@@ -75,6 +75,39 @@ describe('MapSheet — arriving on the map', () => {
     expect(useAppStore.getState().mapSheetState).toBe('half');
   });
 
+  // Review on #666: a card left from the last visit re-opened over the map.
+  it('leaving the map drops its selection, so coming back shows the map', () => {
+    useAppStore.setState({ mobileTab: 'map' } as never);
+    act(() => useAppStore.getState().focusSocietyPin(SKLUB));
+    act(() => useAppStore.getState().setMobileTab('calendar'));
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
+  it('keeps a selection made on the way in', () => {
+    act(() => useAppStore.getState().focusSocietyPin(SKLUB)); // from Jídelníček
+    act(() => useAppStore.getState().setMobileTab('map'));
+    expect(useAppStore.getState().mapSelection?.kind).toBe('societyPin');
+  });
+
+  // Review on #666: the 40vh cap held the sheet back mid-drag.
+  it('a compact card follows the finger up past its cap', () => {
+    act(() => useAppStore.getState().setMobileTab('map'));
+    render(<MapSheet />);
+    act(() => useAppStore.getState().focusSocietyPin(SKLUB));
+    const sheet = screen.getByTestId('map-sheet');
+    fireEvent.pointerDown(sheet, { clientY: 600, pointerId: 1, pointerType: 'touch' });
+    fireEvent.pointerMove(sheet, { clientY: 300, pointerId: 1, pointerType: 'touch' });
+    if (sheet.style.height) expect(sheet.className).not.toMatch(/\bmax-h-\[40vh\]/);
+  });
+
+  // Review on #666: a room is somewhere to look at, from anywhere.
+  it('a room picked with the list open collapses the sheet too', () => {
+    useAppStore.setState({ mobileTab: 'map', mapSheetState: 'half' } as never);
+    render(<MapSheet />);
+    act(() => useAppStore.getState().focusRoomByCode('Q01'));
+    expect(useAppStore.getState().mapSheetState).toBe('peek');
+  });
+
   it('a room picked from a card collapses the sheet to show the map', () => {
     useAppStore.setState({ mobileTab: 'map', mapSheetState: 'half' } as never);
     render(<MapSheet />);

@@ -216,7 +216,9 @@ export function MapSheet() {
         dragHeight === null ? 'transition-[height] duration-300 ease-out' : ''
       } ${
         hugContent
-          ? `h-auto ${compactCard ? 'max-h-[40vh]' : 'max-h-[70vh]'} pb-[calc(72px_+_var(--safe-bottom,0px))]`
+          ? // The compact cap only while resting: mid-drag it held the sheet
+            // back at 40vh under a finger pulling it higher (review on #666).
+            `h-auto ${compactCard && dragHeight === null ? 'max-h-[40vh]' : 'max-h-[70vh]'} pb-[calc(72px_+_var(--safe-bottom,0px))]`
           : fullyExpanded
             ? 'h-[70vh]'
             : sheetState === 'half'

@@ -16,8 +16,9 @@ const ROOM_KINDS = new Set<MapSelection['kind']>(['room', 'roomRef']);
  * map — and a card that opened on the collapsed sheet shows only its top
  * (MapSheet), the rest a pull away. Dominik, 11 November 2026.
  *
- * A room picked from a card (an event's room code) is somewhere to look AT, so
- * the sheet collapses to show it rather than falling back to the list.
+ * A room — picked from a card (an event's room code), from search, or arriving
+ * from a lesson — is somewhere to look AT, so the sheet collapses to show it
+ * rather than leaving the list over it.
  *
  * Keyed on the selection OBJECT, not the event: a second tap on the same pin
  * selects the same event reference, and must still open the card.
@@ -36,7 +37,7 @@ export function useMapCardDetent() {
       setSheetState('half');
       return;
     }
-    if (hadCard.current && selection && ROOM_KINDS.has(selection.kind)) setSheetState('peek');
+    if (selection && ROOM_KINDS.has(selection.kind)) setSheetState('peek');
     hadCard.current = false;
     setCardReturn(null);
   }, [selection, setSheetState, setCardReturn]);

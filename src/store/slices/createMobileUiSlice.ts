@@ -117,12 +117,18 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     // the map and opens as it always did. A card or a room arriving with the
     // tab takes it from there (MapSheet, MapRail).
     const arriving = tab === 'map' && get().mobileTab !== 'map';
+    // And leaving drops the map's selection, or a card from the last visit
+    // re-opens over the map on the next one (review on #666). A selection made
+    // on the way IN (Jídelníček's S-klub, a lesson's room) is set while the
+    // student is still on the other tab, so it survives.
+    const leaving = tab !== 'map' && get().mobileTab === 'map';
     set({
       mobileTab: tab,
       mobileSheets: [],
       ...(tab === 'profile' ? {} : { lastNonProfileTab: tab }),
       ...(tab === 'map' ? {} : { routeSuggestion: null }),
       ...(arriving ? { mapSheetState: 'peek', mapCardReturn: null, mapRailOpen: true } : {}),
+      ...(leaving ? { mapSelection: null, venueMenuSection: null } : {}),
     });
     // A file opened from the Subjects tab should be in the calendar's
     // "recently opened" strip by the time the student gets there.
