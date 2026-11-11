@@ -72,8 +72,14 @@ export function MapRail() {
   // until the next selection — `forRoom` is rebuilt every render, and as a
   // dependency it reopened the rail the moment the student closed it.
   const showsRoomNote = !!forRoom;
+  // And a room with a floor plan closes it: the student was sent to look at
+  // that room (a lesson's pin, a teacher's office), and the events list in the
+  // corner was what they saw instead (Dominik, 11 November 2026). The open
+  // button stays, one tap away.
+  const showsRoom = selection?.kind === 'room' || selection?.kind === 'roomRef';
   useEffect(() => {
     if (selectedCard || showsRoomNote) setOpen(true);
+    else if (showsRoom) setOpen(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
   }, [selectedCard, selection, setOpen]);
 

@@ -28,6 +28,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   // map from 47% to 72%. The reason 'half' was chosen still holds and is still
   // one tap away: the peek row names what is underneath and expands on touch.
   mapSheetState: 'peek',
+  mapCardReturn: null,
   mapRailWidth: RAIL_PX,
   mapRailOpen: true,
   devPhoneOverride: null,
@@ -108,11 +109,20 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
     // looks like it should be: this app runs under StrictMode, so effects are
     // double-invoked and that cleanup ran milliseconds after the pin set the
     // suggestion. The chip never appeared at all.
+    // Arriving on the map from another tab shows the MAP (Dominik, 11 November
+    // 2026: "the events are expanded so I don't really see the map"). The
+    // sheet's height used to outlive the visit, so a list left open covered
+    // the room or café the student had just been sent to. On a phone the
+    // events start collapsed, a pull away; the iPad's rail has room beside
+    // the map and opens as it always did. A card or a room arriving with the
+    // tab takes it from there (MapSheet, MapRail).
+    const arriving = tab === 'map' && get().mobileTab !== 'map';
     set({
       mobileTab: tab,
       mobileSheets: [],
       ...(tab === 'profile' ? {} : { lastNonProfileTab: tab }),
       ...(tab === 'map' ? {} : { routeSuggestion: null }),
+      ...(arriving ? { mapSheetState: 'peek', mapCardReturn: null, mapRailOpen: true } : {}),
     });
     // A file opened from the Subjects tab should be in the calendar's
     // "recently opened" strip by the time the student gets there.
@@ -147,6 +157,7 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   closeAllSheets: () => set({ mobileSheets: [] }),
 
   setMapSheetState: (state) => set({ mapSheetState: state }),
+  setMapCardReturn: (state) => set({ mapCardReturn: state }),
   // Clamped on the way IN, so nothing downstream — the rail's own width, the
   // camera offset that halves it — ever has to re-check.
   setMapRailWidth: (px) => set({ mapRailWidth: clampRailWidth(px, window.innerWidth) }),

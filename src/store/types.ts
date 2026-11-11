@@ -554,6 +554,10 @@ export interface MobileUiSlice {
   mobileSelectedDayIso: string | null;
   mobileSheets: MobileSheet[];
   mapSheetState: MapSheetState;
+  /** Where the phone sheet was when the card on it opened: Back returns there,
+   *  and a card that opened on the collapsed sheet (an arrival from another
+   *  screen, a pin tapped over the map) shows only its top. null = no card. */
+  mapCardReturn: MapSheetState | null;
   /** The tablet rail's width in px. Dragged from its left edge; clamped by
    *  `clampRailWidth`. Ignored on a phone, where the panel is a bottom sheet. */
   mapRailWidth: number;
@@ -601,6 +605,7 @@ export interface MobileUiSlice {
   replaceSheet: (sheet: MobileSheet) => void;
   closeAllSheets: () => void;
   setMapSheetState: (state: MapSheetState) => void;
+  setMapCardReturn: (state: MapSheetState | null) => void;
   setMapRailWidth: (px: number) => void;
   setMapRailOpen: (open: boolean) => void;
   setDevPhoneOverride: (value: boolean | null) => void;
