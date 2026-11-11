@@ -13,6 +13,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
 import { MapSheetHeader } from './MapSheetHeader';
+import { useMapCardDetent } from './useMapCardDetent';
 import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
 import { floorText } from '../../../CampusMap/floorText';
 import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
@@ -125,29 +126,19 @@ export function MapSheet() {
     goToDetent(expanded ? 'peek' : 'half');
   };
 
-  /**
-   * Tapping an event pin selects it, and on a phone this sheet is the only
-   * surface that can show it — desktop has DetailPanel floating over the map,
-   * which there is no room for here. A selection made at peek height would
-   * otherwise be invisible: the pin would highlight and nothing else would
-   * happen.
-   */
-  //
-  // Keyed on the selection OBJECT, not the event: a second tap on the same pin
-  // selects the same event reference, and must still open the card.
-  useEffect(() => {
-    if (
-      !selection ||
-      (selection.kind !== 'event' &&
-        selection.kind !== 'gardenPlace' &&
-        selection.kind !== 'societyPin')
-    )
-      return;
-    // 'half', not 'expanded' — and the height below hugs the card anyway. Any
-    // state out of 'peek' will do; what this call is really for is getting the
-    // peek row out of the way so the card can render at all.
-    setSheetState('half');
-  }, [selection, setSheetState]);
+  // A card opens the sheet ('half'; the height below hugs it), remembers where
+  // the sheet was for Back, and a room picked from a card collapses it.
+  useMapCardDetent();
+  const cardReturn = useAppStore((s) => s.mapCardReturn);
+  const backFromCard = () => {
+    const to = cardReturn ?? 'half';
+    clearMapSelection();
+    setSheetState(to);
+  };
+  // Opened on the collapsed sheet — an arrival from another screen, a pin
+  // tapped over the map — the card shows its top (name, open now, "Trasa
+  // sem") and leaves the map in view; pulling up gives it the tall sheet.
+  const compactCard = !!selectedCard && sheetState === 'half' && cardReturn === 'peek';
 
   // A drawn route is an answer, and the sheet is 45% of the screen in front of
   // it. Whatever the student had open, the map wins the moment directions
@@ -225,7 +216,9 @@ export function MapSheet() {
         dragHeight === null ? 'transition-[height] duration-300 ease-out' : ''
       } ${
         hugContent
-          ? 'h-auto max-h-[70vh] pb-[calc(72px_+_var(--safe-bottom,0px))]'
+          ? // The compact cap only while resting: mid-drag it held the sheet
+            // back at 40vh under a finger pulling it higher (review on #666).
+            `h-auto ${compactCard && dragHeight === null ? 'max-h-[40vh]' : 'max-h-[70vh]'} pb-[calc(72px_+_var(--safe-bottom,0px))]`
           : fullyExpanded
             ? 'h-[70vh]'
             : sheetState === 'half'
@@ -308,7 +301,7 @@ export function MapSheet() {
             onCollapse={toggle}
             // A venue's menu category is a page inside its card, so Back from
             // there returns to the card, and the header names where it goes.
-            onBack={venueMenuOpen ? () => setVenueMenuSection(null) : clearMapSelection}
+            onBack={venueMenuOpen ? () => setVenueMenuSection(null) : backFromCard}
             backLabel={
               venueMenuOpen ? t('map.venueBackTo', { venue: selectedSocietyPin!.title }) : undefined
             }
