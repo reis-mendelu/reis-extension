@@ -694,15 +694,14 @@ size, an unlisted link is accepted.
 >   moderate (that console does not exist in the iOS app), and the feedback form
 >   sends free text to us alone, where it is never shown to another user.
 > - *Permission prompts:* none at launch in the demo; the camera dialog appears
->   only if a photo is taken in the problem-report form. A signed-in student
->   can see two:
->   the camera (`NSCameraUsageDescription`), only when they choose to take a
->   photo for a problem report or a page of their notes, and notifications:
->   the system dialog appears once, normally at the first launch after sign-in
->   (otherwise when an exam reminder or new points first need it), for local
->   notifications only, no push. The campus map is a static basemap that never asks where the device
->   is, and there is no App Tracking Transparency prompt because the app does
->   no tracking.
+>   only if a photo is taken in the problem-report form. A signed-in student can
+>   see two: the camera (`NSCameraUsageDescription`), only when they choose to
+>   take a photo for a problem report or a page of their notes, and
+>   notifications: the system dialog appears once, normally at the first launch
+>   after sign-in (otherwise when an exam reminder or new points first need it),
+>   for local notifications only, no push. The campus map is a static basemap
+>   that never asks where the device is, and there is no App Tracking
+>   Transparency prompt because the app does no tracking.
 >
 > **2. Devices and operating systems tested.**
 >
