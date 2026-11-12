@@ -77,6 +77,14 @@ the secrets) and the profile goes stale if the app's entitlements change.
 Already present and reused: `CHROME_*`, `FIREFOX_*`, and the Google service
 account `CHROME_SERVICE_ACCOUNT_*`, which also calls the Play Developer API.
 
+**The privacy-policy gist** is republished by `privacy-gist.yml` with `GIST_TOKEN`:
+a fine-grained personal access token of ElijaahInverted (the gist's owner) with
+only the account permission **Gists: Read and write**. `GITHUB_TOKEN` is not
+accepted for gists. `npm run privacy:publish` dispatches it and `play-data-safety.yml`;
+a cloud session, which has no local `gh` login, dispatches the same two workflows
+on `test` instead. Without the secret, `npm run privacy:publish -- --gist-local`
+writes the gist from the Mac's `gh` the old way.
+
 **Play Console, once:** Users and permissions → the service account → app
 permissions for `cz.reis.app` → **Release to production, exclude devices and use
 Play app signing** (it also holds **Release apps to testing tracks** and the Data

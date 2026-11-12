@@ -1,9 +1,8 @@
 // Pure logic for the reIS Task List Google Doc. Plain JS: runs on bare Node.
 // Two reads, because neither alone is enough:
 // - `read_doc` (Docs API JSON): character indices to write at, and image URIs.
-// - `read_file_content` (markdown export): whether a checklist box is ticked.
-//   The Docs API omits checklist state; the export renders a ticked item ~~struck~~.
-// No Google API can tick the box itself, so "done" is ✅ + strikethrough.
+// - `read_file_content` (markdown export): a ticked checklist item comes back
+//   ~~struck~~; the Docs API omits that state. No API can tick it: ✅ + strike.
 
 const OBJECT = '\uFFFC';
 export const SOFT_BREAK = '\u000b';
@@ -35,7 +34,7 @@ function normalize(s) {
       .replace(/\\(.)/g, '$1')
       // A styled URL comes back as [text](url): keep the text, as the doc shows it.
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/~~|\*\*|__|[<>]/g, '')
+      .replace(/~~|\*\*|__|[<>\uFFFC]/g, '')
       .replace(/[\s\u000b ]+/g, ' ')
       .trim()
       .toLowerCase()
@@ -48,7 +47,7 @@ function headingLevel(paragraph) {
   return paragraph.paragraphStyle?.namedStyleType === 'TITLE' ? 0 : null;
 }
 
-function paragraphs(body) {
+export function paragraphs(body) {
   return body
     .filter((el) => el.paragraph)
     .map((el) => {
@@ -60,10 +59,10 @@ function paragraphs(body) {
         if (e.textRun) text += e.textRun.content;
         const url = e.textRun?.textStyle?.link?.url;
         if (url) links.push({ text: e.textRun.content.trim(), url });
-        if (e.inlineObjectElement) {
-          text += OBJECT;
-          images.push(e.inlineObjectElement.inlineObjectId);
-        }
+        if (e.inlineObjectElement) images.push(e.inlineObjectElement.inlineObjectId);
+        // Chips and images take index space but carry no text: pad them, so an
+        // offset into `text` stays an offset into the doc.
+        if (!e.textRun) text += OBJECT.repeat(e.endIndex - e.startIndex);
       }
       return {
         start: el.startIndex,
@@ -78,7 +77,7 @@ function paragraphs(body) {
     });
 }
 
-function sectionSlice(items, section, levelOf, textOf) {
+export function sectionSlice(items, section, levelOf, textOf) {
   const target = normalize(section);
   const from = items.findIndex((it) => levelOf(it) !== null && normalize(textOf(it)) === target);
   if (from === -1) return [];
@@ -141,26 +140,37 @@ function addLinks(task, links) {
 }
 
 /**
- * Tasks in one section (default: the Bucket list), numbered from 1 in doc
+ * The section a session works: the current sprint. The Backlog's sections are
+ * the pool Dominik picks the next sprint from (`--section Backlog`).
+ */
+export const DEFAULT_SECTION = 'Current sprint';
+
+/**
+ * Tasks in one section (default: the current sprint), numbered from 1 in doc
  * order. `done` is null when the markdown line could not be matched. Lines
  * under a title — soft line breaks in its item, or nested bullets below it —
  * form the task's `thread`.
  */
-export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {}) {
+export function findTasks(docJson, markdownJson, { section = DEFAULT_SECTION } = {}) {
   const { body, inlineObjects } = unwrapDoc(docJson);
   const md = markdownDoneMap(unwrapMarkdown(markdownJson), section);
   const uriOf = (id) =>
     inlineObjects[id]?.inlineObjectProperties?.embeddedObject?.imageProperties?.contentUri ?? null;
   const tasks = [];
   const used = new Set();
+  let subsection = null;
   for (const p of sectionSlice(
     paragraphs(body),
     section,
     (p) => p.level,
     (p) => p.text
   )) {
-    // A subheading inside the section is structure, never a task or a reply.
-    if (p.level !== null) continue;
+    // A subheading inside the section is structure, never a task or a reply;
+    // it names the group the tasks below it belong to.
+    if (p.level !== null) {
+      subsection = p.text.replace(/\n$/, '').replaceAll(OBJECT, '').trim();
+      continue;
+    }
     const visible = p.text.replace(/\n$/, '');
     const words = visible.replaceAll(OBJECT, '').trim();
     if (!words) {
@@ -187,6 +197,7 @@ export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {
     const match = md[at];
     tasks.push({
       n: tasks.length + 1,
+      subsection,
       title,
       thread: lines.filter(Boolean).flatMap(linesOf),
       done: match ? match.done : null,
