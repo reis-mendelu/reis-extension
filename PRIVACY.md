@@ -70,7 +70,7 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 6. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
 7. **Photon** (`photon.komoot.io`) — venue search, used only by reIS staff and society logins in the admin console when creating an event.
 8. **WebISKAM** (`webiskam.mendelu.cz`) and **MENDELU sign-in** (`alibaba.mendelu.cz`) — mobile app only (Android, iPhone, iPad), when you ask to see your ISIC balance or top it up. You sign in on MENDELU's own page; your password goes straight to MENDELU and reIS never sees it. The app reads the Hlavní konto balance and, for a top-up, sends WebISKAM the amount you typed and whether you chose card or Google Pay, so it can start the GoPay payment as you. reIS keeps the sign-in cookies encrypted on your device (Android Keystore; iOS Keychain); while you are signed in the device's own web-cookie store holds them too, like any browser. Signing out deletes both. The balance is shown and never stored.
-9. **GoPay** (`checkout.gopay.com`, previously `gate.gopay.com`) — the payment page for a top-up opens in your device's browser view. Your card or Google Pay details go to GoPay; reIS never sees them.
+9. **GoPay** (`checkout.gopay.com` and `gate.gopay.com`) — the payment page for a top-up opens in your device's browser view. Your card or Google Pay details go to GoPay; reIS never sees them.
 
 **Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles, partner programme websites under Stáže, the emoji licence) are handed to your browser or the relevant app. reIS makes no background request to them.
 
