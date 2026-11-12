@@ -6,6 +6,7 @@ import type { ExamSection } from '../../../../types/exams';
 import { ExamRowCard, type ExamAccent } from './ExamRowCard';
 import { TermRow } from './TermRow';
 import { AttemptBadgeLegend } from './AttemptBadgeLegend';
+import { SectionMore } from './SectionMore';
 
 export interface OpenCardProps {
   row: OpenExam;
@@ -54,11 +55,15 @@ export function OpenCard({
       expanded={expanded}
       onToggle={onToggle}
     >
+      {/* One "Více" for the card; the rows open nothing and say inline until
+          when they take registrations, as under a registered card. */}
+      <SectionMore section={row.section} />
       {row.section.terms.map((term) => (
         <TermRow
           key={term.id}
           term={term}
           section={row.section}
+          showDetails={false}
           now={now}
           isProcessing={isProcessing}
           onRegister={onRegister}

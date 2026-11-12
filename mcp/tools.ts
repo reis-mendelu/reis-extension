@@ -152,7 +152,7 @@ export const TOOLS: ToolDef[] = [
     name: 'mendelu_subject_files',
     title: 'Subject files',
     description:
-      "Lists the files in one enrolled subject's IS document folder (slides, materials): name, author, date and a downloadUrl to pass to mendelu_read_file. Read-only.",
+      "Lists the files in one enrolled subject's IS document folder (slides, materials): the document's name, the file's own name (one document can hold several files), folder, author, date, modified, and a downloadUrl to pass to mendelu_read_file. Read-only.",
     input: { code: z.string().min(2).describe('Subject code, e.g. "EBC-PS".') },
     run: async (a) => {
       const folderUrl = (await subjectsData())[String(a.code)]?.folderUrl;

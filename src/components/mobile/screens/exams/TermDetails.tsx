@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react';
-import { AlertTriangle, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
@@ -8,6 +7,7 @@ import { parseRegistrationStart } from '../../../../utils/termUtils';
 import { formatOpensAtBare } from '../../../../utils/mobile/examOpening';
 import { termDeadline } from '../../../../utils/mobile/examDeadline';
 import { termPeopleUrl } from '../../../../utils/mobile/termPeopleUrl';
+import { Fact, NoteBlock } from './DetailParts';
 
 export interface TermDetailsProps {
   term: ExamTerm;
@@ -16,15 +16,6 @@ export interface TermDetailsProps {
   isRegHere: boolean;
   /** The store's clock, so "has registration opened yet" matches the row. */
   now: Date;
-}
-
-function Fact({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-2sm text-base-content/60">{label}</dt>
-      <dd className="text-right text-2sm font-medium text-base-content">{children}</dd>
-    </div>
-  );
 }
 
 /** "8. 11. 20:00" from IS's "08.11.2026 20:00"; the raw string if it does not parse. */
@@ -81,26 +72,7 @@ export function TermDetails({ term, section, isRegHere, now }: TermDetailsProps)
           <Fact label={t(`mobile.exams.${deadlineRow.kind}`)}>{deadline(deadlineRow.value)}</Fact>
         )}
       </dl>
-      {note && (
-        // The desktop's TermNoteBlock, at the phone's type size. IS writes
-        // rules with pass/fail consequences in red; the warning tone keeps that.
-        // Headed like the facts above, so it reads as the teacher's note.
-        <div className="flex flex-col gap-1">
-          <span className="text-2sm text-base-content/60">{t('mobile.exams.detailNote')}</span>
-          <div
-            data-testid="term-note"
-            className="flex items-start gap-1.5 rounded-lg bg-base-200/60 px-2.5 py-2 text-2sm leading-relaxed"
-          >
-            <AlertTriangle
-              size={14}
-              className={`mt-0.5 shrink-0 ${note.isEmphasized ? 'text-[var(--tone-warning)]' : 'text-base-content/60'}`}
-            />
-            <div className="min-w-0 whitespace-pre-wrap break-words text-base-content/80">
-              {note.text}
-            </div>
-          </div>
-        </div>
-      )}
+      {note && <NoteBlock note={note} />}
       <div className="flex flex-col gap-2">
         {whoUrl && (
           <a

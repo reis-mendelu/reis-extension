@@ -37,7 +37,9 @@ describe('buildFallbackPlan', () => {
     expect(st.id).toBe('123456');
     expect(st.isEnrolled).toBe(true);
     expect(st.isFulfilled).toBe(false);
-    expect(st.credits).toBe(0);
+    // student/list.pl carries no credits. 999 is IS's "unknown" sentinel,
+    // which every credit display hides — 0 rendered as "0 kr." on each row.
+    expect(st.credits).toBe(999);
   });
 
   it('picks nameEn for en and nameCs for cs', () => {

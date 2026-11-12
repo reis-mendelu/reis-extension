@@ -165,7 +165,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Four feature counters on the random install id, one whitelisted label each.',
+    what: 'Ten feature counters on the random install id, one whitelisted label each: four feature uses and six screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -191,10 +191,21 @@ export const FLOWS: Flow[] = [
         'when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day',
         'the random install identifier and the fixed `calendar_week_view` label',
       ],
+      [
+        'Screen opened',
+        'when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session (again only if a send fails); stored as one row per install per day',
+        'the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed',
+      ],
     ],
     stores: {
-      apple: [INSTALL_ID_APPLE],
-      play: ['PSL_USER_ACCOUNT'],
+      // Which screens an install opened is "how the user interacts with the
+      // app" in both stores' own words (Apple Product Interaction, Play App
+      // interactions), linked through the same install id.
+      apple: [
+        INSTALL_ID_APPLE,
+        { type: 'Product Interaction', purpose: 'Analytics', linked: true, tracking: false },
+      ],
+      play: ['PSL_USER_ACCOUNT', 'PSL_USER_INTERACTION'],
       firefox: ['technicalAndInteraction'],
       cws: ['User activity'],
     },
@@ -221,6 +232,16 @@ export const EXEMPT: Exempt[] = [
     call: 'map_pins',
     files: ['src/api/mapEvents.ts'],
     why: 'Public read of the live society pins on the map; written by reIS staff in Supabase, never a student.',
+  },
+  {
+    call: 'venues',
+    files: ['src/api/venues.ts'],
+    why: 'Public read of the venues on the map (hours, menu, photo paths); written by reIS staff in Supabase, never a student.',
+  },
+  {
+    call: 'is_notice_mutes',
+    files: ['src/api/isNoticeMutes.ts', 'src/api/isNoticeMutesAdmin.ts'],
+    why: 'Public read of the whole list of IS notices reIS muted, filtered on the device: the request says nothing about what the student’s IS shows them, which never leaves the device. Writes are by a signed-in reis_admin, never a student.',
   },
   {
     call: 'reis_questions',

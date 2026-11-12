@@ -1,6 +1,7 @@
 import type { ExamSubject } from '../types/exams';
 import type { Language } from '../store/types';
 import { parseRegistrationStart } from './termUtils';
+import { isGroupSignupSection } from './exams/isGroupSignup';
 
 /** Tags exam-opening notifications, so nothing else cancels or reschedules them. */
 export const EXAM_OPENING_KIND = 'exam-opening';
@@ -101,6 +102,8 @@ export function examOpeningReminders(
   for (const subject of exams) {
     for (const section of subject.sections) {
       if (section.status === 'registered') continue;
+      // No push for a seminar-group signup: it has no badge either (report #37).
+      if (isGroupSignupSection(section)) continue;
       const next = section.terms
         .filter((t) => !t.cannotRegister && t.registrationStart)
         .map((t) => parseRegistrationStart(t.registrationStart!))

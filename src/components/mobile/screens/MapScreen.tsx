@@ -56,12 +56,14 @@ export function MapScreen() {
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
   const focusPoiById = useAppStore((s) => s.focusPoiById);
   const focusLandmarkById = useAppStore((s) => s.focusLandmarkById);
+  const focusSocietyPin = useAppStore((s) => s.focusSocietyPin);
 
   const selectResult = (m: MapSelection) => {
     if (m.kind === 'poi') focusPoiById(m.poi.id);
     else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
     else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id);
     else if (m.kind === 'placedRoom') focusRoomByCode(m.label);
+    else if (m.kind === 'societyPin') focusSocietyPin(m.pin);
     setQuery('');
   };
 
@@ -88,8 +90,12 @@ export function MapScreen() {
           other screen inherits this from ScreenHeader, which the map does not
           use — it floats its own chrome over the canvas instead. A flat mt-4 was
           the bug, and it looks correct in any desktop browser, where --safe-top
-          resolves to 0. */}
-      <div className="relative z-[1000] mx-4 mt-[calc(1rem_+_var(--safe-top,0px))]">
+          resolves to 0.
+          z-[1001], one above everything else floating here: the results
+          open downward over the tablet rail (top 5rem) and the phone sheet,
+          and at a shared z-[1000] the rail, later in the DOM, painted over
+          them — on an iPad the list came up behind "Akce". */}
+      <div className="relative z-[1001] mx-4 mt-[calc(1rem_+_var(--safe-top,0px))]">
         <label
           className="flex items-center gap-2.5 rounded-full px-4 py-3 backdrop-blur-md"
           style={{ background: 'rgba(31,41,55,.94)', border: '1px solid rgba(243,244,246,.1)' }}

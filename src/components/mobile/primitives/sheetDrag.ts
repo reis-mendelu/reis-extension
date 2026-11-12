@@ -186,7 +186,6 @@ export function dragOwnsGesture(target: Element | null, stopAt: Element | null):
   }
   return true;
 }
-
 function isScrollable(el: Element): boolean {
   // scrollHeight > clientHeight alone is not enough: a tall element inside a
   // non-scrolling parent reports that too, and treating it as a scroller would

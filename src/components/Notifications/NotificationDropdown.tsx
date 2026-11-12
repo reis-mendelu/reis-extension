@@ -1,6 +1,6 @@
 import { Bell, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { NotificationItem } from './NotificationItem';
+import { NotificationRow } from './NotificationRow';
 import { DeadlineAlertItem } from './DeadlineAlertItem';
 import { QuestionList } from '../Questions/QuestionList';
 import { useQuestions } from '../../hooks/useQuestions';
@@ -9,6 +9,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 interface NotificationDropdownProps {
   notifications: SpolekNotification[];
@@ -33,6 +34,7 @@ export function NotificationDropdown({
   deadlineAlerts,
   onOpenSubject,
 }: NotificationDropdownProps) {
+  useScreenSignal('screen_notifications');
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const questions = useQuestions();
@@ -80,11 +82,11 @@ export function NotificationDropdown({
       ) : (
         <div className="flex flex-col gap-2">
           {notifications.map((n) => (
-            <NotificationItem
+            <NotificationRow
               key={n.id}
               notification={n}
               onVisible={() => onVisible(n.id)}
-              onClick={() => void openNotification(n)}
+              onOpen={() => void openNotification(n)}
               clickable={opensSomewhere(n)}
             />
           ))}

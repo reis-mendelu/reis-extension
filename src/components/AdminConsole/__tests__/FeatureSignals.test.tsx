@@ -156,4 +156,61 @@ describe('FeatureSignals', () => {
 
     expect(screen.getByText('24.8. – 22.9.')).toBeInTheDocument();
   });
+
+  // 2026-11-07: "10 % of daily installs opened Vývěska" is the level of detail
+  // asked for. The denominator is the usage panel's own daily count.
+  describe('share of daily installs', () => {
+    const usage = (daily: { day: string; active: number }[]) =>
+      useAppStore.setState({
+        adminStats: {
+          today: 0,
+          d7: 0,
+          d30: 0,
+          daily: daily.map((d) => ({ ...d, newDevices: 0, returningDevices: d.active })),
+          byPlatform: [],
+          byFaculty: [],
+          day: null,
+        },
+      } as never);
+
+    afterEach(() => useAppStore.setState({ adminStats: null } as never));
+
+    it("shows a signal as a share of that day's installs, pooled over the window", () => {
+      seed();
+      usage([
+        { day: '2026-09-20', active: 10 },
+        { day: '2026-09-21', active: 20 },
+        { day: '2026-09-22', active: 20 },
+      ]);
+      render(<FeatureSignals />);
+
+      // map: (2 + 3 + 2) / (10 + 20 + 20) = 14 %
+      expect(screen.getByText(/^14 % denních instalací$/)).toBeInTheDocument();
+      // the count itself keeps its own place
+      expect(screen.getByText(/^7 instalací$/)).toBeInTheDocument();
+    });
+
+    // The two numbers come from independent RPCs; without the usage read there
+    // is nothing to divide by, and a made-up share would be worse than none.
+    it('shows the count alone when the daily usage read failed', () => {
+      seed();
+      render(<FeatureSignals />);
+
+      expect(screen.queryByText(/denních instalací/)).not.toBeInTheDocument();
+    });
+
+    // A withheld signal has no daily rows; a share of zero would be a lie.
+    it('never shows a share for a suppressed signal', () => {
+      seed({
+        ...STATS,
+        byFeature: [{ feature: 'eduroam_profile_delivered', installs: -1, hits: -1 }],
+        daily: [],
+      });
+      usage([{ day: '2026-09-22', active: 20 }]);
+      render(<FeatureSignals />);
+
+      const row = screen.getByText('eduroam profil předán').closest('button')!;
+      expect(row).not.toHaveTextContent('denních instalací');
+    });
+  });
 });

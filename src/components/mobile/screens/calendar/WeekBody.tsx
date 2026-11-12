@@ -9,6 +9,8 @@ import { NowNextCard } from './NowNextCard';
 import { WeekNowStrip } from './WeekNowStrip';
 import { DayChips } from './DayChips';
 import { WeekGrid } from './WeekGrid';
+import { weekColumnMinWidths } from './weekLayout';
+import { toIso, weekDays } from '../../../../utils/mobile/weekDays';
 
 export interface WeekBodyProps {
   lessons: BlockLesson[];
@@ -49,6 +51,14 @@ export function WeekBody({
   const gridRef = useRef<HTMLDivElement>(null);
   const scheduleRefreshing = useAppStore((s) => s.scheduleRefreshing);
   const triggerScheduleRefresh = useAppStore((s) => s.triggerScheduleRefresh);
+  const todayIso = toIso(useAppStore((s) => s.now));
+  // One answer for the grid's columns and the chips above them, so a day that
+  // widens for a clash keeps its chip over it (weekLayout's weekColumnMinWidths).
+  const columnMinWidths = weekColumnMinWidths(
+    lessons,
+    weekDays(selectedIso, lessonDates, todayIso).map(toIso),
+    todayIso
+  );
   // How many installs use Týden at all — Tonda's "people pick a view once and
   // never switch", answered with a number (decision 15). A write, not a
   // fetch: the counter latches once per session, the database once a day.
@@ -71,6 +81,7 @@ export function WeekBody({
         // swipe move the week; a tapped day opens in Den.
         view="week"
         onOpenDay={onOpenDay}
+        columnMinWidths={columnMinWidths}
       />
       {/* The indicator is the grid's SIBLING, as in DayBody: the refresh
           holds the referenced element down while it runs, and that must be
@@ -88,6 +99,7 @@ export function WeekBody({
             selectedIso={selectedIso}
             lessonDates={lessonDates}
             onSelectDay={onSelectDay}
+            columnMinWidths={columnMinWidths}
           />
         </div>
       </div>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
-export type ExamGroupTone = 'registered' | 'notYetOpen' | 'open' | 'blocked';
+export type ExamGroupTone = 'registered' | 'notYetOpen' | 'open' | 'blocked' | 'signup';
 
 // The same three colours as the cards' accent bars, so a header and the rows
 // under it read as one thing. A dot and a tinted rule rather than coloured
@@ -14,6 +14,8 @@ const TONE: Record<ExamGroupTone, { dot: string; rule: string }> = {
   open: { dot: 'bg-info', rule: 'border-info/40' },
   // Grey: shown, but nothing to act on.
   blocked: { dot: 'bg-base-content/40', rule: 'border-base-content/20' },
+  // Seminar-group signup: not an exam, so not one of the exam colours.
+  signup: { dot: 'bg-base-content/40', rule: 'border-base-content/20' },
 };
 
 export interface ExamGroupProps {
@@ -22,18 +24,21 @@ export interface ExamGroupProps {
    *  count is the "2 přihlášené" pill right above it. */
   count?: number;
   tone: ExamGroupTone;
+  /** Starts collapsed when false — the signup group (report #37). */
+  defaultOpen?: boolean;
   children: ReactNode;
 }
 
 /** Collapsible, colour-coded section header wrapping one group of exam cards. */
-export function ExamGroup({ title, count, tone, children }: ExamGroupProps) {
-  const [open, setOpen] = useState(true);
+export function ExamGroup({ title, count, tone, defaultOpen = true, children }: ExamGroupProps) {
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div data-testid={`exam-group-${tone}`} className="flex flex-col gap-2">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
         className="flex min-h-11 items-center gap-2 px-0.5 text-left"
       >
         <span

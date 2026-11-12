@@ -373,7 +373,7 @@ export interface HiddenItemsSlice {
   ) => Promise<void>;
   unhideCourse: (courseCode: string, type?: 'lecture' | 'seminar' | 'all') => Promise<void>;
   hideEvent: (id: string, courseCode: string, courseName: string, date: string) => Promise<void>;
-  unhideEvent: (id: string) => Promise<void>;
+  unhideEvent: (id: string, date?: string) => Promise<void>;
 }
 
 export interface TeachingWeekSlice {
@@ -514,6 +514,9 @@ export type MobileSheet =
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
   | { kind: 'menu'; dayIso: string; week?: string[] }
+  // The ISIC balance and Dobít, from the profile (phone only — the same row
+  // the menu sheet shows; src/test/guards/desktopHasNoIskam.test.ts).
+  | { kind: 'isic' }
   | {
       kind: 'venue';
       coord: [number, number];
@@ -534,6 +537,11 @@ export type MobileSheet =
   // inside CalendarScreen while its button shipped on every screen's header —
   // so it opened from one tab out of five.
   | { kind: 'bulletin' }
+  // Stáže: the programmes of the student's partners. Its button sits beside the
+  // vývěska's and only exists when there is a programme to show.
+  | { kind: 'internships' }
+  // A held lesson in Týden or Den: hide it, or all of its kind (#43).
+  | { kind: 'hideLesson'; lesson: BlockLesson }
   | { kind: 'confirm'; confirmId: string };
 
 export type MobileCalendarView = 'day' | 'week';
@@ -546,6 +554,10 @@ export interface MobileUiSlice {
   mobileSelectedDayIso: string | null;
   mobileSheets: MobileSheet[];
   mapSheetState: MapSheetState;
+  /** Where the phone sheet was when the card on it opened: Back returns there,
+   *  and a card that opened on the collapsed sheet (an arrival from another
+   *  screen, a pin tapped over the map) shows only its top. null = no card. */
+  mapCardReturn: MapSheetState | null;
   /** The tablet rail's width in px. Dragged from its left edge; clamped by
    *  `clampRailWidth`. Ignored on a phone, where the panel is a bottom sheet. */
   mapRailWidth: number;
@@ -593,6 +605,7 @@ export interface MobileUiSlice {
   replaceSheet: (sheet: MobileSheet) => void;
   closeAllSheets: () => void;
   setMapSheetState: (state: MapSheetState) => void;
+  setMapCardReturn: (state: MapSheetState | null) => void;
   setMapRailWidth: (px: number) => void;
   setMapRailOpen: (open: boolean) => void;
   setDevPhoneOverride: (value: boolean | null) => void;
@@ -747,9 +760,12 @@ export type AppState = ScheduleSlice &
   ContextSlice &
   PulseSlice &
   NotificationSlice &
+  import('./slices/createSystemNotificationsSlice').SystemNotificationsSlice &
   import('./slices/createQuestionsSlice').QuestionsSlice &
   import('./slices/createSocietyPinsSlice').SocietyPinsSlice &
+  import('./slices/createSklubMenuSlice').SklubMenuSlice &
   BulletinSlice &
+  import('./slices/createIsNoticesSlice').IsNoticesSlice &
   ViewportSlice &
   MobileUiSlice &
   import('./slices/createSearchSlice').SearchSlice &

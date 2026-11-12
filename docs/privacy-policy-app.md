@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 30 October 2026**
+**Last Updated: 9 November 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -41,6 +41,7 @@ yourself — see *Report attachments* below.
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
 | Week view used | when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day | the random install identifier and the fixed `calendar_week_view` label |
+| Screen opened | when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session (again only if a send fails); stored as one row per install per day | the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed |
 <!-- END generated:flows -->
 
 Which partner company you are shown, if any, is decided on your device from your
@@ -87,6 +88,13 @@ stored. A top-up sends WebISKAM the amount you typed and whether you chose card 
 Google Pay, so it can create the payment; it then opens **GoPay**'s payment page
 in your device's browser view, and your card or Google Pay details go to GoPay
 and never to reIS.
+
+**S-klub Pixie** (`sklubpixie.cz`), the café in budova Z, serves its public
+daily menu page, which reIS reads at startup (and again when you return to the
+app, if the menu is over ten minutes old) to show the café's lunch in the
+Jídelníček and on its map card. The request carries no reIS identifier, sign-in
+or academic data; like any web request, it shows S-klub's server your IP address
+and app version.
 
 We do **not** sell or trade your personal information, and transfer it to no one
 else.

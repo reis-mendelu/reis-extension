@@ -41,6 +41,24 @@ export interface DiagnosticsPayload {
      *  so it reads false while a retry is in flight. A flag only: the message
      *  is String(e), uncleaned. */
     syncFailed?: boolean;
+    // Optional: builds up to 5.6.0 send none of these. Each one is a count of
+    // what a "report missing" link covers (reportPrefill.ts), so a report of
+    // an empty list can be read against what the app actually held.
+    /** 'none' (never loaded), 'loading' or 'success'. A store read, like the
+     *  others: `syncLoaded` holds whether a sync answered for subjects. */
+    subjects?: string;
+    subjectsCount?: number;
+    /** Syllabuses held in the store, and of those how many have neither text
+     *  nor table. Counts CACHED entries only: a subject whose syllabus never
+     *  arrived (a failed fetch) also shows "no data" and is not counted here —
+     *  `Sync.syllabus` in the entries counts those failures. */
+    syllabusCount?: number;
+    syllabusEmpty?: number;
+    /** Zápisník records held; `null` ones are failed fetches, empty ones have
+     *  no section and no test. */
+    zaznamnikCount?: number;
+    zaznamnikFailed?: number;
+    zaznamnikEmpty?: number;
   };
 }
 
@@ -101,6 +119,37 @@ export async function collectDiagnostics(
         .filter(([, v]) => v)
         .map(([k]) => k),
       syncFailed: !!s.syncStatus?.error,
+      ...heldCounts(s),
     },
   };
+}
+
+type Store = ReturnType<typeof useAppStore.getState>;
+
+/**
+ * Counts only. Never which subject: no key of these maps leaves here. Runs
+ * inside Send, so it must not throw: a record of an unexpected shape (one
+ * hydrated from an older build) drops these fields, never the report.
+ */
+function heldCounts(s: Store) {
+  try {
+    // The store holds one language per subject: createSyllabusSlice unwraps
+    // IndexedDB's { cz, en } before caching.
+    const syllabuses = Object.values(s.syllabuses?.cache ?? {});
+    const zaznamnik = Object.values(s.zaznamnik ?? {});
+    return {
+      subjects: s.subjectsLoading ? 'loading' : s.subjects ? 'success' : 'none',
+      subjectsCount: Object.keys(s.subjects?.data ?? {}).length,
+      syllabusCount: syllabuses.length,
+      syllabusEmpty: syllabuses.filter((y) => !y?.requirementsText && !y?.requirementsTable?.length)
+        .length,
+      zaznamnikCount: zaznamnik.length,
+      zaznamnikFailed: zaznamnik.filter((z) => z === null).length,
+      zaznamnikEmpty: zaznamnik.filter(
+        (z) => z !== null && !z?.ph?.sections?.length && !z?.vt?.tests?.length
+      ).length,
+    };
+  } catch {
+    return {};
+  }
 }
