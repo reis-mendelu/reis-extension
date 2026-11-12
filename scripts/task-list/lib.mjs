@@ -168,7 +168,7 @@ export function findTasks(docJson, markdownJson, { section = DEFAULT_SECTION } =
     // A subheading inside the section is structure, never a task or a reply;
     // it names the group the tasks below it belong to.
     if (p.level !== null) {
-      subsection = p.text.replace(/\n$/, '').trim();
+      subsection = p.text.replace(/\n$/, '').replaceAll(OBJECT, '').trim();
       continue;
     }
     const visible = p.text.replace(/\n$/, '');

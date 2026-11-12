@@ -591,6 +591,30 @@ describe('sprints: the current sprint is the work, the Backlog is the planning p
     expect(findTasks(sprintDoc, sprintMd)[0]!.subsection).toBe('Sprint 16');
   });
 
+  it('keeps a chip or image in a subheading out of the subsection name', () => {
+    const doc = {
+      content: {
+        revisionId: 'r',
+        tabs: [
+          {
+            documentTab: {
+              body: {
+                content: [
+                  para('Current sprint', { heading: 'HEADING_1' }),
+                  para('Sprint 16 ', { heading: 'HEADING_2', images: ['img.chip'] }),
+                  para('sprint task', { bullet: true }),
+                ],
+              },
+            },
+          },
+        ],
+      },
+    };
+    expect(findTasks(doc, '# Current sprint\n## Sprint 16\n  - sprint task')[0]!.subsection).toBe(
+      'Sprint 16'
+    );
+  });
+
   it('lists the whole Backlog, every subsection, for sprint planning', () => {
     expect(findTasks(sprintDoc, sprintMd, { section: 'Backlog' }).map((t) => t.title)).toEqual([
       'backlog task',
