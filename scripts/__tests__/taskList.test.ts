@@ -581,6 +581,16 @@ describe('sprints: the current sprint is the work, the Backlog is the planning p
     expect(findTasks(sprintDoc, sprintMd).map((t) => t.title)).toEqual(['sprint task']);
   });
 
+  it("names each task's subsection, so planning can group the Backlog", () => {
+    expect(
+      findTasks(sprintDoc, sprintMd, { section: 'Backlog' }).map((t) => [t.subsection, t.title])
+    ).toEqual([
+      ['Code changes & features', 'backlog task'],
+      ['Content & SEO', 'seo page'],
+    ]);
+    expect(findTasks(sprintDoc, sprintMd)[0]!.subsection).toBe('Sprint 16');
+  });
+
   it('lists the whole Backlog, every subsection, for sprint planning', () => {
     expect(findTasks(sprintDoc, sprintMd, { section: 'Backlog' }).map((t) => t.title)).toEqual([
       'backlog task',

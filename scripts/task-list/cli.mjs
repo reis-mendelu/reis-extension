@@ -120,7 +120,12 @@ if (command === 'list') {
       JSON.stringify({ revisionId: unwrapDoc(docJson).revisionId, tasks: selected }, null, 2)
     );
   } else {
+    let group;
     for (const t of selected) {
+      if (t.subsection !== group) {
+        group = t.subsection;
+        if (group) console.log(`## ${group}`);
+      }
       const status = t.done === null ? 'unmatched' : t.status;
       console.log(`#${t.n} [${status}] ${t.title}`);
       for (const line of t.thread) console.log(`     ${line.text}`);

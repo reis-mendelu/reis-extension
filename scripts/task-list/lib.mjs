@@ -158,14 +158,19 @@ export function findTasks(docJson, markdownJson, { section = DEFAULT_SECTION } =
     inlineObjects[id]?.inlineObjectProperties?.embeddedObject?.imageProperties?.contentUri ?? null;
   const tasks = [];
   const used = new Set();
+  let subsection = null;
   for (const p of sectionSlice(
     paragraphs(body),
     section,
     (p) => p.level,
     (p) => p.text
   )) {
-    // A subheading inside the section is structure, never a task or a reply.
-    if (p.level !== null) continue;
+    // A subheading inside the section is structure, never a task or a reply;
+    // it names the group the tasks below it belong to.
+    if (p.level !== null) {
+      subsection = p.text.replace(/\n$/, '').trim();
+      continue;
+    }
     const visible = p.text.replace(/\n$/, '');
     const words = visible.replaceAll(OBJECT, '').trim();
     if (!words) {
@@ -192,6 +197,7 @@ export function findTasks(docJson, markdownJson, { section = DEFAULT_SECTION } =
     const match = md[at];
     tasks.push({
       n: tasks.length + 1,
+      subsection,
       title,
       thread: lines.filter(Boolean).flatMap(linesOf),
       done: match ? match.done : null,
