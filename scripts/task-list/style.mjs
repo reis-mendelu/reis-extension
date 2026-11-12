@@ -1,7 +1,15 @@
 // How Claude's notes look in the doc. Google Docs cannot collapse a list
 // item and the connector cannot start a comment, so a note recedes instead:
 // small, grey, italic, under Dominik's own text, which keeps the doc's size.
-import { NOTE_MARK, NOTE_END, SOFT_BREAK, paragraphs, sectionSlice, unwrapDoc } from './lib.mjs';
+import {
+  DEFAULT_SECTION,
+  NOTE_MARK,
+  NOTE_END,
+  SOFT_BREAK,
+  paragraphs,
+  sectionSlice,
+  unwrapDoc,
+} from './lib.mjs';
 
 export const NOTE_STYLE = {
   italic: true,
@@ -24,7 +32,7 @@ export function noteStyle(startIndex, endIndex) {
 }
 
 /** Every "↳ Claude … ∎" span in a section, as doc index ranges. */
-export function noteSpans(docJson, section = 'Bucket list') {
+export function noteSpans(docJson, section = DEFAULT_SECTION) {
   const { body } = unwrapDoc(docJson);
   const spans = [];
   for (const p of sectionSlice(

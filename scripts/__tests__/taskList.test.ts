@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { findTasks } from '../task-list/lib.mjs';
+import { DEFAULT_SECTION, findTasks } from '../task-list/lib.mjs';
 import { doneRequests, noteRequests, notesRequests, pragueDate } from '../task-list/requests.mjs';
 import { NOTE_MAX, restyleRequests } from '../task-list/style.mjs';
 
@@ -57,7 +57,7 @@ const para = (
 const body = [
   para('Nedělat', { heading: 'HEADING_2' }),
   para('do not pick me', { bullet: true }),
-  para('Bucket list', { heading: 'HEADING_2' }),
+  para('Current sprint', { heading: 'HEADING_2' }),
   para('fix the map pin colour', { bullet: true }),
   para('rename the tab\u000bviz foto', { bullet: true, images: ['img.a'] }),
   para('', { images: ['img.b'] }),
@@ -89,7 +89,7 @@ const doc = {
 
 const markdown = `## Nedělat
   - do not pick me
-## Bucket list
+## Current sprint
   - fix the map pin colour
   - rename the tab  viz foto
   - ~~\\~\\~already shipped thing\\~\\~~~
@@ -101,7 +101,7 @@ const markdown = `## Nedělat
 describe('findTasks', () => {
   const tasks = findTasks(doc, markdown);
 
-  it('reads only the Bucket list — never other sections or the archive', () => {
+  it('reads only the default section — never other sections or the archive', () => {
     expect(tasks.map((t) => t.title)).toEqual([
       'fix the map pin colour',
       'rename the tab',
@@ -136,7 +136,7 @@ describe('findTasks', () => {
             documentTab: {
               body: {
                 content: [
-                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('Current sprint', { heading: 'HEADING_2' }),
                   para('put https://x.example/a into the app', { bullet: true }),
                 ],
               },
@@ -145,7 +145,7 @@ describe('findTasks', () => {
         ],
       },
     };
-    const md = '## Bucket list\n  - put <https://x.example/a> into the app';
+    const md = '## Current sprint\n  - put <https://x.example/a> into the app';
     expect(findTasks(d, md)[0].done).toBe(false);
   });
 
@@ -158,7 +158,7 @@ describe('findTasks', () => {
             documentTab: {
               body: {
                 content: [
-                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('Current sprint', { heading: 'HEADING_2' }),
                   para('stáže\u000b↳ Claude 2026-11-07: merge? (y/n) ∎', { bullet: true }),
                   para('redundant text ', { images: ['img.r'] }),
                   para('next task', { bullet: true }),
@@ -170,7 +170,7 @@ describe('findTasks', () => {
         ],
       },
     };
-    const [task] = findTasks(d, '## Bucket list\n  - stáže\n\nredundant text\n  - next task');
+    const [task] = findTasks(d, '## Current sprint\n  - stáže\n\nredundant text\n  - next task');
     expect(task!.status).toBe('answered');
     expect(task!.thread.at(-1)).toEqual({ by: 'human', text: 'redundant text' });
     expect(task!.images.map((i) => i.id)).toEqual(['img.r']);
@@ -188,7 +188,7 @@ describe('findTasks', () => {
             documentTab: {
               body: {
                 content: [
-                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('Current sprint', { heading: 'HEADING_2' }),
                   para('untouched', { bullet: true }),
                   para(`waiting\u000b${q}`, { bullet: true }),
                   para(`answered inline\u000b${q}\u000bb, on both trees`, { bullet: true }),
@@ -206,7 +206,7 @@ describe('findTasks', () => {
       },
     };
     const md =
-      '## Bucket list\n  - untouched\n  - waiting\n  - answered inline\n  - same line\n  - answered nested\n      - a please\n  - busy';
+      '## Current sprint\n  - untouched\n  - waiting\n  - answered inline\n  - same line\n  - answered nested\n      - a please\n  - busy';
     const tasks = findTasks(d, md);
     expect(tasks.map((t) => [t.title, t.status])).toEqual([
       ['untouched', 'new'],
@@ -303,41 +303,41 @@ describe('edge cases', () => {
 
   it('counts a task done only when its title is struck, not a word inside it', () => {
     const d = docOf(
-      para('Bucket list', { heading: 'HEADING_2' }),
+      para('Current sprint', { heading: 'HEADING_2' }),
       para('rename old tab', { bullet: true })
     );
-    expect(findTasks(d, '## Bucket list\n  - rename ~~old~~ tab')[0]!.done).toBe(false);
-    expect(findTasks(d, '## Bucket list\n  - ~~rename old tab~~')[0]!.done).toBe(true);
+    expect(findTasks(d, '## Current sprint\n  - rename ~~old~~ tab')[0]!.done).toBe(false);
+    expect(findTasks(d, '## Current sprint\n  - ~~rename old tab~~')[0]!.done).toBe(true);
   });
 
   it('gives tasks whose titles share a prefix each their own done-state', () => {
     const d = docOf(
-      para('Bucket list', { heading: 'HEADING_2' }),
+      para('Current sprint', { heading: 'HEADING_2' }),
       para('fix map pins', { bullet: true }),
       para('fix map', { bullet: true })
     );
-    const md = '## Bucket list\n  - ~~fix map pins~~\n  - fix map';
+    const md = '## Current sprint\n  - ~~fix map pins~~\n  - fix map';
     expect(findTasks(d, md).map((t) => t.done)).toEqual([true, false]);
   });
 
   it('does not read a subheading inside the section as a reply', () => {
     const d = docOf(
-      para('Bucket list', { heading: 'HEADING_2' }),
+      para('Current sprint', { heading: 'HEADING_2' }),
       para('a task', { bullet: true }),
       para('Later', { heading: 'HEADING_3' })
     );
-    const [task] = findTasks(d, '## Bucket list\n  - a task\n### Later');
+    const [task] = findTasks(d, '## Current sprint\n  - a task\n### Later');
     expect(task!.thread).toEqual([]);
     expect(task!.status).toBe('new');
   });
 
   it('matches a struck task whose URL the export turned into a markdown link', () => {
     const d = docOf(
-      para('Bucket list', { heading: 'HEADING_2' }),
+      para('Current sprint', { heading: 'HEADING_2' }),
       para('✅ put https://x.example/ in the app (PR #1, merged)', { bullet: true })
     );
     const md =
-      '## Bucket list\n  - ~~✅ put~~ [~~https://x.example/~~](https://x.example/) ~~in the app~~ (PR \\#1, merged)';
+      '## Current sprint\n  - ~~✅ put~~ [~~https://x.example/~~](https://x.example/) ~~in the app~~ (PR \\#1, merged)';
     expect(findTasks(d, md)[0]!.done).toBe(true);
   });
 
@@ -352,9 +352,9 @@ describe('edge cases', () => {
     const reply = para('see https://sportera.cz/', { bullet: true, nesting: 1 });
     const replyRun = (reply.paragraph.elements[0] as { textRun: { textStyle: object } }).textRun;
     replyRun.textStyle = { link: { url: 'https://sportera.cz/' } };
-    const d = docOf(para('Bucket list', { heading: 'HEADING_2' }), task, reply);
+    const d = docOf(para('Current sprint', { heading: 'HEADING_2' }), task, reply);
     const md =
-      '## Bucket list\n  - [send S-klub the posters - venues.pdf  \n    ](https://drive.google.com/open?id=18vDQEnxxJ0DCMnd91dAbbz8dtE31hQI5)';
+      '## Current sprint\n  - [send S-klub the posters - venues.pdf  \n    ](https://drive.google.com/open?id=18vDQEnxxJ0DCMnd91dAbbz8dtE31hQI5)';
     const [t] = findTasks(d, md);
     expect(t!.done).toBe(false);
     expect(t!.links).toEqual([
@@ -368,9 +368,9 @@ describe('edge cases', () => {
   });
 
   it('still finds a section whose heading carries a chip', () => {
-    const heading = para('Bucket list', { heading: 'HEADING_2', images: ['chip'] });
+    const heading = para('Current sprint', { heading: 'HEADING_2', images: ['chip'] });
     const d = docOf(heading, para('a task', { bullet: true }));
-    expect(findTasks(d, '## Bucket list\n  - a task').map((t) => t.title)).toEqual(['a task']);
+    expect(findTasks(d, '## Current sprint\n  - a task').map((t) => t.title)).toEqual(['a task']);
   });
 
   it('restyles only Claude notes, at their exact doc positions, never the replies', () => {
@@ -379,8 +379,8 @@ describe('edge cases', () => {
     const task = para(`${title}\u000b${note} b please`, { bullet: true, images: [] });
     const img = para('', { images: ['img1'] });
     const later = para(`\u000b${note}`, { bullet: true, nesting: 1 });
-    const d = docOf(para('Bucket list', { heading: 'HEADING_2' }), task, img, later);
-    const spans = restyleRequests(d, 'Bucket list').requests.map((r) => r.updateTextStyle.range);
+    const d = docOf(para('Current sprint', { heading: 'HEADING_2' }), task, img, later);
+    const spans = restyleRequests(d, 'Current sprint').requests.map((r) => r.updateTextStyle.range);
     expect(spans).toEqual([
       {
         startIndex: task.startIndex + title.length + 1,
@@ -395,12 +395,12 @@ describe('edge cases', () => {
     const open = 'x\u000b↳ Claude 2026-11-07: no end mark, then a reply';
     const task = para(`t\u000b${quoted}`, { bullet: true });
     const d = docOf(
-      para('Bucket list', { heading: 'HEADING_2' }),
+      para('Current sprint', { heading: 'HEADING_2' }),
       task,
       para(open, { bullet: true }),
       para(`↳ Claude heading ∎`, { heading: 'HEADING_3' })
     );
-    const spans = restyleRequests(d, 'Bucket list').requests.map((r) => r.updateTextStyle.range);
+    const spans = restyleRequests(d, 'Current sprint').requests.map((r) => r.updateTextStyle.range);
     const start = task.startIndex + 2;
     expect(spans).toEqual([
       { startIndex: start, endIndex: start + '↳ Claude 2026-11-07: (a)? ∎'.length },
@@ -426,8 +426,10 @@ describe('edge cases', () => {
     const end = { startIndex: at, endIndex: at + 1, textRun: { content: '\n', textStyle: {} } };
     task.paragraph.elements = [...els, chip, run, end];
     task.endIndex = at + 1;
-    const d = docOf(para('Bucket list', { heading: 'HEADING_2' }), task);
-    const [span] = restyleRequests(d, 'Bucket list').requests.map((r) => r.updateTextStyle.range);
+    const d = docOf(para('Current sprint', { heading: 'HEADING_2' }), task);
+    const [span] = restyleRequests(d, 'Current sprint').requests.map(
+      (r) => r.updateTextStyle.range
+    );
     const start = chip.endIndex + 3;
     expect(span).toEqual({ startIndex: start, endIndex: start + note.length });
   });
@@ -435,10 +437,10 @@ describe('edge cases', () => {
   it("never closes an unterminated note with a later note's end mark", () => {
     const later = '↳ Claude 2026-11-08: (a)? ∎';
     const d = docOf(
-      para('Bucket list', { heading: 'HEADING_2' }),
+      para('Current sprint', { heading: 'HEADING_2' }),
       para(`t\u000b↳ Claude 2026-11-07: no end\u000bmy reply\u000b${later}`, { bullet: true })
     );
-    const spans = restyleRequests(d, 'Bucket list').requests.map((r) => r.updateTextStyle.range);
+    const spans = restyleRequests(d, 'Current sprint').requests.map((r) => r.updateTextStyle.range);
     expect(spans).toHaveLength(1);
     expect(spans[0]!.endIndex - spans[0]!.startIndex).toBe(later.length);
   });
@@ -455,10 +457,10 @@ describe('edge cases', () => {
     writeFileSync(
       doc,
       JSON.stringify(
-        docOf(para('Bucket list', { heading: 'HEADING_2' }), para('only one', { bullet: true }))
+        docOf(para('Current sprint', { heading: 'HEADING_2' }), para('only one', { bullet: true }))
       )
     );
-    writeFileSync(md, '## Bucket list\n  - only one');
+    writeFileSync(md, '## Current sprint\n  - only one');
     const cli = join(process.cwd(), 'scripts/task-list/cli.mjs');
     expect(() =>
       execFileSync('node', [cli, 'list', '--doc', doc, '--md', md, '--task', '9'], {
@@ -480,7 +482,7 @@ describe('notesRequests', () => {
             documentTab: {
               body: {
                 content: [
-                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('Current sprint', { heading: 'HEADING_2' }),
                   para('first', { bullet: true }),
                   para('second', { bullet: true }),
                 ],
@@ -490,7 +492,7 @@ describe('notesRequests', () => {
         ],
       },
     };
-    const tasks = findTasks(d, '## Bucket list\n  - first\n  - second');
+    const tasks = findTasks(d, '## Current sprint\n  - first\n  - second');
     const out = notesRequests(
       tasks,
       'r',
@@ -519,7 +521,7 @@ describe('notesRequests', () => {
             documentTab: {
               body: {
                 content: [
-                  para('Bucket list', { heading: 'HEADING_2' }),
+                  para('Current sprint', { heading: 'HEADING_2' }),
                   para('only', { bullet: true }),
                 ],
               },
@@ -528,9 +530,71 @@ describe('notesRequests', () => {
         ],
       },
     };
-    const tasks = findTasks(d, '## Bucket list\n  - only');
+    const tasks = findTasks(d, '## Current sprint\n  - only');
     expect(() => notesRequests(tasks, 'r', [{ task: 5, text: 'x' }], '2026-11-07')).toThrow(
       /No task #5/
     );
+  });
+});
+
+describe('sprints: the current sprint is the work, the Backlog is the planning pool', () => {
+  const sprintDoc = {
+    content: {
+      revisionId: 'r',
+      tabs: [
+        {
+          documentTab: {
+            body: {
+              content: [
+                para('Current sprint', { heading: 'HEADING_1' }),
+                para('Sprint 16', { heading: 'HEADING_2' }),
+                para('sprint task', { bullet: true }),
+                para('Backlog', { heading: 'HEADING_1' }),
+                para('Code changes & features', { heading: 'HEADING_2' }),
+                para('backlog task', { bullet: true }),
+                para('Content & SEO', { heading: 'HEADING_2' }),
+                para('seo page', { bullet: true }),
+                para('– Archive', { heading: 'HEADING_1' }),
+                para('Sprint 15', { heading: 'HEADING_2' }),
+                para('old task', { bullet: true }),
+              ],
+            },
+          },
+        },
+      ],
+    },
+  };
+  const sprintMd = `# Current sprint
+## Sprint 16
+  - sprint task
+# Backlog
+## Code changes & features
+  - backlog task
+## Content & SEO
+  - seo page
+# – Archive
+## Sprint 15
+  - old task`;
+
+  it('works the current sprint by default, never the Backlog or the archive', () => {
+    expect(DEFAULT_SECTION).toBe('Current sprint');
+    expect(findTasks(sprintDoc, sprintMd).map((t) => t.title)).toEqual(['sprint task']);
+  });
+
+  it("names each task's subsection, so planning can group the Backlog", () => {
+    expect(
+      findTasks(sprintDoc, sprintMd, { section: 'Backlog' }).map((t) => [t.subsection, t.title])
+    ).toEqual([
+      ['Code changes & features', 'backlog task'],
+      ['Content & SEO', 'seo page'],
+    ]);
+    expect(findTasks(sprintDoc, sprintMd)[0]!.subsection).toBe('Sprint 16');
+  });
+
+  it('lists the whole Backlog, every subsection, for sprint planning', () => {
+    expect(findTasks(sprintDoc, sprintMd, { section: 'Backlog' }).map((t) => t.title)).toEqual([
+      'backlog task',
+      'seo page',
+    ]);
   });
 });

@@ -14,7 +14,7 @@ import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { findTasks, unwrapDoc } from './lib.mjs';
+import { DEFAULT_SECTION, findTasks, unwrapDoc } from './lib.mjs';
 import { doneRequests, noteRequests, notesRequests, pragueDate } from './requests.mjs';
 import { restyleRequests } from './style.mjs';
 
@@ -23,7 +23,7 @@ const { positionals, values } = parseArgs({
   options: {
     doc: { type: 'string' },
     md: { type: 'string' },
-    section: { type: 'string', default: 'Bucket list' },
+    section: { type: 'string', default: DEFAULT_SECTION },
     all: { type: 'boolean', default: false },
     json: { type: 'boolean', default: false },
     images: { type: 'string' },
@@ -120,7 +120,12 @@ if (command === 'list') {
       JSON.stringify({ revisionId: unwrapDoc(docJson).revisionId, tasks: selected }, null, 2)
     );
   } else {
+    let group;
     for (const t of selected) {
+      if (t.subsection !== group) {
+        group = t.subsection;
+        if (group) console.log(`## ${group}`);
+      }
       const status = t.done === null ? 'unmatched' : t.status;
       console.log(`#${t.n} [${status}] ${t.title}`);
       for (const line of t.thread) console.log(`     ${line.text}`);

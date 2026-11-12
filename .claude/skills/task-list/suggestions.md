@@ -1,7 +1,7 @@
 # Student reports (Supabase `suggestions`)
 
 The reports students send from the app (Chyba, Nápad, Jiné) are the second
-source of work, next to the Bucket list. **Every session that works the task
+source of work, next to the task list. **Every session that works the task
 list reads them too**, after the doc ("A session", step 1).
 
 They live in Supabase project `zvbpgkmnrqyprtkyxkwn` (reis-notifications),
@@ -49,8 +49,9 @@ and delete the file afterwards.
    see: list it as "asked before, unanswered" with the question, not as new.
    - not code for reIS (a login problem, a request about Instagram or the
      website, a partner) → summary only, status unchanged;
-   - clear, and a bug or a small idea → offer it with the Bucket list (his own
-     tasks first); he picks. When you start it, set `triaged`. Branch
+   - clear, and a bug or a small idea → a candidate for the next sprint, listed
+     at sprint planning; offer a bug that hurts students now (after his sprint
+     tasks). He picks. When you start it, set `triaged`. Branch
      `fix/suggestion-N`, and the commit and PR name `suggestion #N`, so step 1
      finds it next time;
    - unclear, or it needs data the report lacks → ask Dominik in the chat, with
