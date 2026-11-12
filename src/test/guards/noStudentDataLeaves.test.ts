@@ -229,6 +229,7 @@ const ALLOWED_HOSTS = [
   'instagram.com', // a society's profile, the "details" link on an event with none
   'creativecommons.org', // the Twemoji licence, linked from the map's credit line
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
+  'checkout.gopay.com', // the same page, at the host WebISKAM has sent since Nov 2026
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
 
   // --- not destinations ---
