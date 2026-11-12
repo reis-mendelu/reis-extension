@@ -8,6 +8,7 @@
 //   node scripts/task-list/cli.mjs done --doc D --md M --task N [--note "PR #123"]
 //   node scripts/task-list/cli.mjs note --doc D --md M --task N --text "…" [--link URL]
 //   node scripts/task-list/cli.mjs notes --doc D --md M --file notes.json   (all of a run's notes, one write)
+//   node scripts/task-list/cli.mjs restyle --doc D --md M   (old notes → small grey, formatting only)
 import { readFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -15,6 +16,7 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { findTasks, unwrapDoc } from './lib.mjs';
 import { doneRequests, noteRequests, notesRequests, pragueDate } from './requests.mjs';
+import { restyleRequests } from './style.mjs';
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -139,14 +141,19 @@ if (command === 'list') {
     console.error('note needs --text');
     process.exit(2);
   }
-  const date = pragueDate();
-  console.log(
-    JSON.stringify(
-      noteRequests(pick(), unwrapDoc(docJson).revisionId, values.text, date, values.link),
-      null,
-      2
-    )
-  );
+  try {
+    const payload = noteRequests(
+      pick(),
+      unwrapDoc(docJson).revisionId,
+      values.text,
+      pragueDate(),
+      values.link
+    );
+    console.log(JSON.stringify(payload, null, 2));
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
 } else if (command === 'notes') {
   if (!values.file) {
     console.error('notes needs --file <json: [{"task": n, "text": "…", "link": "…"}]>');
@@ -160,6 +167,8 @@ if (command === 'list') {
     console.error(err.message);
     process.exit(1);
   }
+} else if (command === 'restyle') {
+  console.log(JSON.stringify(restyleRequests(docJson, values.section), null, 2));
 } else {
   console.error(`unknown command: ${command}`);
   process.exit(2);
