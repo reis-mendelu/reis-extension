@@ -24,12 +24,15 @@ select id, type, title, body, screen, platform, os_version, ext_version, created
 from suggestions where status <> 'done' order by id;
 ```
 
-A report with an attachment (`suggestion_attachments.has_screenshot`,
-`diagnostics_count`) is not understood until it has been looked at: the
-diagnostics are `select diagnostics from suggestion_attachments where
-suggestion_id = N`; for the screenshot, select `encode(screenshot, 'base64')`,
-decode it into `$SCRATCH/suggestion-N.jpg` and open it with Read. Delete the
-file afterwards.
+A report with an attachment is not understood until it has been looked at:
+
+```sql
+select has_screenshot, diagnostics_count, diagnostics, encode(screenshot, 'base64') as screenshot_b64
+from suggestion_attachments where suggestion_id = N;
+```
+
+Decode `screenshot_b64` into `$SCRATCH/suggestion-N.jpg`, open it with Read,
+and delete the file afterwards.
 
 ## Each session, in this order
 
@@ -47,7 +50,8 @@ file afterwards.
      `fix/suggestion-N`, and the commit and PR name `suggestion #N`, so step 1
      finds it next time;
    - unclear, or it needs data the report lacks → ask Dominik in the chat, with
-     what you found. The student usually left no contact, so nobody else can be asked.
+     what you found, and set `triaged`. The student usually left no contact,
+     so nobody else can be asked.
 3. **Every open report is accounted for** in the chat: closed (with PR),
    started, asked, or left alone (with the reason). Reports are not written
    into the doc.
