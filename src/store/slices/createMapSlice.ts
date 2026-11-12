@@ -124,7 +124,10 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   selectGardenPlace: (place) => set({ mapSelection: { kind: 'gardenPlace', place } }),
 
   setMapSearchQuery: (q) =>
-    set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS, PLACED) }),
+    set({
+      mapSearchQuery: q,
+      mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS, PLACED, get().venuePins),
+    }),
 
   focusRoomByCode: (code) => {
     const entry = lookupRoomEntry(code, INDEX);

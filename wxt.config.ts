@@ -65,7 +65,7 @@ export default defineConfig({
   },
   manifest: {
     name: 'reIS',
-    version: '5.6.0',
+    version: '5.7.0',
     description: 'Modernizovaný reIS rozšířený pro IS Mendelu',
     icons: {
       16: 'reIS_logo_16.png',
@@ -117,6 +117,10 @@ export default defineConfig({
       'https://raw.githubusercontent.com/reis-mendelu/reis-data/*',
       'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*',
       'https://skm.mendelu.cz/*',
+      // S-klub Pixie's daily menu (api/sklubMenu.ts), read through the
+      // background fetch like SKM's. New in this release, so Chrome and Firefox
+      // ask existing installs to approve it on update.
+      'https://sklubpixie.cz/*',
       'https://mendelu.cz/*',
       'https://zvbpgkmnrqyprtkyxkwn.supabase.co/*',
       'https://hei.api.uni-foundation.eu/*',

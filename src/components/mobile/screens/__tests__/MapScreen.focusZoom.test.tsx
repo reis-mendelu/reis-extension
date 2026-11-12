@@ -10,7 +10,11 @@ vi.mock('../../../CampusMap/EventLayer', () => ({
 }));
 
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MapScreen } from '../MapScreen';
+import { useAppStore } from '../../../../store/useAppStore';
+import { venueRowToPin } from '../../../../api/venues';
+import { SKLUB_VENUE_ROW } from '../../../../test/fixtures/sklubVenueRow';
 
 /**
  * WebKit zooms the whole page onto any focused text field whose font is under
@@ -34,5 +38,25 @@ describe('MapScreen search field', () => {
     const px = fontPx(screen.getByRole('textbox').className);
     expect(px, 'the field sets no font size of its own').not.toBeNull();
     expect(px).toBeGreaterThanOrEqual(16);
+  });
+});
+
+describe('MapScreen search results', () => {
+  it('lists a venue and opens its card on the campus when chosen', async () => {
+    const sklub = venueRowToPin(SKLUB_VENUE_ROW)!;
+    useAppStore.setState({
+      language: 'cz',
+      venuePins: [sklub],
+      mapSearchQuery: '',
+      mapSearchResults: [],
+      activeBuildingId: 9000001,
+      mapSelection: null,
+    } as never);
+    render(<MapScreen />);
+    await userEvent.type(screen.getByRole('textbox'), 'pixie');
+    const [hit] = await screen.findAllByRole('button', { name: 'S-klub Pixie' });
+    await userEvent.click(hit!);
+    expect(useAppStore.getState().mapSelection).toEqual({ kind: 'societyPin', pin: sklub });
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
   });
 });

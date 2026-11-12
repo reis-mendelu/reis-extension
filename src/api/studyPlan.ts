@@ -2,6 +2,7 @@ import { fetchWithAuth, BASE_URL } from './client';
 import { parseRequiredInt, parseOptionalInt, ParserError } from '../utils/parsers/parserGuards';
 import { logError } from '../utils/reportError';
 import { STUDY_PLAN_SORT_PARAM, repeatedSemesterTitles } from './studyPlanSortMode';
+import { boldSpans, rowHeadingText } from './studyPlanHeading';
 import type {
   StudyPlan,
   DualLanguageStudyPlan,
@@ -108,6 +109,12 @@ function extractPlanTitle(doc: Document): string {
     const text = (el.textContent || '').trim();
     if (/[A-Z]-\w+.*[ZW]S\s+\d{4}/.test(text)) return text;
   }
+  // New IS: the `font[size="+1"]` above became a bold span (studyPlanHeading.ts).
+  // Only on a page with no such font at all, so prod markup takes the old path.
+  for (const el of fontEls.length ? [] : boldSpans(doc)) {
+    const text = (el.textContent || '').trim();
+    if (/[A-Z]-\w+.*[ZW]S\s+\d{4}/.test(text)) return text;
+  }
   const boldEls = doc.querySelectorAll('b');
   for (const el of boldEls) {
     const text = (el.textContent || '').trim();
@@ -190,8 +197,7 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
 
     if (cells.length === 2 && (row.textContent || '').trim() === '') continue;
 
-    const boldEls = row.querySelectorAll('b');
-    const boldText = boldEls.length > 0 ? (boldEls[0].textContent || '').trim() : '';
+    const boldText = rowHeadingText(row);
 
     if (boldText.match(L.semesterPattern) || L.wholeplanGroups.includes(boldText)) {
       const isPool = L.wholeplanGroups.includes(boldText);

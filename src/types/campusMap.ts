@@ -125,6 +125,67 @@ export interface SocietyPin {
   url: string | null;
   /** [lng, lat] */
   coord: [number, number];
+  /** A permanent place the society runs (S-klub's café, the `venues` table):
+   *  its card shows hours, lunch, a menu and photos instead of a description. */
+  venue?: Venue;
+}
+
+export interface Bilingual {
+  cz: string;
+  en: string;
+}
+
+/** Opening hours for one weekday, local Prague time, 'HH:MM'. */
+export interface VenueHours {
+  /** 1 = Monday … 7 = Sunday (ISO). */
+  day: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  open: string;
+  close: string;
+}
+
+export interface VenueMenuItem {
+  name: string;
+  /** In CZK; a text price for a range ('45/55'). */
+  price: number | string;
+}
+
+export interface VenueMenuSection {
+  id: string;
+  title: Bilingual;
+  /** Public URL of the category's photo, when there is one. */
+  photo: string | null;
+  items: VenueMenuItem[];
+}
+
+export interface VenueLunchDay {
+  /** 'YYYY-MM-DD', Prague. */
+  date: string;
+  soup: string | null;
+  dishes: string[];
+}
+
+export interface Venue {
+  /** 'Kavárna' — the eyebrow's first half. */
+  kind: Bilingual;
+  /** 'Budova Z' — short, for the eyebrow and Jídelníček. */
+  place: Bilingual;
+  /** 'Přízemí FRRMS · tř. Generála Píky 7'. */
+  address: Bilingual;
+  /** The IS room it is in (BZ00N1015), when it is in one. */
+  roomCode: string | null;
+  hours: VenueHours[];
+  /** A dated closure (Prague calendar days, inclusive): overrides the hours. */
+  closure: { from: string; until: string } | null;
+  /** The lunch offer as the venue states it: a fixed price, dishes vary. */
+  lunch: { name: Bilingual; note: Bilingual | null; price: number } | null;
+  /** The week's dishes, by Prague date, as the venue publishes them (Czech). */
+  lunchDays: VenueLunchDay[];
+  menu: VenueMenuSection[];
+  /** Public URLs, in order. */
+  photos: string[];
+  instagram: string | null;
+  /** Where the prices come from, and when they were last checked. */
+  source: { url: string; checked: string } | null;
 }
 
 export interface GardenPlace {

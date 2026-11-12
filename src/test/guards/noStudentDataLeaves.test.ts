@@ -87,6 +87,11 @@ const SUPABASE_CALLERS = new Set([
   'src/services/spolky/spolkyService.ts',
   // Reads the public society events feed. No student data in either direction.
   'src/api/mapEvents.ts',
+  // The venues on the map (S-klub's café, November 2026): an anonymous select
+  // of public venue rows (hours, menu, photo paths). Nothing written, no
+  // identity. Photos then load as plain <img> GETs from the same project's
+  // public venue-photos bucket, as society logos do; full URLs are refused.
+  'src/api/venues.ts',
   // The societies catalog (September 2026): an anonymous select of public
   // branding (name, colour, faculty, logo path). No identity, no student data,
   // nothing written. Logos then load as plain <img> GETs from the same project.
@@ -109,6 +114,12 @@ const SUPABASE_CALLERS = new Set([
   // at. That pairing would be a behavioural profile, and no payload here can
   // express it.
   'src/api/featureUsage.ts',
+  // The IS notices a reIS admin muted for everyone (November 2026): an
+  // anonymous select of the whole `is_notice_mutes` list, filtered on the
+  // device. Nothing goes up — in particular not which notices the student's
+  // own IS shows them; those are read from IS and never leave the device
+  // (test/guards/isNoticesStayOnDevice.test.tsx).
+  'src/api/isNoticeMutes.ts',
 ]);
 
 /**
@@ -123,6 +134,9 @@ const SUPABASE_CALLERS = new Set([
 const ADMIN_CALLERS = new Set([
   'src/api/adminQuestions.ts',
   'src/api/featureStats.ts',
+  // Mutes an IS notice for everyone: the notice's key and title as the
+  // ADMIN's own IS shows them. reis_admin only, by RLS.
+  'src/api/isNoticeMutesAdmin.ts',
   'src/api/schoolStats.ts',
   'src/api/societiesAdmin.ts',
   'src/api/societyAccounts.ts',
@@ -198,6 +212,8 @@ const ALLOWED_HOSTS = [
   'openstreetmap.org', // campus map tiles
   'photon.komoot.io', // off-campus venue search — SOCIETY ADMINS only
   'hei.api.uni-foundation.eu', // public Erasmus university directory (read-only)
+  'sklubpixie.cz', // S-klub Pixie's public daily menu page (api/sklubMenu.ts), and its
+  // site linked from the café card
 
   // --- fetched from, carrying student data. Each must stay disclosed. ---
   'webiskam.mendelu.cz', // phone/iPad only: the ISIC Hlavní konto balance and the GoPay

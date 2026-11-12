@@ -2,17 +2,20 @@ import { ExternalLink } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useSociety } from '../../hooks/useSociety';
 import { SocietyLogo } from '../SocietyLogo';
+import { VenueCard } from './VenueCard';
 import type { SocietyPin } from '../../types/campusMap';
 
 /**
  * A society pin, opened: the same identity row as `EventDetailCard` (logo,
  * title, society), the society's short description, and "Více informací" to
  * its website. No date or venue — a pin is a place on the map for a while, not
- * an event.
+ * an event. A venue (S-klub's café, the `venues` table) has a card of its own,
+ * `VenueCard`.
  */
 export function SocietyPinCard({ pin, flush = false }: { pin: SocietyPin; flush?: boolean }) {
   const { t } = useTranslation();
   const soc = useSociety(pin.societyId)!;
+  if (pin.venue) return <VenueCard pin={pin} venue={pin.venue} flush={flush} />;
 
   return (
     <div
