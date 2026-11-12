@@ -44,7 +44,9 @@ and delete the file afterwards.
    means nobody needs to work on it.
 2. **Triage the rest**, the same three ways as a task. A `triaged` report
    with a `fix/suggestion-N` branch or an open PR is already started: report
-   where it stands instead of offering it again.
+   where it stands instead of offering it again. A `triaged` report without
+   one was asked about in an earlier session's chat, which this one cannot
+   see: list it as "asked before, unanswered" with the question, not as new.
    - not code for reIS (a login problem, a request about Instagram or the
      website, a partner) → summary only, status unchanged;
    - clear, and a bug or a small idea → offer it with the Bucket list (his own
