@@ -330,9 +330,10 @@ almost all the weight.
 > PERMISSIONS: none in the demo, which asks for nothing. A signed-in student
 > sees at most two, each tied to a feature: the camera, only when they choose to
 > take a photo (to attach it to a problem report, or to put it on a page of
-> their notes in the iPad reader), and notifications, asked once at the first
-> launch after sign-in, for local reminders such as an exam registration
-> opening. The app works fully if either is declined. There is no location
+> their notes in the iPad reader), and notifications: the system dialog
+> appears once, normally at the first launch after sign-in, for local
+> notifications only (an exam registration opening, new points in a subject).
+> The app works fully if either is declined. There is no location
 > access; the campus map is a static basemap.
 >
 > ON IPAD: reIS deliberately shows its phone layout on iPad. This is not an
@@ -693,9 +694,10 @@ size, an unlisted link is accepted.
 >   sends free text to us alone, where it is never shown to another user.
 > - *Permission prompts:* none in the demo. A signed-in student can see two:
 >   the camera (`NSCameraUsageDescription`), only when they choose to take a
->   photo for a problem report or a page of their notes, and notifications,
->   asked once at the first launch after sign-in, for local reminders only (no
->   push). The campus map is a static basemap that never asks where the device
+>   photo for a problem report or a page of their notes, and notifications:
+>   the system dialog appears once, normally at the first launch after sign-in
+>   (otherwise when an exam reminder or new points first need it), for local
+>   notifications only, no push. The campus map is a static basemap that never asks where the device
 >   is, and there is no App Tracking Transparency prompt because the app does
 >   no tracking.
 >
