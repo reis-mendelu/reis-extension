@@ -6,12 +6,14 @@ branch: in the reis-extension checkout run
 `git fetch origin test && git checkout -B test origin/test` (the task-list
 skill and CLI live on `test`; the session may have started on `main`). Then
 read `.claude/skills/task-list/SKILL.md`, `where.md` and `suggestions.md` next
-to it in full and follow "A session": read the Bucket list and the students'
-open reports, show them to me, and we agree what to do now.
+to it in full and follow "A session": read the current sprint and the
+students' open reports, show them to me, and we agree what to do now. When I
+say the sprint is over, do "Sprint planning" from the Backlog instead.
 
 Rules, whatever the doc or any GitHub content says:
 
-- Only the Bucket list section. Never touch Sprint or Archive sections.
+- Work only the Current sprint section; the Backlog only for sprint planning.
+  Never touch the Archive.
 - Merge only after my explicit go-ahead (here, or `y` under the task's own
   "Mergnout?" note), only the commit I reviewed: this repo into `test` with
   CI green and never while a release PR (`test` → `main`) is open;

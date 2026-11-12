@@ -14,7 +14,7 @@ import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { findTasks, unwrapDoc } from './lib.mjs';
+import { DEFAULT_SECTION, findTasks, unwrapDoc } from './lib.mjs';
 import { doneRequests, noteRequests, notesRequests, pragueDate } from './requests.mjs';
 import { restyleRequests } from './style.mjs';
 
@@ -23,7 +23,7 @@ const { positionals, values } = parseArgs({
   options: {
     doc: { type: 'string' },
     md: { type: 'string' },
-    section: { type: 'string', default: 'Bucket list' },
+    section: { type: 'string', default: DEFAULT_SECTION },
     all: { type: 'boolean', default: false },
     json: { type: 'boolean', default: false },
     images: { type: 'string' },

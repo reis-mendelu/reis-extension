@@ -140,12 +140,18 @@ function addLinks(task, links) {
 }
 
 /**
- * Tasks in one section (default: the Bucket list), numbered from 1 in doc
+ * The section a session works: the current sprint. The Backlog's sections are
+ * the pool Dominik picks the next sprint from (`--section Backlog`).
+ */
+export const DEFAULT_SECTION = 'Current sprint';
+
+/**
+ * Tasks in one section (default: the current sprint), numbered from 1 in doc
  * order. `done` is null when the markdown line could not be matched. Lines
  * under a title — soft line breaks in its item, or nested bullets below it —
  * form the task's `thread`.
  */
-export function findTasks(docJson, markdownJson, { section = 'Bucket list' } = {}) {
+export function findTasks(docJson, markdownJson, { section = DEFAULT_SECTION } = {}) {
   const { body, inlineObjects } = unwrapDoc(docJson);
   const md = markdownDoneMap(unwrapMarkdown(markdownJson), section);
   const uriOf = (id) =>
