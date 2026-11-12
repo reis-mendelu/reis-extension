@@ -1,6 +1,7 @@
 // update_doc payloads for the reIS Task List. Pure: the CLI prints them and
 // Claude passes them to the Google Docs connector unchanged.
 import { SOFT_BREAK, NOTE_MARK, NOTE_END } from './lib.mjs';
+import { NOTE_MAX, noteStyle } from './style.mjs';
 
 /** Marks a task done: ✅ + strikethrough, optional "(note)". */
 export function doneRequests(task, revisionId, note) {
@@ -20,21 +21,19 @@ export function doneRequests(task, revisionId, note) {
 }
 
 /**
- * Appends an italic "↳ Claude" note inside the task's own item. `link`, when
+ * Appends a small grey "↳ Claude" note inside the task's own item. `link`, when
  * it appears in the message, becomes clickable — the review page, a PR.
  */
 export function noteRequests(task, revisionId, message, date, link) {
+  if (message.length > NOTE_MAX)
+    throw new Error(
+      `Note for #${task.n} is ${message.length} characters; keep it to at most ${NOTE_MAX} (details go on the review page or in the PR).`
+    );
   const text = `${SOFT_BREAK}${NOTE_MARK} ${date}: ${message} ${NOTE_END}`;
   const at = task.textEnd;
   const requests = [
     { insertText: { text, location: { index: at } } },
-    {
-      updateTextStyle: {
-        range: { startIndex: at + 1, endIndex: at + text.length },
-        textStyle: { italic: true },
-        fields: 'italic',
-      },
-    },
+    noteStyle(at + 1, at + text.length),
   ];
   const offset = link ? text.indexOf(link) : -1;
   if (offset !== -1) {

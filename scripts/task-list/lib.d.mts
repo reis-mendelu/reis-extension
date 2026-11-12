@@ -10,6 +10,8 @@ export interface TaskImage {
 }
 export interface Task {
   n: number;
+  /** The subheading the task sits under inside the section, or null. */
+  subsection: string | null;
   title: string;
   /** Lines under the title, in order; Claude's start "↳ Claude". */
   thread: { by: 'claude' | 'human'; text: string }[];
@@ -21,6 +23,7 @@ export interface Task {
   textEnd: number;
   images: TaskImage[];
 }
+export declare const DEFAULT_SECTION: string;
 export declare const SOFT_BREAK: string;
 export declare const NOTE_MARK: string;
 export declare const NOTE_END: string;

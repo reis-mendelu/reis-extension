@@ -327,8 +327,15 @@ almost all the weight.
 > is available under the person icon (top right) → language. The demo button's
 > English label is "Try the demo".
 >
-> PERMISSIONS: the app requests none. There is no location access; the campus
-> map is a static basemap.
+> PERMISSIONS: the demo asks for nothing at launch or sign-in; only choosing to
+> take a photo in the problem-report form can show the camera dialog. A
+> signed-in student sees at most two, each tied to a feature: the camera, only
+> when they choose to take a photo (to attach it to a problem report, or to put
+> it on a page of their notes in the iPad reader), and notifications: the system
+> dialog appears once, normally at the first launch after sign-in, for local
+> notifications only (an exam registration opening, new points in a subject).
+> The app works fully if either is declined. There is no location access; the
+> campus map is a static basemap.
 >
 > ON IPAD: reIS deliberately shows its phone layout on iPad. This is not an
 > unadapted iPhone app — the layout is the tested one, and the tablet-specific
@@ -686,11 +693,15 @@ size, an unlisted link is accepted.
 >   student societies through a separate access-controlled web console that we
 >   moderate (that console does not exist in the iOS app), and the feedback form
 >   sends free text to us alone, where it is never shown to another user.
-> - *Permission prompts:* there are none. The app requests no device
->   permissions at all — its Info.plist contains no usage-description keys, the
->   campus map is a static basemap that never asks where the device is, and
->   there is no App Tracking Transparency prompt because the app does no
->   tracking.
+> - *Permission prompts:* none at launch in the demo; the camera dialog appears
+>   only if a photo is taken in the problem-report form. A signed-in student can
+>   see two: the camera (`NSCameraUsageDescription`), only when they choose to
+>   take a photo for a problem report or a page of their notes, and
+>   notifications: the system dialog appears once, normally at the first launch
+>   after sign-in (otherwise when an exam reminder or new points first need it),
+>   for local notifications only, no push. The campus map is a static basemap
+>   that never asks where the device is, and there is no App Tracking
+>   Transparency prompt because the app does no tracking.
 >
 > **2. Devices and operating systems tested.**
 >
