@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, Suspense, lazy } from 'react';
 import { useFileActions } from '../../hooks/ui/useFileActions';
 import { usePdfReadingPosition } from '../../hooks/ui/usePdfReadingPosition';
+import { useFileLastVisit } from '../../hooks/ui/useFileLastVisit';
 import { logError } from '../../utils/reportError';
 import { DrawerHeader } from './DrawerHeader';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
@@ -43,7 +44,7 @@ export function SubjectFileDrawer({
   const [activePdfUrl, setActivePdfUrl] = useState<string | null>(null);
   const [activePdfFile, setActivePdfFile] = useState<{ link: string; name: string } | null>(null);
   const [activeNoteFile, setActiveNoteFile] = useState<{ link: string; name: string } | null>(null);
-  const [lastVisitedAt, setLastVisitedAt] = useState<number | null | undefined>(undefined);
+  const lastVisitedAt = useFileLastVisit(lesson?.courseCode, isOpen);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
   const { loadPosition, viewerPosition } = usePdfReadingPosition(lesson?.courseCode);
   const { t } = useTranslation();
@@ -136,26 +137,6 @@ export function SubjectFileDrawer({
       setShowDragHint(false);
     }
   }, [state.isDragging, clearDragHintTimers]);
-
-  // Hydrate last visited timestamp and update it
-  useEffect(() => {
-    const courseCode = lesson?.courseCode;
-    if (!isOpen || !courseCode) return;
-    let isCurrent = true;
-    // Reset stale timestamp when switching subjects, before the async load below.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLastVisitedAt(undefined);
-    const key = `file_last_visit_${courseCode}`;
-    IndexedDBService.get('meta', key).then((prev) => {
-      if (!isCurrent) return;
-      setLastVisitedAt(prev ?? null);
-      IndexedDBService.set('meta', key, Date.now());
-    });
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [isOpen, lesson?.courseCode]);
 
   // Consolidated cleanup when drawer closes to prevent state leakage
   useEffect(() => {

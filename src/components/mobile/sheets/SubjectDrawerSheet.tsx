@@ -28,6 +28,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { useCourseName } from '../../../hooks/ui/useCourseName';
 import { useMarkZaznamnikSeen } from '../../../hooks/ui/useMarkZaznamnikSeen';
+import { useFileLastVisit } from '../../../hooks/ui/useFileLastVisit';
 import { syllabusUrl } from '../../../utils/syllabusUrl';
 
 type SubjectDrawerSheetData = Extract<MobileSheet, { kind: 'subjectDrawer' }>;
@@ -58,6 +59,8 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   const { courseCode, courseName, courseId } = sheet;
   const { t, language } = useTranslation();
   const { getSubject } = useSubjects();
+  // "NOVÉ" on documents changed since the last open, as in the extension.
+  const lastVisitedAt = useFileLastVisit(courseCode, true);
   // Mirrors desktop's useSubjectFileDrawerState: files/classmates/zaznamnik
   // need a subjectId (an enrolled subject) to fetch anything, so a subject
   // not yet resolved to one opens on Success rate instead of a dead tab.
@@ -215,6 +218,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           }
           // The programme line only ever rendered clipped mid-word on a phone.
           showStudyInfo={false}
+          lastVisitedAt={lastVisitedAt}
         />
       </SubjectDrawerScroller>
       {previewUrl && (
