@@ -327,10 +327,12 @@ almost all the weight.
 > is available under the person icon (top right) → language. The demo button's
 > English label is "Try the demo".
 >
-> PERMISSIONS: none in the demo, which asks for nothing. A signed-in student
-> sees at most two, each tied to a feature: the camera, only when they choose to
-> take a photo (to attach it to a problem report, or to put it on a page of
-> their notes in the iPad reader), and notifications: the system dialog
+> PERMISSIONS: the demo asks for nothing at launch or sign-in; only choosing to
+> take a photo in the problem-report form can show the camera dialog. A
+> signed-in student sees at most two, each tied to a feature: the camera, only
+> when they choose to take a photo (to attach it to a problem report, or to put
+> it on a page of their notes in the iPad reader), and notifications: the system
+> dialog
 > appears once, normally at the first launch after sign-in, for local
 > notifications only (an exam registration opening, new points in a subject).
 > The app works fully if either is declined. There is no location
@@ -692,7 +694,9 @@ size, an unlisted link is accepted.
 >   student societies through a separate access-controlled web console that we
 >   moderate (that console does not exist in the iOS app), and the feedback form
 >   sends free text to us alone, where it is never shown to another user.
-> - *Permission prompts:* none in the demo. A signed-in student can see two:
+> - *Permission prompts:* none at launch in the demo; the camera dialog appears
+>   only if a photo is taken in the problem-report form. A signed-in student
+>   can see two:
 >   the camera (`NSCameraUsageDescription`), only when they choose to take a
 >   photo for a problem report or a page of their notes, and notifications:
 >   the system dialog appears once, normally at the first launch after sign-in
