@@ -332,11 +332,10 @@ almost all the weight.
 > signed-in student sees at most two, each tied to a feature: the camera, only
 > when they choose to take a photo (to attach it to a problem report, or to put
 > it on a page of their notes in the iPad reader), and notifications: the system
-> dialog
-> appears once, normally at the first launch after sign-in, for local
+> dialog appears once, normally at the first launch after sign-in, for local
 > notifications only (an exam registration opening, new points in a subject).
-> The app works fully if either is declined. There is no location
-> access; the campus map is a static basemap.
+> The app works fully if either is declined. There is no location access; the
+> campus map is a static basemap.
 >
 > ON IPAD: reIS deliberately shows its phone layout on iPad. This is not an
 > unadapted iPhone app — the layout is the tested one, and the tablet-specific
