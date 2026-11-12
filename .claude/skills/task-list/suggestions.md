@@ -20,7 +20,7 @@ Reach it with the **Supabase** connector (`execute_sql`).
 ## Read
 
 ```sql
-select id, type, title, body, screen, platform, os_version, ext_version, created_at::date
+select id, status, type, title, body, screen, platform, os_version, ext_version, created_at::date
 from suggestions where status <> 'done' order by id;
 ```
 
@@ -42,7 +42,9 @@ and delete the file afterwards.
    A fix merged into `test` → set the row `done` and name it with the PR in the
    summary. It reaches students with the next release, which is fine: `done`
    means nobody needs to work on it.
-2. **Triage the rest**, the same three ways as a task:
+2. **Triage the rest**, the same three ways as a task. A `triaged` report
+   with a `fix/suggestion-N` branch or an open PR is already started: report
+   where it stands instead of offering it again.
    - not code for reIS (a login problem, a request about Instagram or the
      website, a partner) → summary only, status unchanged;
    - clear, and a bug or a small idea → offer it with the Bucket list (his own
