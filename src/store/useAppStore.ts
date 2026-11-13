@@ -61,6 +61,7 @@ import { retireSocietyFeatures } from '../services/cleanup/retireSocietyFeatures
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
+import { IS_OTHER_SCHOOL } from '../utils/otherSchool';
 
 export const useAppStore = create<AppState>()(
   overlayGuard((...a) => ({
@@ -156,8 +157,12 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
-  s.loadQuestions();
-  s.fetchNotifications();
+  // Novinky and questions are Supabase rows, which another school's
+  // prototype cannot reach (scripts/isHostSwap.ts).
+  if (!IS_OTHER_SCHOOL) {
+    s.loadQuestions();
+    s.fetchNotifications();
+  }
   s.fetchSchedule();
   s.fetchExams();
   s.fetchSubjects();

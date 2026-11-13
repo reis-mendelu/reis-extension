@@ -17,6 +17,11 @@ import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
 // another school's build does not have: it opens on the syllabus instead.
 const FIRST_TAB_WITHOUT_FILES = IS_OTHER_SCHOOL ? ('syllabus' as const) : ('stats' as const);
 
+/** A caller asking for success rates gets the syllabus where that tab does not exist. */
+export function tabForThisSchool<T extends string>(tab: T | undefined): T | 'syllabus' | undefined {
+  return IS_OTHER_SCHOOL && tab === 'stats' ? 'syllabus' : tab;
+}
+
 export function useSubjectFileDrawerState(
   lesson: BlockLesson | SelectedSubject | null,
   isOpen: boolean
@@ -25,7 +30,9 @@ export function useSubjectFileDrawerState(
   const { getSubject } = useSubjects();
   const isExam = lesson && 'isExam' in lesson ? lesson.isExam : false;
   const isEnrolled = !!(lesson?.courseCode && getSubject(lesson.courseCode)?.subjectId);
-  const requestedTab = lesson && 'initialTab' in lesson ? lesson.initialTab : undefined;
+  const requestedTab = tabForThisSchool(
+    lesson && 'initialTab' in lesson ? lesson.initialTab : undefined
+  );
   const [activeTab, setActiveTab] = useState<
     'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik'
   >(requestedTab ?? (isExam || !isEnrolled ? FIRST_TAB_WITHOUT_FILES : 'files'));

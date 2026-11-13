@@ -41,6 +41,10 @@ describe('other-school build', () => {
     'store/slices/createMenuSlice.ts',
     'store/slices/createSuccessRateSlice.ts',
     'store/slices/createSimilarSubjectsSlice.ts',
+    'store/useAppStore.ts',
+    'components/SearchBar/useSearch.ts',
+    'components/SubjectFileDrawer/useSubjectFileDrawerState.ts',
+    'components/Feedback/reportPrefill.ts',
   ])('%s gates its MENDELU-only part', (file) => {
     expect(read(file)).toContain('IS_OTHER_SCHOOL');
   });
