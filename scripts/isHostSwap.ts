@@ -47,8 +47,14 @@ export function isHostSwapPlugin(): Plugin {
   };
 }
 
-/** Same swap on the generated manifest: content-script matches, host permissions. */
+/**
+ * Same swap on the generated manifest: content-script matches, host permissions.
+ * The prototype also gets its own Firefox add-on id, so it installs next to
+ * reIS instead of replacing it (Chrome gives an unpacked build its own id).
+ */
 export function swapManifest(manifest: Record<string, unknown>): void {
   const swapped = JSON.parse(swapHost(JSON.stringify(manifest))) as Record<string, unknown>;
+  const bss = swapped.browser_specific_settings as { gecko?: { id?: string } } | undefined;
+  if (bss?.gecko) bss.gecko.id = `reis-prototype@${IS_HOST}`;
   Object.assign(manifest, swapped, { name: `reIS – ${IS_HOST} prototyp` });
 }
