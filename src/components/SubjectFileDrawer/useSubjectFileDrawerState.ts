@@ -11,6 +11,16 @@ import { useDragSelection } from './useDragSelection';
 import { useMarkZaznamnikSeen } from '../../hooks/ui/useMarkZaznamnikSeen';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
+import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
+
+// An exam or a subject you are not enrolled in opens on success rates, which
+// another school's build does not have: it opens on the syllabus instead.
+const FIRST_TAB_WITHOUT_FILES = IS_OTHER_SCHOOL ? ('syllabus' as const) : ('stats' as const);
+
+/** A caller asking for success rates gets the syllabus where that tab does not exist. */
+export function tabForThisSchool<T extends string>(tab: T | undefined): T | 'syllabus' | undefined {
+  return IS_OTHER_SCHOOL && tab === 'stats' ? 'syllabus' : tab;
+}
 
 export function useSubjectFileDrawerState(
   lesson: BlockLesson | SelectedSubject | null,
@@ -20,10 +30,12 @@ export function useSubjectFileDrawerState(
   const { getSubject } = useSubjects();
   const isExam = lesson && 'isExam' in lesson ? lesson.isExam : false;
   const isEnrolled = !!(lesson?.courseCode && getSubject(lesson.courseCode)?.subjectId);
-  const requestedTab = lesson && 'initialTab' in lesson ? lesson.initialTab : undefined;
+  const requestedTab = tabForThisSchool(
+    lesson && 'initialTab' in lesson ? lesson.initialTab : undefined
+  );
   const [activeTab, setActiveTab] = useState<
     'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik'
-  >(requestedTab ?? (isExam || !isEnrolled ? 'stats' : 'files'));
+  >(requestedTab ?? (isExam || !isEnrolled ? FIRST_TAB_WITHOUT_FILES : 'files'));
 
   useEffect(() => {
     if (requestedTab) queueMicrotask(() => setActiveTab(requestedTab));
@@ -37,7 +49,8 @@ export function useSubjectFileDrawerState(
   const [tabOpening, setTabOpening] = useState(openingKey);
   if (openingKey !== tabOpening) {
     setTabOpening(openingKey);
-    if (openingKey) setActiveTab(requestedTab ?? (isExam || !isEnrolled ? 'stats' : 'files'));
+    if (openingKey)
+      setActiveTab(requestedTab ?? (isExam || !isEnrolled ? FIRST_TAB_WITHOUT_FILES : 'files'));
   }
 
   useMarkZaznamnikSeen(lesson?.courseCode, activeTab, isOpen);
@@ -74,7 +87,9 @@ export function useSubjectFileDrawerState(
       if (!requested) {
         const isExamNow = 'isExam' in lesson ? lesson.isExam : false;
         const isEnrolledNow = !!(lesson.courseCode && getSubject(lesson.courseCode)?.subjectId);
-        queueMicrotask(() => setActiveTab(isExamNow || !isEnrolledNow ? 'stats' : 'files'));
+        queueMicrotask(() =>
+          setActiveTab(isExamNow || !isEnrolledNow ? FIRST_TAB_WITHOUT_FILES : 'files')
+        );
       }
       fileRefs.current.clear();
     }

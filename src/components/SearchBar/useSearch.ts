@@ -5,6 +5,7 @@ import { isEnglishVariantCode, semesterRank } from '../../api/search/subjectVari
 import type { SearchResult, SearchSection } from './types';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
+import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
 
 interface RelevanceCtx {
   searchQuery: string;
@@ -88,7 +89,8 @@ export function useSearch(query: string, subjectsOnly = false) {
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isLang: 'cz' | 'en' = language === 'en' ? 'en' : 'cz';
-  const facultySubjekt = facultySubjektId(userFaculty);
+  // Workplace ids are MENDELU's: another school searches the whole university.
+  const facultySubjekt = IS_OTHER_SCHOOL ? undefined : facultySubjektId(userFaculty);
   // Only meaningful to scope/widen when we actually know the student's faculty.
   const canScopeToFaculty = !!facultySubjekt;
   const effectiveSubjekt = scope === 'faculty' ? facultySubjekt : undefined;

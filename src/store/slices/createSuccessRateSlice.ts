@@ -7,6 +7,7 @@ import {
 } from '../../api/successRate';
 import { ensureSuccessRateVersion, getKnownSuccessRateVersion } from '../../api/successRateVersion';
 import { loggers } from '../../utils/logger';
+import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
 
 const batchInFlight = new Set<string>();
 
@@ -24,6 +25,8 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
   successRatesLoading: {},
   successRatesGlobalLoaded: false,
   fetchSuccessRateBatch: async (courseCodes) => {
+    // Success rates are scraped from MENDELU only (reis-data).
+    if (IS_OTHER_SCHOOL) return;
     const missing = courseCodes.filter((c) => !get().successRates[c] && !batchInFlight.has(c));
     const claimed = new Set(missing);
     for (const c of missing) batchInFlight.add(c);
@@ -81,6 +84,7 @@ export const createSuccessRateSlice: AppSlice<SuccessRateSlice> = (set, get) => 
     }
   },
   fetchSuccessRate: async (courseCode) => {
+    if (IS_OTHER_SCHOOL) return;
     if (get().successRatesLoading[courseCode]) return;
 
     if (!get().successRates[courseCode]) {
