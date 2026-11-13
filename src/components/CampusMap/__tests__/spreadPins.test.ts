@@ -91,6 +91,17 @@ describe('spreadPins', () => {
     }
   });
 
+  it('does not step clear of an obstacle onto a neighbouring pin', () => {
+    // Pushed straight away from the obstacle, (0,0) landed at (40,0), 20 px
+    // from the pin at (60,0) (CodeRabbit, PR 679). It must clear both.
+    const obstacle = { x: -10, y: 0, r: 50 };
+    const out = spreadPins([pin('a', 0, 0), pin('b', 60, 0)], 34, [obstacle]);
+    expect(at(out, 'b')).toEqual([60, 0]);
+    const [ax, ay] = at(out, 'a') as [number, number];
+    expect(Math.hypot(ax - obstacle.x, ay - obstacle.y)).toBeGreaterThanOrEqual(50);
+    expect(Math.hypot(ax - 60, ay - 0)).toBeGreaterThanOrEqual(33.99);
+  });
+
   it('leaves pins that are already clear of every obstacle alone', () => {
     const out = spreadPins([pin('a', 200, 200)], 34, [{ x: 0, y: 0, r: 60 }]);
     expect(at(out, 'a')).toEqual([200, 200]);

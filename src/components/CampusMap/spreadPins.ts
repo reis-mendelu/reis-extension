@@ -72,10 +72,16 @@ export function spreadPins<T extends { key: string; x: number; y: number }>(
 
   if (obstacles.length === 0) return out;
   for (const members of clustersOf(pins, root).values()) {
-    const shift = clearingShift(
-      members.map((i) => out[i]!),
-      obstacles
-    );
+    const own = members.map((i) => out[i]!);
+    // Only a cluster that covers another layer's pin moves at all.
+    if (clearOf(own, obstacles)) continue;
+    // Where it steps to must also keep a gap from every other sport pin, as
+    // they stand now (CodeRabbit, PR 679: pushed off S-klub onto a neighbour).
+    // The hair of tolerance matches the merge pass above.
+    const neighbours = out
+      .filter((_, i) => !members.includes(i))
+      .map((p) => ({ x: p.x, y: p.y, r: gap - 0.01 }));
+    const shift = clearingShift(own, [...obstacles, ...neighbours]);
     if (!shift) continue;
     for (const i of members)
       out[i] = { ...out[i]!, x: out[i]!.x + shift.x, y: out[i]!.y + shift.y };
