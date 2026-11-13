@@ -6,6 +6,7 @@ import { ensureSuccessRateVersion } from '../../api/successRateVersion';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { STORAGE_KEYS } from '../../services/storage/keys';
 import { logError } from '../../utils/reportError';
+import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
 
 /** Persisted in `meta`, stamped with the reis-data version like success rates,
  * so a refresh reaches the Capacitor apps too — they never restart the way
@@ -20,6 +21,7 @@ const readCache = async (): Promise<Cache> =>
 export const createSimilarSubjectsSlice: AppSlice<SimilarSubjectsSlice> = (set, get) => ({
   similarSubjects: {},
   fetchSimilarSubjects: async (courseCode) => {
+    if (IS_OTHER_SCHOOL) return;
     if (inFlight.has(courseCode)) return;
     inFlight.add(courseCode);
     const show = (suggestions: SimilarSuggestion[]) => {

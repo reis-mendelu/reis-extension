@@ -8,6 +8,7 @@ import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getWeekForDate } from '../api/teachingWeek';
 import { isTrustedHostOrigin } from '../utils/trustedOrigin';
+import { IS_OTHER_SCHOOL } from '../utils/otherSchool';
 import { HalloweenHeaderBats } from './halloween/HalloweenHeaderBats';
 
 interface AppHeaderProps {
@@ -133,8 +134,9 @@ export function AppHeader({
               programme). The row stretches; the pills keep their width. */}
           {currentView === 'calendar' ? (
             <div className="flex min-w-0 flex-1 items-center">
-              <BulletinBanner inline />
-              <InternshipsMenu />
+              {/* Vývěska and the bundled MENDELU partners: not for another school. */}
+              {!IS_OTHER_SCHOOL && <BulletinBanner inline />}
+              {!IS_OTHER_SCHOOL && <InternshipsMenu />}
             </div>
           ) : (
             <div className="flex-1" />
@@ -152,13 +154,16 @@ export function AppHeader({
             </button>
 
             <div className="flex items-center gap-1">
-              <NotificationFeed
-                onShowMap={onShowMap}
-                onOpenSubject={(a) =>
-                  a.courseCode &&
-                  onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')
-                }
-              />
+              {/* Novinky come from Supabase, which another school's prototype has none of. */}
+              {!IS_OTHER_SCHOOL && (
+                <NotificationFeed
+                  onShowMap={onShowMap}
+                  onOpenSubject={(a) =>
+                    a.courseCode &&
+                    onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')
+                  }
+                />
+              )}
             </div>
           </div>
         </div>

@@ -31,6 +31,7 @@ import { PARENT_ORIGIN } from '../api/proxy/trustedOrigin';
 import { getPlatform } from '../platform';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
+import { IS_OTHER_SCHOOL } from '../utils/otherSchool';
 
 interface SyncedData {
   /** The study the per-study data belongs to; see the guard in the listener. */
@@ -75,6 +76,7 @@ export function useAppLogic() {
   // only on an actual bump of the counter — never on initial mount.
   useEffect(() => {
     return useAppStore.subscribe((state, prev) => {
+      if (IS_OTHER_SCHOOL) return; // MENDELU's campus map only
       if (state.mapFocusRequest !== prev.mapFocusRequest) setCurrentView('map');
     });
   }, []);
@@ -116,7 +118,9 @@ export function useAppLogic() {
         if (w) setCurrentDate(new Date(w as string));
         // Validated, not cast: a view removed since this value was written
         // would otherwise boot the app onto a screen nothing renders.
-        if (isAppView(v)) setCurrentView(v);
+        // Another school's build has no map or Erasmus view to come back to.
+        if (isAppView(v) && !(IS_OTHER_SCHOOL && (v === 'map' || v === 'erasmus')))
+          setCurrentView(v);
       })
       .catch((e) => logError('useAppLogic.restoreView', e))
       .finally(() => {

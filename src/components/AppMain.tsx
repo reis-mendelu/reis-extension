@@ -7,6 +7,7 @@ import { StudyPlanPage } from './SubjectsPanel/StudyPlanPage';
 import { ErasmusPanel } from './ErasmusPanel';
 import { CampusMapView } from './CampusMap/CampusMapView';
 import { OldIsPanel } from './OldIsPanel';
+import { IS_OTHER_SCHOOL } from '../utils/otherSchool';
 
 interface AppMainProps {
   currentView: AppView;
@@ -79,13 +80,13 @@ export function AppMain({
               onOpenSubject={handleOpenSubjectFromSearch}
             />
           )}
-          {currentView === 'erasmus' && (
+          {currentView === 'erasmus' && !IS_OTHER_SCHOOL && (
             <ErasmusPanel
               onOpenSubject={handleOpenSubjectFromSearch}
               onSearchSubject={(name) => searchPrefillRef?.current?.(name)}
             />
           )}
-          {currentView === 'map' && <CampusMapView />}
+          {currentView === 'map' && !IS_OTHER_SCHOOL && <CampusMapView />}
           {currentView === 'oldIs' && <OldIsPanel />}
         </div>
       </div>
