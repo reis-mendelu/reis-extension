@@ -19,8 +19,12 @@ import type { SocietyPin, SportPlace } from '../../types/campusMap';
 const PIN_INK = '#0F6E56';
 /** A pin's footprint plus a hair: closer than this and two pins would touch. */
 const PIN_GAP = 32;
-/** Half our pin's 28px face: the clearance an obstacle needs on top of its own size. */
-const PIN_RADIUS = 14;
+/**
+ * Half a CHOSEN pin's reach: its 34px face and 3px ring. Sized for the chosen
+ * pin, not the 28px resting one, because the chosen one grows in place and
+ * covered the end of S-klub's name on an iPad.
+ */
+const PIN_RADIUS = 20;
 
 /**
  * The room a society pin or venue takes: its 36px logo and, for a venue, the
