@@ -15,6 +15,9 @@ export interface SubjectGroup {
   name: string;
   statusDescription: string;
   subjects: SubjectStatus[];
+  /** The school's own name for the group, where IS prints one before the heading
+   *  (VŠE's InSIS: "oSZ - Předměty státní závěrečné zkoušky (t: 1)"). MENDELU has none. */
+  label?: string;
   /** Minimum number of subjects required from this group (parsed from "min. N př."). */
   minCount?: number;
   /** Minimum total credits required from this group (parsed from "min. N kr."). */

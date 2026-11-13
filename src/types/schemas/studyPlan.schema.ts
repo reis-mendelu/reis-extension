@@ -34,6 +34,7 @@ const SubjectGroupSchema = z
     name: z.string(),
     statusDescription: z.string(),
     subjects: z.array(SubjectStatusSchema),
+    label: z.string().optional(),
     minCount: z.number().optional(),
     minCredits: z.number().optional(),
   })
