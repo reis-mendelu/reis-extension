@@ -9,7 +9,7 @@ const category = (children: PageCategory['children']): PageCategory => ({
 });
 
 describe('pagesForOtherSchool', () => {
-  it("drops MENDELU's own pages: dorms, Microsoft Imagine, its network", () => {
+  it("drops MENDELU's own pages: dorms, Microsoft Imagine, its network, elections", () => {
     const [c] = pagesForOtherSchool([
       category([
         {
@@ -26,6 +26,21 @@ describe('pagesForOtherSchool', () => {
           id: 'vpn',
           label: 'Přístup do univerzitní sítě',
           href: 'https://is.mendelu.cz/auth/wifi/heslo_vpn_sit.pl?_m=3532;lang={{lang}}',
+        },
+        {
+          id: 'wifi-stat',
+          label: 'Statistiky sítě',
+          href: 'https://is.mendelu.cz/auth/wifi/statistika.pl?_m=21201',
+        },
+        {
+          id: 'technika',
+          label: 'Evidovaná technika',
+          href: 'https://is.mendelu.cz/auth/sit/technika_moje.pl?_m=313',
+        },
+        {
+          id: 'volby',
+          label: 'Portál voliče',
+          href: 'https://is.mendelu.cz/auth/evolby/portal_volice.pl?_m=1',
         },
         {
           id: 'studium',
