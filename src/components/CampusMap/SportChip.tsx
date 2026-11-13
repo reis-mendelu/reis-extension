@@ -37,8 +37,9 @@ export function SportChip({ floating = false }: { floating?: boolean }) {
       <button
         type="button"
         onClick={show}
+        // Not aria-pressed: pressing it again re-fits the map rather than
+        // turning the pins off — the × beside it is the only off control.
         aria-label={t('map.sport.chipAria')}
-        aria-pressed={on}
         className={`flex h-full items-center gap-1.5 rounded-full pl-3 ${on ? 'pr-1' : 'pr-3.5'}`}
       >
         <span

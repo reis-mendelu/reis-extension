@@ -38,6 +38,19 @@ describe('sport places on the map', () => {
     expect(s.mapFocusRequest).toBe(1);
   });
 
+  it('turning Sport on closes an open card, so the camera fits the places and not that card', () => {
+    useAppStore.setState({ mapSelection: { kind: 'placedRoom', label: 'Q01', display: 'Q01' } });
+    useAppStore.getState().showSportPlaces();
+    expect(useAppStore.getState().mapSelection).toBeNull();
+  });
+
+  it('turning Sport off points the camera back at the campus', () => {
+    // Left at 'sport', any later redraw of the overview re-fitted the hidden places.
+    useAppStore.getState().showSportPlaces();
+    useAppStore.getState().hideSportPlaces();
+    expect(useAppStore.getState().mapFocusTarget).toBe('campus');
+  });
+
   it('turning Sport on from a floor plan goes back to the campus, where the pins are', () => {
     useAppStore.setState({ activeBuildingId: 3, activeFloorId: 7 });
     useAppStore.getState().showSportPlaces();

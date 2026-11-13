@@ -346,12 +346,15 @@ export function MapCanvas() {
           railRef.current.width,
           railRef.current.open
         );
+        // Asked of the page, not of `rail === 0`: an iPad with its rail closed
+        // has no rail padding and no sheet either.
+        const sheet = isPhone && !!document.querySelector('[data-testid="map-sheet"]');
         flyAndReveal(map, () =>
           map.fitBounds(SPORT_BOUNDS, {
             // 32 at the sides. A wider margin drops a whole zoom level on a 390px
             // phone (zoom snaps to whole levels), shrinking every pin's context.
             paddingTopLeft: [32, 110],
-            paddingBottomRight: [32 + rail, isPhone && rail === 0 ? 220 : 40],
+            paddingBottomRight: [32 + rail, sheet ? 220 : 40],
             maxZoom: 17,
             animate: false,
           })

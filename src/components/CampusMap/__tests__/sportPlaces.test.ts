@@ -52,10 +52,16 @@ describe('SPORT_PLACES', () => {
     }
   });
 
-  it('names a nearest building whose distance matches the coordinates within 30 m', () => {
+  it('names the nearest campus building, at a distance the coordinates agree with within 30 m', () => {
+    const names = (buildingsJson as { buildings: { name: string }[] }).buildings.map((b) => b.name);
     for (const p of SPORT_PLACES) {
       const actual = metres(p.coord, centroid(p.near.building));
       expect(Math.abs(actual - p.near.metres), p.id).toBeLessThan(30);
+      for (const other of names) {
+        expect(metres(p.coord, centroid(other)), `${p.id} vs ${other}`).toBeGreaterThanOrEqual(
+          actual
+        );
+      }
     }
   });
 

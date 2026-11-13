@@ -41,12 +41,54 @@ describe('spreadPins', () => {
     expect(at(out, 'a')).toEqual([60, 80]);
   });
 
-  it('moves a spread pair together, so it stays a pair', () => {
+  it('moves a spread pair together, so it stays a pair, until both are clear', () => {
     // The pair lands at (86,102) and (120,102); S-klub's label sits above the
-    // left one. Both step down the 18 px the left one needs.
-    const out = spreadPins([pin('a', 100, 100), pin('b', 106, 104)], 34, [{ x: 86, y: 80, r: 40 }]);
-    expect(at(out, 'a')).toEqual([86, 120]);
-    expect(at(out, 'b')).toEqual([120, 120]);
+    // left one.
+    const obstacle = { x: 86, y: 80, r: 40 };
+    const out = spreadPins([pin('a', 100, 100), pin('b', 106, 104)], 34, [obstacle]);
+    const [ax, ay] = at(out, 'a') as [number, number];
+    const [bx, by] = at(out, 'b') as [number, number];
+    expect([bx - ax, by - ay]).toEqual([34, 0]);
+    for (const [x, y] of [
+      [ax, ay],
+      [bx, by],
+    ] as const) {
+      expect(Math.hypot(x - obstacle.x, y - obstacle.y)).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  it('clears every member, not just the deepest one', () => {
+    // Pushed sideways by the left pin's need, the right pin stayed inside
+    // (CodeRabbit, PR 679): the whole pair has to end up outside.
+    const obstacle = { x: 0, y: 0, r: 40 };
+    const out = spreadPins([pin('a', -1, 0), pin('b', 1, 0)], 34, [obstacle]);
+    for (const p of out) {
+      expect(Math.hypot(p.x - obstacle.x, p.y - obstacle.y)).toBeGreaterThanOrEqual(40);
+    }
+    expect(at(out, 'b')[0]! - at(out, 'a')[0]!).toBe(34);
+  });
+
+  it('clears a cluster squeezed between two obstacles', () => {
+    const obstacles = [
+      { x: 0, y: 0, r: 30 },
+      { x: 0, y: 50, r: 30 },
+    ];
+    const out = spreadPins([pin('a', 0, 25)], 34, obstacles);
+    for (const o of obstacles) {
+      expect(Math.hypot(out[0]!.x - o.x, out[0]!.y - o.y)).toBeGreaterThanOrEqual(30);
+    }
+  });
+
+  it('keeps a spread cluster off the pins next to it', () => {
+    // (0,0) and (0,20) spread to (-16,10) and (16,10), 24 px from the pin at
+    // (40,10) (CodeRabbit, PR 679). All three then need a gap of their own.
+    const out = spreadPins([pin('a', 0, 0), pin('b', 0, 20), pin('c', 40, 10)], 32);
+    for (let i = 0; i < out.length; i++) {
+      for (let j = i + 1; j < out.length; j++) {
+        const d = Math.hypot(out[i]!.x - out[j]!.x, out[i]!.y - out[j]!.y);
+        expect(d).toBeGreaterThanOrEqual(31.99);
+      }
+    }
   });
 
   it('leaves pins that are already clear of every obstacle alone', () => {

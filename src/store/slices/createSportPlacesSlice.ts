@@ -27,12 +27,19 @@ export const createSportPlacesSlice: AppSlice<SportPlacesSlice> = (set, get) => 
       sportPlacesOn: true,
       activeBuildingId: null,
       activeFloorId: null,
+      // MapCanvas answers an open card's selection before the 'sport' target,
+      // so with one open the chip flew to that card instead. As the other
+      // focus actions in createMapSlice do, the move replaces the selection.
+      mapSelection: null,
       mapFocusRequest: get().mapFocusRequest + 1,
       mapFocusTarget: 'sport',
     }),
   hideSportPlaces: () =>
     set({
       sportPlacesOn: false,
+      // Left at 'sport', any later redraw of the overview re-fitted the hidden
+      // places; 'campus' is where the map rests.
+      mapFocusTarget: 'campus',
       ...(get().mapSelection?.kind === 'sportPlace' ? { mapSelection: null } : {}),
     }),
   selectSportPlace: (place) => set({ mapSelection: { kind: 'sportPlace', place } }),

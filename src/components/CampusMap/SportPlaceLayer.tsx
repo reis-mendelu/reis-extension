@@ -111,9 +111,11 @@ function SportPin({
     // The sheet rises to fit the card, over whatever was in the lower half of
     // the map — so the pin just tapped would end up under it. Moved into the
     // strip between the search and the sheet, as a list tap already is.
+    // Measured where the pin is DRAWN: spreadPins may have moved it off its
+    // place's own coordinate, and that is the pin the student is looking at.
     const map = getMapInstance();
     if (isPhone && map)
-      panPinClearOfSheet(map, [place.coord[1], place.coord[0]], {
+      panPinClearOfSheet(map, map.layerPointToLatLng([x, y]), {
         afterMs: 340,
         onlyIfCovered: true,
       });
