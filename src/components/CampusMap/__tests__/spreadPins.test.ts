@@ -91,6 +91,18 @@ describe('spreadPins', () => {
     }
   });
 
+  it('keeps the gap when an obstacle push would close it (33 px apart)', () => {
+    // CodeRabbit, PR 679: pushed right off (-10,0), (0,0) landed at (10,0),
+    // 23 px from (33,0).
+    const obstacle = { x: -10, y: 0, r: 20 };
+    const out = spreadPins([pin('a', 0, 0), pin('b', 33, 0)], 32, [obstacle]);
+    const [ax, ay] = at(out, 'a') as [number, number];
+    const [bx, by] = at(out, 'b') as [number, number];
+    expect(Math.hypot(ax - obstacle.x, ay - obstacle.y)).toBeGreaterThanOrEqual(20);
+    expect(Math.hypot(bx - obstacle.x, by - obstacle.y)).toBeGreaterThanOrEqual(20);
+    expect(Math.hypot(ax - bx, ay - by)).toBeGreaterThanOrEqual(31.99);
+  });
+
   it('does not step clear of an obstacle onto a neighbouring pin', () => {
     // Pushed straight away from the obstacle, (0,0) landed at (40,0), 20 px
     // from the pin at (60,0) (CodeRabbit, PR 679). It must clear both.
