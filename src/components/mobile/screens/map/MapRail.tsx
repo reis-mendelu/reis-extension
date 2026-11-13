@@ -61,7 +61,10 @@ export function MapRail() {
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
-  const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
+  // A Sportera place likewise.
+  const selectedSportPlace = selection?.kind === 'sportPlace' ? selection.place : null;
+  const selectedCard =
+    selectedEvent || selectedGardenPlace || selectedSocietyPin || selectedSportPlace;
   const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
@@ -201,6 +204,7 @@ export function MapRail() {
           selectedEvent={selectedEvent}
           selectedGardenPlace={selectedGardenPlace}
           selectedSocietyPin={selectedSocietyPin}
+          selectedSportPlace={selectedSportPlace}
           flush
         />
       </div>

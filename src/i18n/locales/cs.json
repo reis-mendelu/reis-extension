@@ -1137,6 +1137,32 @@
       "title": "Mapa potřebuje jedno povolení",
       "text": "OpenStreetMap blokuje podklad mapy, když neví, kdo se ptá. Povolte reIS, ať se mu může představit.",
       "allow": "Povolit"
+    },
+    "sport": {
+      "chip": "Sport",
+      "chipAria": "Ukázat hřiště v okolí",
+      "hideAria": "Skrýt hřiště",
+      "title": "Sport",
+      "open": "Otevřít na Sporteře",
+      "note": "Fotky, hodnocení a spoluhráči jsou na sportera.cz.",
+      "near": "{metres} m od budovy {building}",
+      "nonstop": "Nonstop",
+      "surface": {
+        "tartan": "Tartan",
+        "gravel": "Kačírek"
+      },
+      "hoopsOne": "{count} koš",
+      "hoopsFew": "{count} koše",
+      "hoopsMany": "{count} košů",
+      "tablesOne": "{count} stůl",
+      "tablesFew": "{count} stoly",
+      "tablesMany": "{count} stolů",
+      "kind": {
+        "basketball": "Basketbal",
+        "football": "Fotbal",
+        "workout": "Workout",
+        "pingpong": "Ping-pong"
+      }
     }
   },
   "admin": {
