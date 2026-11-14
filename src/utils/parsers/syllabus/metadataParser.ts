@@ -22,8 +22,9 @@ export function parseCourseMetadata(doc: Document, lang: string = 'cz'): CourseM
     return (text || '').toLowerCase().replace(/\s+/g, ' ').trim().replace(/:$/, '');
   };
 
-  // `completion` is never initialised: only an InSIS page sets it, so a MENDELU
-  // record keeps exactly the keys it had before.
+  // `completion` is added to `info` only when an InSIS page sets it (the `insis`
+  // holder below starts it at null), so a MENDELU record keeps exactly the keys
+  // it had before.
   let sawCredits = false;
   let sawTeachers = false;
   const insis: { credits: string | null; completion: string | null } & Pick<

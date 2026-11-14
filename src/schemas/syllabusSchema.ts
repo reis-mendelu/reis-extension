@@ -5,8 +5,9 @@ export const CourseMetadataSchema = z.object({
   courseNameCs: z.string().nullable().optional(),
   courseNameEn: z.string().nullable().optional(),
   credits: z.string().nullable(),
-  // InSIS (VŠE) only: "Forma ukončení" ("zkouška", "zápočet"…). MENDELU puts the
-  // completion into `credits` ("zkouška (5 kreditů)") and never sets this key.
+  // InSIS (VŠE) only: "Forma ukončení" ("zkouška", "zápočet"…). MENDELU keeps the
+  // completion inside its own `credits` value (the bold part of the completion
+  // row, e.g. "Exam" from "<b>Exam</b> (5 credits)") and never sets this key.
   completion: z.string().nullable().optional(),
   garant: z
     .object({

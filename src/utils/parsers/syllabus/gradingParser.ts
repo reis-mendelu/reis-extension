@@ -8,8 +8,10 @@ const TABLE_LABELS = [
 
 /**
  * InSIS (VŠE) prints the same activity → weight table under "Způsoby a kritéria
- * hodnocení". Its "Hodnocení:" row is the grade scale, not requirements, and a
- * bare "Hodnocení" would also match MENDELU's "Podíl kritérií na hodnocení".
+ * hodnocení". Its "Hodnocení:" row is the grade scale, not requirements. Labels
+ * are written out in full: `findHeaderRow` matches with a case-sensitive
+ * `includes`, so a short lowercase "hodnocení" would also hit MENDELU's
+ * "Podíl kritérií na hodnocení".
  * Tried only when no MENDELU label matched.
  */
 const INSIS_TABLE_LABELS = ['Způsoby a kritéria hodnocení:', 'Assessment methods and criteria:'];
