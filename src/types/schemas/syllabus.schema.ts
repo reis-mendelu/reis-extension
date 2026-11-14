@@ -24,6 +24,7 @@ const CourseMetadataSchema = z
     courseNameEn: z.string().nullable().optional(),
     courseCode: z.string().nullable().optional(),
     credits: z.string().nullable().optional(),
+    completion: z.string().nullable().optional(),
     garant: z
       .object({ name: z.string().nullable(), id: z.string().nullable().optional() })
       .passthrough()
