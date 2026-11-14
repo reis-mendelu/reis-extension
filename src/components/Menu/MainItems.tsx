@@ -11,18 +11,25 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
-import { IS_OTHER_SCHOOL, MENDELU_ONLY_MENU_IDS } from '../../utils/otherSchool';
+import type { Feature } from '../../utils/schoolProfiles';
+import { currentSchool } from '../../utils/school';
+
+/** Menu entries that open a feature not every school has. */
+const MENU_FEATURE: Partial<Record<string, Feature>> = {
+  map: 'campusMap',
+  testy: 'practiceTests',
+  dokumenty: 'studyDocuments',
+};
+
+const offered = (item: { id: string }) => {
+  const feature = MENU_FEATURE[item.id];
+  return !feature || currentSchool.has(feature);
+};
 
 const forThisSchool = (items: MenuItem[]): MenuItem[] =>
-  IS_OTHER_SCHOOL
-    ? items
-        .filter((i) => !MENDELU_ONLY_MENU_IDS.has(i.id))
-        .map((i) =>
-          i.children
-            ? { ...i, children: i.children.filter((c) => !MENDELU_ONLY_MENU_IDS.has(c.id)) }
-            : i
-        )
-    : items;
+  items
+    .filter(offered)
+    .map((i) => (i.children ? { ...i, children: i.children.filter(offered) } : i));
 
 export const mainItems = (
   sid: string,

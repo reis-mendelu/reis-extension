@@ -20,7 +20,7 @@ import { PartnersBlock } from '../Partners/PartnersBlock';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { useLongPress } from '../../hooks/ui/useLongPress';
 import { StudySwitcher } from '../StudySwitcher/StudySwitcher';
-import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
+import { currentSchool } from '../../utils/school';
 
 export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: () => void }) {
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
@@ -59,7 +59,7 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
             <div className="flex flex-col gap-2.5 text-xs">
               <div
                 data-testid="profile-popup-name"
-                {...(IS_OTHER_SCHOOL ? {} : hold)}
+                {...(currentSchool.has('adminConsole') ? hold : {})}
                 className="flex select-none items-center gap-3 text-base-content/90"
               >
                 <User size={16} className="text-base-content/40" />
@@ -124,7 +124,7 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
               machine, which is a setting, not a page of the study agenda.
               Same hand-off as the welcome modal and the header button — the
               drawer opens on the machine reIS is running on. */}
-          {!IS_OTHER_SCHOOL && (
+          {currentSchool.has('eduroam') && (
             <button
               onClick={() => {
                 // Same three-answer resolve as the welcome modal: null keeps the
@@ -147,7 +147,7 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
 
         {/* Admin section: only for a device signed in to the console. Students
             have nothing here — societies are not chosen (spec 2026-10-08). */}
-        {(hasAdminSession || isReisAdmin) && !IS_OTHER_SCHOOL && (
+        {(hasAdminSession || isReisAdmin) && currentSchool.has('adminConsole') && (
           <div className="py-1 border-b border-base-200">
             {hasAdminSession && (
               <button
@@ -176,13 +176,13 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
         {/* Who reIS works with, as on the phone's Profil (spec 2026-10-09):
             partners reach their field on every product, the extension too.
             Renders nothing for a field without a partner. */}
-        {!IS_OTHER_SCHOOL && (
+        {currentSchool.has('partners') && (
           <PartnersBlock compact className="border-b border-base-200 px-1 py-2" />
         )}
 
         {/* Support Section */}
         <div className="py-1">
-          {!IS_OTHER_SCHOOL && (
+          {currentSchool.has('reports') && (
             <button
               onClick={() => {
                 onClose?.();

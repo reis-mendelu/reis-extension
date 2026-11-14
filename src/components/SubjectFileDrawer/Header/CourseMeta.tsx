@@ -9,7 +9,7 @@ import { MapHoverCard } from '../../MapHoverCard';
 import roomsIndexJson from '../../../data/map/rooms-index.json';
 import type { RoomIndexEntry } from '../../../types/campusMap';
 import { lookupRoomTarget } from '../../../utils/rooms/lookupRoomPlace';
-import { IS_OTHER_SCHOOL } from '../../../utils/otherSchool';
+import { currentSchool } from '../../../utils/school';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 export function CourseMeta({
@@ -25,7 +25,7 @@ export function CourseMeta({
   const { t, language } = useTranslation();
   // MENDELU's room index: another school's room must never open MENDELU's map.
   const target = useMemo(
-    () => (IS_OTHER_SCHOOL ? null : lookupRoomTarget(lesson?.room, INDEX)),
+    () => (currentSchool.has('campusMap') ? lookupRoomTarget(lesson?.room, INDEX) : null),
     [lesson?.room]
   );
 

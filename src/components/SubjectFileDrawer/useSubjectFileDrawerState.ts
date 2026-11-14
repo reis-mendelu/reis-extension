@@ -11,15 +11,16 @@ import { useDragSelection } from './useDragSelection';
 import { useMarkZaznamnikSeen } from '../../hooks/ui/useMarkZaznamnikSeen';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
-import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
+import { currentSchool } from '../../utils/school';
 
 // An exam or a subject you are not enrolled in opens on success rates, which
-// another school's build does not have: it opens on the syllabus instead.
-const FIRST_TAB_WITHOUT_FILES = IS_OTHER_SCHOOL ? ('syllabus' as const) : ('stats' as const);
+// a school without them does not have: it opens on the syllabus instead.
+const firstTabWithoutFiles = () =>
+  currentSchool.has('successRates') ? ('stats' as const) : ('syllabus' as const);
 
 /** A caller asking for success rates gets the syllabus where that tab does not exist. */
 export function tabForThisSchool<T extends string>(tab: T | undefined): T | 'syllabus' | undefined {
-  return IS_OTHER_SCHOOL && tab === 'stats' ? 'syllabus' : tab;
+  return !currentSchool.has('successRates') && tab === 'stats' ? 'syllabus' : tab;
 }
 
 export function useSubjectFileDrawerState(
@@ -35,7 +36,7 @@ export function useSubjectFileDrawerState(
   );
   const [activeTab, setActiveTab] = useState<
     'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik'
-  >(requestedTab ?? (isExam || !isEnrolled ? FIRST_TAB_WITHOUT_FILES : 'files'));
+  >(requestedTab ?? (isExam || !isEnrolled ? firstTabWithoutFiles() : 'files'));
 
   useEffect(() => {
     if (requestedTab) queueMicrotask(() => setActiveTab(requestedTab));
@@ -50,7 +51,7 @@ export function useSubjectFileDrawerState(
   if (openingKey !== tabOpening) {
     setTabOpening(openingKey);
     if (openingKey)
-      setActiveTab(requestedTab ?? (isExam || !isEnrolled ? FIRST_TAB_WITHOUT_FILES : 'files'));
+      setActiveTab(requestedTab ?? (isExam || !isEnrolled ? firstTabWithoutFiles() : 'files'));
   }
 
   useMarkZaznamnikSeen(lesson?.courseCode, activeTab, isOpen);
@@ -88,7 +89,7 @@ export function useSubjectFileDrawerState(
         const isExamNow = 'isExam' in lesson ? lesson.isExam : false;
         const isEnrolledNow = !!(lesson.courseCode && getSubject(lesson.courseCode)?.subjectId);
         queueMicrotask(() =>
-          setActiveTab(isExamNow || !isEnrolledNow ? FIRST_TAB_WITHOUT_FILES : 'files')
+          setActiveTab(isExamNow || !isEnrolledNow ? firstTabWithoutFiles() : 'files')
         );
       }
       fileRefs.current.clear();

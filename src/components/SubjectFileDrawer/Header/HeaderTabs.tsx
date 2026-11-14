@@ -1,7 +1,7 @@
 import { FileText, Users, BarChart3, BookOpen, ClipboardList } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { IS_OTHER_SCHOOL } from '../../../utils/otherSchool';
+import { currentSchool } from '../../../utils/school';
 
 type TabId = 'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik';
 
@@ -26,9 +26,9 @@ export function HeaderTabs({
     { id: 'files', label: t('course.tabs.files'), icon: FileText },
     { id: 'classmates', label: t('course.tabs.classmates'), icon: Users },
     // Success rates are MENDELU's data (reis-data); no tab at another school.
-    ...(IS_OTHER_SCHOOL
-      ? []
-      : [{ id: 'stats' as const, label: t('course.tabs.successRate'), icon: BarChart3 }]),
+    ...(currentSchool.has('successRates')
+      ? [{ id: 'stats' as const, label: t('course.tabs.successRate'), icon: BarChart3 }]
+      : []),
     { id: 'syllabus', label: t('course.tabs.requirements'), icon: BookOpen },
     { id: 'zaznamnik', label: t('course.tabs.zaznamnik'), icon: ClipboardList },
   ];

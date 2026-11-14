@@ -6,7 +6,7 @@ import { osobniManagement, eAgenda } from './management';
 import { technologie, spravaIS, dokumentace } from './technical';
 import { herna, personalizace, nastaveniIS, ochranaUdaju } from './personal';
 import { pagesForOtherSchool } from './otherSchoolPages';
-import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
+import { currentSchool } from '../../utils/school';
 
 export * from './types';
 
@@ -26,7 +26,12 @@ const allPages: PageCategory[] = [
   ochranaUdaju,
 ];
 
-/** Another school's prototype gets the list without MENDELU's own pages. */
-export const pagesData: PageCategory[] = IS_OTHER_SCHOOL ? pagesForOtherSchool(allPages) : allPages;
+/**
+ * The list above is MENDELU's own Starý IS menu. Every other school gets it
+ * trimmed to general UIS. Keyed on the school, not a feature: the list itself is
+ * MENDELU's, and this is the one place that says so.
+ */
+export const pagesData: PageCategory[] =
+  currentSchool.id === 'mendelu' ? allPages : pagesForOtherSchool(allPages);
 
 export const BASE_URL = 'https://is.mendelu.cz';
