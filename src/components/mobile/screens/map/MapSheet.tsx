@@ -59,7 +59,10 @@ export function MapSheet() {
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
-  const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
+  // A Sportera place likewise.
+  const selectedSportPlace = selection?.kind === 'sportPlace' ? selection.place : null;
+  const selectedCard =
+    selectedEvent || selectedGardenPlace || selectedSocietyPin || selectedSportPlace;
   // The phone shows a venue's menu category as a page of its own (VenueCard).
   const venueMenuSection = useAppStore((s) => s.venueMenuSection);
   const setVenueMenuSection = useAppStore((s) => s.setVenueMenuSection);
@@ -313,6 +316,7 @@ export function MapSheet() {
               selectedEvent={selectedEvent}
               selectedGardenPlace={selectedGardenPlace}
               selectedSocietyPin={selectedSocietyPin}
+              selectedSportPlace={selectedSportPlace}
             />
           </div>
         </>

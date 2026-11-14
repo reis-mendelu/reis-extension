@@ -707,7 +707,7 @@ export interface MapSlice {
    * re-fitted the campus on top of the move. Re-reading this gives the same
    * answer every time, which is what makes the camera stay put.
    */
-  mapFocusTarget: 'campus' | 'draft';
+  mapFocusTarget: 'campus' | 'draft' | 'sport';
   /** "Show me where this lands" — point the map at the draft before publishing. */
   previewDraftOnMap: () => void;
   /** True while the event-composer overlay is open. */
@@ -763,6 +763,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createSystemNotificationsSlice').SystemNotificationsSlice &
   import('./slices/createQuestionsSlice').QuestionsSlice &
   import('./slices/createSocietyPinsSlice').SocietyPinsSlice &
+  import('./slices/createSportPlacesSlice').SportPlacesSlice &
   import('./slices/createSklubMenuSlice').SklubMenuSlice &
   BulletinSlice &
   import('./slices/createIsNoticesSlice').IsNoticesSlice &

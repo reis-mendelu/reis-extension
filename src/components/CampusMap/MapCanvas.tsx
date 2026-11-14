@@ -30,6 +30,7 @@ import { roomFocusView } from './focusBounds';
 import { roomPlanLabels, venueRoomKey } from './roomPlanLabel';
 import { venueRoomTitles } from './venueSearch';
 import { panPinClearOfSheet } from './sheetClearance';
+import { SPORT_BOUNDS } from './sportPlaces';
 import { TiltToggle } from '../Building3D/tilt/TiltToggle';
 import { drawPoiHighlight, outlineForSelection } from './poiOutline';
 import type { BuildingsMeta, RoomFeature, RoomProperties } from '../../types/campusMap';
@@ -332,6 +333,31 @@ export function MapCanvas() {
         const [lon, lat] = draftCoordRef.current;
         flyAndReveal(map, () =>
           map.setView([lat, lon], Math.max(map.getZoom(), 18), { animate: false })
+        );
+      } else if (focusTarget === 'sport') {
+        // "Sport": every Sportera place in frame. They all sit outside the
+        // campus view the map opens on, which is why the chip moves the camera
+        // at all. Idempotent like 'draft': a re-run re-fits the same frame.
+        // Clear of the search and chip above, the iPad's rail on the right and,
+        // on a phone, the sheet's peek below.
+        const rail = railPaddingPx(
+          map.getSize().x,
+          isPhone,
+          railRef.current.width,
+          railRef.current.open
+        );
+        // Asked of the page, not of `rail === 0`: an iPad with its rail closed
+        // has no rail padding and no sheet either.
+        const sheet = isPhone && !!document.querySelector('[data-testid="map-sheet"]');
+        flyAndReveal(map, () =>
+          map.fitBounds(SPORT_BOUNDS, {
+            // 32 at the sides. A wider margin drops a whole zoom level on a 390px
+            // phone (zoom snaps to whole levels), shrinking every pin's context.
+            paddingTopLeft: [32, 110],
+            paddingBottomRight: [32 + rail, sheet ? 220 : 40],
+            maxZoom: 17,
+            animate: false,
+          })
         );
       } else {
         flyAndReveal(map, () =>

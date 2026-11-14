@@ -5,6 +5,8 @@ import { MapCanvas } from '../../CampusMap/MapCanvas';
 import { OsmTileAccessBanner } from '../../CampusMap/OsmTileAccessBanner';
 import { EventLayer } from '../../CampusMap/EventLayer';
 import { SocietyPinLayer } from '../../CampusMap/SocietyPinLayer';
+import { SportPlaceLayer } from '../../CampusMap/SportPlaceLayer';
+import { SportChip } from '../../CampusMap/SportChip';
 import { roomLabel } from '../../CampusMap/mapHelpers';
 import type { MapSelection } from '../../../types/campusMap';
 import { FloorSwitcher } from './map/FloorSwitcher';
@@ -83,6 +85,7 @@ export function MapScreen() {
           here and does not affect this element's layout. */}
       <EventLayer />
       <SocietyPinLayer />
+      <SportPlaceLayer />
       <FloorSwitcher />
       {/* marginTop carries --safe-top because this floating bar is the topmost
           element on the map screen and targetSdk 36 forces edge-to-edge: without
@@ -138,6 +141,9 @@ export function MapScreen() {
         {/* Extension only (Firefox for Android): the apps never report the
             OSM tile permission missing, so this renders nothing there. */}
         <OsmTileAccessBanner className="mt-2 w-full md:w-96" />
+        <div className="mt-2">
+          <SportChip floating />
+        </div>
       </div>
       {/* Two shells, not one with breakpoints. A sheet's vocabulary is
           vertical — grab pill, detents, a chevron pointing down — and none of
