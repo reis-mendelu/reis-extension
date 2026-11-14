@@ -81,15 +81,19 @@ describe('fetchOdevzdavarny — InSIS VŠE, with the extra "Odkdy" column', () =
     expect(parse(drifted(fixture('en')), 'en')).toBeNull();
   });
 
-  it('answers null when a needed column is missing, not a row read from the wrong cell', () => {
-    // Only the submitted table (the one with a row) loses its column, so the
-    // null comes from that table's mapping, not from an empty table before it.
+  it('answers null when a header repeats, not a row read from the wrong cell', () => {
+    // The submitted table (the one with a row) gets a second "Odkdy" in place of
+    // "Počet souborů": same column count, so only the header mapping can refuse
+    // it. A column dropped outright is not testable here: with one fewer cell
+    // the table has MENDELU's own count and MENDELU's unchanged layout applies.
     const page = fixture('cz');
     const at = page.indexOf('Odevzdávárny s odevzdanými');
-    const noFiles =
-      page.slice(0, at) + page.slice(at).replace(/<th[^>]*>Počet souborů<\/th>/, '<th>Odkdy</th>');
-    expect(noFiles).not.toBe(page);
-    expect(parse(noFiles, 'cz')).toBeNull();
+    const submitted = page.slice(at);
+    expect(submitted.match(/<th[^>]*>Odkdy<\/th>/g)?.length).toBeGreaterThan(0);
+    const repeated =
+      page.slice(0, at) + submitted.replace(/<th[^>]*>Počet souborů<\/th>/, '<th>Odkdy</th>');
+    expect(repeated).not.toBe(page);
+    expect(parse(repeated, 'cz')).toBeNull();
   });
 
   it.each(['5OBP', '5EKB', '2AJ324', '1BP210', 'UP02'])('reads the VŠE course code %s', (code) => {
