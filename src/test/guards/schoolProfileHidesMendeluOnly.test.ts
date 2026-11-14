@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ALL_FEATURES, SCHOOL_PROFILES } from '../../utils/schoolProfiles';
+import { ALL_FEATURES, SCHOOL_PROFILES, type Feature } from '../../utils/schoolProfiles';
 
 /**
  * A build for another UIS school (`REIS_SCHOOL=vse|czu`, scripts/isHostSwap.ts)
@@ -21,27 +21,59 @@ describe('school profiles in the build', () => {
     expect(ALL_FEATURES.filter((f) => SCHOOL_PROFILES.vse.features[f])).toEqual([]);
   });
 
-  it.each([
-    'components/AppHeader.tsx',
-    'components/AppMain.tsx',
-    'components/AppOverlays.tsx',
-    'components/Sidebar/BottomActions.tsx',
-    'components/Sidebar/ProfilePopup.tsx',
-    'components/Menu/MainItems.tsx',
-    'components/SubjectFileDrawer/Header/CourseMeta.tsx',
-    'components/SubjectFileDrawer/Header/HeaderTabs.tsx',
-    'components/Feedback/ReportMissingLink.tsx',
-    'hooks/useAppLogic.ts',
-    'store/slices/createMenuSlice.ts',
-    'store/slices/createSuccessRateSlice.ts',
-    'store/slices/createSimilarSubjectsSlice.ts',
-    'store/useAppStore.ts',
-    'components/SearchBar/useSearch.ts',
-    'components/SubjectFileDrawer/useSubjectFileDrawerState.ts',
-    'components/Feedback/reportPrefill.ts',
-  ])('%s gates its MENDELU-only part on currentSchool.has', (file) => {
-    expect(read(file)).toContain('currentSchool.has(');
-    expect(read(file)).not.toContain('IS_OTHER_SCHOOL');
+  /**
+   * Every gate, by file. A feature listed twice is gated in two places: removing
+   * either one fails here, not only removing the last gate in a file.
+   */
+  const GATES: Record<string, Feature[]> = {
+    'components/AppHeader.tsx': ['bulletin', 'internships', 'novinky'],
+    'components/AppMain.tsx': ['campusMap', 'erasmus'],
+    'components/AppOverlays.tsx': [
+      'welcome',
+      'eduroam',
+      'reports',
+      'studyDocuments',
+      'impersonation',
+      'impersonation',
+    ],
+    'components/Sidebar/BottomActions.tsx': ['teamsOutlook'],
+    'components/Sidebar/ProfilePopup.tsx': [
+      'adminConsole',
+      'adminConsole',
+      'eduroam',
+      'partners',
+      'reports',
+    ],
+    'components/SubjectFileDrawer/Header/CourseMeta.tsx': ['campusMap'],
+    'components/SubjectFileDrawer/Header/HeaderTabs.tsx': ['successRates'],
+    'components/Feedback/ReportMissingLink.tsx': ['reports'],
+    'hooks/useAppLogic.ts': ['campusMap', 'campusMap', 'erasmus'],
+    'store/slices/createMenuSlice.ts': ['canteenMenu'],
+    'store/slices/createSuccessRateSlice.ts': ['successRates', 'successRates'],
+    'store/slices/createSimilarSubjectsSlice.ts': ['similarSubjects'],
+    'store/useAppStore.ts': ['novinky'],
+    'components/SearchBar/useSearch.ts': ['facultySearchScope'],
+    'components/SubjectFileDrawer/useSubjectFileDrawerState.ts': ['successRates', 'successRates'],
+    'components/Feedback/reportPrefill.ts': ['reports'],
+  };
+
+  it.each(Object.entries(GATES))('%s gates each MENDELU-only part', (file, features) => {
+    const code = read(file);
+    expect(code).not.toContain('IS_OTHER_SCHOOL');
+    for (const feature of new Set(features)) {
+      const gates = code.split(`currentSchool.has('${feature}')`).length - 1;
+      expect(gates, `${file}: currentSchool.has('${feature}')`).toBeGreaterThanOrEqual(
+        features.filter((f) => f === feature).length
+      );
+    }
+  });
+
+  it('components/Menu/MainItems.tsx drops each menu entry its feature gates', () => {
+    const code = read('components/Menu/MainItems.tsx');
+    expect(code).toContain('currentSchool.has(feature)');
+    expect(code).toContain("map: 'campusMap'");
+    expect(code).toContain("testy: 'practiceTests'");
+    expect(code).toContain("dokumenty: 'studyDocuments'");
   });
 
   it('data/pages/index.ts trims Starý IS to general UIS outside MENDELU', () => {

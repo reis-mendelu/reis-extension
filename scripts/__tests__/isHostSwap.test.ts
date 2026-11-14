@@ -22,8 +22,8 @@ describe('isHostSwap', () => {
     expect(m.isHostSwapped).toBe(false);
     expect(defines(m)?.['import.meta.env.VITE_REIS_SCHOOL']).toBe('"mendelu"');
     expect(transform(m, "'is.mendelu.cz'; 'https://zvbpgkmnrqyprtkyxkwn.supabase.co'")).toBeNull();
-    // Gates fold to `true`, as `!IS_OTHER_SCHOOL` used to.
-    expect(transform(m, "currentSchool.has('campusMap') && x")?.code).toBe('true && x');
+    // Feature checks stay runtime calls: a MENDELU build's code is never rewritten.
+    expect(transform(m, "currentSchool.has('campusMap') && x")).toBeNull();
   });
 
   it('takes the host from the profile table and cuts Supabase off', async () => {
@@ -44,24 +44,15 @@ describe('isHostSwap', () => {
     expect(defines(m)?.['import.meta.env.VITE_REIS_SCHOOL']).toBe('"vse"');
   });
 
-  it('rewrites modules and folds feature checks through the plugin itself', async () => {
+  it('rewrites modules through the plugin itself', async () => {
     const m = await load({ REIS_SCHOOL: 'czu' });
     expect(transform(m, "fetch('https://is.mendelu.cz/x')")?.code).toBe(
       "fetch('https://is.czu.cz/x')"
     );
-    // Folded to a literal so the build drops the branch, as it did for IS_OTHER_SCHOOL.
-    expect(
-      transform(m, '!currentSchool.has(\'campusMap\') ? a : currentSchool.has(\n  "erasmus"\n)')
-        ?.code
-    ).toBe('!false ? a : false');
-    expect(transform(m, "currentSchool.id === 'mendelu'")?.code).toBe('"czu" === \'mendelu\'');
+    // Feature checks are left for runtime.
+    expect(transform(m, "currentSchool.has('campusMap') && x")).toBeNull();
     // node_modules are never touched.
     expect(transform(m, "'is.mendelu.cz'", '/x/node_modules/lib/index.js')).toBeNull();
-  });
-
-  it('refuses a feature the profile table does not know', async () => {
-    const m = await load({ REIS_SCHOOL: 'vse' });
-    expect(() => transform(m, "currentSchool.has('teleport')")).toThrow(/teleport/);
   });
 
   it('REIS_PROTOTYPE=1 builds a school against MENDELU itself: its features, Supabase cut', async () => {

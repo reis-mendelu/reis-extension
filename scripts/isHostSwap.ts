@@ -1,11 +1,5 @@
 import type { Plugin } from 'vite';
-import {
-  ALL_FEATURES,
-  SCHOOL_PROFILES,
-  isSchoolId,
-  type Feature,
-  type SchoolProfile,
-} from '../src/utils/schoolProfiles';
+import { SCHOOL_PROFILES, isSchoolId, type SchoolProfile } from '../src/utils/schoolProfiles';
 
 // Builds for another school on the same UIS (IS4U) system:
 //
@@ -58,27 +52,6 @@ export function swapHost(text: string): string {
   );
 }
 
-const FEATURE_CHECK = /\bcurrentSchool\.has\(\s*(['"])(\w+)\1\s*\)/g;
-const ID_READ = /\bcurrentSchool\.id\b/g;
-
-/**
- * `currentSchool.has('campusMap')` becomes the literal `true` or `false` this
- * school's profile says, and `currentSchool.id` its id, so the build drops a
- * branch the school lacks, as it did for the old `IS_OTHER_SCHOOL` constant.
- * A call is not something Rollup folds by itself. Builds without this plugin
- * (dev webapp, Capacitor) answer the same at runtime.
- */
-function foldSchoolChecks(code: string): string {
-  if (!code.includes('currentSchool.')) return code;
-  return code
-    .replace(FEATURE_CHECK, (_, _q, feature: string) => {
-      if (!(ALL_FEATURES as readonly string[]).includes(feature))
-        throw new Error(`currentSchool.has('${feature}'): no such feature in schoolProfiles.ts`);
-      return String(SCHOOL.features[feature as Feature]);
-    })
-    .replace(ID_READ, JSON.stringify(SCHOOL.id));
-}
-
 export function isHostSwapPlugin(): Plugin {
   return {
     name: 'reis-school',
@@ -87,12 +60,13 @@ export function isHostSwapPlugin(): Plugin {
     config: () => ({
       define: { 'import.meta.env.VITE_REIS_SCHOOL': JSON.stringify(SCHOOL.id) },
     }),
+    // A MENDELU build's code is never rewritten. Gates are runtime
+    // `currentSchool.has()` calls, so another school's bundle still carries
+    // MENDELU-only code that it never renders.
     transform(code, id) {
-      if (id.includes('/node_modules/')) return null;
-      let out = foldSchoolChecks(code);
-      if (isHostSwapped && (/mendelu/i.test(out) || out.includes(SUPABASE_HOST)))
-        out = swapHost(out);
-      return out === code ? null : { code: out, map: null };
+      if (!isHostSwapped || id.includes('/node_modules/')) return null;
+      if (!/mendelu/i.test(code) && !code.includes(SUPABASE_HOST)) return null;
+      return { code: swapHost(code), map: null };
     },
   };
 }

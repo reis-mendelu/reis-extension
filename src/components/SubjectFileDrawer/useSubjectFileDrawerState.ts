@@ -14,8 +14,7 @@ import type { SelectedSubject } from '../../types/app';
 import { currentSchool } from '../../utils/school';
 
 // An exam or a subject you are not enrolled in opens on success rates, which
-// a school without them does not have: it opens on the syllabus instead. Read
-// at use, not at import, so the school may be resolved after this module loads.
+// a school without them does not have: it opens on the syllabus instead.
 const firstTabWithoutFiles = () =>
   currentSchool.has('successRates') ? ('stats' as const) : ('syllabus' as const);
 
