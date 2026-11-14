@@ -47,8 +47,12 @@ const REQUIRED: Record<OdevzdavarnaSection, Role[]> = {
   closed: [...COMMON, 'status', 'display'],
 };
 
-/** MENDELU's "EBC-PJ" or VŠE's "5EN254", before the course name. */
-const COURSE_CODE = /^([A-Z]{2,4}-[A-Z0-9]+|\d[A-Z]{2}\d{3}) /;
+/**
+ * MENDELU's "EBC-PJ", or a VŠE code before the course name: faculty digit,
+ * letters, optional digits ("5EN254", "5OBP", "2AJ324"), or "UP02"-style.
+ * Shapes taken from the VŠE study plan (fixtures/studijni-povinnosti.vse.cz.html).
+ */
+const COURSE_CODE = /^([A-Z]{2,4}-[A-Z0-9]+|\d[A-Z]{2,3}\d{0,3}|[A-Z]{2}\d{2}) /;
 
 const clean = (s: string) => s.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
 

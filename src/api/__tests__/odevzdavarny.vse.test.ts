@@ -82,7 +82,19 @@ describe('fetchOdevzdavarny — InSIS VŠE, with the extra "Odkdy" column', () =
   });
 
   it('answers null when a needed column is missing, not a row read from the wrong cell', () => {
-    const noFiles = fixture('cz').replace(/<th[^>]*>Počet souborů<\/th>/g, '<th>Odkdy</th>');
+    // Only the submitted table (the one with a row) loses its column, so the
+    // null comes from that table's mapping, not from an empty table before it.
+    const page = fixture('cz');
+    const at = page.indexOf('Odevzdávárny s odevzdanými');
+    const noFiles =
+      page.slice(0, at) + page.slice(at).replace(/<th[^>]*>Počet souborů<\/th>/, '<th>Odkdy</th>');
+    expect(noFiles).not.toBe(page);
     expect(parse(noFiles, 'cz')).toBeNull();
+  });
+
+  it.each(['5OBP', '5EKB', '2AJ324', '1BP210', 'UP02'])('reads the VŠE course code %s', (code) => {
+    const page = fixture('cz').replaceAll('5EN254', code);
+    const rows = parse(page, 'cz');
+    expect(rows?.find((r) => r.section === 'submitted')?.courseCode).toBe(code);
   });
 });
