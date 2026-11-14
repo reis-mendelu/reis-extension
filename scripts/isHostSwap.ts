@@ -90,9 +90,8 @@ export function isHostSwapPlugin(): Plugin {
     transform(code, id) {
       if (id.includes('/node_modules/')) return null;
       let out = foldSchoolChecks(code);
-      // The profile table keeps every school's real host.
-      const swaps = isHostSwapped && !id.includes('/src/utils/schoolProfiles.ts');
-      if (swaps && (/mendelu/i.test(out) || out.includes(SUPABASE_HOST))) out = swapHost(out);
+      if (isHostSwapped && (/mendelu/i.test(out) || out.includes(SUPABASE_HOST)))
+        out = swapHost(out);
       return out === code ? null : { code: out, map: null };
     },
   };

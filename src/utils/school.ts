@@ -25,6 +25,10 @@ const built: string = import.meta.env.VITE_REIS_SCHOOL ?? 'mendelu';
  * Gate a school-specific capability on `currentSchool.has(feature)`, never on
  * the id: the profile table in utils/schoolProfiles.ts is the one place that
  * says what a school has.
+ *
+ * Only the resolution below is build-time. Resolving from the IS host the page
+ * is on instead means replacing this one constant (and the literal folding in
+ * scripts/isHostSwap.ts); callers keep `id`, `host` and `has`.
  */
 export const currentSchool: School = schoolFor(
   SCHOOL_PROFILES[isSchoolId(built) ? built : 'mendelu']

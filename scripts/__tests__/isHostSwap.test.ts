@@ -55,8 +55,6 @@ describe('isHostSwap', () => {
         ?.code
     ).toBe('!false ? a : false');
     expect(transform(m, "currentSchool.id === 'mendelu'")?.code).toBe('"czu" === \'mendelu\'');
-    // The profile table keeps every school's real host.
-    expect(transform(m, "host: 'is.mendelu.cz'", '/repo/src/utils/schoolProfiles.ts')).toBeNull();
     // node_modules are never touched.
     expect(transform(m, "'is.mendelu.cz'", '/x/node_modules/lib/index.js')).toBeNull();
   });

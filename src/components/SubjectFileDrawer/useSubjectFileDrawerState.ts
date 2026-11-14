@@ -14,10 +14,10 @@ import type { SelectedSubject } from '../../types/app';
 import { currentSchool } from '../../utils/school';
 
 // An exam or a subject you are not enrolled in opens on success rates, which
-// another school's build does not have: it opens on the syllabus instead.
-const FIRST_TAB_WITHOUT_FILES = currentSchool.has('successRates')
-  ? ('stats' as const)
-  : ('syllabus' as const);
+// a school without them does not have: it opens on the syllabus instead. Read
+// at use, not at import, so the school may be resolved after this module loads.
+const firstTabWithoutFiles = () =>
+  currentSchool.has('successRates') ? ('stats' as const) : ('syllabus' as const);
 
 /** A caller asking for success rates gets the syllabus where that tab does not exist. */
 export function tabForThisSchool<T extends string>(tab: T | undefined): T | 'syllabus' | undefined {
@@ -37,7 +37,7 @@ export function useSubjectFileDrawerState(
   );
   const [activeTab, setActiveTab] = useState<
     'files' | 'stats' | 'syllabus' | 'classmates' | 'zaznamnik'
-  >(requestedTab ?? (isExam || !isEnrolled ? FIRST_TAB_WITHOUT_FILES : 'files'));
+  >(requestedTab ?? (isExam || !isEnrolled ? firstTabWithoutFiles() : 'files'));
 
   useEffect(() => {
     if (requestedTab) queueMicrotask(() => setActiveTab(requestedTab));
@@ -52,7 +52,7 @@ export function useSubjectFileDrawerState(
   if (openingKey !== tabOpening) {
     setTabOpening(openingKey);
     if (openingKey)
-      setActiveTab(requestedTab ?? (isExam || !isEnrolled ? FIRST_TAB_WITHOUT_FILES : 'files'));
+      setActiveTab(requestedTab ?? (isExam || !isEnrolled ? firstTabWithoutFiles() : 'files'));
   }
 
   useMarkZaznamnikSeen(lesson?.courseCode, activeTab, isOpen);
@@ -90,7 +90,7 @@ export function useSubjectFileDrawerState(
         const isExamNow = 'isExam' in lesson ? lesson.isExam : false;
         const isEnrolledNow = !!(lesson.courseCode && getSubject(lesson.courseCode)?.subjectId);
         queueMicrotask(() =>
-          setActiveTab(isExamNow || !isEnrolledNow ? FIRST_TAB_WITHOUT_FILES : 'files')
+          setActiveTab(isExamNow || !isEnrolledNow ? firstTabWithoutFiles() : 'files')
         );
       }
       fileRefs.current.clear();
