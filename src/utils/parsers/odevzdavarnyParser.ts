@@ -7,9 +7,12 @@
 //
 // Verified against real pages for three periods (fixtures in
 // src/api/__tests__/fixtures/odevzdavarny/). Each table has its own layout,
-// so the column indices below are per table and load-bearing.
+// so the column indices below are per table and load-bearing. A table with a
+// different column count (InSIS VŠE adds "Odkdy") is read by its header text
+// instead, in odevzdavarnyHeaders.ts.
 
 import { instructionsFromOnclick } from './boxInstructions';
+import { layoutFromHeaders } from './odevzdavarnyHeaders';
 
 export type OdevzdavarnaSection = 'open' | 'submitted' | 'closed';
 
@@ -34,7 +37,7 @@ export interface ParsedOdevzdavarna {
   instructions?: string;
 }
 
-interface Layout {
+export interface Layout {
   cells: number;
   deadline: number;
   status: number | null;
@@ -44,6 +47,8 @@ interface Layout {
   link: number;
   /** The "Pokyny" icon. */
   instructions: number;
+  /** Only on a header-derived layout (odevzdavarnyHeaders.ts); MENDELU's is the regex in parseRow. */
+  courseCode?: RegExp;
 }
 
 // Header row, cz/en (verified 2026-10-03):
@@ -94,11 +99,10 @@ function absolute(href: string): string {
   return `https://is.mendelu.cz/auth/student/${href}`;
 }
 
-function parseRow(cols: HTMLCollectionOf<Element>, section: OdevzdavarnaSection) {
-  const L = LAYOUTS[section];
+function parseRow(cols: HTMLCollectionOf<Element>, section: OdevzdavarnaSection, L: Layout = LAYOUTS[section]) {
   const courseLink = cols[0]!.getElementsByTagName('a')[0];
   const rawCourse = text(courseLink) || text(cols[0]);
-  const codeMatch = rawCourse.match(/^([A-Z]{2,4}-[A-Z0-9]+) /);
+  const codeMatch = rawCourse.match(L.courseCode ?? /^([A-Z]{2,4}-[A-Z0-9]+) /);
   const courseId = courseLink?.getAttribute('href')?.match(/predmet=(\d+)/)?.[1] ?? '';
   const icon = cols[2]!.querySelector('[data-sysid], img[sysid]');
   const statusSysid = L.status === null ? '' : (cols[L.status]!.querySelector('[data-sysid]')?.getAttribute('data-sysid') ?? '');
@@ -133,7 +137,7 @@ function parseRow(cols: HTMLCollectionOf<Element>, section: OdevzdavarnaSection)
  *
  * `null` means "this is not the page we expected" — no section marker at all
  * (a login or error page, which IS also serves as 200), or a table whose header
- * no longer has the known number of columns. Callers keep their cache on null;
+ * is neither MENDELU's column count nor a set of labels we know. Callers keep their cache on null;
  * only a real, recognised page may say "no boxes".
  */
 export function parseOdevzdavarnyPage(
@@ -154,14 +158,17 @@ export function parseOdevzdavarnyPage(
     if (!table) continue;
 
     const trs = table.getElementsByTagName('tr');
-    const headerCells = trs[0]?.getElementsByTagName('th').length ?? 0;
-    if (headerCells !== LAYOUTS[section].cells) return null;
+    const ths = Array.from(trs[0]?.getElementsByTagName('th') ?? []);
+    // MENDELU's layout when the count is MENDELU's; otherwise the headers decide (VŠE).
+    const layout =
+      ths.length === LAYOUTS[section].cells ? LAYOUTS[section] : layoutFromHeaders(ths.map(text), section, lang);
+    if (!layout) return null;
 
     for (let i = 1; i < trs.length; i++) {
       const cols = trs[i]!.getElementsByTagName('td');
       // The "Nenalezena žádná vyhovující data" row is one spanning cell.
-      if (cols.length !== LAYOUTS[section].cells) continue;
-      const row = parseRow(cols, section);
+      if (cols.length !== layout.cells) continue;
+      const row = parseRow(cols, section, layout);
       if (row.courseName && row.name) rows.push(row);
     }
   }
