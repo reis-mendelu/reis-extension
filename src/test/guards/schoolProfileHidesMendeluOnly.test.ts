@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ALL_FEATURES, SCHOOL_PROFILES, type Feature } from '../../utils/schoolProfiles';
@@ -66,6 +66,24 @@ describe('school profiles in the build', () => {
         features.filter((f) => f === feature).length
       );
     }
+  });
+
+  // GATES is the whole list: a new `currentSchool.has(` anywhere else must be added
+  // there, so this guard checks it too. MainItems and school.ts are covered below.
+  it('lists every file that gates on currentSchool.has', () => {
+    const covered = new Set([
+      ...Object.keys(GATES),
+      'components/Menu/MainItems.tsx',
+      'utils/school.ts',
+    ]);
+    const root = resolve(process.cwd(), 'src');
+    const unlisted = (readdirSync(root, { recursive: true }) as string[])
+      .filter(
+        (f) => /\.tsx?$/.test(f) && !/(^|\/)(__tests__|test)\//.test(f) && !/\.test\.tsx?$/.test(f)
+      )
+      .filter((f) => read(f).includes('currentSchool.has('))
+      .filter((f) => !covered.has(f));
+    expect(unlisted).toEqual([]);
   });
 
   it('components/Menu/MainItems.tsx drops each menu entry its feature gates', () => {

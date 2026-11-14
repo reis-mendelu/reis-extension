@@ -23,7 +23,9 @@ describe('isHostSwap', () => {
     expect(defines(m)?.['import.meta.env.VITE_REIS_SCHOOL']).toBe('"mendelu"');
     expect(transform(m, "'is.mendelu.cz'; 'https://zvbpgkmnrqyprtkyxkwn.supabase.co'")).toBeNull();
     // Feature checks stay runtime calls: a MENDELU build's code is never rewritten.
-    expect(transform(m, "currentSchool.has('campusMap') && x")).toBeNull();
+    expect(
+      transform(m, "currentSchool.has('campusMap') && fetch('https://is.mendelu.cz/x')")
+    ).toBeNull();
   });
 
   it('takes the host from the profile table and cuts Supabase off', async () => {
@@ -42,6 +44,10 @@ describe('isHostSwap', () => {
     const m = await load({ REIS_SCHOOL: 'vse' });
     expect(m.IS_HOST).toBe('insis.vse.cz');
     expect(defines(m)?.['import.meta.env.VITE_REIS_SCHOOL']).toBe('"vse"');
+    // A swapped file keeps its feature checks as runtime calls; only the host changes.
+    expect(
+      transform(m, "currentSchool.has('campusMap') && fetch('https://is.mendelu.cz/x')")?.code
+    ).toBe("currentSchool.has('campusMap') && fetch('https://insis.vse.cz/x')");
   });
 
   it('rewrites modules through the plugin itself', async () => {
