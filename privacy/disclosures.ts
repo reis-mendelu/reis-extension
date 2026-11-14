@@ -48,7 +48,7 @@ const INSTALL_ID_APPLE: AppleType = {
 export const FLOWS: Flow[] = [
   {
     id: 'daily_count',
-    what: 'One row per install per day: random install id, faculty, base study-programme code, platform and app version labels.',
+    what: 'One row per install per day: random install id, school, faculty, base study-programme code, platform and app version labels.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/feedback.ts'],
@@ -57,7 +57,7 @@ export const FLOWS: Flow[] = [
       [
         'Daily count',
         'once a day',
-        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not.',
+        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus school (e.g. MENDELU), faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not.',
       ],
     ],
     stores: {
@@ -69,7 +69,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report',
-    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport, and the platform and OS version it was sent from (no device model).',
+    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport, the platform and OS version it was sent from (no device model), and the school whose IS it was sent from.',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
@@ -78,7 +78,7 @@ export const FLOWS: Flow[] = [
       [
         'Feedback',
         'you press send',
-        'your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model)',
+        'your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model), and the school whose IS you sent it from (e.g. MENDELU)',
       ],
     ],
     stores: {
@@ -165,7 +165,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Ten feature counters on the random install id, one whitelisted label each: four feature uses and six screens opened.',
+    what: 'Ten feature counters on the random install id and the school label, one whitelisted label each: four feature uses and six screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -174,27 +174,27 @@ export const FLOWS: Flow[] = [
       [
         'Map used for 3 seconds',
         'at most once a day, after three seconds on the map',
-        'the random install identifier and the fixed `map_dwell_3s` label',
+        'the random install identifier, the school and the fixed `map_dwell_3s` label',
       ],
       [
         'eduroam network configured',
         'the app itself saves the eduroam network (phone)',
-        'the random install identifier and the fixed `eduroam_wifi_configured` label',
+        'the random install identifier, the school and the fixed `eduroam_wifi_configured` label',
       ],
       [
         'eduroam profile handed over',
         'a profile is prepared for you to install (Mac, Windows)',
-        'the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
+        'the random install identifier, the school and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
       ],
       [
         'Week view used',
         'when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day',
-        'the random install identifier and the fixed `calendar_week_view` label',
+        'the random install identifier, the school and the fixed `calendar_week_view` label',
       ],
       [
         'Screen opened',
         'when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session (again only if a send fails); stored as one row per install per day',
-        'the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed',
+        'the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed',
       ],
     ],
     stores: {

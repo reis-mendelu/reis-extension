@@ -349,19 +349,22 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   plus faculty, base programme code, platform and app version as labels; nothing else derived
+   plus school, faculty, base programme code, platform and app version as labels; nothing else derived
    from the student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
    across days, and the same UUID is on the survey and the feature counters (4), so those rows
-   join per install to faculty, platform, programme and app version. The policy says so; none of it carries
-   a name, student number or IS account.
+   join per install to school, faculty, platform, programme and app version. The policy says so; none of it carries
+   a name, student number or IS account. The school (`mendelu`/`vse`/`czu`, November 2026) is a
+   column with default `'mendelu'`, so released builds' v1 calls land as MENDELU;
+   `track_daily_usage_v2` takes it explicitly and stores faculty and programme for MENDELU only.
+   Every admin/stats function counts `school = 'mendelu'` only.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
-   with screen name, app version, browser and viewport.
+   with screen name, app version, browser, viewport and the school (`submit_suggestion_v4`).
 3. **Society event view/click counters** — a post row id and nothing else. Views are
    counted once per device (`viewedIds`); clicks too, since PR #566: the device remembers
    in IndexedDB which ids it already counted (`services/spolky/countedOpens.ts`) and
    nothing about that is sent.
-4. **Feature counters** (`src/api/featureUsage.ts`) — the same random install UUID plus
-   one label from `FEATURE_SIGNALS`, a database-enforced whitelist pinned by
+4. **Feature counters** (`src/api/featureUsage.ts`) — the same random install UUID, the
+   school (`track_feature_usage_v2`) and one label from `FEATURE_SIGNALS`, a database-enforced whitelist pinned by
    `featureSignalWhitelist.test.ts`. Counts installs, not people.
 5. **Map views per event** (same file) — a society event's row id and *no* identifier at all,
    rolled up per event per day in `event_map_views`, kept clear of the Novinky `view_count`.
