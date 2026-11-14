@@ -8,7 +8,7 @@ import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getWeekForDate } from '../api/teachingWeek';
 import { isTrustedHostOrigin } from '../utils/trustedOrigin';
-import { IS_OTHER_SCHOOL } from '../utils/otherSchool';
+import { currentSchool } from '../utils/school';
 import { HalloweenHeaderBats } from './halloween/HalloweenHeaderBats';
 
 interface AppHeaderProps {
@@ -135,8 +135,8 @@ export function AppHeader({
           {currentView === 'calendar' ? (
             <div className="flex min-w-0 flex-1 items-center">
               {/* Vývěska and the bundled MENDELU partners: not for another school. */}
-              {!IS_OTHER_SCHOOL && <BulletinBanner inline />}
-              {!IS_OTHER_SCHOOL && <InternshipsMenu />}
+              {currentSchool.has('bulletin') && <BulletinBanner inline />}
+              {currentSchool.has('internships') && <InternshipsMenu />}
             </div>
           ) : (
             <div className="flex-1" />
@@ -155,7 +155,7 @@ export function AppHeader({
 
             <div className="flex items-center gap-1">
               {/* Novinky come from Supabase, which another school's prototype has none of. */}
-              {!IS_OTHER_SCHOOL && (
+              {currentSchool.has('novinky') && (
                 <NotificationFeed
                   onShowMap={onShowMap}
                   onOpenSubject={(a) =>

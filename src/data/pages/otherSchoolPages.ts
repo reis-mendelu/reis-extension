@@ -1,8 +1,8 @@
 import type { PageCategory, PageItem } from './types';
 
 /**
- * The Starý IS directory for another UIS school (prototype builds only, see
- * `utils/otherSchool.ts`). The list is MENDELU's; most of it is plain UIS and
+ * The Starý IS directory for another UIS school (every school but MENDELU in
+ * `utils/schoolProfiles.ts`, chosen in `data/pages/index.ts`). The list is MENDELU's; most of it is plain UIS and
  * works anywhere, so it is trimmed rather than replaced:
  *
  * - pages only MENDELU has go: its dorms (SKM), Microsoft Imagine, its network

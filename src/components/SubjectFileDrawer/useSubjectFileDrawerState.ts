@@ -11,15 +11,17 @@ import { useDragSelection } from './useDragSelection';
 import { useMarkZaznamnikSeen } from '../../hooks/ui/useMarkZaznamnikSeen';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
-import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
+import { currentSchool } from '../../utils/school';
 
 // An exam or a subject you are not enrolled in opens on success rates, which
 // another school's build does not have: it opens on the syllabus instead.
-const FIRST_TAB_WITHOUT_FILES = IS_OTHER_SCHOOL ? ('syllabus' as const) : ('stats' as const);
+const FIRST_TAB_WITHOUT_FILES = currentSchool.has('successRates')
+  ? ('stats' as const)
+  : ('syllabus' as const);
 
 /** A caller asking for success rates gets the syllabus where that tab does not exist. */
 export function tabForThisSchool<T extends string>(tab: T | undefined): T | 'syllabus' | undefined {
-  return IS_OTHER_SCHOOL && tab === 'stats' ? 'syllabus' : tab;
+  return !currentSchool.has('successRates') && tab === 'stats' ? 'syllabus' : tab;
 }
 
 export function useSubjectFileDrawerState(
