@@ -2,7 +2,12 @@ import { useEffect, useRef } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { MapSelection } from '../../../../types/campusMap';
 
-const CARD_KINDS = new Set<MapSelection['kind']>(['event', 'gardenPlace', 'societyPin']);
+const CARD_KINDS = new Set<MapSelection['kind']>([
+  'event',
+  'gardenPlace',
+  'societyPin',
+  'sportPlace',
+]);
 const ROOM_KINDS = new Set<MapSelection['kind']>(['room', 'roomRef']);
 
 /**

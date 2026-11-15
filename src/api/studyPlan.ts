@@ -3,6 +3,9 @@ import { parseRequiredInt, parseOptionalInt, ParserError } from '../utils/parser
 import { logError } from '../utils/reportError';
 import { STUDY_PLAN_SORT_PARAM, repeatedSemesterTitles } from './studyPlanSortMode';
 import { boldSpans, rowHeadingText } from './studyPlanHeading';
+import { hasStudiedOnlyView, labelledGroupHeading } from './studyPlanGroupLayout';
+import { studyPlanPageShape, studyPlanSubjectCount } from './studyPlanPageShape';
+import { classifyIsPage, notUnderstood } from './isPage';
 import type {
   StudyPlan,
   DualLanguageStudyPlan,
@@ -81,12 +84,22 @@ export async function fetchDualLanguageStudyPlan(
     const [czHtml, enHtml] = await Promise.all([czRes.text(), enRes.text()]);
     const parser = new DOMParser();
 
-    const czPlan = parseStudyPlanDOM(parser.parseFromString(czHtml, 'text/html'), 'cz');
-    const enPlan = parseStudyPlanDOM(parser.parseFromString(enHtml, 'text/html'), 'en');
-    for (const [lang, plan] of [
-      ['cz', czPlan],
-      ['en', enPlan],
+    const czDoc = parser.parseFromString(czHtml, 'text/html');
+    const enDoc = parser.parseFromString(enHtml, 'text/html');
+    const czPlan = parseStudyPlanDOM(czDoc, 'cz');
+    const enPlan = parseStudyPlanDOM(enDoc, 'en');
+    for (const [lang, plan, doc, html] of [
+      ['cz', czPlan, czDoc, czHtml],
+      ['en', enPlan, enDoc, enHtml],
     ] as const) {
+      // A plan with `blocks: []` used to be stored over the student's plan
+      // when IS reworded its headings. Either language not understood is a
+      // failed read: null keeps the cache, as a failed fetch does.
+      const shape = studyPlanPageShape(doc, html, LANG[lang].noSubjectsMessage, plan);
+      if (classifyIsPage(plan, studyPlanSubjectCount(plan), shape).kind === 'unrecognised') {
+        logError('Api.fetchDualLanguageStudyPlan', notUnderstood(`study plan (${lang})`, shape));
+        return null;
+      }
       const repeated = repeatedSemesterTitles(plan);
       if (repeated.length > 0) {
         logError('Api.fetchDualLanguageStudyPlan', new Error('Study plan repeats semesters'), {
@@ -190,6 +203,8 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
 
   const table = doc.getElementById('tmtab_1') || doc;
   const rows = Array.from(table.querySelectorAll('tr'));
+  // InSIS (VŠE) only: show what IS shows on load, not the group catalogue.
+  const studiedOnly = hasStudiedOnlyView(doc);
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -207,9 +222,12 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
       continue;
     }
 
-    if (boldText.startsWith(L.groupPrefix)) {
-      const rawText = (row.textContent || '').trim();
-      let name = boldText;
+    const labelled = boldText.startsWith(L.groupPrefix)
+      ? null
+      : labelledGroupHeading(row, L.groupPrefix);
+    if (boldText.startsWith(L.groupPrefix) || labelled) {
+      const rawText = labelled ? labelled.heading : (row.textContent || '').trim();
+      let name = labelled ? labelled.heading : boldText;
       let statusDesc = '';
 
       if (rawText.includes('-')) {
@@ -217,7 +235,7 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
         name = parts[0].trim();
         statusDesc = parts.slice(1).join('-').trim();
       } else {
-        statusDesc = rawText;
+        statusDesc = labelled ? '' : rawText;
       }
 
       const constraint = parseGroupConstraint(name);
@@ -225,6 +243,7 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
         name,
         statusDescription: statusDesc,
         subjects: [],
+        ...(labelled ? { label: labelled.label } : {}),
         ...(constraint.minCount !== undefined ? { minCount: constraint.minCount } : {}),
         ...(constraint.minCredits !== undefined ? { minCredits: constraint.minCredits } : {}),
       };
@@ -233,6 +252,8 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
       }
       continue;
     }
+
+    if (studiedOnly && row.classList.contains('predmety_vse')) continue;
 
     if (row.classList.contains('predmety_vse') || row.classList.contains('uis-hl-table')) {
       if ((row.textContent || '').includes(L.noSubjectsMessage)) continue;

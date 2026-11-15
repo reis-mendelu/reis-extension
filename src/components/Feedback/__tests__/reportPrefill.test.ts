@@ -14,7 +14,8 @@ describe('reportToastOptions', () => {
   });
 
   it('labels the action and opens the form with our own title', () => {
-    const { action } = reportToastOptions(t, 'examActionFailed');
+    // Always present in a real build; only another school's prototype drops it.
+    const action = reportToastOptions(t, 'examActionFailed').action!;
     expect(action.label).toBe('Report');
     action.onClick();
     expect(useAppStore.getState().reportPrefill).toEqual({ title: 'Exams: action failed' });

@@ -9,6 +9,7 @@ import { usePdfReadingPosition } from './usePdfReadingPosition';
 import { useAppStore } from '../../store/useAppStore';
 import type { SubjectPdfInput } from '../../mobile/pdfInkFiles';
 import { isPdfInkAvailable, nativePdfInkDeps } from '../../mobile/pdfInkNative';
+import { storeReviewAfterReaderClosed } from '../../mobile/storeReview';
 
 export interface PdfPreviewFile {
   link: string;
@@ -87,6 +88,18 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     };
   }, []);
 
+  // When pdf.js finished loading the file in the web viewer, for the
+  // store-rating dwell; null while nothing readable is on screen. Reported once,
+  // by whichever comes first: the viewer's close, or the sheet going away
+  // (Android Back pops the whole subject sheet without closePreview).
+  const readingSince = useRef<number | null>(null);
+  const endReading = useCallback(() => {
+    const since = readingSince.current;
+    readingSince.current = null;
+    if (since !== null) void storeReviewAfterReaderClosed(Date.now() - since, 1);
+  }, []);
+  useEffect(() => endReading, [endReading]);
+
   const inkStrings = usePdfInkStrings();
   // The web viewer's page. The iPad reader keeps its own, in the PDF cache index.
   const { loadPosition, viewerPosition } = usePdfReadingPosition(courseCode);
@@ -115,7 +128,11 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
       // The reader has closed by now (open resolves on Close) and the index has
       // the new lastOpenedAt: the calendar's strip should show this file.
       void useAppStore.getState().refreshRecentPdfs();
-      if (result.kind === 'shown') return { kind: 'handled' };
+      if (result.kind === 'shown') {
+        // The store-rating file moment: the reader is gone, reIS is back.
+        void storeReviewAfterReaderClosed(result.openMs, result.filesShown);
+        return { kind: 'handled' };
+      }
       if (result.kind === 'unreadable') {
         return { kind: 'viewer', blobUrl: URL.createObjectURL(result.blob) };
       }
@@ -165,8 +182,15 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   );
 
   const closePreview = useCallback(() => {
+    // The store-rating file moment, for the pdf.js viewer.
+    endReading();
     setPreviewUrl(null);
     setPreviewFile(null);
+  }, [endReading]);
+
+  /** The viewer's pdf.js loaded the file: the dwell clock starts now. */
+  const onPreviewLoaded = useCallback(() => {
+    readingSince.current = Date.now();
   }, []);
 
   return {
@@ -178,6 +202,7 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     isPreviewLoading: openingLink !== null,
     viewPdf,
     closePreview,
+    onPreviewLoaded,
     openFile,
     downloadSingle,
     isDownloading,

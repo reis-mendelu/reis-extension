@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: November 9, 2026**
+**Last Updated: November 15, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -57,7 +57,7 @@ Firefox asks you directly about everything above. Nothing is **required** to use
 
 ## Third-Party Access
 
-reIS contacts the following services. **IS Mendelu is the only one that receives your academic data**, and only because it is the university's own system; WebISKAM, below, is the university's too, and receives only the sign-in that lets the app read your ISIC balance, plus, for a top-up, the amount and the payment method you chose. No other service on this list receives it, under any feature. The two that once did — Anthropic, for the Erasmus syllabus comparison, and Microsoft Bookings, for library study-room booking — were removed in September 2026 along with both features. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
+reIS contacts the following services. **IS Mendelu is the only one that receives your academic data**, and only because it is the university's own system; WebISKAM, below, is the university's too, and receives only the sign-in that lets the app read your ISIC balance and open dorm payments, plus, for a top-up, the amount and the payment method you chose, and, when you pay a dorm payment, the confirmation you tap on WebISKAM's own page. No other service on this list receives it, under any feature. The two that once did — Anthropic, for the Erasmus syllabus comparison, and Microsoft Bookings, for library study-room booking — were removed in September 2026 along with both features. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
@@ -69,10 +69,10 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 **Only when you use the relevant feature:**
 6. **Erasmus HEI directory** (`hei.api.uni-foundation.eu`) — a public list of partner universities. Nothing about you is sent.
 7. **Photon** (`photon.komoot.io`) — venue search, used only by reIS staff and society logins in the admin console when creating an event.
-8. **WebISKAM** (`webiskam.mendelu.cz`) and **MENDELU sign-in** (`alibaba.mendelu.cz`) — mobile app only (Android, iPhone, iPad), when you ask to see your ISIC balance or top it up. You sign in on MENDELU's own page; your password goes straight to MENDELU and reIS never sees it. The app reads the Hlavní konto balance and, for a top-up, sends WebISKAM the amount you typed and whether you chose card or Google Pay, so it can start the GoPay payment as you. reIS keeps the sign-in cookies encrypted on your device (Android Keystore; iOS Keychain); while you are signed in the device's own web-cookie store holds them too, like any browser. Signing out deletes both. The balance is shown and never stored.
+8. **WebISKAM** (`webiskam.mendelu.cz`) and **MENDELU sign-in** (`alibaba.mendelu.cz`) — mobile app only (Android, iPhone, iPad), when you ask to see your ISIC balance, top it up, or pay a dorm payment. You sign in on MENDELU's own page; your password goes straight to MENDELU and reIS never sees it. The app reads the Hlavní konto balance and your open dorm payments (pohledávky), and, for a top-up, sends WebISKAM the amount you typed and whether you chose card or Google Pay, so it can start the GoPay payment as you. reIS keeps the sign-in cookies encrypted on your device (Android Keystore; iOS Keychain); while you are signed in the device's own web-cookie store holds them too, like any browser. Signing out deletes both. The balance and the payments are shown and never stored. To pay one, the app opens WebISKAM's own page with its pay dialog up; you confirm the payment there, and the app sends no payment itself.
 9. **GoPay** (`checkout.gopay.com` and `gate.gopay.com`) — the payment page for a top-up opens in your device's browser view. Your card or Google Pay details go to GoPay; reIS never sees them.
 
-**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles, partner programme websites under Stáže, the emoji licence) are handed to your browser or the relevant app. reIS makes no background request to them.
+**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles, partner programme websites under Stáže, the emoji licence, the extension's "Ohodnotit reIS" link to its Chrome Web Store page or its Firefox Add-ons page at addons.mozilla.org) are handed to your browser or the relevant app. reIS makes no background request to them.
 
 ## User Control
 You have full control over your data:

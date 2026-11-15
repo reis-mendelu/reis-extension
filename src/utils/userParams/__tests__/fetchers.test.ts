@@ -6,7 +6,7 @@ vi.mock('../../../api/client', () => ({
   BASE_URL: 'https://is.mendelu.cz',
 }));
 
-const { fetchUserBaseIds } = await import('../fetchers');
+const { fetchUserBaseIds, fetchUserNetId } = await import('../fetchers');
 
 /**
  * Both fixtures are the real `studium.pl` markup, with the identity values
@@ -126,5 +126,67 @@ describe('fetchUserBaseIds', () => {
     expect(params).toMatchObject({ studium: '149707', obdobi: '812' });
     expect(params?.studentId).toBe('120344');
     expect(params?.fullName).toBe('Jan Novák');
+  });
+
+  // IS ČZU (same UIS, older header) greets in a div, and the name is followed
+  // by `</div>`, not by `&nbsp;`. Markup from a real is.czu.cz studium.pl,
+  // October 2026, identity replaced.
+  it('reads the name from the IS ČZU header', async () => {
+    respond(`
+<html><body>
+<a href="/auth/student/studium.pl?studium=358180;obdobi=1327;lang=cz">x</a>
+<div id="menu_top"> <div id="log"> Přihlášen:&nbsp;Jan Novák </div> <div id="ema"><a href="/auth/posta/">0 zpráv</a></div></div>
+${ID_ROW('Identifikační číslo uživatele: ', '120344')}
+</body></html>`);
+    const params = await fetchUserBaseIds();
+    expect(params?.studentId).toBe('120344');
+    expect(params?.fullName).toBe('Jan Novák');
+  });
+
+  // InSIS VŠE puts the greeting in <strong> inside span#logs. Markup from a
+  // real insis.vse.cz studium.pl, November 2026, identity replaced.
+  it('reads the name from the InSIS VŠE header', async () => {
+    respond(`
+<html><body>
+<a href="/auth/student/studium.pl?studium=358180;obdobi=1278;lang=cz">x</a>
+<span id="logs"> <strong> Přihlášen:</strong>&nbsp;Jan Novák</span> <ul> <li><a href="https://outlook.com/vse.cz">Office365</a></li></ul>
+${ID_ROW('Identifikační číslo uživatele: ', '120344')}
+</body></html>`);
+    const params = await fetchUserBaseIds();
+    expect(params?.fullName).toBe('Jan Novák');
+  });
+
+  // The UIS redesign live on is.mendelu.cz since November 2026 drops the
+  // `Přihlášen:` greeting altogether. The name now sits in the menu popup's
+  // `.user-info` link (and again, bare, in the header's `.info`). Markup from a
+  // real studium.pl, 2026-11-15, svg icons cut and identity replaced. Without
+  // this the app showed the student's number where the name belongs.
+  it.each([
+    ['cz', 'Identifikační číslo uživatele: ', 'PEF B-OI-ZBOI prez [sem 3, roč 2]'],
+    ['en', "User's identification number: ", 'FBE B-OI-ZBOI pres [term 3, year 2]'],
+  ])('reads the name from the redesigned %s header', async (lang, idLabel, ident) => {
+    respond(`
+<html><body data-body> <div class="wholepage"><div id="menu-popup" data-active="false" data-page="1"><div class="menu-pages"><div class="items" data-page="1"><div class="user-info"><a target="_blank" href="/auth/lide/clovek.pl?id=120344;lang=${lang}">Jan Novák</a><div title="${ident}" class="ident">${ident}</div></div></div></div></div>
+<div id="header"><div class="left">Mendelova univerzita v Brně</div><div class="right"><div class="info"><div >Leopold</div><div title="">15. 11. 2026&nbsp;21:23</div><div class="dvdr"></div><div >Jan Novák</div></div><div id="pfp"><img alt="" src="/auth/lide/foto.pl?id=120344;lang=${lang}"/></div></div></div>
+<a href="https://is.mendelu.cz/auth/student/studium.pl?studium=150001;obdobi=829;lang=sk" title="SK">sk</a>
+${ID_ROW(idLabel, '120344')}
+</body></html>`);
+    const params = await fetchUserBaseIds();
+    expect(params).toMatchObject({ studium: '150001', obdobi: '829' });
+    expect(params?.studentId).toBe('120344');
+    expect(params?.fullName).toBe('Jan Novák');
+  });
+});
+
+// The redesign writes `<b >`. Shape from a real certifikat.pl, 2026-11-15,
+// username replaced. Without it the eduroam screen had no network username.
+describe('fetchUserNetId', () => {
+  it.each([
+    'Můžete si vygenerovat nový certifikát pro uživatele <b >xnovak1</b> s&nbsp;délkou platnosti 366 dní',
+    'You can generate a&nbsp;new certificate for user <b >xnovak1</b> valid for 366 days',
+    'Můžete si vygenerovat nový certifikát pro uživatele <b>xnovak1</b> s&nbsp;délkou',
+  ])('reads the username from %s', async (html) => {
+    respond(`<html><body>${html}</body></html>`);
+    expect(await fetchUserNetId()).toEqual({ username: 'xnovak1' });
   });
 });

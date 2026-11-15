@@ -37,11 +37,16 @@
     "invalid": "Zadej celé číslo od 1 do 15 000 Kč",
     "failed": "Platbu se nepodařilo zahájit",
     "added": "Dobito +{amount}",
-    "unseen": "Zůstatek se zatím nezměnil. Pokud jsi zaplatil(a), brzy se aktualizuje."
+    "unseen": "Zůstatek se zatím nezměnil. Pokud jsi zaplatil(a), brzy se aktualizuje.",
+    "claimDue": "splatné do {date}",
+    "payClaim": "Zaplatit",
+    "claimShort": "Na kontě chybí {amount}. Nejdřív dobij, pak zaplať.",
+    "claimPaid": "Zaplaceno {amount}"
   },
   "settings": {
     "title": "Nastavení",
     "reportBug": "Nahlásit chybu / Nápad",
+    "rateReis": "Ohodnotit reIS",
     "darkMode": "Tmavý režim",
     "language": "Jazyk",
     "czech": "Čeština",
@@ -105,6 +110,8 @@
     "today": "Dnes",
     "back": "Zpět",
     "close": "Zavřít",
+    "enlargePhoto": "Zvětšit fotku",
+    "photo": "Fotka",
     "cancel": "Zrušit",
     "confirm": "Potvrdit",
     "save": "Uložit",
@@ -996,7 +1003,6 @@
     "moreOnInstagram": "Více na Instagramu",
     "venueOpen": "Otevřeno",
     "venueClosed": "Zavřeno",
-    "venueClosedShort": "zavřeno",
     "venueUntilToday": "dnes do {time}",
     "venueOpensToday": "otevírá v {time}",
     "venueOpensTomorrow": "otevírá zítra v {time}",
@@ -1137,6 +1143,28 @@
       "title": "Mapa potřebuje jedno povolení",
       "text": "OpenStreetMap blokuje podklad mapy, když neví, kdo se ptá. Povolte reIS, ať se mu může představit.",
       "allow": "Povolit"
+    },
+    "sport": {
+      "open": "Otevřít na Sporteře",
+      "note": "Fotky, hodnocení a spoluhráči jsou na sportera.cz.",
+      "near": "{metres} m od budovy {building}",
+      "nonstop": "Nonstop",
+      "surface": {
+        "tartan": "Tartan",
+        "gravel": "Kačírek"
+      },
+      "hoopsOne": "{count} koš",
+      "hoopsFew": "{count} koše",
+      "hoopsMany": "{count} košů",
+      "tablesOne": "{count} stůl",
+      "tablesFew": "{count} stoly",
+      "tablesMany": "{count} stolů",
+      "kind": {
+        "basketball": "Basketbal",
+        "football": "Fotbal",
+        "workout": "Workout",
+        "pingpong": "Ping-pong"
+      }
     }
   },
   "admin": {

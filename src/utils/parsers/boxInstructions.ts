@@ -46,7 +46,8 @@ export function instructionsFromOnclick(
   if (arg === undefined) return undefined;
   let html = unescapeJs(arg);
 
-  const heading = html.match(/^\s*<b>([\s\S]*?)<\/b>/i);
+  // `<b\s*>`: the UIS redesign (November 2026) writes `<b >`, read off a real page.
+  const heading = html.match(/^\s*<b\s*>([\s\S]*?)<\/b>/i);
   if (heading && oneLine(htmlToText(heading[1] ?? '')) === `${oneLine(boxName)}:`) {
     html = html.slice(heading[0].length);
   }

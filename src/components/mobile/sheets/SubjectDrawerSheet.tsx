@@ -98,6 +98,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
     previewPosition,
     viewPdf,
     closePreview,
+    onPreviewLoaded,
     openFile,
     downloadSingle,
     openingLink,
@@ -222,7 +223,12 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
         />
       </SubjectDrawerScroller>
       {previewUrl && (
-        <SubjectPdfOverlay url={previewUrl} position={previewPosition} onClose={closePreview} />
+        <SubjectPdfOverlay
+          url={previewUrl}
+          position={previewPosition}
+          onClose={closePreview}
+          onLoaded={onPreviewLoaded}
+        />
       )}
     </Sheet>
   );

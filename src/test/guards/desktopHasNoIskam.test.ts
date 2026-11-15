@@ -34,6 +34,17 @@ const MOBILE_ONLY = [
   'src/mobile/iskam/iskamStore.ts',
   'src/mobile/iskam/clearIskam.ts',
   'src/mobile/iskam/iskamTopUp.ts',
+  // Open claims (pohledávky) under the balance, and WebISKAM's own pay page
+  // for one (2026-11-15). reIS never pays: src/test/guards/iskamNeverPays.test.ts.
+  'src/mobile/iskam/claimsParser.ts',
+  'src/mobile/iskam/iskamClaims.ts',
+  'src/mobile/iskam/payScript.ts',
+  'src/mobile/iskam/iskamPayClaim.ts',
+  'src/mobile/iskam/iskamDevState.ts',
+  'src/mobile/iskam/iskamClaimFlow.ts',
+  'src/mobile/iskam/iskamTypes.ts',
+  'src/components/mobile/sheets/IskamClaims.tsx',
+  'src/components/mobile/sheets/formatKc.ts',
   'src/components/mobile/sheets/IskamBalanceRow.tsx',
   'src/components/mobile/sheets/IskamTopUpForm.tsx',
   'src/components/mobile/sheets/MenuSheet.tsx',
@@ -47,6 +58,7 @@ const MOBILE_ONLY = [
 /** Files outside src/mobile/iskam that may reach it, each on the phone tree. */
 const ALLOWED_IMPORTERS = new Set([
   'src/components/mobile/sheets/IskamBalanceRow.tsx',
+  'src/components/mobile/sheets/IskamClaims.tsx',
   'src/components/mobile/sheets/IskamTopUpForm.tsx',
   'src/components/mobile/sheets/MenuSheet.tsx',
   'src/components/mobile/screens/calendar/MenuCard.tsx',

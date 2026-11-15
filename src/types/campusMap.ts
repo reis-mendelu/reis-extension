@@ -188,6 +188,32 @@ export interface Venue {
   source: { url: string; checked: string } | null;
 }
 
+export type Sport = 'basketball' | 'football' | 'workout' | 'pingpong';
+
+/**
+ * A free outdoor sports place near campus, linked to its page on sportera.cz
+ * (Sportera, a Brno map of public sports places). Hand-picked and bundled in
+ * `src/data/map/sportPlaces.json`: reIS shows the pin and links out, and leaves
+ * photos, ratings and finding people to play with to Sportera.
+ */
+export interface SportPlace {
+  id: string;
+  sport: Sport;
+  /** The place's own name, as Sportera lists it — a proper name, not translated. */
+  name: string;
+  /** [lng, lat] */
+  coord: [number, number];
+  /** Its page on sportera.cz. */
+  url: string;
+  /** 'nonstop', or the hours as "8:00–21:00"; null when nobody has said. */
+  hours: string | null;
+  surface: 'tartan' | 'gravel' | null;
+  /** Hoops on a basketball court, tables at a ping-pong place. */
+  count: number | null;
+  /** Straight-line distance to the nearest campus building, rounded to 10 m. */
+  near: { building: string; metres: number };
+}
+
 export interface GardenPlace {
   /** Stable slug, and the stem of the bundled thumb: `public/garden/<id>.webp`. */
   id: string;
@@ -321,5 +347,6 @@ export type MapSelection =
   | { kind: 'placedRoom'; label: string; display: string }
   | { kind: 'gardenPlace'; place: GardenPlace } // one of the botanical garden's places
   | { kind: 'societyPin'; pin: SocietyPin } // a society's logo on the map for a while
+  | { kind: 'sportPlace'; place: SportPlace } // a Sportera court near campus
   // a society event pin
   | { kind: 'event'; event: import('./events').MapEvent };

@@ -1,0 +1,76 @@
+/**
+ * The schools reIS can be built for, all on the same UIS (IS4U) software, and
+ * what each one has. Plain data with no imports and no `import.meta`, so the
+ * build script (scripts/isHostSwap.ts, run in Node) reads the same table the
+ * app does. The app asks `currentSchool` (utils/school.ts), never this table.
+ *
+ * A feature is named for the capability, not for the school that has it, so a
+ * third school that differs from VŠE is one more row, not a new kind of check.
+ * MENDELU has every feature. VŠE and ČZU are prototype builds and today have
+ * the same set: what is not general UIS (audits: research/czu-dump,
+ * research/vse-dump). Why each is MENDELU's own:
+ * - campusMap (the map, room-to-map buttons), erasmus: MENDELU data;
+ * - canteenMenu: skm.mendelu.cz, which the build does not swap;
+ * - successRates, similarSubjects: reis-data, scraped from MENDELU only;
+ * - internships: bundled MENDELU partners, which match any faculty called "PEF";
+ * - facultySearchScope: the workplace ids are MENDELU's;
+ * - bulletin (Vývěska), teamsOutlook: not general enough to keep (Dominik, 2026-11-13);
+ * - novinky, reports, partners, adminConsole, impersonation: Supabase rows,
+ *   which a non-MENDELU build is cut off from;
+ * - eduroam (MENDELU's RADIUS server), welcome (its eduroam set-up),
+ *   studyDocuments, practiceTests: MENDELU only;
+ * - storeRating ("Ohodnotit reIS"): the store listings are MENDELU's reIS.
+ */
+export const ALL_FEATURES = [
+  'campusMap',
+  'erasmus',
+  'canteenMenu',
+  'successRates',
+  'similarSubjects',
+  'internships',
+  'facultySearchScope',
+  'bulletin',
+  'teamsOutlook',
+  'novinky',
+  'reports',
+  'partners',
+  'adminConsole',
+  'impersonation',
+  'eduroam',
+  'welcome',
+  'studyDocuments',
+  'practiceTests',
+  'storeRating',
+] as const;
+
+export type Feature = (typeof ALL_FEATURES)[number];
+
+export type SchoolId = 'mendelu' | 'vse' | 'czu';
+
+export interface SchoolProfile {
+  id: SchoolId;
+  /** The IS host every `is.mendelu.cz` in the bundle and manifest becomes. */
+  host: string;
+  name: string;
+  features: Readonly<Record<Feature, boolean>>;
+}
+
+const everything = Object.fromEntries(ALL_FEATURES.map((f) => [f, true])) as Record<
+  Feature,
+  boolean
+>;
+
+/** General UIS only: every MENDELU-only feature off. */
+const generalUis = Object.fromEntries(ALL_FEATURES.map((f) => [f, false])) as Record<
+  Feature,
+  boolean
+>;
+
+export const SCHOOL_PROFILES: Readonly<Record<SchoolId, SchoolProfile>> = {
+  mendelu: { id: 'mendelu', host: 'is.mendelu.cz', name: 'MENDELU', features: everything },
+  vse: { id: 'vse', host: 'insis.vse.cz', name: 'VŠE', features: generalUis },
+  czu: { id: 'czu', host: 'is.czu.cz', name: 'ČZU', features: generalUis },
+};
+
+export const isSchoolId = (value: string): value is SchoolId =>
+  Object.prototype.hasOwnProperty.call(SCHOOL_PROFILES, value);
