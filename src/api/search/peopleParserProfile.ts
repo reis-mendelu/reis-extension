@@ -1,4 +1,4 @@
-import { personNameElement } from '../personProfile';
+import { personNameElement } from '../personProfileDom';
 import { sanitizeString, validateUrl } from '../../utils/validation/index';
 import type { Person } from './types';
 
