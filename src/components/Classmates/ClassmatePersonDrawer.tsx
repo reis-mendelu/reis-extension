@@ -26,6 +26,12 @@ export function ClassmatePersonDrawer({ classmate, onClose }: ClassmatePersonDra
   // Escape is AdaptiveDrawer's (useEscapeLayer). A window listener of its own
   // here closed this drawer AND the subject drawer under it on one press.
 
+  // However the drawer closes, no photo stays queued for the next time it opens.
+  const close = () => {
+    setZoomedId(null);
+    onClose();
+  };
+
   const profileUrl = classmate
     ? `https://is.mendelu.cz/auth/lide/clovek.pl?id=${classmate.personId};lang=cz`
     : '';
@@ -33,12 +39,12 @@ export function ClassmatePersonDrawer({ classmate, onClose }: ClassmatePersonDra
   return (
     <AdaptiveDrawer
       open={!!classmate}
-      onClose={onClose}
+      onClose={close}
       title={classmate?.name || t('common.close')}
     >
       <button
         type="button"
-        onClick={onClose}
+        onClick={close}
         aria-label={t('common.close')}
         className="btn btn-sm btn-circle btn-ghost absolute right-3 top-3 z-10"
       >

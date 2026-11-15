@@ -56,7 +56,8 @@ export function PersonPhotoLightbox({ src, alt, onClose }: PersonPhotoLightboxPr
       data-testid="person-photo-lightbox"
       role="dialog"
       aria-modal="true"
-      aria-label={alt}
+      // A dialog needs a name; a profile that failed to load leaves alt empty.
+      aria-label={alt || t('common.photo')}
       onClick={close}
       // One control, so Tab has nowhere to go but out, behind the scrim.
       onKeyDown={(e) => e.key === 'Tab' && e.preventDefault()}

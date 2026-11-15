@@ -87,4 +87,9 @@ describe('PersonPhotoLightbox', () => {
     );
     expect(document.activeElement).toBe(opener);
   });
+
+  it('names the dialog even when the name is unknown', () => {
+    render(<PersonPhotoLightbox src={PHOTO} alt="" onClose={vi.fn()} />);
+    expect(screen.getByRole('dialog', { name: 'Fotka' })).toBeInTheDocument();
+  });
 });

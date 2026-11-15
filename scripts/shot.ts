@@ -22,7 +22,7 @@
  */
 
 import { chromium, type Page } from '@playwright/test';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { analyzeProbe, assertShell, type Finding, type ProbeResult } from './lib/uiFindings';
 import { probeSource } from './lib/uiProbe';
@@ -544,12 +544,22 @@ async function run(): Promise<number> {
       await page.addInitScript({
         content: 'globalThis.__name = globalThis.__name || ((f) => f);',
       });
-      for (const path of opts.initScripts) await page.addInitScript({ path });
+      // Wrapped, so a script that throws fails the run below instead of leaving
+      // it to measure a page the script never set up.
+      for (const path of opts.initScripts) {
+        await page.addInitScript({
+          content: `try {\n${readFileSync(path, 'utf8')}\n} catch (e) { (globalThis.__reisInitScriptErrors ??= []).push(${JSON.stringify(path)} + ': ' + e); }`,
+        });
+      }
       const consoleErrors: string[] = [];
       page.on('console', (m) => m.type() === 'error' && consoleErrors.push(m.text()));
 
       // See the note in seedMeta: 'networkidle' cannot settle against real data.
       await page.goto(opts.url, { waitUntil: 'load' });
+      const initErrors = await page.evaluate(
+        () => (globalThis as { __reisInitScriptErrors?: string[] }).__reisInitScriptErrors ?? []
+      );
+      if (initErrors.length > 0) throw new Error(`--init-script threw: ${initErrors.join('; ')}`);
       // Dismiss onboarding by default — otherwise every run screenshots the
       // welcome modal and measures the blurred page behind it.
       // `--onboarding` SEEDS false rather than leaving the key alone: the flag

@@ -53,4 +53,15 @@ describe('ClassmatePersonDrawer photo', () => {
     render(<ClassmatePersonDrawer classmate={JAN} onClose={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'Zvětšit fotku' })).toBeNull();
   });
+
+  it('a photo open when the drawer closes does not reopen with it', () => {
+    const onClose = vi.fn();
+    const { rerender } = render(<ClassmatePersonDrawer classmate={JAN} onClose={onClose} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Zvětšit fotku' }));
+    fireEvent.click(screen.getAllByLabelText('Zavřít')[0]!);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    rerender(<ClassmatePersonDrawer classmate={null} onClose={onClose} />);
+    rerender(<ClassmatePersonDrawer classmate={JAN} onClose={onClose} />);
+    expect(screen.queryByTestId('person-photo-lightbox')).toBeNull();
+  });
 });
