@@ -42,13 +42,9 @@ export const CAPABILITIES = {
   menu: { desktop: 'present', mobile: 'present' },
   /** Desktop: ClassmatePersonDrawer and PersonHoverCard. */
   person: { desktop: 'present', mobile: 'present' },
-  personPhoto: {
-    desktop: {
-      omitted:
-        "undecided: a classmate's photo enlarges on the phone; the extension shows it at card size only. desktopHasNoOwnPhotoEnlarge decides the student's OWN photo, not a classmate's.",
-    },
-    mobile: 'present',
-  },
+  /** Desktop: PersonPhotoLightbox, from ClassmatePersonDrawer and PersonHoverCard.
+   *  The student's OWN photo is desktopHasNoOwnPhotoEnlarge's decision, not this one. */
+  personPhoto: { desktop: 'present', mobile: 'present' },
   eduroam: { desktop: 'present', mobile: 'present' },
   /** Desktop: DocumentsDrawer. Phone: the docs sheet. */
   studyDocuments: { desktop: 'present', mobile: 'present' },

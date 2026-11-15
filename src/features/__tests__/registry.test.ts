@@ -100,16 +100,18 @@ describe('the registry', () => {
   // The open questions for Dominik. Settling one changes this list on purpose.
   it('pins the undecided cases', () => {
     const undecided = reasons().filter((r) => r.startsWith('undecided:'));
-    expect(undecided).toHaveLength(3);
-    expect(CAPABILITIES.personPhoto.desktop).toMatchObject({
-      omitted: expect.stringMatching(/^undecided:/),
-    });
+    expect(undecided).toHaveLength(2);
     expect(DESKTOP_VIEW_CAPABILITY.settings).toMatchObject({
       unrendered: expect.stringMatching(/^undecided:/),
     });
     expect(DESKTOP_VIEW_CAPABILITY['timeline-demo']).toMatchObject({
       unrendered: expect.stringMatching(/^undecided:/),
     });
+  });
+
+  // Settled 2026-11-15: a person's photo enlarges in the extension too (PR 699).
+  it('enlarges a photo on both trees', () => {
+    expect(CAPABILITIES.personPhoto).toEqual({ desktop: 'present', mobile: 'present' });
   });
 
   it('only the known keys escape as unrendered', () => {
