@@ -57,6 +57,32 @@ describe('SportPlaceLayer', () => {
     );
   });
 
+  it("never lets one pin's tap area cover a neighbour's face", () => {
+    // Zoomed far out (1 m ≈ 0.1 px): the court and the pitch at Schreberovy,
+    // and the Lužánky and Píky pairs, all start on top of each other.
+    fakeMap.latLngToLayerPoint = (ll: [number, number] | { lat: number; lng: number }) => {
+      const [lat, lng] = Array.isArray(ll) ? ll : [ll.lat, ll.lng];
+      return { x: (lng - 16.6) * 1e4, y: (49.22 - lat) * 1e4 };
+    };
+    render(<SportPlaceLayer />);
+    const centres = [...pinsPane.querySelectorAll<HTMLElement>('[data-testid="sport-pin"]')].map(
+      (el) => {
+        const m = /translate\(([-\d.]+)px, ([-\d.]+)px\)/.exec(el.style.transform)!;
+        return [Number(m[1]), Number(m[2])] as const;
+      }
+    );
+    expect(centres).toHaveLength(SPORT_PLACES.length);
+    // A chosen pin's tap area reaches 25 px (34 px face + 8 px padding a side);
+    // a resting neighbour's face is 14 px from its centre (Greptile, PR 679).
+    for (let i = 0; i < centres.length; i++) {
+      for (let j = i + 1; j < centres.length; j++) {
+        const [ax, ay] = centres[i]!;
+        const [bx, by] = centres[j]!;
+        expect(Math.hypot(ax - bx, ay - by)).toBeGreaterThanOrEqual(25 + 14);
+      }
+    }
+  });
+
   it('draws none over a floor plan', () => {
     render(<SportPlaceLayer />);
     act(() => useAppStore.setState({ activeBuildingId: 3 }));

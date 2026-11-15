@@ -5,7 +5,7 @@ import { useSociety } from '../../hooks/useSociety';
 import { SocietyLogo } from '../SocietyLogo';
 import { useEventPinPlacement } from './useEventPinPlacement';
 import { useTranslation } from '../../hooks/useTranslation';
-import { venueStatus } from '../../utils/venues/venueStatus';
+import { venuePinLabel } from '../../utils/venues/venuePinLabel';
 import type { SocietyPin } from '../../types/campusMap';
 
 /**
@@ -70,7 +70,7 @@ function SocietyPinButton({
   const { t } = useTranslation();
   const now = useAppStore((s) => s.now);
   if (pin.venue) {
-    const open = venueStatus(pin.venue.hours, now, pin.venue.closure).open;
+    const { open, label } = venuePinLabel(pin, now, t('map.venueClosedShort'));
     const ring = open ? soc.color : '#9ca3af';
     return (
       <button
@@ -81,7 +81,7 @@ function SocietyPinButton({
         // that lands on the ring's edge must open S-klub, not the map.
         className="group pointer-events-auto absolute left-0 top-0 p-[5px] leaflet-zoom-animated"
         style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
-        aria-label={open ? pin.title : `${pin.title} · ${t('map.venueClosedShort')}`}
+        aria-label={label}
         onClick={() => onSelect(pin)}
       >
         {/* The same footprint as a society pin (32px logo in a white ring);
@@ -106,7 +106,7 @@ function SocietyPinButton({
           className="pointer-events-none absolute left-1/2 top-full -mt-0.5 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-1.5 py-px text-[10px] font-bold shadow"
           style={{ color: '#111827' }}
         >
-          {open ? pin.title : `${pin.title} · ${t('map.venueClosedShort')}`}
+          {label}
         </span>
       </button>
     );

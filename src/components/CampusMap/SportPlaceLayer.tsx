@@ -9,7 +9,7 @@ import { SPORT_PLACES } from './sportPlaces';
 import { getMapInstance } from './mapInstance';
 import { panPinClearOfSheet } from './sheetClearance';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
-import { venueStatus } from '../../utils/venues/venueStatus';
+import { venuePinLabel } from '../../utils/venues/venuePinLabel';
 import type { SocietyPin, SportPlace } from '../../types/campusMap';
 
 /**
@@ -18,8 +18,18 @@ import type { SocietyPin, SportPlace } from '../../types/campusMap';
  * Teal: not a society's colour, and not the blue of the campus buildings.
  */
 const PIN_INK = '#0F6E56';
-/** A pin's footprint plus a hair: closer than this and two pins would touch. */
-const PIN_GAP = 32;
+/** A resting pin's face, and a chosen one's. */
+const FACE = 28;
+const FACE_CHOSEN = 34;
+/** Transparent padding around the face: a 44px tap target at rest. */
+const TAP_PAD = 8;
+/**
+ * The closest two pins may sit: a CHOSEN pin's tap area (half its face plus
+ * the padding) must stop short of a resting neighbour's face. At the face
+ * width alone (32) the padding reached over the next pin, and a tap on its
+ * edge opened the wrong place (Greptile, PR 679).
+ */
+const PIN_GAP = FACE_CHOSEN / 2 + TAP_PAD + FACE / 2 + 1;
 /**
  * Half a CHOSEN pin's reach: its 34px face and 3px ring. Sized for the chosen
  * pin, not the 28px resting one, because the chosen one grows in place and
@@ -29,10 +39,9 @@ const PIN_RADIUS = 20;
 
 /**
  * The room a society pin or venue takes: its 36px logo and, for a venue, the
- * name label hanging under it (11px bold, ~6.6px a character). `label` is the
- * text SocietyPinLayer actually draws: while S-klub is closed that is "S-klub
- * Pixie · zavřeno", and sized from the name alone a workout pin sat on
- * "zavřeno" (seen on the Pixel, 2026-11-15).
+ * name label hanging under it (10px bold, ~6px a character; 6.6 leaves a
+ * margin). `label` is the text SocietyPinLayer draws (`venuePinLabel`), so a
+ * closed venue's "· zavřeno" is counted too.
  */
 function obstacleOf(pin: SocietyPin, x: number, y: number, label: string): PinObstacle {
   if (!pin.venue) return { x, y, r: 18 + PIN_RADIUS };
@@ -76,8 +85,7 @@ export function SportPlaceLayer() {
     .filter((p) => otherPins.has(p.key))
     .map((p) => {
       const pin = otherPins.get(p.key)!;
-      const closed = pin.venue && !venueStatus(pin.venue.hours, now, pin.venue.closure).open;
-      const label = closed ? `${pin.title} · ${t('map.venueClosedShort')}` : pin.title;
+      const { label } = venuePinLabel(pin, now, t('map.venueClosedShort'));
       return obstacleOf(pin, p.x, p.y, label);
     });
   const live = new Map(items.map((i) => [i.key, i.place]));
@@ -139,7 +147,7 @@ function SportPin({
     <button
       type="button"
       data-testid="sport-pin"
-      // p-[8px] around the 28px face keeps the tap target at 44px.
+      // p-[8px] (TAP_PAD) around the 28px face keeps the tap target at 44px.
       className="group pointer-events-auto absolute left-0 top-0 p-[8px] leaflet-zoom-animated"
       style={{
         transform: `translate(${x}px, ${y}px) translate(-50%, -50%)`,
