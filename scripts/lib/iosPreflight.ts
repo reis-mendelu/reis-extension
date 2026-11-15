@@ -15,6 +15,17 @@ export interface IosBlocker {
   submissionIds: string[];
 }
 
+/**
+ * What the preflight reports: ios-submit.ts's BLOCKING, plus an approved version
+ * not yet out. Apple creates no new version until that one is released, and
+ * BLOCKING leaves it out because ios-submit.ts never creates one in that state.
+ */
+export const PREFLIGHT_BLOCKING = [
+  ...BLOCKING,
+  'PENDING_DEVELOPER_RELEASE',
+  'PENDING_APPLE_RELEASE',
+];
+
 /** Under review: the only states a withdraw (cancel the submission) applies to. */
 const IN_REVIEW = ['WAITING_FOR_REVIEW', 'IN_REVIEW'];
 
@@ -41,7 +52,7 @@ export async function iosBlockers(
   const rows = await listAll(asc, versionsPath(appId));
   const blockers: IosBlocker[] = rows
     .filter((r) => r.attributes?.versionString !== newVersion)
-    .filter((r) => BLOCKING.includes(r.attributes?.appStoreState ?? ''))
+    .filter((r) => PREFLIGHT_BLOCKING.includes(r.attributes?.appStoreState ?? ''))
     .map((r) => ({
       id: r.id,
       versionString: r.attributes?.versionString ?? '?',

@@ -74,6 +74,19 @@ describe('iosBlockers', () => {
     ]);
   });
 
+  it('reports an approved version still pending release: Apple makes no new one until it is out', async () => {
+    const { asc } = fakeAsc({
+      'GET /v1/apps/APP/appStoreVersions': versions([
+        ['V1', '5.7.1', 'READY_FOR_SALE'],
+        ['V2', '5.7.2', 'PENDING_DEVELOPER_RELEASE'],
+      ]),
+    });
+    const out = await iosBlockers(asc, 'APP', '5.7.3');
+    expect(out.map((b) => `${b.versionString} ${b.state}`)).toEqual([
+      '5.7.2 PENDING_DEVELOPER_RELEASE',
+    ]);
+  });
+
   it('reports nothing when every other version is live or replaced', async () => {
     const { asc } = fakeAsc({
       'GET /v1/apps/APP/appStoreVersions': versions([

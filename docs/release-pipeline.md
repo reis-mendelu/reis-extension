@@ -90,7 +90,8 @@ commit (it reads the first parent), and 5.4.0–5.7.0 shipped that way.
 ### Another App Store version still in review
 
 Only one iOS version can be edited at a time. If the previous release is still
-waiting for review, in review, or otherwise editable (rejected, a stale draft),
+waiting for review, in review, otherwise editable (rejected, a stale draft) or
+approved but pending release,
 `ship.yml` uploads the new build and then `ios-submit.ts` stops with "X is
 WAITING_FOR_REVIEW; only one version can be edited". Google Play, the extension
 and the database still ship, and only the summary goes red. That happened at
@@ -99,7 +100,8 @@ version with its version record id and, when it is in review, its review
 submission id. The new version's own draft is not reported: `ios-submit.ts`
 reuses it.
 
-Two choices. **Dominik picks, and withdrawing always needs his OK:**
+**Dominik picks, and any change to a version in App Store Connect needs his OK.**
+For a version in review there are two choices:
 
 1. **Wait** until Apple finishes the review, then release. Or release anyway
    and run `npx tsx scripts/release/ios-submit.ts --version X.Y.Z` once the
@@ -119,10 +121,27 @@ Two choices. **Dominik picks, and withdrawing always needs his OK:**
       record and submits it. **After the merge** (the iOS leg already uploaded
       the build and stopped, as at 5.7.2):
       `npx tsx scripts/release/ios-submit.ts --version X.Y.Z --dry-run`, then
-      without `--dry-run`.
+      without `--dry-run`. The dry run must say `build … is VALID`: with no
+      X.Y.Z build uploaded it still exits 0 ("No build … expected before the
+      upload"), and the real run would then poll for about ten minutes and fail.
 
    iOS users then skip the withdrawn version. Carry its What's new line into
    this release's notes (5.7.1's line went into 5.7.2's for iOS).
+
+**A blocker that is not in review** (the preflight shows a version record id and
+no review submission): `DEVELOPER_REJECTED`, `REJECTED`, `METADATA_REJECTED`,
+`INVALID_BINARY`, or another version's stale `PREPARE_FOR_SUBMISSION` draft.
+Nothing waits on Apple, so neither choice above clears it. Rename that record to
+the new version (step 3 above, without steps 1 and 2), and `ios-submit.ts`
+reuses it like its own draft. If the new version already has a draft of its own,
+there are two editable records: delete one of them in App Store Connect first.
+Same approval rule: Dominik's OK.
+
+**Pending release** (`PENDING_DEVELOPER_RELEASE`, `PENDING_APPLE_RELEASE`): the
+previous version is approved but not out, and Apple will not create another
+version until it is. Release it in App Store Connect (or let the scheduled date
+pass) first. reIS submits with "release after approval", so this should not
+normally happen.
 
 ## One-time setup: repository secrets (Dominik adds these)
 

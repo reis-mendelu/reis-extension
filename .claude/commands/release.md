@@ -22,16 +22,6 @@ release PR is the last gate: walk its checklist before merging.
    - read the current version from `package.json`
    - the repository secrets in `docs/release-pipeline.md` exist (a missing one
      fails its store's job first, naming it, but find out before the merge)
-   - **`npm run release:preflight -- --version X.Y.Z`** (the new version). Read-only.
-     It catches the two traps that each cost a manual detour after the 5.7.2 merge:
-     - **main/test drift**: the release PR would conflict. Sync first (below),
-       *before* the bump: nothing may merge into `test` once the release PR is open.
-     - **another iOS version still in review or editable**: `ship.yml` would
-       upload the build and stop at the submit, and nobody notices (5.7.1, 5.7.2).
-       Tell Dominik and let him choose: **wait** until it is out of review, or
-       **withdraw** it. Withdrawing is never done without his explicit OK.
-     The recipes for both are in `docs/release-pipeline.md`, "Before the release PR".
-     Do not carry on past a finding.
 
 2. **Ask the user** (AskUserQuestion, all in one message):
    - New version number (suggest the next patch increment)
@@ -40,7 +30,22 @@ release PR is the last gate: walk its checklist before merging.
      becomes `release-notes/<version>.cs.txt` (max 500 characters; one text feeds
      the App Store and Google Play).
 
-3. **Bump on a branch off `test`**:
+3. **`npm run release:preflight -- --version X.Y.Z`**, with the version agreed in
+   step 2 (never a guess: the new version's own App Store draft is left out of the
+   blocker check). Read-only. It catches the two traps that each cost a manual
+   detour after the 5.7.2 merge:
+   - **main/test drift**: the release PR would conflict, now or after the bump.
+     Sync first, *before* the bump: nothing may merge into `test` once the
+     release PR is open.
+   - **another iOS version in review, editable, or pending release**: `ship.yml`
+     would upload the build and stop at the submit, and nobody notices (5.7.1,
+     5.7.2). Tell Dominik and let him choose (wait, withdraw, or rename a stale
+     record). Changing a version in App Store Connect never happens without his
+     explicit OK.
+   The recipes for both are in `docs/release-pipeline.md`, "Before the release PR".
+   Do not carry on past a finding.
+
+4. **Bump on a branch off `test`**:
    - `package.json` `version`, `package-lock.json` (the root `version` in two
      places) and `wxt.config.ts` `manifest.version` — same value, or
      `release-tag.yml` refuses to tag
@@ -48,14 +53,14 @@ release PR is the last gate: walk its checklist before merging.
      fails the PR without it
    - Commit `chore: bump to X.Y.Z - <description>`, PR into `test`, merge it
 
-4. **Re-run `npm run release:preflight -- --version X.Y.Z`**, then **open the
+5. **Re-run `npm run release:preflight -- --version X.Y.Z`**, then **open the
    release PR** `test` → `main`. `release-checklist.yml` injects the
    checklist; `release-gate.yml` requires CI's *Build web preview* to have passed
    for that exact SHA, and the release notes file. Walk the checklist — the
    device item is the one that actually catches things. The Release gate fails
    the first time, every time: it runs before CI's build has reported. Rerun it.
 
-5. **Merge it with a merge commit, never squash**: `gh pr merge <N> --merge
+6. **Merge it with a merge commit, never squash**: `gh pr merge <N> --merge
    --match-head-commit <sha>`, or the REST merge with `merge_method=merge`. This
    overrides the usual squash-merge habit for this one PR (and for a main→test
    sync PR). A squash puts a commit on `main` that `test` never had, and the next
@@ -64,7 +69,7 @@ release PR is the last gate: walk its checklist before merging.
    `release-tag.yml` pushes `vX.Y.Z`, then `ship.yml` runs in the
    same run. **This submits to the stores.** Nothing to run on a Mac.
 
-6. **Read the summary** at the bottom of the run (`gh run list --workflow
+7. **Read the summary** at the bottom of the run (`gh run list --workflow
    release-tag.yml`): App Store, Google Play, Chrome + Firefox. A red row names
    what failed; "Re-run failed jobs" is safe, because each step reads the store's
    state first. A store that needs a human (another App Store version stuck in

@@ -28,7 +28,10 @@ function arg(name: string): string | undefined {
 }
 
 function driftFindings(remote: string): string[] {
-  const fetched = spawnSync('git', ['fetch', '--quiet', remote, 'main', 'test'], {
+  // Explicit destinations: a remote whose fetch config maps only some branches
+  // would otherwise leave a stale origin/test behind and read as a false PASS.
+  const refspecs = ['main', 'test'].map((b) => `+refs/heads/${b}:refs/remotes/${remote}/${b}`);
+  const fetched = spawnSync('git', ['fetch', '--quiet', remote, ...refspecs], {
     encoding: 'utf8',
   });
   if (fetched.status !== 0) throw new Error(`git fetch ${remote}: ${fetched.stderr.trim()}`);
@@ -51,17 +54,22 @@ function driftFindings(remote: string): string[] {
   return [`main/test drift: ${what}\n       ${how}`];
 }
 
+/** What to do, per state; recipes in the doc. Every one needs Dominik's OK. */
+function remedy(state: string): string {
+  if (state === 'WAITING_FOR_REVIEW' || state === 'IN_REVIEW')
+    return 'ship.yml would upload the build and stop at the submit. Wait, or withdraw (needs Dominik).';
+  if (state.startsWith('PENDING_'))
+    return 'Approved but not out: Apple makes no new version until it is released.';
+  return 'Not in review: rename that record to the new version (needs Dominik).';
+}
+
 async function iosFindings(version: string | undefined): Promise<string[]> {
   const blockers = await iosBlockers(ascHttp(resolveAscCredentials()), APP_ID, version);
   if (!blockers.length) {
     console.log('ok   App Store: no other iOS version is in review or editable');
     return [];
   }
-  return blockers.map(
-    (b) =>
-      `App Store: ${describeBlocker(b)}.\n` +
-      '       ship.yml would upload the build and stop at the submit. Wait, or withdraw (needs Dominik).'
-  );
+  return blockers.map((b) => `App Store: ${describeBlocker(b)}.\n       ${remedy(b.state)}`);
 }
 
 async function main(): Promise<void> {
