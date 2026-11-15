@@ -30,7 +30,8 @@ const TAP_PAD = PIN_TAP_PAD;
 const PIN_GAP = FACE_CHOSEN / 2 + TAP_PAD + FACE / 2 + 1;
 /**
  * Places closer than this are one spot (the Schreberovy court and pitch, 6 m;
- * the Lužánky table and gym, 37 m) and get their pins side by side. Every
+ * the Bieblova gym and the Píky court, 22 m; the Lužánky table and gym, 37 m)
+ * and get their pins side by side. Every
  * other pin stays exactly on its place, even where it meets another on screen.
  */
 const SAME_SPOT_M = 50;

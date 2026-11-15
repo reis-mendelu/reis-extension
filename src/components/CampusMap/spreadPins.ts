@@ -8,6 +8,12 @@ type Pin = { key: string; x: number; y: number };
  * moving half the shortfall — at most `gap / 2`. A pair on the very same point
  * goes side by side, ordered by key.
  *
+ * Three or more at one spot (none in the bundled places today, which only form
+ * pairs) go into a row around their midpoint once any two overlap: every
+ * member moves, and the outer ones by up to a full `gap` per step from the
+ * middle. A row is the simplest layout where none of them overlap; the
+ * half-gap bound above holds for pairs only.
+ *
  * Nothing else moves. Pins that merely meet on screen (two spots seen from far
  * out, or a pin under S-klub's) stay on their own places, and so does a
  * pair the map already shows apart. An earlier version pushed pins in pixels
@@ -47,7 +53,8 @@ export function spreadPins<T extends Pin>(
       out[j] = { ...b, x: b.x + ux * half, y: b.y + uy * half };
       continue;
     }
-    // Three or more at one spot: a row around the midpoint, west to east.
+    // Three or more at one spot: a row around the midpoint, west to east (see
+    // the doc above: the outer members move further than half a gap).
     const sorted = [...members].sort(
       (i, j) => pins[i]!.x - pins[j]!.x || pins[i]!.key.localeCompare(pins[j]!.key)
     );

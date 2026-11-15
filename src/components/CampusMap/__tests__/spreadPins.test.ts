@@ -55,6 +55,19 @@ describe('spreadPins', () => {
     expect(at(out, 'b')).toEqual([67, 50]);
   });
 
+  it('lays three at one spot out in a row once any two overlap, every one moving', () => {
+    // Not in the bundled places, which only form pairs: pinned so the row,
+    // where the outer pins move a full gap, is a choice and not an accident.
+    const out = spreadPins(
+      [pin('a', 0, 0, 's'), pin('b', 10, 0, 's'), pin('c', 20, 0, 's')],
+      30,
+      sameSpot
+    );
+    expect(at(out, 'a')).toEqual([-20, 0]);
+    expect(at(out, 'b')).toEqual([10, 0]);
+    expect(at(out, 'c')).toEqual([40, 0]);
+  });
+
   it('carries every other field through untouched', () => {
     const out = spreadPins([pin('a', 0, 0)], 34, sameSpot);
     expect(out[0]).toEqual({ key: 'a', x: 0, y: 0, spot: 'a' });
