@@ -91,6 +91,8 @@ describe('useIskamStore claims', () => {
     expect(openClaimInIskam).toHaveBeenCalledWith(CLAIM.id);
     expect(s().payingClaim).toBe(false);
     expect(s().claims).toEqual([]);
+    // The balance was read again too: once before Zaplatit, once after.
+    expect(runSilentChain).toHaveBeenCalledTimes(2);
   });
 
   it('sign-out clears the claims', async () => {
@@ -106,9 +108,11 @@ describe('useIskamStore claims', () => {
     runSilentChain.mockReturnValue(new Promise((r) => (chainDone = r)));
     fetchClaims.mockResolvedValue([CLAIM]);
     const p = s().check();
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(fetchClaims).toHaveBeenCalledWith(expect.anything(), { persist: false });
+    // Started while the chain is still pending (no tick counting: any new await
+    // in check() would break that without a real regression).
+    await vi.waitFor(() =>
+      expect(fetchClaims).toHaveBeenCalledWith(expect.anything(), { persist: false })
+    );
     chainDone({ state: 'live', kontaHtml: KONTA });
     await p;
     expect(fetchClaims).toHaveBeenCalledOnce();
@@ -128,7 +132,8 @@ describe('useIskamStore claims', () => {
     let claimsDone!: (v: unknown) => void;
     fetchClaims.mockReturnValue(new Promise((r) => (claimsDone = r)));
     const p = s().check();
-    for (let i = 0; i < 5; i++) await Promise.resolve();
+    await vi.waitFor(() => expect(runSilentChain).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
     expect(s().status).toBe('checking');
     expect(s().balance).toBeNull();
     claimsDone([CLAIM]);
@@ -163,5 +168,21 @@ describe('useIskamStore claims', () => {
     openClaimInIskam.mockResolvedValue(undefined);
     await s().payClaim(CLAIM.id);
     expect(s().lastClaimPaid).toBeNull();
+  });
+
+  it('closing the sheet while WebISKAM is open keeps Zaplatit disabled until it closes', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockResolvedValue([CLAIM]);
+    await s().check();
+    let finish!: () => void;
+    openClaimInIskam.mockReturnValue(new Promise<void>((r) => (finish = r)));
+    const p = s().payClaim(CLAIM.id);
+    s().reset();
+    expect(s().payingClaim).toBe(true);
+    await s().payClaim(CLAIM.id);
+    expect(openClaimInIskam).toHaveBeenCalledOnce();
+    finish();
+    await p;
+    expect(s().payingClaim).toBe(false);
   });
 });

@@ -81,7 +81,12 @@ export async function openClaimInIskam(claimId: string): Promise<void> {
           await InAppBrowser.addListener('browserPageLoaded', () => {
             loaded = true;
             clearTimeout(deadline);
-            void InAppBrowser.executeScript({ code: openDialog }).catch(() => undefined);
+            // Once the bridge reported the dialog opened, a later claims page
+            // (WebISKAM refused or the student cancelled) stays as it is: no
+            // second prompt. Without a working bridge it opens on every load.
+            if (!state.opened) {
+              void InAppBrowser.executeScript({ code: openDialog }).catch(() => undefined);
+            }
             void InAppBrowser.executeScript({ code: probe }).catch(() => undefined);
           }),
           await InAppBrowser.addListener('messageFromWebview', (e) => {

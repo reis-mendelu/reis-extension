@@ -45,7 +45,9 @@ function isoDate(text: string): string | null {
   if (!day || !month || !year) return null;
   const d = Number(day);
   const m = Number(month);
-  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  // Round-trip through a real date, so 31.02.2026 is "cannot tell", not a due date.
+  const real = new Date(Date.UTC(Number(year), m - 1, d));
+  if (real.getUTCMonth() !== m - 1 || real.getUTCDate() !== d) return null;
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 // The same strict shapes as kontaParser (not imported: that parser stays as verified).

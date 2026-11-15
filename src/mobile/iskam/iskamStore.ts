@@ -213,13 +213,15 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     // A top-up already starting or on the payment page outlives the sheet:
     // clearing its phase here let a reopened sheet start a second payment.
     const inFlight = get().topUp === 'starting' || get().topUp === 'paying';
+    // Same for WebISKAM's pay view: while it is open, Zaplatit stays disabled
+    // on a reopened sheet, so a second view can never open (payClaimFlow
+    // clears the flag itself when its view closes).
     set({
       status: 'hidden',
       balance: null,
       signingIn: false,
       lastTopUp: null,
       claims: null,
-      payingClaim: false,
       lastClaimPaid: null,
       ...(inFlight ? {} : { topUp: 'idle' as const }),
     });

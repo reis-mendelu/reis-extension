@@ -53,6 +53,8 @@ export async function payClaimFlow(id: string, ctx: PayClaimContext): Promise<vo
     logError('Iskam.payClaim', e);
   }
   if (!ctx.sameAccount()) return;
+  // Cleared even when the sheet went away meanwhile: reset() keeps the flag
+  // while this view is open, so this flow is the only one and must free it.
   ctx.set({ payingClaim: false });
   if (!ctx.sameSheet()) return;
   await ctx.check();

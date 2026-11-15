@@ -27,54 +27,56 @@ export function IskamClaims() {
   const paying = useIskamStore((s) => s.payingClaim);
   const paid = useIskamStore((s) => s.lastClaimPaid);
   if (balance === null) return null;
-  if (!claims?.length) {
-    // WebISKAM shows nothing after paying, so reIS says it — once the re-read
-    // balance shows the claim gone.
-    return paid ? (
-      <p role="status" className="mt-2 text-2sm font-bold text-[var(--tone-success)]">
-        {t('iskam.claimPaid', { amount: formatKc(paid.amount, language, { whole: true }) })}
-      </p>
-    ) : null;
-  }
+  // WebISKAM shows nothing after paying, so reIS says it — once the re-read
+  // shows the claim gone. Also beside claims that are still open.
+  const paidNotice = paid ? (
+    <p role="status" className="mt-2 text-2sm font-bold text-[var(--tone-success)]">
+      {t('iskam.claimPaid', { amount: formatKc(paid.amount, language, { whole: true }) })}
+    </p>
+  ) : null;
+  if (!claims?.length) return paidNotice;
 
   return (
-    <ul data-testid="iskam-claims" className="mt-2.5 border-t border-base-content/10 pt-2.5">
-      {claims.map((c) => {
-        const covered = balance.amount >= c.remaining;
-        return (
-          <li key={c.id} className="py-0.5">
-            <div className="flex items-center gap-2.5">
-              <BedDouble size={18} className="flex-shrink-0 text-base-content/60" aria-hidden />
-              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-2sm text-base-content/70">{c.description}</span>
-                {/* Three short lines, not two long ones: at 320px a joined
+    <>
+      {paidNotice}
+      <ul data-testid="iskam-claims" className="mt-2.5 border-t border-base-content/10 pt-2.5">
+        {claims.map((c) => {
+          const covered = balance.amount >= c.remaining;
+          return (
+            <li key={c.id} className="py-0.5">
+              <div className="flex items-center gap-2.5">
+                <BedDouble size={18} className="flex-shrink-0 text-base-content/60" aria-hidden />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="truncate text-2sm text-base-content/70">{c.description}</span>
+                  {/* Three short lines, not two long ones: at 320px a joined
                     "amount · due" line cut the due date off. */}
-                <span className="truncate text-md font-bold text-base-content">
-                  {formatKc(c.remaining, language, { whole: true })}
+                  <span className="truncate text-md font-bold text-base-content">
+                    {formatKc(c.remaining, language, { whole: true })}
+                  </span>
+                  <span className="truncate text-2sm text-base-content/70">
+                    {t('iskam.claimDue', { date: formatDue(c.due, language) })}
+                  </span>
                 </span>
-                <span className="truncate text-2sm text-base-content/70">
-                  {t('iskam.claimDue', { date: formatDue(c.due, language) })}
-                </span>
-              </span>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm flex-shrink-0 disabled:opacity-40"
-                disabled={!covered || paying}
-                onClick={() => void useIskamStore.getState().payClaim(c.id)}
-              >
-                {t('iskam.payClaim')}
-              </button>
-            </div>
-            {!covered && (
-              <p className="mt-1.5 text-2sm text-base-content/70">
-                {t('iskam.claimShort', {
-                  amount: formatKc(Math.ceil(c.remaining - balance.amount), language),
-                })}
-              </p>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm flex-shrink-0 disabled:opacity-40"
+                  disabled={!covered || paying}
+                  onClick={() => void useIskamStore.getState().payClaim(c.id)}
+                >
+                  {t('iskam.payClaim')}
+                </button>
+              </div>
+              {!covered && (
+                <p className="mt-1.5 text-2sm text-base-content/70">
+                  {t('iskam.claimShort', {
+                    amount: formatKc(Math.ceil(c.remaining - balance.amount), language),
+                  })}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </>
   );
 }

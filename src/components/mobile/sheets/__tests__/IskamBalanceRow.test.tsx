@@ -171,4 +171,23 @@ describe('IskamBalanceRow', () => {
     render(<IskamBalanceRow />);
     expect(screen.queryByTestId('iskam-claims')).toBeNull();
   });
+
+  it('says Zaplaceno beside a claim that is still open', () => {
+    setState({
+      status: 'balance',
+      balance: { amount: 100 },
+      claims: [
+        {
+          id: '00000000-0000-0000-0000-000000000002',
+          due: '2026-12-20',
+          description: 'Ubytování 30.11.2026 - 31.12.2026',
+          remaining: 5370,
+        },
+      ],
+      lastClaimPaid: { amount: 5370 },
+    });
+    render(<IskamBalanceRow />);
+    expect(screen.getByRole('status')).toHaveTextContent(/Zaplaceno 5\s370\sKč/);
+    expect(screen.getByTestId('iskam-claims')).toHaveTextContent('30.11.2026');
+  });
 });
