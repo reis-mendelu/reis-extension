@@ -80,7 +80,7 @@ database — infrastructure, not a recipient doing anything of its own.
 
 **WebISKAM** (the university's accommodation and canteen system) receives, only
 in the mobile app (Android, iPhone, iPad) and only when you ask for your ISIC
-balance or a top-up, the MENDELU sign-in you make on MENDELU's own page — your
+balance, a top-up or a dorm payment, the MENDELU sign-in you make on MENDELU's own page — your
 password goes to MENDELU, never to reIS. reIS keeps the sign-in encrypted on your
 device; while you are signed in the device's own web-cookie store holds it too,
 like any browser, and signing out deletes both. The balance and your open dorm

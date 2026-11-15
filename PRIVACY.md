@@ -57,7 +57,7 @@ Firefox asks you directly about everything above. Nothing is **required** to use
 
 ## Third-Party Access
 
-reIS contacts the following services. **IS Mendelu is the only one that receives your academic data**, and only because it is the university's own system; WebISKAM, below, is the university's too, and receives only the sign-in that lets the app read your ISIC balance, plus, for a top-up, the amount and the payment method you chose. No other service on this list receives it, under any feature. The two that once did — Anthropic, for the Erasmus syllabus comparison, and Microsoft Bookings, for library study-room booking — were removed in September 2026 along with both features. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
+reIS contacts the following services. **IS Mendelu is the only one that receives your academic data**, and only because it is the university's own system; WebISKAM, below, is the university's too, and receives only the sign-in that lets the app read your ISIC balance and open dorm payments, plus, for a top-up, the amount and the payment method you chose, and, when you pay a dorm payment, the confirmation you tap on WebISKAM's own page. No other service on this list receives it, under any feature. The two that once did — Anthropic, for the Erasmus syllabus comparison, and Microsoft Bookings, for library study-room booking — were removed in September 2026 along with both features. jsDelivr receives no identifier, but the set of subjects requested does reveal which courses you are enrolled in.
 
 **Always:**
 1. **IS Mendelu** (`is.mendelu.cz`) — fetches your academic data, authenticated by you.
