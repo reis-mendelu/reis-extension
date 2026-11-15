@@ -13,6 +13,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const LOCK_MODULE = resolve(__dirname, '../installLock.mjs');
+const LOCK = 'node_modules.install.lock';
 
 /** A pid that has certainly exited: a child we ran to completion. */
 const deadPid = () => spawnSync(process.execPath, ['-e', '0']).pid!;
@@ -34,100 +35,87 @@ const lockOwnedBy = (lock: string, pid: number) => {
   mkdirSync(lock);
   writeFileSync(join(lock, `owner-${pid}`), '');
 };
-const owners = (lock: string) => readdirSync(lock).filter((n) => n.startsWith('owner-'));
 
 describe('takeOverFrom', () => {
   // Greptile on #703 and #704: a caller acting on a "dead owner" it saw a
   // moment ago moved or deleted a lock a live process had taken since. The
-  // takeover is now one rename of the dead owner's own entry, so it cannot
-  // touch any other owner's lock.
+  // takeover is one rename of the dead owner's own entry, so it cannot touch
+  // any other owner's lock.
   it('cannot take a lock a live process holds, whatever the caller saw before', async () => {
     const { takeOverFrom } = await import(LOCK_MODULE);
-    const lock = join(tempDir(), 'node_modules.lock');
+    const lock = join(tempDir(), LOCK);
     const live = livePid();
     lockOwnedBy(lock, live);
 
     expect(takeOverFrom(lock, deadPid(), 4242)).toBe(false);
-    expect(owners(lock)).toEqual([`owner-${live}`]);
+    expect(readdirSync(lock)).toEqual([`owner-${live}`]);
   });
 
   it('gives a dead owner lock to exactly one of the callers that saw it dead', async () => {
     const { takeOverFrom } = await import(LOCK_MODULE);
-    const lock = join(tempDir(), 'node_modules.lock');
+    const lock = join(tempDir(), LOCK);
     const dead = deadPid();
     lockOwnedBy(lock, dead);
 
     expect(takeOverFrom(lock, dead, 1111)).toBe(true);
     expect(takeOverFrom(lock, dead, 2222)).toBe(false);
-    expect(owners(lock)).toEqual(['owner-1111']);
-  });
-
-  it('takes over a lock left by the earlier format (a `pid` file)', async () => {
-    const { takeOverFrom, ownerOf } = await import(LOCK_MODULE);
-    const lock = join(tempDir(), 'node_modules.lock');
-    const dead = deadPid();
-    mkdirSync(lock);
-    writeFileSync(join(lock, 'pid'), String(dead));
-
-    expect(ownerOf(lock)).toBe(dead);
-    expect(takeOverFrom(lock, dead, 1111)).toBe(true);
-    expect(readdirSync(lock).sort()).toEqual(['owner-1111', 'pid']);
-    expect(readFileSync(join(lock, 'pid'), 'utf8')).toBe('1111');
+    expect(readdirSync(lock)).toEqual(['owner-1111']);
   });
 });
 
 describe('withInstallLock', () => {
-  // Greptile on #704: the bootstrap hook runs the main checkout's copy of this
-  // script and `npm run check` the worktree's, against the same checkout. Older
-  // copies read only `lock/pid`, and treat a lock without one as abandoned after
-  // a minute. So every lock this version holds names its owner there too.
-  it('keeps a pid file naming the live owner, for older copies of this script', async () => {
-    const { withInstallLock } = await import(LOCK_MODULE);
-    const dir = tempDir();
-    const lock = join(dir, 'node_modules.lock');
-
-    const seen = withInstallLock(dir, 1000, () => readFileSync(join(lock, 'pid'), 'utf8'));
-
-    expect(seen).toBe(String(process.pid));
-    expect(existsSync(lock)).toBe(false);
-  });
-
-  it('rewrites the pid file for the new owner on a takeover', async () => {
-    const { takeOverFrom } = await import(LOCK_MODULE);
-    const lock = join(tempDir(), 'node_modules.lock');
-    const dead = deadPid();
-    lockOwnedBy(lock, dead);
-    writeFileSync(join(lock, 'pid'), String(dead));
-
-    expect(takeOverFrom(lock, dead, 1111)).toBe(true);
-    expect(readFileSync(join(lock, 'pid'), 'utf8')).toBe('1111');
-    expect(readdirSync(lock).sort()).toEqual(['owner-1111', 'pid']);
-  });
-
   it('replaces an empty lock left by an owner killed while releasing', async () => {
     const { withInstallLock } = await import(LOCK_MODULE);
     const dir = tempDir();
-    mkdirSync(join(dir, 'node_modules.lock'));
+    mkdirSync(join(dir, LOCK));
 
     expect(withInstallLock(dir, 1000, () => 'ran')).toBe('ran');
-    expect(existsSync(join(dir, 'node_modules.lock'))).toBe(false);
+    expect(existsSync(join(dir, LOCK))).toBe(false);
   });
 
   it('waits for a live owner, then reports busy, and leaves its lock alone', async () => {
     const { withInstallLock } = await import(LOCK_MODULE);
     const dir = tempDir();
-    const lock = join(dir, 'node_modules.lock');
-    lockOwnedBy(lock, livePid());
+    lockOwnedBy(join(dir, LOCK), livePid());
 
     expect(withInstallLock(dir, 300, () => 'ran')).toEqual({ status: 'busy' });
-    expect(owners(lock)).toEqual([`owner-${livePid()}`]);
+    expect(readdirSync(join(dir, LOCK))).toEqual([`owner-${livePid()}`]);
     expect(readdirSync(dir).filter((n) => n.includes('.cand-'))).toEqual([]);
+  });
+
+  // #704's review: sharing `node_modules.lock` with copies from before this PR
+  // made every interop rule a new race, so the new protocol never touches it.
+  describe('an old-format lock (node_modules.lock with a pid file)', () => {
+    const legacy = (dir: string, pid: number) => {
+      mkdirSync(join(dir, 'node_modules.lock'));
+      writeFileSync(join(dir, 'node_modules.lock', 'pid'), String(pid));
+    };
+
+    it('is waited for while it names a live process, and left untouched', async () => {
+      const { withInstallLock } = await import(LOCK_MODULE);
+      const dir = tempDir();
+      legacy(dir, livePid());
+
+      expect(withInstallLock(dir, 300, () => 'ran')).toEqual({ status: 'busy' });
+      expect(readFileSync(join(dir, 'node_modules.lock', 'pid'), 'utf8')).toBe(String(livePid()));
+      expect(existsSync(join(dir, LOCK))).toBe(false);
+    });
+
+    it('does not block once its process is gone, and is still left untouched', async () => {
+      const { withInstallLock } = await import(LOCK_MODULE);
+      const dir = tempDir();
+      const dead = deadPid();
+      legacy(dir, dead);
+
+      expect(withInstallLock(dir, 1000, () => 'ran')).toBe('ran');
+      expect(readFileSync(join(dir, 'node_modules.lock', 'pid'), 'utf8')).toBe(String(dead));
+    });
   });
 
   // Real processes, so the interleaving is the operating system's, not ours.
   it('lets exactly one install run at a time after a dead owner', async () => {
     const dir = tempDir();
-    lockOwnedBy(join(dir, 'node_modules.lock'), deadPid());
+    lockOwnedBy(join(dir, LOCK), deadPid());
     const log = join(dir, 'log');
     writeFileSync(log, '');
     const script = `
@@ -158,6 +146,6 @@ describe('withInstallLock', () => {
       const [b, pidB] = lines[i + 1]!.split(' ');
       expect([a, b, pidA]).toEqual(['start', 'end', pidB]);
     }
-    expect(existsSync(join(dir, 'node_modules.lock'))).toBe(false);
+    expect(existsSync(join(dir, LOCK))).toBe(false);
   }, 30_000);
 });

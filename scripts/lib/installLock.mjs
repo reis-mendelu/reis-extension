@@ -5,12 +5,12 @@
 // first: each would delete the other's staging directory, and either could
 // rename an unfinished tree into place.
 //
-// The lock is `<dir>/node_modules.lock`, a directory holding `owner-<pid>`
-// (plus a `pid` file naming the same process, for older copies of this script). Every state change is one rename(2) or rmdir(2), each atomic
-// and each conditional on what is there, so no caller can act on a state it
-// read a moment ago:
+// The lock is `<dir>/node_modules.install.lock`, a directory holding exactly
+// one entry, `owner-<pid>`. Every state change is one rename(2) or rmdir(2),
+// each atomic and each conditional on what is there, so no caller can act on
+// a state it read a moment ago:
 //
-//   acquire   rename `lock.cand-<me>` (already holding `owner-<me>`) onto the
+//   acquire   rename `<lock>.cand-<me>` (already holding `owner-<me>`) onto the
 //             lock. It fails while a lock with an owner exists (ENOTEMPTY), and
 //             replaces an empty one left by an owner killed while releasing.
 //   take over rename `lock/owner-<dead>` to `lock/owner-<me>`. It succeeds for
@@ -19,9 +19,13 @@
 //   release   remove `owner-<me>`, then rmdir the lock. rmdir fails on a
 //             non-empty directory, so it never removes another owner's lock.
 //
-// Two earlier designs lost exclusivity in races Greptile found on #703/#704:
-// moving the lock aside to inspect it, and a takeover guard whose expiry could
-// be cleared by two callers at once. Neither a guard nor a timeout is needed now.
+// Copies of this script from before #704 used `node_modules.lock` (mkdir, then
+// a `pid` file) and took a dead owner's lock by moving it aside, which Greptile
+// showed could take a live one. Sharing that directory made every interop rule
+// a new race (#704's review), so this protocol has its own path and never
+// writes the old one. It only waits, before installing, while an old-format
+// lock names a live process. An old copy does not see this lock in return;
+// old copies disappear as checkouts move past #704.
 import {
   mkdirSync,
   readdirSync,
@@ -34,6 +38,9 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 
+const LOCK = 'node_modules.install.lock';
+const LEGACY_LOCK = 'node_modules.lock';
+
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 const alive = (pid) => {
@@ -45,67 +52,45 @@ const alive = (pid) => {
   }
 };
 
-/** The lock's entry naming its owner: `owner-<pid>`, or the earlier format's `pid` file. */
-function ownerEntry(lock) {
-  let names;
+/** The pid holding `lock`, or 0 when there is none (no lock, or an empty one). */
+export function ownerOf(lock) {
   try {
-    names = readdirSync(lock);
+    const entry = readdirSync(lock).find((n) => /^owner-\d+$/.test(n));
+    return entry ? Number(entry.slice('owner-'.length)) : 0;
   } catch {
-    return null;
+    return 0;
   }
-  const current = names.find((n) => /^owner-\d+$/.test(n));
-  if (current) return { name: current, pid: Number(current.slice('owner-'.length)) };
-  if (names.includes('pid')) {
-    try {
-      return { name: 'pid', pid: Number(readFileSync(join(lock, 'pid'), 'utf8')) || 0 };
-    } catch {
-      return null;
-    }
-  }
-  return null;
 }
 
-/** The pid holding the lock, or 0 when there is none (no lock, or an empty one). */
-export const ownerOf = (lock) => ownerEntry(lock)?.pid ?? 0;
-
 /**
- * Take the lock from `deadOwner` for `me`, in one rename of the dead owner's
- * own entry. True for exactly one caller, and only while `deadOwner` still
- * holds it.
+ * Take `lock` from `deadOwner` for `me`, in one rename of the dead owner's own
+ * entry. True for exactly one caller, and only while `deadOwner` still holds it.
  */
 export function takeOverFrom(lock, deadOwner, me = process.pid) {
-  const entry = ownerEntry(lock);
-  if (!entry || entry.pid !== deadOwner) return false;
+  if (!deadOwner) return false;
   try {
-    renameSync(join(lock, entry.name), join(lock, `owner-${me}`));
+    renameSync(join(lock, `owner-${deadOwner}`), join(lock, `owner-${me}`));
+    return true;
   } catch {
     return false; // another caller took it first, or the owner released it
   }
-  writeLegacyPid(lock, me);
-  return true;
 }
 
-/**
- * `lock/pid`, the only thing copies of this script from before #704 read. The
- * bootstrap hook runs the main checkout's copy and `npm run check` the
- * worktree's, against the same checkout, so the two formats meet; a lock
- * without a pid file looks abandoned to the older copy after a minute.
- * Written aside and renamed in, so a reader never sees it half written.
- */
-function writeLegacyPid(lock, pid) {
-  const staged = join(lock, `pid.${pid}`);
-  writeFileSync(staged, String(pid));
-  renameSync(staged, join(lock, 'pid'));
+/** A live process other than this one named by an old-format lock (before #704), else 0. */
+function legacyHolder(dir) {
+  try {
+    const pid = Number(readFileSync(join(dir, LEGACY_LOCK, 'pid'), 'utf8')) || 0;
+    return pid && pid !== process.pid && alive(pid) ? pid : 0;
+  } catch {
+    return 0;
+  }
 }
 
 function release(lock) {
-  // Ours until we unlink it: a takeover needs us dead.
-  if (ownerOf(lock) !== process.pid) return;
-  rmSync(join(lock, 'pid'), { force: true });
   try {
     unlinkSync(join(lock, `owner-${process.pid}`));
   } catch {
-    return;
+    return; // not ours (taken over, which needs us dead) or already gone
   }
   try {
     rmdirSync(lock);
@@ -115,35 +100,34 @@ function release(lock) {
 }
 
 /**
- * Run `action` holding `<dir>/node_modules.lock`, or return `{ status: 'busy' }`
- * when another live process still holds it after `waitMs`. A dead owner's lock
+ * Run `action` holding `<dir>/node_modules.install.lock`, or return
+ * `{ status: 'busy' }` when another live process still holds it, or an old
+ * copy of this script is still installing, after `waitMs`. A dead owner's lock
  * (a hook killed at its timeout) is taken over at once.
  */
 export function withInstallLock(dir, waitMs, action) {
-  const lock = join(dir, 'node_modules.lock');
+  const lock = join(dir, LOCK);
   const candidate = `${lock}.cand-${process.pid}`;
   const deadline = Date.now() + waitMs;
   rmSync(candidate, { recursive: true, force: true });
   mkdirSync(candidate);
   writeFileSync(join(candidate, `owner-${process.pid}`), '');
-  writeFileSync(join(candidate, 'pid'), String(process.pid)); // for older copies, see writeLegacyPid
   let held = false;
   try {
     for (;;) {
-      try {
-        renameSync(candidate, lock);
-        held = true;
-        break;
-      } catch (error) {
-        if (!['ENOTEMPTY', 'EEXIST', 'ENOTDIR'].includes(error.code)) throw error;
+      if (!held) {
+        try {
+          renameSync(candidate, lock);
+          held = true;
+        } catch (error) {
+          if (!['ENOTEMPTY', 'EEXIST', 'ENOTDIR'].includes(error.code)) throw error;
+          const owner = ownerOf(lock);
+          if (owner && !alive(owner)) held = takeOverFrom(lock, owner);
+        }
       }
-      const owner = ownerOf(lock);
-      if (owner && !alive(owner) && takeOverFrom(lock, owner)) {
-        held = true;
-        break;
-      }
+      if (held && !legacyHolder(dir)) break;
       if (Date.now() >= deadline) return { status: 'busy' };
-      sleep(owner ? 500 : 50);
+      sleep(held || ownerOf(lock) ? 500 : 50);
     }
     return action();
   } finally {
