@@ -28,4 +28,10 @@ describe('instructionsFromOnclick', () => {
     expect(instructionsFromOnclick('alert(1)', 'X')).toBeUndefined();
     expect(instructionsFromOnclick(call('<b>X:</b><p></p><p></p>  '), 'X')).toBeUndefined();
   });
+
+  // The UIS redesign (November 2026) writes the heading as `<b >`; shape from a
+  // real odevzdavarny.pl, 2026-11-15.
+  it('drops the box-name heading the redesign writes as <b >', () => {
+    expect(instructionsFromOnclick(call('<b >Projekt:</b><p></p>text'), 'Projekt')).toBe('text');
+  });
 });

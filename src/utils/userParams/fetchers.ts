@@ -30,9 +30,13 @@ export async function fetchUserBaseIds(studium?: string) {
   // Other UIS schools: IS ČZU greets in `<div id="log">`, InSIS VŠE in
   // `<span id="logs"><strong>Přihlášen:</strong>`, and both end the name with a
   // tag rather than `&nbsp;`, hence `<` in the class.
-  const nm = h.match(
-    /id="(?:prihlasen|logs?)"[^>]*>\s*(?:<strong>\s*)?(?:Přihlášena?|Logged\s+in):(?:\s*<\/strong>)?&nbsp;([^&<]+)/i
-  );
+  // The UIS redesign (live on is.mendelu.cz, November 2026) has no greeting at
+  // all: the name is the text of the menu popup's `.user-info` link to the
+  // student's own `clovek.pl`. Read off a real page in both languages.
+  const nm =
+    h.match(
+      /id="(?:prihlasen|logs?)"[^>]*>\s*(?:<strong>\s*)?(?:Přihlášena?|Logged\s+in):(?:\s*<\/strong>)?&nbsp;([^&<]+)/i
+    ) || h.match(/class="user-info"[^>]*>\s*<a\b[^>]*>([^<]+)<\/a>/i);
 
   // Stricter Erasmus detection:
   // Usually, Erasmus students have 'Erasmus+' in their study program name or a specific active study row.
@@ -105,6 +109,7 @@ export async function fetchUserStudyDetails(studium?: string) {
 export async function fetchUserNetId() {
   const res = await fetchWithAuth(`${BASE_URL}/auth/wifi/certifikat.pl?_m=177`),
     h = await res.text();
-  const m = h.match(/pro uživatele <b>([^<]+)<\/b>/i) || h.match(/for user <b>([^<]+)<\/b>/i);
-  return { username: m ? m[1]! : '' }; // safe: both regexes have 1 required capturing group
+  // `<b\s*>`: the UIS redesign (November 2026) writes `<b >`, read off a real page.
+  const m = h.match(/(?:pro uživatele|for user)\s+<b\s*>([^<]+)<\/b>/i);
+  return { username: m ? m[1]! : '' }; // safe: the regex has 1 required capturing group
 }
