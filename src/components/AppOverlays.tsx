@@ -7,6 +7,7 @@ import { DocumentsDrawer } from './StudyDocuments/DocumentsDrawer';
 import { ImpersonationDrawer } from './Impersonation/ImpersonationDrawer';
 import { ImpersonationBanner } from './Impersonation/ImpersonationBanner';
 import type { SelectedSubject } from '../types/app';
+import { currentSchool } from '../utils/school';
 interface AppOverlaysProps {
   selectedSubject: SelectedSubject | null;
   setSelectedSubject: (subject: SelectedSubject | null) => void;
@@ -20,14 +21,15 @@ export function AppOverlays({ selectedSubject, setSelectedSubject }: AppOverlays
         isOpen={!!selectedSubject}
         onClose={() => setSelectedSubject(null)}
       />
-      <WelcomeModal />
+      {/* MENDELU's welcome (eduroam set-up) means nothing to another school. */}
+      {currentSchool.has('welcome') && <WelcomeModal />}
       <FeedbackModalHost />
-      <EduroamDrawer />
-      <SuggestionsToast />
-      <DocumentsDrawer />
+      {currentSchool.has('eduroam') && <EduroamDrawer />}
+      {currentSchool.has('reports') && <SuggestionsToast />}
+      {currentSchool.has('studyDocuments') && <DocumentsDrawer />}
       {/* reIS admins only. The phone tree mounts its own sheet and a banner row. */}
-      <ImpersonationDrawer />
-      <ImpersonationBanner variant="floating" />
+      {currentSchool.has('impersonation') && <ImpersonationDrawer />}
+      {currentSchool.has('impersonation') && <ImpersonationBanner variant="floating" />}
     </>
   );
 }

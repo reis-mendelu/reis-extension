@@ -27,7 +27,12 @@ export async function fetchUserBaseIds(studium?: string) {
     );
   // `Přihlášena:` is how IS greets a female student (seen on real pages,
   // October 2026); without the optional `a` her name was always ''.
-  const nm = h.match(/id="prihlasen"[^>]*>\s*(?:Přihlášena?|Logged\s+in):&nbsp;([^&]+)/i);
+  // Other UIS schools: IS ČZU greets in `<div id="log">`, InSIS VŠE in
+  // `<span id="logs"><strong>Přihlášen:</strong>`, and both end the name with a
+  // tag rather than `&nbsp;`, hence `<` in the class.
+  const nm = h.match(
+    /id="(?:prihlasen|logs?)"[^>]*>\s*(?:<strong>\s*)?(?:Přihlášena?|Logged\s+in):(?:\s*<\/strong>)?&nbsp;([^&<]+)/i
+  );
 
   // Stricter Erasmus detection:
   // Usually, Erasmus students have 'Erasmus+' in their study program name or a specific active study row.

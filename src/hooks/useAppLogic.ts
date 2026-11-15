@@ -31,6 +31,7 @@ import { PARENT_ORIGIN } from '../api/proxy/trustedOrigin';
 import { getPlatform } from '../platform';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
+import { currentSchool } from '../utils/school';
 
 interface SyncedData {
   /** The study the per-study data belongs to; see the guard in the listener. */
@@ -75,6 +76,7 @@ export function useAppLogic() {
   // only on an actual bump of the counter — never on initial mount.
   useEffect(() => {
     return useAppStore.subscribe((state, prev) => {
+      if (!currentSchool.has('campusMap')) return;
       if (state.mapFocusRequest !== prev.mapFocusRequest) setCurrentView('map');
     });
   }, []);
@@ -116,7 +118,13 @@ export function useAppLogic() {
         if (w) setCurrentDate(new Date(w as string));
         // Validated, not cast: a view removed since this value was written
         // would otherwise boot the app onto a screen nothing renders.
-        if (isAppView(v)) setCurrentView(v);
+        // A school without the map or Erasmus has no such view to come back to.
+        if (
+          isAppView(v) &&
+          (v !== 'map' || currentSchool.has('campusMap')) &&
+          (v !== 'erasmus' || currentSchool.has('erasmus'))
+        )
+          setCurrentView(v);
       })
       .catch((e) => logError('useAppLogic.restoreView', e))
       .finally(() => {

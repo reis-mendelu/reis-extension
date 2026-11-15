@@ -3,6 +3,7 @@ import { parseRequiredInt, parseOptionalInt, ParserError } from '../utils/parser
 import { logError } from '../utils/reportError';
 import { STUDY_PLAN_SORT_PARAM, repeatedSemesterTitles } from './studyPlanSortMode';
 import { boldSpans, rowHeadingText } from './studyPlanHeading';
+import { hasStudiedOnlyView, labelledGroupHeading } from './studyPlanGroupLayout';
 import type {
   StudyPlan,
   DualLanguageStudyPlan,
@@ -190,6 +191,8 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
 
   const table = doc.getElementById('tmtab_1') || doc;
   const rows = Array.from(table.querySelectorAll('tr'));
+  // InSIS (VŠE) only: show what IS shows on load, not the group catalogue.
+  const studiedOnly = hasStudiedOnlyView(doc);
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -207,9 +210,12 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
       continue;
     }
 
-    if (boldText.startsWith(L.groupPrefix)) {
-      const rawText = (row.textContent || '').trim();
-      let name = boldText;
+    const labelled = boldText.startsWith(L.groupPrefix)
+      ? null
+      : labelledGroupHeading(row, L.groupPrefix);
+    if (boldText.startsWith(L.groupPrefix) || labelled) {
+      const rawText = labelled ? labelled.heading : (row.textContent || '').trim();
+      let name = labelled ? labelled.heading : boldText;
       let statusDesc = '';
 
       if (rawText.includes('-')) {
@@ -217,7 +223,7 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
         name = parts[0].trim();
         statusDesc = parts.slice(1).join('-').trim();
       } else {
-        statusDesc = rawText;
+        statusDesc = labelled ? '' : rawText;
       }
 
       const constraint = parseGroupConstraint(name);
@@ -225,6 +231,7 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
         name,
         statusDescription: statusDesc,
         subjects: [],
+        ...(labelled ? { label: labelled.label } : {}),
         ...(constraint.minCount !== undefined ? { minCount: constraint.minCount } : {}),
         ...(constraint.minCredits !== undefined ? { minCredits: constraint.minCredits } : {}),
       };
@@ -233,6 +240,8 @@ export function parseStudyPlanDOM(doc: Document, lang: Lang): StudyPlan {
       }
       continue;
     }
+
+    if (studiedOnly && row.classList.contains('predmety_vse')) continue;
 
     if (row.classList.contains('predmety_vse') || row.classList.contains('uis-hl-table')) {
       if ((row.textContent || '').includes(L.noSubjectsMessage)) continue;

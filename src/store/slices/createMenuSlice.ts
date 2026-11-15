@@ -1,5 +1,6 @@
 import type { MenuSlice, AppSlice, Language } from '../types';
 import { fetchMenu } from '../../api/menu';
+import { currentSchool } from '../../utils/school';
 
 /**
  * Which request is the newest. Module-scoped rather than store state because
@@ -98,7 +99,8 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => {
       // already returns early in demo (api/feedback.ts, for one); this
       // one did not, and now that the calendar carries a jídelníček card the demo
       // boot sat on a pending request for half a minute.
-      if (get().demoMode) return;
+      // SKM's menu is MENDELU's canteens: no use to another school.
+      if (get().demoMode || !currentSchool.has('canteenMenu')) return;
 
       // The REQUEST guard, and it belongs here rather than in the callers.
       // `!get().menu` used to gate only the loading flag, so every caller reached

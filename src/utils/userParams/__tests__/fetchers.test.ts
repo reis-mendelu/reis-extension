@@ -127,4 +127,32 @@ describe('fetchUserBaseIds', () => {
     expect(params?.studentId).toBe('120344');
     expect(params?.fullName).toBe('Jan Novák');
   });
+
+  // IS ČZU (same UIS, older header) greets in a div, and the name is followed
+  // by `</div>`, not by `&nbsp;`. Markup from a real is.czu.cz studium.pl,
+  // October 2026, identity replaced.
+  it('reads the name from the IS ČZU header', async () => {
+    respond(`
+<html><body>
+<a href="/auth/student/studium.pl?studium=358180;obdobi=1327;lang=cz">x</a>
+<div id="menu_top"> <div id="log"> Přihlášen:&nbsp;Jan Novák </div> <div id="ema"><a href="/auth/posta/">0 zpráv</a></div></div>
+${ID_ROW('Identifikační číslo uživatele: ', '120344')}
+</body></html>`);
+    const params = await fetchUserBaseIds();
+    expect(params?.studentId).toBe('120344');
+    expect(params?.fullName).toBe('Jan Novák');
+  });
+
+  // InSIS VŠE puts the greeting in <strong> inside span#logs. Markup from a
+  // real insis.vse.cz studium.pl, November 2026, identity replaced.
+  it('reads the name from the InSIS VŠE header', async () => {
+    respond(`
+<html><body>
+<a href="/auth/student/studium.pl?studium=358180;obdobi=1278;lang=cz">x</a>
+<span id="logs"> <strong> Přihlášen:</strong>&nbsp;Jan Novák</span> <ul> <li><a href="https://outlook.com/vse.cz">Office365</a></li></ul>
+${ID_ROW('Identifikační číslo uživatele: ', '120344')}
+</body></html>`);
+    const params = await fetchUserBaseIds();
+    expect(params?.fullName).toBe('Jan Novák');
+  });
 });

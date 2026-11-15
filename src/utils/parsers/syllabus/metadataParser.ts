@@ -22,6 +22,16 @@ export function parseCourseMetadata(doc: Document, lang: string = 'cz'): CourseM
     return (text || '').toLowerCase().replace(/\s+/g, ' ').trim().replace(/:$/, '');
   };
 
+  // `completion` is added to `info` only when an InSIS page sets it (the `insis`
+  // holder below starts it at null), so a MENDELU record keeps exactly the keys
+  // it had before.
+  let sawCredits = false;
+  let sawTeachers = false;
+  const insis: { credits: string | null; completion: string | null } & Pick<
+    CourseMetadata,
+    'teachers'
+  > = { credits: null, completion: null, teachers: [] };
+
   doc.querySelectorAll('table tbody tr').forEach((r) => {
     const c = r.querySelectorAll('td');
     if (c.length < 2) return;
@@ -57,6 +67,7 @@ export function parseCourseMetadata(doc: Document, lang: string = 'cz'): CourseM
       // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
       const bold = v.querySelector('b')?.textContent?.trim();
       info.credits = bold || v_txt;
+      sawCredits = true;
     }
     const extractId = (url: string | null | undefined) => {
       if (!url) return null;
@@ -75,7 +86,7 @@ export function parseCourseMetadata(doc: Document, lang: string = 'cz'): CourseM
     if (l === 'typ předmětu' || l === 'course type') {
       info.status = v_txt;
     }
-    if (l === 'vyučující' || l === 'instructors' || l === 'teachers') {
+    const readTeachers = (into: CourseMetadata['teachers']) => {
       // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
       v.querySelectorAll('a').forEach((a) => {
         // Roles are usually in parenthesis immediately following the link
@@ -88,14 +99,32 @@ export function parseCourseMetadata(doc: Document, lang: string = 'cz'): CourseM
           if (match) roles = match[1];
         }
 
-        info.teachers.push({
+        into.push({
           name: a.textContent?.trim() || '',
           id: extractId(a.getAttribute('href')),
           roles: roles.trim(),
         });
       });
+    };
+
+    if (l === 'vyučující' || l === 'instructors' || l === 'teachers') {
+      sawTeachers = true;
+      readTeachers(info.teachers);
     }
+
+    // InSIS (VŠE) labels, kept apart and applied after the loop only where no
+    // MENDELU label matched, so a MENDELU page can never read them.
+    if (l === 'počet přidělených ects kreditů' || l === 'number of ects credits allocated') {
+      // @ts-ignore -- nuia: parser load-bearing (see CLAUDE.md Parser Rules)
+      insis.credits = v.querySelector('b')?.textContent?.trim() || v_txt;
+    }
+    if (l === 'forma ukončení' || l === 'mode of completion') insis.completion = v_txt;
+    if (l === 'name of lecturer(s)') readTeachers(insis.teachers);
   });
+
+  if (!sawCredits && insis.credits) info.credits = insis.credits;
+  if (insis.completion) info.completion = insis.completion;
+  if (!sawTeachers && insis.teachers.length > 0) info.teachers = insis.teachers;
 
   // Set deprecated courseName with full fallback path
   info.courseName =
