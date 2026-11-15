@@ -13,7 +13,8 @@ vi.mock('../../../../mobile/iskam/iskamLogin', () => ({
 }));
 
 import { IskamBalanceRow } from '../IskamBalanceRow';
-import { useIskamStore, type IskamState } from '../../../../mobile/iskam/iskamStore';
+import { useIskamStore } from '../../../../mobile/iskam/iskamStore';
+import type { IskamState } from '../../../../mobile/iskam/iskamTypes';
 import { useAppStore } from '../../../../store/useAppStore';
 
 const setState = (p: Partial<IskamState>) => useIskamStore.setState(p);
@@ -121,5 +122,72 @@ describe('IskamBalanceRow', () => {
     act(() => setState({ lastTopUp: { kind: 'unseen' } }));
     expect(screen.getByRole('status')).toHaveTextContent('Zůstatek se zatím nezměnil');
     expect(screen.getByText('Částka (Kč)')).toBeTruthy();
+  });
+
+  it('an open claim: its amount and due date, and Zaplatit opens WebISKAM for it', () => {
+    const payClaim = vi.fn(async () => {});
+    const id = '00000000-0000-0000-0000-000000000001';
+    setState({
+      status: 'balance',
+      balance: { amount: 6940.16 },
+      claims: [
+        {
+          id,
+          due: '2026-11-20',
+          description: 'Ubytování 31.10.2026 - 30.11.2026',
+          remaining: 5370,
+        },
+      ],
+      payClaim,
+    });
+    render(<IskamBalanceRow />);
+    const claims = screen.getByTestId('iskam-claims');
+    expect(claims).toHaveTextContent('Ubytování 31.10.2026 - 30.11.2026');
+    expect(claims).toHaveTextContent(/5\s370\sKč.*splatné do 20\. 11\./);
+    fireEvent.click(screen.getByRole('button', { name: 'Zaplatit' }));
+    expect(payClaim).toHaveBeenCalledWith(id);
+  });
+
+  it('a claim the balance does not cover: Zaplatit disabled, and how much to top up', () => {
+    setState({
+      status: 'balance',
+      balance: { amount: 2825.58 },
+      claims: [
+        {
+          id: '00000000-0000-0000-0000-000000000001',
+          due: '2026-11-20',
+          description: 'Ubytování',
+          remaining: 5370,
+        },
+      ],
+    });
+    render(<IskamBalanceRow />);
+    expect(screen.getByRole('button', { name: 'Zaplatit' })).toBeDisabled();
+    expect(screen.getByTestId('iskam-claims')).toHaveTextContent(/chybí 2\s545,00\s*Kč/);
+  });
+
+  it('no claims row without claims', () => {
+    setState({ status: 'balance', balance: { amount: 10 }, claims: [] });
+    render(<IskamBalanceRow />);
+    expect(screen.queryByTestId('iskam-claims')).toBeNull();
+  });
+
+  it('says Zaplaceno beside a claim that is still open', () => {
+    setState({
+      status: 'balance',
+      balance: { amount: 100 },
+      claims: [
+        {
+          id: '00000000-0000-0000-0000-000000000002',
+          due: '2026-12-20',
+          description: 'Ubytování 30.11.2026 - 31.12.2026',
+          remaining: 5370,
+        },
+      ],
+      lastClaimPaid: { amount: 5370 },
+    });
+    render(<IskamBalanceRow />);
+    expect(screen.getByRole('status')).toHaveTextContent(/Zaplaceno 5\s370\sKč/);
+    expect(screen.getByTestId('iskam-claims')).toHaveTextContent('30.11.2026');
   });
 });
