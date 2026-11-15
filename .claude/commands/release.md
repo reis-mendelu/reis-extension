@@ -42,7 +42,7 @@ release PR is the last gate: walk its checklist before merging.
      5.7.2). Tell Dominik and let him choose (wait, withdraw, or rename a stale
      record). Changing a version in App Store Connect never happens without his
      explicit OK.
-   The recipes for both are in `docs/release-pipeline.md`, "Before the release PR".
+   The recipes for both are in `docs/release-preflight.md`.
    Do not carry on past a finding.
 
 4. **Bump on a branch off `test`**:

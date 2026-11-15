@@ -9,7 +9,7 @@
 //    otherwise editable? Then ship.yml would upload the build and stop.
 //
 // Exit 0 = nothing found. Exit 1 = a finding (or a check that could not run).
-// What to do about each: docs/release-pipeline.md, "Before the release PR".
+// What to do about each: docs/release-preflight.md.
 import { config as loadDotenv } from 'dotenv';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
@@ -20,7 +20,7 @@ import { checkDrift } from '../lib/releaseDrift';
 loadDotenv({ path: resolve(process.cwd(), '.env'), quiet: true });
 
 const APP_ID = process.env.REIS_ASC_APP_ID ?? '6804832714';
-const DOC = 'docs/release-pipeline.md, "Before the release PR"';
+const DOC = 'docs/release-preflight.md';
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(name);
