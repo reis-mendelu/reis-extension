@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { parseClaims } from '../claimsParser';
 
 const fixture = readFileSync(resolve(__dirname, 'fixtures/pohledavky.html'), 'utf8');
+const fixtureEn = readFileSync(resolve(__dirname, 'fixtures/pohledavky-en.html'), 'utf8');
 
 describe('parseClaims', () => {
   it('reads the open claim from the live page (2026-11-15)', () => {
@@ -50,5 +51,28 @@ describe('parseClaims', () => {
       `data-id="1'];alert(1);//"`
     );
     expect(parseClaims(evil)).toEqual([]);
+  });
+
+  // A phone in English gets WebISKAM in English: month-first date, comma
+  // thousands. The first device test found nothing because of the date.
+  it('reads the English page (phone set to English)', () => {
+    expect(parseClaims(fixtureEn)).toEqual([
+      {
+        id: '00000000-0000-0000-0000-000000000001',
+        due: '2026-11-20',
+        description: 'Accomodation 31.10.2026 - 30.11.2026',
+        remaining: 4815,
+      },
+    ]);
+  });
+
+  it('rejects a date that is neither format, or out of range', () => {
+    for (const bad of ['2026-11-20', '13/20/2026', '20.13.2026', '']) {
+      const page = fixture.replace(
+        '<td class="dateCol">20.11.2026</td>',
+        `<td class="dateCol">${bad}</td>`
+      );
+      expect(parseClaims(page)).toEqual([]);
+    }
   });
 });

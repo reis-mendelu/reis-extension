@@ -5,7 +5,11 @@
  * page on 2026-11-15 with one claim open (__tests__/fixtures/pohledavky.html).
  * The table is `#omezeniPohledavkyTable`; a claim is a row with WebISKAM's own
  * pay button `.payfrommainaccount[data-id]`, and the "Celkem" row has none.
- * Cells: 0 due date, 1 description, 4 "Zbývá uhradit".
+ * Cells: 0 due date, 1 description, 4 "Zbývá uhradit" / "To be paid".
+ *
+ * WebISKAM answers in the PHONE's language, and many students' phones are in
+ * English: the same table then says "11/20/2026" and "5,370 Kč". Both are read
+ * (fixtures/pohledavky.html and pohledavky-en.html).
  *
  * null when the table is missing: the page with nothing owed has not been
  * seen yet, so a missing table means "cannot tell", and the app shows nothing.
@@ -26,7 +30,22 @@ export interface Claim {
 }
 
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const DATE = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
+// Czech "20.11.2026" (day first); English "11/20/2026" (month first). Measured
+// on the live page in both languages, 2026-11-15. The separator decides the
+// order, so a page whose lang attribute is odd still reads right.
+const DATE_CS = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
+const DATE_EN = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+
+function isoDate(text: string): string | null {
+  const cs = text.match(DATE_CS);
+  const en = cs ? null : text.match(DATE_EN);
+  const [day, month, year] = cs ? [cs[1], cs[2], cs[3]] : en ? [en[2], en[1], en[3]] : [];
+  if (!day || !month || !year) return null;
+  const d = Number(day);
+  const m = Number(month);
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+}
 // The same strict shapes as kontaParser (not imported: that parser stays as verified).
 const AMOUNT_CS = /^(-?(?:\d{1,3}(?:\s\d{3})+|\d+)(?:,\d{1,2})?)\s*Kč$/;
 const AMOUNT_EN = /^(-?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)\s*Kč$/;
@@ -51,13 +70,12 @@ export function parseClaims(html: string): Claim[] | null {
   const claims: Claim[] = [];
   for (const row of Array.from(table.querySelectorAll('tbody tr'))) {
     const id = row.querySelector('.payfrommainaccount')?.getAttribute('data-id') ?? '';
-    const date = cellText(row, 0).match(DATE);
+    const due = isoDate(cellText(row, 0));
     const remaining = amountOf(cellText(row, 4), english);
-    if (!GUID.test(id) || !date || remaining === null || remaining <= 0) continue;
-    const [, d, m, y] = date;
+    if (!GUID.test(id) || !due || remaining === null || remaining <= 0) continue;
     claims.push({
       id,
-      due: `${y}-${m!.padStart(2, '0')}-${d!.padStart(2, '0')}`,
+      due,
       description: cellText(row, 1),
       remaining,
     });
