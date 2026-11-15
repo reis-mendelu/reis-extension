@@ -145,3 +145,69 @@ describe.skipIf(process.platform !== 'darwin')('cloneTree (APFS)', () => {
     expect(existsSync(join(to, 'vitest', 'marker'))).toBe(true);
   });
 });
+
+// The old hook linked node_modules to the main checkout when it could not
+// clone. A link that matches the lockfile is still not this checkout's own:
+// `npm ci` here would rebuild it under every session that shares it.
+describe('a shared (linked) install', () => {
+  it('is replaced by a private copy even when it matches the lockfile', () => {
+    const shared = checkout('main', '5.0.1', '5.0.1');
+    const dir = checkout('wt', '5.0.1');
+    symlinkSync(join(shared, 'node_modules'), join(dir, 'node_modules'));
+    const result = ensureInstall(dir, { candidates: [shared], clone: copy });
+    expect(result).toEqual({ status: 'copied', from: shared });
+    expect(lstatSync(join(dir, 'node_modules')).isSymbolicLink()).toBe(false);
+    expect(marker(shared)).toBe('5.0.1');
+  });
+
+  it('is kept, and reported, when no private copy can be made right now', () => {
+    const shared = checkout('main', '5.0.1', '5.0.1');
+    const dir = checkout('wt', '5.0.1');
+    symlinkSync(join(shared, 'node_modules'), join(dir, 'node_modules'));
+    const result = ensureInstall(dir, { candidates: [], clone: null });
+    expect(result.status).toBe('shared');
+    expect(lstatSync(join(dir, 'node_modules')).isSymbolicLink()).toBe(true);
+  });
+});
+
+// The hook's copy takes ~20 s. An agent that runs `npm run check` meanwhile
+// must not start a second copy over the first.
+describe('two calls for the same checkout', () => {
+  const lockDir = (dir: string) => join(dir, 'node_modules.lock');
+  const heldBy = (dir: string, pid: number) => {
+    mkdirSync(lockDir(dir));
+    writeFileSync(join(lockDir(dir), 'pid'), String(pid));
+  };
+
+  it('does not touch the install while another live call holds the lock', () => {
+    const dir = checkout('wt', '5.0.1', '3.2.7');
+    heldBy(dir, process.pid);
+    const npmCi = vi.fn();
+    const result = ensureInstall(dir, {
+      candidates: [],
+      clone: copy,
+      npmCi,
+      install: true,
+      waitMs: 0,
+    });
+    expect(result.status).toBe('busy');
+    expect(npmCi).not.toHaveBeenCalled();
+    expect(marker(dir)).toBe('3.2.7');
+  });
+
+  // A hook killed at its timeout leaves its lock behind.
+  it('takes over the lock of a process that no longer exists', () => {
+    const dir = checkout('wt', '5.0.1', '3.2.7');
+    const sibling = checkout('sibling', '5.0.1', '5.0.1');
+    heldBy(dir, 999_999_999);
+    const result = ensureInstall(dir, { candidates: [sibling], clone: copy, waitMs: 0 });
+    expect(result.status).toBe('copied');
+    expect(existsSync(lockDir(dir))).toBe(false);
+  });
+
+  it('releases the lock when it is done', () => {
+    const dir = checkout('wt', '5.0.1', '3.2.7');
+    ensureInstall(dir, { candidates: [], clone: copy });
+    expect(existsSync(lockDir(dir))).toBe(false);
+  });
+});

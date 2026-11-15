@@ -187,3 +187,4 @@ dist-plugin/
 
 # A node_modules copy in flight (scripts/ensure-install.mjs); renamed into place when whole.
 node_modules.incoming
+node_modules.lock

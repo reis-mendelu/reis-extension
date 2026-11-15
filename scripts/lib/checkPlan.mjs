@@ -43,13 +43,39 @@ const CODE = /\.(?:[cm]?[jt]sx?|json)$/;
  * - `tests`: arguments for `vitest related`. The guard tests are always in the
  *   list: they read files through fs, so no import graph ties them to a change,
  *   and a docs-only edit that breaks one would otherwise pass here and fail CI.
+ *   `extraTests` are the tests that name a deleted file (see deletedStems).
  */
-export function planFromChanges(changed, alwaysRun) {
+export function planFromChanges(changed, alwaysRun, extraTests = []) {
   return {
     lint: changed.filter((f) => LINTED.test(f)),
     format: [...changed],
-    tests: [...new Set([...changed.filter((f) => CODE.test(f)), ...alwaysRun])],
+    tests: [...new Set([...changed.filter((f) => CODE.test(f)), ...extraTests, ...alwaysRun])],
   };
+}
+
+/**
+ * git's `-z` output as paths. Without -z git quotes a non-ASCII name
+ * (`"docs/\303\272vod.md"`), and that string is not a file: it would drop out
+ * of lint, format and tests without a word.
+ */
+export const nulSeparated = (out) => out.split('\0').filter(Boolean);
+
+/**
+ * What an import of each deleted code file would contain: its name without the
+ * extension, or its folder for an index file. `vitest related` cannot relate a
+ * test to a file that no longer exists, and tsc does not cover scripts/, so the
+ * tests that mention these names are found by text and run as well.
+ */
+export function deletedStems(deleted) {
+  const stems = deleted
+    .filter((file) => CODE.test(file) && !/\.(?:test|spec)\.[^.]+$/.test(file))
+    .map((file) => {
+      const parts = file.split('/');
+      const stem = parts.pop().replace(/\.[^.]+$/, '');
+      return stem === 'index' ? (parts.pop() ?? '') : stem;
+    })
+    .filter((stem) => stem.length >= 3);
+  return [...new Set(stems)];
 }
 
 /**

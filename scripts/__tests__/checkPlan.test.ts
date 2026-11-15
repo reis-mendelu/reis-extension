@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { closestBase, planFromChanges, staleInstall, verdict } from '../lib/checkPlan.mjs';
+import {
+  closestBase,
+  deletedStems,
+  nulSeparated,
+  planFromChanges,
+  staleInstall,
+  verdict,
+} from '../lib/checkPlan.mjs';
 
 const lock = {
   packages: {
@@ -136,5 +143,41 @@ describe('verdict', () => {
   // A run that did nothing must not read as a pass.
   it('fails when nothing ran', () => {
     expect(verdict([])).toBe('check: FAIL (nothing ran)');
+  });
+});
+
+describe('nulSeparated', () => {
+  // Without -z git quotes a non-ASCII name ("docs/\303\272vod.md"); that string
+  // is not a file, so the file would drop out of lint, format and tests.
+  it('keeps a Czech file name exactly as it is on disk', () => {
+    expect(nulSeparated('docs/úvod.md\0src/a.ts\0')).toEqual(['docs/úvod.md', 'src/a.ts']);
+  });
+
+  it('is empty for no output', () => {
+    expect(nulSeparated('')).toEqual([]);
+  });
+});
+
+// `vitest related` cannot relate a test to a file that no longer exists, and
+// tsc does not cover scripts/: a deleted helper's test would fail only in CI.
+describe('deletedStems', () => {
+  it('names deleted code by what an import of it contains', () => {
+    expect(deletedStems(['scripts/lib/fooHelper.mjs', 'src/utils/bar.ts', 'docs/x.md'])).toEqual([
+      'fooHelper',
+      'bar',
+    ]);
+  });
+
+  it('uses the folder for an index file, and skips deleted tests and tiny names', () => {
+    expect(deletedStems(['src/components/Widget/index.tsx', 'src/a.test.ts', 'src/x.ts'])).toEqual([
+      'Widget',
+    ]);
+  });
+});
+
+describe('planFromChanges with deleted code', () => {
+  it('runs the tests that named a deleted file', () => {
+    const plan = planFromChanges(['src/a.ts'], ['g.test.ts'], ['scripts/__tests__/foo.test.ts']);
+    expect(plan.tests).toEqual(['src/a.ts', 'scripts/__tests__/foo.test.ts', 'g.test.ts']);
   });
 });

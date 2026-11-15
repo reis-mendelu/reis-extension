@@ -26,6 +26,7 @@ import {
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { staleInstall } from './lib/checkPlan.mjs';
+import { withInstallLock } from './lib/installLock.mjs';
 
 const readJson = (file) => {
   try {
@@ -41,7 +42,8 @@ const installedIn = (dir) => readJson(join(dir, 'node_modules', '.package-lock.j
  * Copy a tree so that `to` exists only once the whole copy does. The hook that
  * calls this is killed at its timeout; a copy written straight into
  * node_modules would leave a partial tree that resolves some imports and looks
- * installed. `<to>.incoming` is gitignored.
+ * installed. `<to>.incoming` is gitignored, and only ever touched by the call
+ * that holds the install lock.
  */
 export function cloneTree(from, to) {
   const incoming = `${to}.incoming`;
@@ -79,7 +81,7 @@ function runNpmCi(dir) {
 const canClone = process.platform === 'darwin';
 
 /**
- * @returns {{ status: 'ok' | 'copied' | 'installed' | 'stale', from?: string, stale?: object[] }}
+ * @returns {{ status: 'ok' | 'copied' | 'installed' | 'stale' | 'shared' | 'busy', from?: string, stale?: object[] }}
  */
 export function ensureInstall(dir, options = {}) {
   const {
@@ -87,38 +89,53 @@ export function ensureInstall(dir, options = {}) {
     clone = canClone ? cloneTree : null,
     npmCi = runNpmCi,
     install = false,
+    waitMs = 120_000,
   } = options;
   const lock = readJson(join(dir, 'package-lock.json'));
   if (!lock) return { status: 'ok' };
   const modules = join(dir, 'node_modules');
   const stale = () => staleInstall(lock, installedIn(dir));
-  if (stale().length === 0) return { status: 'ok' };
+  // A link is another checkout's install, however well it matches: `npm ci`
+  // here would rebuild that tree under every session sharing it.
+  const linked = () => lstatSync(modules, { throwIfNoEntry: false })?.isSymbolicLink() ?? false;
+  const owned = () => !linked() && stale().length === 0;
+  if (owned()) return { status: 'ok' };
 
-  // A stale link is another checkout's install. Installing through it would
-  // rebuild that tree under every session sharing it, so drop the link only.
-  if (lstatSync(modules, { throwIfNoEntry: false })?.isSymbolicLink()) unlinkSync(modules);
+  return withInstallLock(dir, waitMs, () => {
+    // Another call may have finished the job while this one waited.
+    if (owned()) return { status: 'ok' };
 
-  if (clone) {
     const here = resolve(dir);
-    for (const other of candidates) {
-      if (resolve(other) === here) continue;
+    const matching = (clone ? candidates : []).filter((other) => {
       const theirs = join(other, 'node_modules');
-      if (!existsSync(theirs) || lstatSync(theirs).isSymbolicLink()) continue;
-      if (staleInstall(lock, installedIn(other)).length > 0) continue;
+      if (resolve(other) === here || !existsSync(theirs)) return false;
+      return (
+        !lstatSync(theirs).isSymbolicLink() && staleInstall(lock, installedIn(other)).length === 0
+      );
+    });
+
+    if (linked()) {
+      // A working link is only given up for something better; a stale one is
+      // no use to anyone. Only the link goes, never the install it points at.
+      if (stale().length === 0 && !install && matching.length === 0) return { status: 'shared' };
+      unlinkSync(modules);
+    }
+
+    for (const other of matching) {
       try {
-        clone(theirs, modules);
+        clone(join(other, 'node_modules'), modules);
       } catch {
         continue; // not APFS, or the source vanished mid-copy: try the next
       }
       if (stale().length === 0) return { status: 'copied', from: other };
     }
-  }
 
-  if (install) {
-    npmCi(dir);
-    if (stale().length === 0) return { status: 'installed' };
-  }
-  return { status: 'stale', stale: stale() };
+    if (install) {
+      npmCi(dir);
+      if (stale().length === 0) return { status: 'installed' };
+    }
+    return { status: 'stale', stale: stale() };
+  });
 }
 
 /** One line for whoever reads the hook or the check output. */
@@ -127,6 +144,10 @@ export function describeInstall(result) {
     return `install: copied node_modules from ${result.from} (copy-on-write; this checkout owns it)`;
   if (result.status === 'installed')
     return 'install: ran npm ci (node_modules did not match package-lock.json)';
+  if (result.status === 'shared')
+    return "install: node_modules is a link to another checkout's install. It matches the lockfile, but do not run 'npm ci' through it; 'npm run check' replaces the link with this checkout's own install.";
+  if (result.status === 'busy')
+    return 'install: another install is running in this checkout (node_modules.lock). Try again when it has finished.';
   if (result.status === 'stale') {
     const [first] = result.stale;
     const example = first ? ` (e.g. ${first.name} ${first.have ?? 'missing'} → ${first.want})` : '';
@@ -153,5 +174,5 @@ if (isMain()) {
   const result = ensureInstall(dir, { install: args.includes('--install') });
   const line = describeInstall(result);
   if (line) console.log(line);
-  process.exit(result.status === 'stale' ? 2 : 0);
+  process.exit(result.status === 'stale' || result.status === 'busy' ? 2 : 0);
 }

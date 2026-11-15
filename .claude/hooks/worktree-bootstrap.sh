@@ -43,10 +43,17 @@ lines=()
 # origin/test. Detached is the opt-in: a checkout someone put on a branch is
 # their work and is never moved — the hook only says how far behind it is.
 # To park it: git -C <main checkout> checkout --detach origin/test
+main_is_parked() {
+  git -C "$main_root" symbolic-ref -q HEAD >/dev/null 2>&1 && return 1
+  [ -z "$(git -C "$main_root" status --porcelain --untracked-files=no 2>/dev/null)" ]
+}
+
 advance_parked_main() {
-  git -C "$main_root" symbolic-ref -q HEAD >/dev/null 2>&1 && return 0
-  [ -z "$(git -C "$main_root" status --porcelain --untracked-files=no 2>/dev/null)" ] || return 0
+  main_is_parked || return 0
   git -C "$main_root" fetch -q origin test 2>/dev/null || return 0
+  # Asked again: the fetch takes seconds, and a branch checked out or a file
+  # edited meanwhile is someone's choice, which a checkout here would undo.
+  main_is_parked || return 0
   [ "$(git -C "$main_root" rev-parse HEAD 2>/dev/null)" = "$(git -C "$main_root" rev-parse origin/test 2>/dev/null)" ] && return 0
   git -C "$main_root" checkout -q --detach origin/test 2>/dev/null
 }

@@ -19,7 +19,13 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { closestBase, planFromChanges, verdict } from './lib/checkPlan.mjs';
+import {
+  closestBase,
+  deletedStems,
+  nulSeparated,
+  planFromChanges,
+  verdict,
+} from './lib/checkPlan.mjs';
 import { describeInstall, ensureInstall } from './ensure-install.mjs';
 
 const git = (...args) => {
@@ -28,6 +34,19 @@ const git = (...args) => {
       .trim()
       .split('\n')
       .filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+/** File lists from git, NUL-separated so a non-ASCII name arrives as it is on disk. */
+const gitPaths = (command, ...args) => {
+  try {
+    return nulSeparated(
+      execFileSync('git', [command, '-z', ...args], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      })
+    );
   } catch {
     return [];
   }
@@ -51,33 +70,64 @@ if (root) process.chdir(root);
 header('install');
 const install = ensureInstall(process.cwd(), { install: true });
 console.log(describeInstall(install) ?? 'install: node_modules matches package-lock.json');
-step('install', install.status !== 'stale');
+const installed = install.status !== 'stale' && install.status !== 'busy';
+step('install', installed);
 // A stale install fails typecheck and tests in ways that look like real bugs.
-if (install.status === 'stale') finish();
+if (!installed) finish();
 
 // Local refs only: no fetch, so this works offline and never waits on a network.
+// `npm run check -- --base <ref>` names the base where neither is known.
+const baseArg = process.argv.indexOf('--base');
 const base = closestBase(
-  ['origin/test', 'origin/main'].flatMap((ref) => {
-    const [sha] = git('merge-base', 'HEAD', ref);
+  (baseArg > 0 ? [process.argv[baseArg + 1]] : ['origin/test', 'origin/main']).flatMap((ref) => {
+    const [sha] = ref ? git('merge-base', 'HEAD', ref) : [];
     if (!sha) return [];
     return [{ ref, sha, ahead: Number(git('rev-list', '--count', `${sha}..HEAD`)[0] ?? 0) }];
   })
 );
-const changed = [
-  ...new Set([
-    ...(base ? git('diff', '--name-only', '--diff-filter=ACMR', base.sha) : []),
-    ...git('diff', '--name-only', '--diff-filter=ACMR', 'HEAD'),
-    ...git('ls-files', '--others', '--exclude-standard'),
-  ]),
-].filter((file) => existsSync(file));
 
 header('changes');
+// Without a base only uncommitted files would be looked at, and a clean branch
+// would pass with none of its commits linted, formatted or tested.
+if (!base) {
+  console.log(
+    'Cannot tell what this branch changed: neither origin/test nor origin/main is known here.\n' +
+      'Fetch one (git fetch origin test), or name the base: npm run check -- --base <ref>'
+  );
+  step('changes', false, 'no base');
+  finish();
+}
+
+const diff = (filter, ref, ...more) =>
+  gitPaths('diff', '--name-only', `--diff-filter=${filter}`, ...more, ref);
+const changed = [
+  ...new Set([
+    ...diff('ACMR', base.sha),
+    ...diff('ACMR', 'HEAD'),
+    ...gitPaths('ls-files', '--others', '--exclude-standard'),
+  ]),
+].filter((file) => existsSync(file));
+// A rename counts as a deletion of the old path: its tests may still import it.
+const deleted = [
+  ...new Set([...diff('D', base.sha, '--no-renames'), ...diff('D', 'HEAD', '--no-renames')]),
+].filter((file) => !existsSync(file));
+const testsNamingDeleted = [
+  ...new Set(
+    deletedStems(deleted).flatMap((stem) =>
+      gitPaths('grep', '-l', '-F', '-e', stem, '--', '*.test.ts', '*.test.tsx', '*.spec.ts')
+    )
+  ),
+].filter((file) => existsSync(file));
+
 const behind = Number(git('rev-list', '--count', 'HEAD..origin/test')[0] ?? 0);
 console.log(
-  `${changed.length} changed file(s) against ${base ? base.ref : 'HEAD (no base found)'}` +
+  `${changed.length} changed file(s) against ${base.ref}` +
+    (deleted.length > 0
+      ? `; ${deleted.length} deleted or renamed, named by ${testsNamingDeleted.length} test file(s)`
+      : '') +
     (behind > 0 ? `; origin/test is ${behind} commit(s) ahead of this branch` : '')
 );
-if (base?.ref === 'origin/main')
+if (base.ref === 'origin/main')
   console.log(
     'note: this branch is cut from main. PRs go to test: merge origin/test in first (CLAUDE.md > Branches).'
   );
@@ -89,7 +139,7 @@ const alwaysRun = [
     .map((file) => `${guardDir}/${file}`),
   'scripts/lib/__tests__/privacyDisclosures.test.ts',
 ].filter((file) => existsSync(file));
-const plan = planFromChanges(changed, alwaysRun);
+const plan = planFromChanges(changed, alwaysRun, testsNamingDeleted);
 const files = (list) => `${list.length} file${list.length === 1 ? '' : 's'}`;
 
 header('typecheck');

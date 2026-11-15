@@ -119,6 +119,22 @@ describe('the main checkout', () => {
     expect(git(main, 'rev-parse', 'HEAD')).toBe(before);
   });
 
+  // "Someone checks out a branch while the fetch runs", made deterministic: the
+  // fetch itself does the checkout, through the remote's upload-pack command.
+  it('is not detached again when a branch is checked out during the fetch', () => {
+    git(main, 'checkout', '-q', '--detach', 'origin/test');
+    mergeAnotherPr();
+    const switcher = join(root, 'upload-pack.sh');
+    writeFileSync(
+      switcher,
+      `#!/bin/sh\ngit -C "${main}" checkout -q main\nexec git upload-pack "$@"\n`,
+      { mode: 0o755 }
+    );
+    git(main, 'config', 'remote.origin.uploadpack', switcher);
+    hook(wt);
+    expect(git(main, 'symbolic-ref', '--short', 'HEAD')).toBe('main');
+  });
+
   it('follows origin/test when the session starts in the main checkout itself', () => {
     git(main, 'checkout', '-q', '--detach', 'origin/test');
     const tip = mergeAnotherPr();
