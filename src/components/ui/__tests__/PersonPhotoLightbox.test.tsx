@@ -58,4 +58,33 @@ describe('PersonPhotoLightbox', () => {
     fireEvent.click(screen.getByLabelText('Zavřít'));
     expect(parent).not.toHaveBeenCalled();
   });
+
+  it('takes keyboard focus to the X, keeps Tab there, and hands it back on close', () => {
+    // Opened with Enter from the avatar, focus would otherwise stay on the
+    // button behind the overlay and Tab would walk the hidden drawer.
+    const { rerender } = render(
+      <>
+        <button type="button">opener</button>
+        <PersonPhotoLightbox src={null} alt="Jan Novák" onClose={vi.fn()} />
+      </>
+    );
+    const opener = screen.getByText('opener');
+    opener.focus();
+    rerender(
+      <>
+        <button type="button">opener</button>
+        <PersonPhotoLightbox src={PHOTO} alt="Jan Novák" onClose={vi.fn()} />
+      </>
+    );
+    const close = screen.getByLabelText('Zavřít');
+    expect(document.activeElement).toBe(close);
+    expect(fireEvent.keyDown(close, { key: 'Tab' })).toBe(false);
+    rerender(
+      <>
+        <button type="button">opener</button>
+        <PersonPhotoLightbox src={null} alt="Jan Novák" onClose={vi.fn()} />
+      </>
+    );
+    expect(document.activeElement).toBe(opener);
+  });
 });

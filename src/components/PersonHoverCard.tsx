@@ -54,7 +54,9 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
   const [zoomed, setZoomed] = useState(false);
   const isTouch = useAppStore((s) => s.isTouch);
   // The id the avatar shows, cached for the session: enlarging fetches nothing.
-  const photo = usePersonPhoto(profile?.id || (/^\d+$/.test(personId) ? personId : null));
+  // Only while the card or the photo is open: a card nobody opens asks IS for nothing.
+  const photoId = profile?.id || (/^\d+$/.test(personId) ? personId : null);
+  const photo = usePersonPhoto(visible || zoomed ? photoId : null);
 
   const anchorRef = useRef<HTMLSpanElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

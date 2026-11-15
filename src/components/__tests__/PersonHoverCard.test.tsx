@@ -49,4 +49,12 @@ describe('PersonHoverCard photo', () => {
     await screen.findByText('Jan Novák');
     expect(screen.queryByRole('button', { name: 'Zvětšit fotku' })).toBeNull();
   });
+
+  it('asks for no photo until the card is opened', () => {
+    // A subject header lists several teachers; a card nobody opens must not
+    // send a photo request to IS.
+    render(<PersonHoverCard personId="42">{ANCHOR}</PersonHoverCard>);
+    expect(usePersonPhoto).toHaveBeenCalled();
+    expect(usePersonPhoto.mock.calls.every(([id]) => id == null)).toBe(true);
+  });
 });

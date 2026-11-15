@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import type React from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
@@ -25,7 +26,21 @@ interface PersonPhotoLightboxProps {
  */
 export function PersonPhotoLightbox({ src, alt, onClose }: PersonPhotoLightboxProps) {
   const { t } = useTranslation();
-  useEscapeLayer(!!src, onClose);
+  const open = !!src;
+  useEscapeLayer(open, onClose);
+
+  // Modal for the keyboard too: focus moves to the X (the only control), and
+  // goes back to whatever opened the photo once it closes, if that is still
+  // on screen (the hover card has stepped aside by then).
+  const closeRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    closeRef.current?.focus();
+    return () => {
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [open]);
 
   if (!src || typeof document === 'undefined') return null;
 
@@ -43,9 +58,12 @@ export function PersonPhotoLightbox({ src, alt, onClose }: PersonPhotoLightboxPr
       aria-modal="true"
       aria-label={alt}
       onClick={close}
+      // One control, so Tab has nowhere to go but out, behind the scrim.
+      onKeyDown={(e) => e.key === 'Tab' && e.preventDefault()}
       className="fixed inset-0 z-[10000] flex cursor-zoom-out items-center justify-center bg-black/90 p-6 animate-in fade-in"
     >
       <button
+        ref={closeRef}
         type="button"
         onClick={close}
         aria-label={t('common.close')}
