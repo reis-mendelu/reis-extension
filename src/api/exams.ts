@@ -4,6 +4,8 @@ import { fetchWithAuth } from './client';
 import { getUserParams } from '../utils/userParams';
 import { logError } from '../utils/reportError';
 import { mergeDualLanguageExams } from './mergeDualLanguageExams';
+import { examsPageShape } from './examsPageShape';
+import { classifyIsPage, notUnderstood } from './isPage';
 
 /**
  * Result of exam registration/unregistration.
@@ -62,12 +64,23 @@ function verifyUnregistrationSuccess(html: string, termId: string): boolean {
   return !stillRegistered;
 }
 
-/** One language's exam list, or a throw — the failure `fetchExamData` hides. */
+/**
+ * One language's exam list, or a throw — the failure `fetchExamData` hides.
+ *
+ * A page whose term rows the parser could not read throws too (report 41): its
+ * `[]` would otherwise reach the sync as "IS answered, no exams". The throw
+ * takes the path an unreachable IS takes (#511), so the cached list stays.
+ */
 async function fetchExamDataOrThrow(lang: string): Promise<ExamSubject[]> {
   const url = await getExamListUrl(lang);
   const response = await fetchWithAuth(url);
   const html = await response.text();
-  return parseExamData(html, lang);
+  const exams = parseExamData(html, lang);
+  if (exams.length > 0) return exams;
+  const shape = examsPageShape(html);
+  if (classifyIsPage(exams, 0, shape).kind === 'unrecognised')
+    throw notUnderstood(`exams (${lang})`, shape);
+  return exams;
 }
 
 export async function fetchExamData(lang: string = 'cz'): Promise<ExamSubject[]> {
