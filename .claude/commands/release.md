@@ -22,6 +22,16 @@ release PR is the last gate: walk its checklist before merging.
    - read the current version from `package.json`
    - the repository secrets in `docs/release-pipeline.md` exist (a missing one
      fails its store's job first, naming it, but find out before the merge)
+   - **`npm run release:preflight -- --version X.Y.Z`** (the new version). Read-only.
+     It catches the two traps that each cost a manual detour after the 5.7.2 merge:
+     - **main/test drift**: the release PR would conflict. Sync first (below),
+       *before* the bump: nothing may merge into `test` once the release PR is open.
+     - **another iOS version still in review or editable**: `ship.yml` would
+       upload the build and stop at the submit, and nobody notices (5.7.1, 5.7.2).
+       Tell Dominik and let him choose: **wait** until it is out of review, or
+       **withdraw** it. Withdrawing is never done without his explicit OK.
+     The recipes for both are in `docs/release-pipeline.md`, "Before the release PR".
+     Do not carry on past a finding.
 
 2. **Ask the user** (AskUserQuestion, all in one message):
    - New version number (suggest the next patch increment)
@@ -44,7 +54,13 @@ release PR is the last gate: walk its checklist before merging.
    device item is the one that actually catches things. The Release gate fails
    the first time, every time: it runs before CI's build has reported. Rerun it.
 
-5. **Merge it.** `release-tag.yml` pushes `vX.Y.Z`, then `ship.yml` runs in the
+5. **Merge it with a merge commit, never squash**: `gh pr merge <N> --merge
+   --match-head-commit <sha>`, or the REST merge with `merge_method=merge`. This
+   overrides the usual squash-merge habit for this one PR (and for a main→test
+   sync PR). A squash puts a commit on `main` that `test` never had, and the next
+   release PR conflicts (5.7.1 and 5.7.2 were squashed; 5.4.0–5.7.0 were not).
+   `release-tag.yml` reads the merge commit's first parent, so tagging works the same.
+   `release-tag.yml` pushes `vX.Y.Z`, then `ship.yml` runs in the
    same run. **This submits to the stores.** Nothing to run on a Mac.
 
 6. **Read the summary** at the bottom of the run (`gh run list --workflow
@@ -55,6 +71,8 @@ release PR is the last gate: walk its checklist before merging.
 
 ## Rules
 - Never skip the preflight — a dirty tree means uncommitted work ships as part of the release.
+- The release PR merges with a merge commit, never squash.
+- Withdrawing an App Store version from review needs Dominik's OK, every time.
 - `package.json`, `package-lock.json` and `wxt.config.ts` move together.
 - Merging without a version change releases nothing, on purpose. The bump is the release.
 - The release notes file is part of the release PR. No notes, no tag.
