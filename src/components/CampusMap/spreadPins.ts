@@ -9,7 +9,7 @@ type Pin = { key: string; x: number; y: number };
  * goes side by side, ordered by key.
  *
  * Nothing else moves. Pins that merely meet on screen (two spots seen from far
- * out, or a pin under S-klub's name) stay on their own places, and so does a
+ * out, or a pin under S-klub's) stay on their own places, and so does a
  * pair the map already shows apart. An earlier version pushed pins in pixels
  * to clear other pins and labels, and zoomed out that drew a pin streets away
  * from the court it marks (seen on the Pixel, PR 679).

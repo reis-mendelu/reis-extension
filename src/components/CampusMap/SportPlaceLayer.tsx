@@ -6,6 +6,7 @@ import { useEventPinPlacement } from './useEventPinPlacement';
 import { spreadPins } from './spreadPins';
 import { SportIcon } from './SportIcon';
 import { SPORT_PLACES } from './sportPlaces';
+import { PIN_FACE, PIN_FACE_CHOSEN, PIN_TAP_PAD } from './pinGeometry';
 import { getMapInstance } from './mapInstance';
 import { panPinClearOfSheet } from './sheetClearance';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
@@ -17,11 +18,9 @@ import type { SportPlace } from '../../types/campusMap';
  * Teal: not a society's colour, and not the blue of the campus buildings.
  */
 const PIN_INK = '#0F6E56';
-/** A resting pin's face, and a chosen one's. */
-const FACE = 28;
-const FACE_CHOSEN = 34;
-/** Transparent padding around the face: a 44px tap target at rest. */
-const TAP_PAD = 8;
+const FACE = PIN_FACE;
+const FACE_CHOSEN = PIN_FACE_CHOSEN;
+const TAP_PAD = PIN_TAP_PAD;
 /**
  * The closest two pins may sit: a CHOSEN pin's tap area (half its face plus
  * the padding) must stop short of a resting neighbour's face. At the face
@@ -48,8 +47,8 @@ function sameSpot(a: SportPlace, b: SportPlace): boolean {
  * placement, like the society pins, so a tap on one never reaches the map's
  * tap-away. Places at one spot (a court and the pitch beside it) are set side
  * by side; every other pin stays on its place. A resting pin draws BELOW the
- * society and event pins, so far out, where one meets S-klub, S-klub's name
- * stays readable and its logo tappable; a chosen one comes to the top. Not
+ * society and event pins, so far out, where one meets S-klub's pin, S-klub
+ * stays tappable; a chosen one comes to the top. Not
  * over a floor plan.
  */
 export function SportPlaceLayer() {
