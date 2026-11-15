@@ -4,7 +4,34 @@
 // runs `npm run check` meanwhile would otherwise start a second copy over the
 // first: each would delete the other's staging directory, and either could
 // rename an unfinished tree into place.
-import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+//
+// The lock is `<dir>/node_modules.lock`, a directory holding exactly one entry,
+// `owner-<pid>`. Every state change is one rename(2) or rmdir(2), each atomic
+// and each conditional on what is there, so no caller can act on a state it
+// read a moment ago:
+//
+//   acquire   rename `lock.cand-<me>` (already holding `owner-<me>`) onto the
+//             lock. It fails while a lock with an owner exists (ENOTEMPTY), and
+//             replaces an empty one left by an owner killed while releasing.
+//   take over rename `lock/owner-<dead>` to `lock/owner-<me>`. It succeeds for
+//             exactly one caller, and only while the dead pid still owns it, so
+//             a live lock is never moved or deleted.
+//   release   remove `owner-<me>`, then rmdir the lock. rmdir fails on a
+//             non-empty directory, so it never removes another owner's lock.
+//
+// Two earlier designs lost exclusivity in races Greptile found on #703/#704:
+// moving the lock aside to inspect it, and a takeover guard whose expiry could
+// be cleared by two callers at once. Neither a guard nor a timeout is needed now.
+import {
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  rmdirSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -18,81 +45,91 @@ const alive = (pid) => {
   }
 };
 
-const ownerOf = (lock) => {
+/** The lock's entry naming its owner: `owner-<pid>`, or the earlier format's `pid` file. */
+function ownerEntry(lock) {
+  let names;
   try {
-    return Number(readFileSync(join(lock, 'pid'), 'utf8')) || 0;
+    names = readdirSync(lock);
   } catch {
-    return 0;
+    return null;
   }
-};
+  const current = names.find((n) => /^owner-\d+$/.test(n));
+  if (current) return { name: current, pid: Number(current.slice('owner-'.length)) };
+  if (names.includes('pid')) {
+    try {
+      return { name: 'pid', pid: Number(readFileSync(join(lock, 'pid'), 'utf8')) || 0 };
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
-const ageOf = (path) =>
-  Date.now() - (statSync(path, { throwIfNoEntry: false })?.mtimeMs ?? Date.now());
+/** The pid holding the lock, or 0 when there is none (no lock, or an empty one). */
+export const ownerOf = (lock) => ownerEntry(lock)?.pid ?? 0;
 
 /**
- * Remove a dead owner's lock, never a live one. A caller acts on what it saw a
- * moment ago, and by now another caller may have cleared the dead lock and
- * taken its own. Moving the lock aside to look (the earlier tombstone rename)
- * briefly took a LIVE lock away: a third caller could take the empty slot, the
- * move back then failed, and two installs ran (Greptile on #703).
- *
- * So the check and the delete happen under `<lock>.takeover`, a second mkdir
- * mutex: only its holder removes the lock, and only while the lock still names
- * the owner it saw dead. A new owner cannot appear while it does, because
- * nobody can take a lock that still exists. Everyone else just retries.
+ * Take the lock from `deadOwner` for `me`, in one rename of the dead owner's
+ * own entry. True for exactly one caller, and only while `deadOwner` still
+ * holds it.
  */
-export function clearDeadLock(lock, deadOwner) {
-  const guard = `${lock}.takeover`;
+export function takeOverFrom(lock, deadOwner, me = process.pid) {
+  const entry = ownerEntry(lock);
+  if (!entry || entry.pid !== deadOwner) return false;
   try {
-    mkdirSync(guard);
-  } catch (error) {
-    if (error.code !== 'EEXIST') throw error;
-    // A takeover killed between its two syscalls leaves the guard behind.
-    if (ageOf(guard) > 60_000) rmSync(guard, { recursive: true, force: true });
-    return;
+    renameSync(join(lock, entry.name), join(lock, `owner-${me}`));
+    return true;
+  } catch {
+    return false; // another caller took it first, or the owner released it
+  }
+}
+
+function release(lock) {
+  try {
+    unlinkSync(join(lock, `owner-${process.pid}`));
+  } catch {
+    return; // not ours (taken over, which needs us dead) or already gone
   }
   try {
-    const owner = ownerOf(lock);
-    const stillDead = owner ? !alive(owner) : ageOf(lock) > 60_000;
-    if (owner === deadOwner && stillDead) rmSync(lock, { recursive: true, force: true });
-  } finally {
-    rmSync(guard, { recursive: true, force: true });
+    rmdirSync(lock);
+  } catch {
+    // a new owner moved in after our unlink; it is theirs now
   }
 }
 
 /**
  * Run `action` holding `<dir>/node_modules.lock`, or return `{ status: 'busy' }`
- * when another live process still holds it after `waitMs`.
- *
- * The lock is a directory (mkdir is atomic) holding its owner's pid. A hook
- * killed at its timeout leaves it behind, so a dead owner's lock is taken over
- * at once instead of blocking every later call.
+ * when another live process still holds it after `waitMs`. A dead owner's lock
+ * (a hook killed at its timeout) is taken over at once.
  */
 export function withInstallLock(dir, waitMs, action) {
   const lock = join(dir, 'node_modules.lock');
+  const candidate = `${lock}.cand-${process.pid}`;
   const deadline = Date.now() + waitMs;
-  for (;;) {
-    try {
-      mkdirSync(lock);
-      break;
-    } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-    }
-    const owner = ownerOf(lock);
-    // No pid yet: the owner is between mkdir and its write. Give it a minute.
-    if (owner ? !alive(owner) : ageOf(lock) > 60_000) {
-      clearDeadLock(lock, owner);
-      sleep(50);
-      continue;
-    }
-    if (Date.now() >= deadline) return { status: 'busy' };
-    sleep(500);
-  }
+  rmSync(candidate, { recursive: true, force: true });
+  mkdirSync(candidate);
+  writeFileSync(join(candidate, `owner-${process.pid}`), '');
+  let held = false;
   try {
-    writeFileSync(join(lock, 'pid'), String(process.pid));
+    for (;;) {
+      try {
+        renameSync(candidate, lock);
+        held = true;
+        break;
+      } catch (error) {
+        if (!['ENOTEMPTY', 'EEXIST', 'ENOTDIR'].includes(error.code)) throw error;
+      }
+      const owner = ownerOf(lock);
+      if (owner && !alive(owner) && takeOverFrom(lock, owner)) {
+        held = true;
+        break;
+      }
+      if (Date.now() >= deadline) return { status: 'busy' };
+      sleep(owner ? 500 : 50);
+    }
     return action();
   } finally {
-    // Only a lock this process still owns: one taken over meanwhile is not ours.
-    if (ownerOf(lock) === process.pid) rmSync(lock, { recursive: true, force: true });
+    rmSync(candidate, { recursive: true, force: true });
+    if (held) release(lock);
   }
 }
