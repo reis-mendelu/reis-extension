@@ -8,15 +8,3 @@ import type { SportPlace } from '../../types/campusMap';
  * campus building.
  */
 export const SPORT_PLACES = (sportPlacesJson as { places: SportPlace[] }).places;
-
-/** [[south, west], [north, east]] around every place: what "Sport" fits the camera to. */
-export const SPORT_BOUNDS: [[number, number], [number, number]] = [
-  [
-    Math.min(...SPORT_PLACES.map((p) => p.coord[1])),
-    Math.min(...SPORT_PLACES.map((p) => p.coord[0])),
-  ],
-  [
-    Math.max(...SPORT_PLACES.map((p) => p.coord[1])),
-    Math.max(...SPORT_PLACES.map((p) => p.coord[0])),
-  ],
-];

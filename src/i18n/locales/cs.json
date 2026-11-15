@@ -1139,10 +1139,6 @@
       "allow": "Povolit"
     },
     "sport": {
-      "chip": "Sport",
-      "chipAria": "Ukázat hřiště v okolí",
-      "hideAria": "Skrýt hřiště",
-      "title": "Sport",
       "open": "Otevřít na Sporteře",
       "note": "Fotky, hodnocení a spoluhráči jsou na sportera.cz.",
       "near": "{metres} m od budovy {building}",

@@ -26,10 +26,12 @@ const place = SPORT_PLACES[0]!;
 afterEach(cleanup);
 
 describe('sport places on both trees', () => {
-  it.each(MOUNTS)('%s mounts the pins and the Sport chip', (path) => {
+  it.each(MOUNTS)('%s mounts the pins, with no switch in front of them', (path) => {
     const src = readFileSync(path, 'utf8');
     expect(src).toMatch(/<SportPlaceLayer\b/);
-    expect(src).toMatch(/<SportChip\b/);
+    // Decided 2026-11-15 on the Pixel: the places are simply on the map, not
+    // behind a "Sport" chip.
+    expect(src).not.toMatch(/SportChip/);
   });
 
   it.each(SHELLS)('%s hands a tapped place to the panel', (path) => {

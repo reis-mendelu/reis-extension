@@ -707,7 +707,7 @@ export interface MapSlice {
    * re-fitted the campus on top of the move. Re-reading this gives the same
    * answer every time, which is what makes the camera stay put.
    */
-  mapFocusTarget: 'campus' | 'draft' | 'sport';
+  mapFocusTarget: 'campus' | 'draft';
   /** "Show me where this lands" — point the map at the draft before publishing. */
   previewDraftOnMap: () => void;
   /** True while the event-composer overlay is open. */

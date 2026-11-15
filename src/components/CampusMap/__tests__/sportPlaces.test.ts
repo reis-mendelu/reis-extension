@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SPORT_PLACES, SPORT_BOUNDS } from '../sportPlaces';
+import { SPORT_PLACES } from '../sportPlaces';
 import buildingsJson from '../../../data/map/buildings.json';
 
 /**
@@ -62,16 +62,6 @@ describe('SPORT_PLACES', () => {
           actual
         );
       }
-    }
-  });
-
-  it('bounds every place', () => {
-    const [[south, west], [north, east]] = SPORT_BOUNDS;
-    for (const p of SPORT_PLACES) {
-      expect(p.coord[1]).toBeGreaterThanOrEqual(south);
-      expect(p.coord[1]).toBeLessThanOrEqual(north);
-      expect(p.coord[0]).toBeGreaterThanOrEqual(west);
-      expect(p.coord[0]).toBeLessThanOrEqual(east);
     }
   });
 });

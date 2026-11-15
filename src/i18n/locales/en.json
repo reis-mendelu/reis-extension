@@ -1139,10 +1139,6 @@
       "allow": "Allow"
     },
     "sport": {
-      "chip": "Sport",
-      "chipAria": "Show sports places nearby",
-      "hideAria": "Hide sports places",
-      "title": "Sport",
       "open": "Open on Sportera",
       "note": "Photos, ratings and people to play with are on sportera.cz.",
       "near": "{metres} m from building {building}",

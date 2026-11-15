@@ -9,6 +9,7 @@ import { SPORT_PLACES } from './sportPlaces';
 import { getMapInstance } from './mapInstance';
 import { panPinClearOfSheet } from './sheetClearance';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
+import { venueStatus } from '../../utils/venues/venueStatus';
 import type { SocietyPin, SportPlace } from '../../types/campusMap';
 
 /**
@@ -28,21 +29,26 @@ const PIN_RADIUS = 20;
 
 /**
  * The room a society pin or venue takes: its 36px logo and, for a venue, the
- * name label hanging under it (11px bold, ~6.6px a character).
+ * name label hanging under it (11px bold, ~6.6px a character). `label` is the
+ * text SocietyPinLayer actually draws: while S-klub is closed that is "S-klub
+ * Pixie · zavřeno", and sized from the name alone a workout pin sat on
+ * "zavřeno" (seen on the Pixel, 2026-11-15).
  */
-function obstacleOf(pin: SocietyPin, x: number, y: number): PinObstacle {
+function obstacleOf(pin: SocietyPin, x: number, y: number, label: string): PinObstacle {
   if (!pin.venue) return { x, y, r: 18 + PIN_RADIUS };
-  return { x, y: y + 12, r: PIN_RADIUS + Math.max(23, pin.title.length * 3.3) };
+  return { x, y: y + 12, r: PIN_RADIUS + Math.max(23, label.length * 3.3) };
 }
 
 /**
- * The Sportera places, one pin each, while Sport is on. On the events' pane and
+ * The Sportera places, one pin each, always on the campus overview — no switch
+ * in front of them (decided 2026-11-15). On the events' pane and
  * placement, like the society pins, so a tap on one never reaches the map's
  * tap-away. Pins a few metres apart (a court and the pitch beside it) are set
  * side by side rather than drawn on top of each other. Not over a floor plan.
  */
 export function SportPlaceLayer() {
-  const on = useAppStore((s) => s.sportPlacesOn);
+  const { t } = useTranslation();
+  const now = useAppStore((s) => s.now);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const select = useAppStore((s) => s.selectSportPlace);
@@ -50,25 +56,30 @@ export function SportPlaceLayer() {
   const venuePins = useAppStore((s) => s.venuePins);
   const items = useMemo(
     () =>
-      on && activeBuildingId === null
+      activeBuildingId === null
         ? SPORT_PLACES.map((place) => ({ key: place.id, coord: place.coord, place }))
         : [],
-    [on, activeBuildingId]
+    [activeBuildingId]
   );
   const { placed, pane } = useEventPinPlacement(items, null);
   // Where SocietyPinLayer draws, so a sport pin never lands on S-klub's name.
   const others = useMemo(
     () =>
-      on && activeBuildingId === null
+      activeBuildingId === null
         ? [...venuePins, ...societyPins].map((pin) => ({ key: pin.id, coord: pin.coord, pin }))
         : [],
-    [on, activeBuildingId, venuePins, societyPins]
+    [activeBuildingId, venuePins, societyPins]
   );
   const { placed: othersPlaced } = useEventPinPlacement(others, null);
   const otherPins = new Map(others.map((o) => [o.key, o.pin]));
   const obstacles = othersPlaced
     .filter((p) => otherPins.has(p.key))
-    .map((p) => obstacleOf(otherPins.get(p.key)!, p.x, p.y));
+    .map((p) => {
+      const pin = otherPins.get(p.key)!;
+      const closed = pin.venue && !venueStatus(pin.venue.hours, now, pin.venue.closure).open;
+      const label = closed ? `${pin.title} · ${t('map.venueClosedShort')}` : pin.title;
+      return obstacleOf(pin, p.x, p.y, label);
+    });
   const live = new Map(items.map((i) => [i.key, i.place]));
   const visible = spreadPins(
     placed.filter((p) => live.has(p.key)),
