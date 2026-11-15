@@ -28,6 +28,16 @@ export function staleInstall(lock, installed) {
       have: found?.version ?? null,
     });
   }
+  // The other direction: a package still installed that the lockfile dropped.
+  // An import of it resolves here and fails on CI's clean install.
+  for (const [path, entry] of Object.entries(have)) {
+    if (!path.startsWith('node_modules/') || path in (lock.packages ?? {})) continue;
+    stale.push({
+      name: path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length),
+      want: null,
+      have: entry.version ?? null,
+    });
+  }
   return stale;
 }
 

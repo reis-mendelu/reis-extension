@@ -57,7 +57,29 @@ beforeEach(() => {
 });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
+const mergeAnotherPr = () => {
+  const tip = commit(seed, 'another-pr');
+  git(seed, 'push', '-q', 'origin', 'test');
+  return tip;
+};
+
 describe('a session worktree cut from main', () => {
+  // A start made from a stale origin/test: the next session start catches up.
+  it('catches up with origin/test while it still has nothing of its own', () => {
+    hook(wt);
+    const tip = mergeAnotherPr();
+    hook(wt);
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(tip);
+  });
+
+  it('does not move a branch that is not a session branch off an older test commit', () => {
+    git(wt, 'checkout', '-q', '-b', 'release-marker', 'origin/test');
+    const before = git(wt, 'rev-parse', 'HEAD');
+    mergeAnotherPr();
+    hook(wt);
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(before);
+  });
+
   it('starts on origin/test when the branch has nothing of its own', () => {
     const out = hook(wt);
     expect(git(wt, 'rev-parse', 'HEAD')).toBe(testTip);
@@ -89,12 +111,6 @@ describe('a session worktree cut from main', () => {
 // Skills, slash commands and hooks are read from the main checkout whatever
 // worktree a session works in; it sat 374 commits behind for 54 days.
 describe('the main checkout', () => {
-  const mergeAnotherPr = () => {
-    const tip = commit(seed, 'another-pr');
-    git(seed, 'push', '-q', 'origin', 'test');
-    return tip;
-  };
-
   it('follows origin/test while parked (detached)', () => {
     git(main, 'checkout', '-q', '--detach', 'origin/test');
     const tip = mergeAnotherPr();
@@ -108,6 +124,12 @@ describe('the main checkout', () => {
     expect(git(main, 'rev-parse', 'HEAD')).toBe(before);
     expect(git(main, 'symbolic-ref', '--short', 'HEAD')).toBe('main');
     expect(out).toMatch(/main checkout is on 'main'.*behind origin\/test/);
+  });
+
+  it('still refreshes origin/test for every worktree when it is on a branch', () => {
+    const tip = mergeAnotherPr();
+    hook(wt);
+    expect(git(main, 'rev-parse', 'origin/test')).toBe(tip);
   });
 
   it('is never moved while it has uncommitted changes to tracked files', () => {

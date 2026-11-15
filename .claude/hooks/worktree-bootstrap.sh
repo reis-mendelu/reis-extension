@@ -48,10 +48,11 @@ main_is_parked() {
   [ -z "$(git -C "$main_root" status --porcelain --untracked-files=no 2>/dev/null)" ]
 }
 
+# The fetch runs whatever the main checkout is on: every worktree reads
+# origin/test from this one repository, and a stale ref is a stale start.
 advance_parked_main() {
-  main_is_parked || return 0
   git -C "$main_root" fetch -q origin test 2>/dev/null || return 0
-  # Asked again: the fetch takes seconds, and a branch checked out or a file
+  # Asked AFTER the fetch, which takes seconds: a branch checked out or a file
   # edited meanwhile is someone's choice, which a checkout here would undo.
   main_is_parked || return 0
   [ "$(git -C "$main_root" rev-parse HEAD 2>/dev/null)" = "$(git -C "$main_root" rev-parse origin/test 2>/dev/null)" ] && return 0
@@ -94,11 +95,17 @@ move_fresh_branch_to_test() {
   git -C "$here" rev-parse -q --verify origin/test >/dev/null 2>&1 || return 0
   git -C "$here" rev-parse -q --verify origin/main >/dev/null 2>&1 || return 0
   [ "$(git -C "$here" rev-parse HEAD)" = "$(git -C "$here" rev-parse origin/test)" ] && return 0
-  git -C "$here" merge-base --is-ancestor HEAD origin/main 2>/dev/null || return 0
+  # Nothing of its own: every commit is already in main (a fresh session
+  # branch) or, for a session branch that started from an older test, in test.
+  # The second case is how a start made from a stale origin/test catches up.
+  if ! git -C "$here" merge-base --is-ancestor HEAD origin/main 2>/dev/null; then
+    case "$branch" in claude/*) ;; *) return 0 ;; esac
+    git -C "$here" merge-base --is-ancestor HEAD origin/test 2>/dev/null || return 0
+  fi
   git -C "$here" rev-parse -q --verify "refs/remotes/origin/$branch" >/dev/null 2>&1 && return 0
   [ -z "$(git -C "$here" status --porcelain 2>/dev/null)" ] || return 0
   git -C "$here" reset -q --hard origin/test 2>/dev/null || return 0
-  lines+=("worktree bootstrap: '$branch' had no commits of its own and was cut from main; it now starts from origin/test ($(git -C "$here" rev-parse --short HEAD))")
+  lines+=("worktree bootstrap: '$branch' had no commits of its own; it now starts from origin/test ($(git -C "$here" rev-parse --short HEAD))")
 }
 
 link_if_missing() {

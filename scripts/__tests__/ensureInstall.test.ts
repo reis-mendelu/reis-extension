@@ -27,6 +27,7 @@ function checkout(name: string, locked: string, installed?: string) {
   if (installed) {
     mkdirSync(join(dir, 'node_modules', 'vitest'), { recursive: true });
     writeFileSync(join(dir, 'node_modules', 'vitest', 'marker'), installed);
+    writeFileSync(join(dir, 'node_modules', 'vitest', 'package.json'), '{}');
     writeFileSync(
       join(dir, 'node_modules', '.package-lock.json'),
       JSON.stringify(lockFor(installed))
@@ -37,7 +38,11 @@ function checkout(name: string, locked: string, installed?: string) {
 
 const marker = (dir: string) => readFileSync(join(dir, 'node_modules', 'vitest', 'marker'), 'utf8');
 // A stand-in for the APFS clone, so the decisions are testable on any platform.
-const copy = (from: string, to: string) => cpSync(from, to, { recursive: true });
+// Like cloneTree it REPLACES the target: nothing of the old tree may survive.
+const copy = (from: string, to: string) => {
+  rmSync(to, { recursive: true, force: true });
+  cpSync(from, to, { recursive: true });
+};
 
 beforeEach(() => {
   root = realpathSync(mkdtempSync(join(tmpdir(), 'reis-install-')));
@@ -65,11 +70,33 @@ describe('ensureInstall', () => {
     expect(marker(dir)).toBe('5.0.1');
   });
 
-  it('replaces a stale install instead of keeping it', () => {
+  it('replaces a stale install instead of keeping it, leftovers included', () => {
     const dir = checkout('wt', '5.0.1', '3.2.7');
+    mkdirSync(join(dir, 'node_modules', 'left-over'));
     const sibling = checkout('sibling', '5.0.1', '5.0.1');
     ensureInstall(dir, { candidates: [sibling], clone: copy });
     expect(marker(dir)).toBe('5.0.1');
+    expect(existsSync(join(dir, 'node_modules', 'left-over'))).toBe(false);
+  });
+
+  // npm trusts its record only while the folders it names exist.
+  it('does not trust a record whose package folder is gone', () => {
+    const dir = checkout('wt', '5.0.1', '5.0.1');
+    rmSync(join(dir, 'node_modules', 'vitest'), { recursive: true });
+    const result = ensureInstall(dir, { candidates: [], clone: copy });
+    expect(result.status).toBe('stale');
+    expect(result.stale).toEqual([{ name: 'vitest', want: '5.0.1', have: null }]);
+  });
+
+  it('reports a failed npm ci even when the tree it left looks complete', () => {
+    const dir = checkout('wt', '5.0.1');
+    const npmCi = vi.fn(() => {
+      checkout('wt', '5.0.1', '5.0.1');
+      return false;
+    });
+    expect(ensureInstall(dir, { candidates: [], clone: copy, npmCi, install: true })).toEqual({
+      status: 'failed',
+    });
   });
 
   it('reports what is stale when there is nothing to copy and it may not install', () => {
@@ -94,12 +121,9 @@ describe('ensureInstall', () => {
 
   it('says so when npm ci ran and the install still does not match', () => {
     const dir = checkout('wt', '5.0.1');
-    const result = ensureInstall(dir, {
-      candidates: [],
-      clone: copy,
-      npmCi: vi.fn(),
-      install: true,
-    });
+    const npmCi = vi.fn();
+    const result = ensureInstall(dir, { candidates: [], clone: copy, npmCi, install: true });
+    expect(npmCi).toHaveBeenCalledOnce();
     expect(result.status).toBe('stale');
   });
 

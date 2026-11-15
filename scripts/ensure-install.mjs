@@ -36,7 +36,19 @@ const readJson = (file) => {
   }
 };
 
-const installedIn = (dir) => readJson(join(dir, 'node_modules', '.package-lock.json'));
+/**
+ * What is installed in `dir`, by npm's own record — minus every entry whose
+ * folder is gone. npm trusts that file only while the packages it names exist,
+ * and a deleted folder under an intact record would otherwise read as installed.
+ */
+const installedIn = (dir) => {
+  const record = readJson(join(dir, 'node_modules', '.package-lock.json'));
+  if (!record?.packages) return record;
+  const present = Object.entries(record.packages).filter(
+    ([path]) => !path.startsWith('node_modules/') || existsSync(join(dir, path, 'package.json'))
+  );
+  return { ...record, packages: Object.fromEntries(present) };
+};
 
 /**
  * Copy a tree so that `to` exists only once the whole copy does. The hook that
@@ -70,18 +82,20 @@ export function otherCheckouts(dir) {
   }
 }
 
+/** `npm ci`; false when npm itself failed or was killed. */
 function runNpmCi(dir) {
-  spawnSync('npm', ['ci', '--no-audit', '--no-fund'], {
+  const { status } = spawnSync('npm', ['ci', '--no-audit', '--no-fund'], {
     cwd: dir,
     stdio: 'inherit',
     shell: process.platform === 'win32',
   });
+  return status === 0;
 }
 
 const canClone = process.platform === 'darwin';
 
 /**
- * @returns {{ status: 'ok' | 'copied' | 'installed' | 'stale' | 'shared' | 'busy', from?: string, stale?: object[] }}
+ * @returns {{ status: 'ok' | 'copied' | 'installed' | 'stale' | 'shared' | 'busy' | 'failed', from?: string, stale?: object[] }}
  */
 export function ensureInstall(dir, options = {}) {
   const {
@@ -131,7 +145,9 @@ export function ensureInstall(dir, options = {}) {
     }
 
     if (install) {
-      npmCi(dir);
+      // npm's own exit status too: a failed install can still leave a record
+      // that looks complete.
+      if (npmCi(dir) === false) return { status: 'failed' };
       if (stale().length === 0) return { status: 'installed' };
     }
     return { status: 'stale', stale: stale() };
@@ -148,9 +164,13 @@ export function describeInstall(result) {
     return "install: node_modules is a link to another checkout's install. It matches the lockfile, but do not run 'npm ci' through it; 'npm run check' replaces the link with this checkout's own install.";
   if (result.status === 'busy')
     return 'install: another install is running in this checkout (node_modules.lock). Try again when it has finished.';
+  if (result.status === 'failed')
+    return 'install: npm ci failed (its output is above). node_modules cannot be trusted until it succeeds.';
   if (result.status === 'stale') {
     const [first] = result.stale;
-    const example = first ? ` (e.g. ${first.name} ${first.have ?? 'missing'} → ${first.want})` : '';
+    const example = first
+      ? ` (e.g. ${first.name} ${first.have ?? 'missing'} → ${first.want ?? 'not in the lockfile'})`
+      : '';
     return `install: STALE — ${result.stale.length} packages differ from package-lock.json${example}. Run 'npm ci' here; until then typecheck and test results are not about your code.`;
   }
   return null;
@@ -174,5 +194,5 @@ if (isMain()) {
   const result = ensureInstall(dir, { install: args.includes('--install') });
   const line = describeInstall(result);
   if (line) console.log(line);
-  process.exit(result.status === 'stale' || result.status === 'busy' ? 2 : 0);
+  process.exit(['stale', 'busy', 'failed'].includes(result.status) ? 2 : 0);
 }

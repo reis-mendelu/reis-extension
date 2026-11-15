@@ -60,6 +60,22 @@ describe('staleInstall', () => {
     expect(staleInstall(lock, installed).map((p) => p.name)).not.toContain('@esbuild/linux-x64');
   });
 
+  // The other direction: `npm ci` would remove it, so an import of it passes
+  // here and fails in CI.
+  it('names a package that is installed but no longer locked', () => {
+    const installed = {
+      packages: {
+        'node_modules/vitest': { version: '5.0.1' },
+        'node_modules/react': { version: '19.2.0' },
+        'node_modules/left-pad': { version: '1.3.0' },
+        'native/capacitor-eduroam': { version: '1.0.0' },
+      },
+    };
+    expect(staleInstall(lock, installed)).toEqual([
+      { name: 'left-pad', want: null, have: '1.3.0' },
+    ]);
+  });
+
   it('treats no install at all as everything missing', () => {
     expect(staleInstall(lock, null).map((p) => p.name)).toEqual(['vitest', 'react']);
   });
