@@ -21,27 +21,41 @@ import {
  * so each `@ts-expect-error` below is checked by `npm run typecheck` (tsconfig
  * includes all of `src`). If one of them stops erroring, the directive itself
  * becomes the error, and the mechanism it proves has gone quiet.
+ *
+ * The coverage rule is spelled out here, not imported from `surfaces.ts`: if
+ * that file's `satisfies` were loosened (say, to `Record<string, …>`), these
+ * assignments would still demand every real sheet kind, tab and view.
  */
-type SheetsPlusOne = Record<MobileSheet['kind'] | 'brandNewSheet', MobileCapabilityId | Unrendered>;
-type TabsPlusOne = Record<MobileTab | 'brandNewTab', MobileCapabilityId>;
-type ViewsPlusOne = Record<AppView | 'brandNewView', DesktopCapabilityId | Unrendered>;
+type SheetsCovered = Record<MobileSheet['kind'], MobileCapabilityId | Unrendered>;
+type TabsCovered = Record<MobileTab, MobileCapabilityId>;
+type ViewsCovered = Record<AppView, DesktopCapabilityId | Unrendered>;
 
 describe('a surface on one tree only does not compile', () => {
-  it('a new sheet kind must name a capability', () => {
-    // @ts-expect-error — 'brandNewSheet' is in the union but names no capability
-    const sheets: SheetsPlusOne = PHONE_SHEET_CAPABILITY;
+  it('each map covers its whole union, whatever surfaces.ts declares', () => {
+    const sheets: SheetsCovered = PHONE_SHEET_CAPABILITY;
+    const tabs: TabsCovered = PHONE_TAB_CAPABILITY;
+    const views: ViewsCovered = DESKTOP_VIEW_CAPABILITY;
+    expect([sheets, tabs, views]).toHaveLength(3);
+  });
+
+  it('a real sheet kind left out of the map does not compile', () => {
+    const without: Omit<typeof PHONE_SHEET_CAPABILITY, 'hideLesson'> = PHONE_SHEET_CAPABILITY;
+    // @ts-expect-error — hideLesson is a real sheet kind, now with no capability
+    const sheets: SheetsCovered = without;
     expect(sheets).toBe(PHONE_SHEET_CAPABILITY);
   });
 
-  it('a new phone tab must name a capability', () => {
-    // @ts-expect-error — 'brandNewTab' names no capability
-    const tabs: TabsPlusOne = PHONE_TAB_CAPABILITY;
+  it('a real phone tab left out of the map does not compile', () => {
+    const without: Omit<typeof PHONE_TAB_CAPABILITY, 'profile'> = PHONE_TAB_CAPABILITY;
+    // @ts-expect-error — profile is a real tab, now with no capability
+    const tabs: TabsCovered = without;
     expect(tabs).toBe(PHONE_TAB_CAPABILITY);
   });
 
-  it('a new desktop view must name a capability', () => {
-    // @ts-expect-error — 'brandNewView' names no capability
-    const views: ViewsPlusOne = DESKTOP_VIEW_CAPABILITY;
+  it('a real desktop view left out of the map does not compile', () => {
+    const without: Omit<typeof DESKTOP_VIEW_CAPABILITY, 'erasmus'> = DESKTOP_VIEW_CAPABILITY;
+    // @ts-expect-error — erasmus is a real view, now with no capability
+    const views: ViewsCovered = without;
     expect(views).toBe(DESKTOP_VIEW_CAPABILITY);
   });
 
