@@ -4,6 +4,8 @@ import {
   MIN_DAYS_SINCE_FIRST,
   MIN_DAYS_USED,
   MIN_FILES_OPENED,
+  MIN_FILE_DWELL_MS,
+  filesToCredit,
   markAsked,
   noteDayUsed,
   noteFilesOpened,
@@ -152,5 +154,26 @@ describe('shouldAskForReview — the file moment', () => {
 
   it('other moments ignore the file count', () => {
     expect(shouldAskForReview(seasoned({ filesOpened: 0 }), '2026-11-08')).toBe(true);
+  });
+});
+
+describe('filesToCredit', () => {
+  it('a file counts only once the reader was open for 30 s', () => {
+    expect(MIN_FILE_DWELL_MS).toBe(30_000);
+    expect(filesToCredit(29_999, 1)).toBe(0);
+    expect(filesToCredit(30_000, 1)).toBe(1);
+  });
+
+  // Only the session's total time is known for the iPad reader, and 35 s over
+  // three quick flips proves no single file was read for 30 s.
+  it('one session credits at most one file, however many it showed', () => {
+    expect(filesToCredit(35_000, 3)).toBe(1);
+    expect(filesToCredit(10 * 60_000, 5)).toBe(1);
+  });
+
+  it('a reader that showed nothing, or a broken clock, credits nothing', () => {
+    expect(filesToCredit(60_000, 0)).toBe(0);
+    expect(filesToCredit(Number.NaN, 1)).toBe(0);
+    expect(filesToCredit(-5, 1)).toBe(0);
   });
 });

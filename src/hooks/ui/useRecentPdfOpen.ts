@@ -67,7 +67,7 @@ export function useRecentPdfOpen() {
         if (result.kind === 'failed') logError('useRecentPdfOpen', result.error);
         if (result.kind !== 'shown') toast.error(t('course.file.openFailed'));
         // The store-rating file moment: the reader has closed by now.
-        else void storeReviewAfterReaderClosed(result.filesShown);
+        else void storeReviewAfterReaderClosed(result.openMs, result.filesShown);
         await refreshRecentPdfs();
       } finally {
         setIsOpening(false);

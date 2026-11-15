@@ -23,6 +23,8 @@ export const MIN_DAYS_SINCE_FIRST = 7;
 export const ASK_COOLDOWN_DAYS = 120;
 /** The file moment waits for this many files opened in reIS's reader, ever. */
 export const MIN_FILES_OPENED = 3;
+/** A file counts toward them only if the reader was open this long. */
+export const MIN_FILE_DWELL_MS = 30_000;
 
 export interface StoreReviewState {
   /** The first day this install was counted. For an existing install that is
@@ -51,6 +53,16 @@ export function noteDayUsed(state: StoreReviewState | null, today: string): Stor
   // Today already counted, or a clock set back: count nothing.
   if (!(daysFrom(state.lastDay, today) > 0)) return state;
   return { ...state, lastDay: today, daysUsed: state.daysUsed + 1 };
+}
+
+/**
+ * How many files a closed reader session counts for: 1 if it was open for
+ * 30 s, else 0. Never more than 1: the iPad reader reports only its total time,
+ * and 35 s spread over three quick flips proves no single file was read. A
+ * quick "wrong file, close" counts nothing (and so asks nothing).
+ */
+export function filesToCredit(openMs: number, filesShown: number): number {
+  return filesShown >= 1 && openMs >= MIN_FILE_DWELL_MS ? 1 : 0;
 }
 
 /** The record after the reader showed `count` more files on `today`. */

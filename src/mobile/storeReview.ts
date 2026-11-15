@@ -5,6 +5,7 @@ import { IndexedDBService } from '../services/storage/IndexedDBService';
 import {
   markAsked,
   noteDayUsed,
+  filesToCredit,
   noteFilesOpened,
   shouldAskForReview,
   type StoreReviewState,
@@ -31,8 +32,8 @@ export const STORE_REVIEW_MOMENTS = {
   /** A manual exam registration IS confirmed (useExamActions.handleRegister). */
   exam_registered: true,
   /**
-   * reIS's PDF reader closed, once it has shown 3 files in all
-   * (storeReviewAfterReaderClosed). Asked after the reader is gone, never as a
+   * reIS's PDF reader closed after 30 s or more, once 3 such sessions have
+   * been counted in all (storeReviewAfterReaderClosed). Asked after the reader is gone, never as a
    * file opens. Only the readers count: a file handed to the iOS share sheet or
    * saved into Android's Downloads never shows in reIS, and the share sheet can
    * send the student into another app, where an ask would be wasted.
@@ -121,14 +122,21 @@ export async function maybeAskForStoreReview(moment: StoreReviewMoment): Promise
 /**
  * The file moment. Called once reIS's reader has closed and the screen under it
  * is back: the iPad's PencilKit reader resolves its `open` on Close, the pdf.js
- * viewer on the phone calls closePreview. `filesShown` is how many files that
- * reader showed, the PencilKit reader's sidebar can show several.
+ * viewer on the phone calls closePreview. `openMs` is how long the reader was
+ * up, `filesShown` how many files it showed (the PencilKit sidebar can show
+ * several). A session under 30 s counts nothing and asks nothing, so closing
+ * file 3 to open file 4 never brings up stars.
  */
-export async function storeReviewAfterReaderClosed(filesShown: number): Promise<boolean> {
+export async function storeReviewAfterReaderClosed(
+  openMs: number,
+  filesShown: number
+): Promise<boolean> {
   if (!applies()) return false;
+  const credited = filesToCredit(openMs, filesShown);
+  if (credited === 0) return false;
   try {
     const before = await read();
-    const after = noteFilesOpened(before, today(), filesShown);
+    const after = noteFilesOpened(before, today(), credited);
     if (after !== before) await IndexedDBService.set('meta', KEY, after);
   } catch (e) {
     logError('Mobile.storeReview.noteFile', e);

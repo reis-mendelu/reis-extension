@@ -138,7 +138,7 @@ export interface OpenPdfWithInkInput {
 }
 
 export type OpenPdfWithInkResult =
-  | { kind: 'shown'; hasInk: boolean; filesShown: number }
+  | { kind: 'shown'; hasInk: boolean; filesShown: number; openMs: number }
   /** PDFKit rejected the bytes; show them in the web viewer instead. */
   | { kind: 'unreadable'; blob: Blob }
   | { kind: 'notPdf' }
@@ -240,6 +240,8 @@ export async function openPdfWithInk(
     });
     subscriptions.push(needsFile);
 
+    // How long the reader was up, for the store-rating dwell rule.
+    const openedAt = deps.now();
     const { shown, positions } = await deps.plugin.open({
       courseTitle: input.courseTitle,
       currentLink: input.fileLink,
@@ -248,13 +250,14 @@ export async function openPdfWithInk(
       tint: PDF_INK_TINT,
     });
     const now = deps.now();
+    const openMs = now - openedAt;
     for (const link of shown) {
       await recordOpen(deps.fs, await keyFor(link), now, { courseCode: input.courseCode, link });
     }
     await savePositions(positions);
     // The sweep may not take an annotated file with it: see enforceCap.
     await enforceCap(deps.fs, undefined, deps.hasInk);
-    return { kind: 'shown', hasInk: false, filesShown: shown.length };
+    return { kind: 'shown', hasInk: false, filesShown: shown.length, openMs };
   } catch (error) {
     if (!isUnreadable(error)) return { kind: 'failed', error };
     // Bad bytes: drop the copy so the next open fetches afresh, and give the

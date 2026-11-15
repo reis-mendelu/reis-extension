@@ -88,6 +88,9 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     };
   }, []);
 
+  // When the web viewer put the current file on screen (store-rating dwell).
+  const shownAt = useRef(0);
+
   const inkStrings = usePdfInkStrings();
   // The web viewer's page. The iPad reader keeps its own, in the PDF cache index.
   const { loadPosition, viewerPosition } = usePdfReadingPosition(courseCode);
@@ -118,7 +121,7 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
       void useAppStore.getState().refreshRecentPdfs();
       if (result.kind === 'shown') {
         // The store-rating file moment: the reader is gone, reIS is back.
-        void storeReviewAfterReaderClosed(result.filesShown);
+        void storeReviewAfterReaderClosed(result.openMs, result.filesShown);
         return { kind: 'handled' };
       }
       if (result.kind === 'unreadable') {
@@ -155,6 +158,8 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
         }
         if (blobUrl) {
           await loadPosition(link);
+          // The dwell clock starts when the file is on screen, not at the tap.
+          shownAt.current = Date.now();
           setPreviewUrl(blobUrl);
           setPreviewFile({ link, name });
         } else {
@@ -171,7 +176,7 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
 
   const closePreview = useCallback(() => {
     // The store-rating file moment, for the pdf.js viewer: a file was shown.
-    if (previewUrl) void storeReviewAfterReaderClosed(1);
+    if (previewUrl) void storeReviewAfterReaderClosed(Date.now() - shownAt.current, 1);
     setPreviewUrl(null);
     setPreviewFile(null);
   }, [previewUrl]);

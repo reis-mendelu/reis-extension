@@ -134,7 +134,7 @@ describe('openPdfWithInk', () => {
 
     const result = await openPdfWithInk(deps, input);
 
-    expect(result).toEqual({ kind: 'shown', hasInk: false, filesShown: 1 });
+    expect(result).toEqual({ kind: 'shown', hasInk: false, filesShown: 1, openMs: 0 });
     expect(fetchPdf).toHaveBeenCalledTimes(1);
     expect(fetchPdf).toHaveBeenCalledWith(LINK);
     expect(open).toHaveBeenCalledWith({
@@ -417,6 +417,7 @@ describe('openPdfWithInk', () => {
       kind: 'shown',
       hasInk: false,
       filesShown: 1,
+      openMs: 0,
     });
   });
 
@@ -536,5 +537,18 @@ describe('openPdfWithInk', () => {
     files.set('pdf-ink/orphan.pdf', { size: 301 * 1024 * 1024 });
     await openPdfWithInk(deps, input);
     expect(files.has('pdf-ink/orphan.pdf')).toBe(false);
+  });
+});
+
+describe('openPdfWithInk — how long the reader was open', () => {
+  it('measures from presenting the reader to its Close, on the injected clock', async () => {
+    let t = 1_000;
+    const { deps, input, open } = harness({ now: () => t });
+    open.mockImplementation(async () => {
+      t += 42_000; // the student reads for 42 s
+      return { shown: [LINK, LINK_B] };
+    });
+    const result = await openPdfWithInk(deps, input);
+    expect(result).toEqual({ kind: 'shown', hasInk: false, filesShown: 2, openMs: 42_000 });
   });
 });

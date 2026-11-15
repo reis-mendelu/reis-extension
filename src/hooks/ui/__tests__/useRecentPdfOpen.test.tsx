@@ -153,11 +153,16 @@ describe('useRecentPdfOpen', () => {
     expect(refreshRecentPdfs).toHaveBeenCalledTimes(1);
   });
 
-  it('offers the store-rating file moment after the reader closes, with every file it showed', async () => {
-    openPdfWithInk.mockResolvedValue({ kind: 'shown', hasInk: false, filesShown: 3 });
+  it('offers the store-rating file moment after the reader closes, with its open time and files', async () => {
+    openPdfWithInk.mockResolvedValue({
+      kind: 'shown',
+      hasInk: false,
+      filesShown: 3,
+      openMs: 31_000,
+    });
     const { result } = renderHook(() => useRecentPdfOpen());
     await act(async () => void (await result.current.openRecentPdf(row('a', 'EBC-AP', 'A'))));
-    expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(3);
+    expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(31_000, 3);
   });
 
   it('not when the reader failed to open', async () => {

@@ -125,28 +125,40 @@ describe('maybeAskForStoreReview', () => {
 });
 
 describe('storeReviewAfterReaderClosed', () => {
-  it('counts the files the reader showed, and asks on the close that reaches the 3rd', async () => {
+  const READ = 45_000;
+
+  it('counts files read for 30 s, and asks on the close that reaches the 3rd', async () => {
     db.set(KEY, seasoned);
     const { storeReviewAfterReaderClosed, ASK_DELAY_MS } = await load();
-    expect(await storeReviewAfterReaderClosed(1)).toBe(false);
-    expect(await storeReviewAfterReaderClosed(1)).toBe(false);
+    expect(await storeReviewAfterReaderClosed(READ, 1)).toBe(false);
+    expect(await storeReviewAfterReaderClosed(READ, 1)).toBe(false);
     expect((db.get(KEY) as StoreReviewState).filesOpened).toBe(2);
-    expect(await storeReviewAfterReaderClosed(1)).toBe(true);
+    expect(await storeReviewAfterReaderClosed(READ, 1)).toBe(true);
     expect((db.get(KEY) as StoreReviewState).filesOpened).toBe(3);
     await vi.advanceTimersByTimeAsync(ASK_DELAY_MS);
     expect(requestReview).toHaveBeenCalledTimes(1);
   });
 
-  it('one reader session that showed three files is enough', async () => {
+  it('a quick "wrong file, close" neither counts nor asks, even past the 3rd file', async () => {
+    db.set(KEY, { ...seasoned, filesOpened: 3 });
+    const { storeReviewAfterReaderClosed } = await load();
+    expect(await storeReviewAfterReaderClosed(5_000, 1)).toBe(false);
+    expect((db.get(KEY) as StoreReviewState).filesOpened).toBe(3);
+    await vi.runAllTimersAsync();
+    expect(requestReview).not.toHaveBeenCalled();
+  });
+
+  it('one long session that showed three files counts as one', async () => {
     db.set(KEY, seasoned);
     const { storeReviewAfterReaderClosed } = await load();
-    expect(await storeReviewAfterReaderClosed(3)).toBe(true);
+    expect(await storeReviewAfterReaderClosed(READ, 3)).toBe(false);
+    expect((db.get(KEY) as StoreReviewState).filesOpened).toBe(1);
   });
 
   it('counts files even before the day gates pass, and does not ask', async () => {
-    db.set(KEY, { ...seasoned, daysUsed: 2 });
+    db.set(KEY, { ...seasoned, daysUsed: 2, filesOpened: 3 });
     const { storeReviewAfterReaderClosed } = await load();
-    expect(await storeReviewAfterReaderClosed(4)).toBe(false);
+    expect(await storeReviewAfterReaderClosed(READ, 1)).toBe(false);
     expect((db.get(KEY) as StoreReviewState).filesOpened).toBe(4);
   });
 
@@ -154,7 +166,7 @@ describe('storeReviewAfterReaderClosed', () => {
     kind = 'extension';
     db.set(KEY, seasoned);
     const { storeReviewAfterReaderClosed } = await load();
-    expect(await storeReviewAfterReaderClosed(3)).toBe(false);
+    expect(await storeReviewAfterReaderClosed(READ, 1)).toBe(false);
     expect((db.get(KEY) as StoreReviewState).filesOpened).toBeUndefined();
   });
 

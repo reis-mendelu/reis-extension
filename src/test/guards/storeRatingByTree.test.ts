@@ -45,9 +45,10 @@ describe('store rating, by tree', () => {
   });
 
   it('the success moments call the helper', () => {
-    expect(read('src/components/ExamPanel/useExamActions.ts')).toContain(
-      "maybeAskForStoreReview('exam_registered')"
-    );
+    const exam = read('src/components/ExamPanel/useExamActions.ts');
+    expect(exam).toContain("maybeAskForStoreReview('exam_registered')");
+    // Never after a resit (Dominik, 2026-11-15).
+    expect(exam).toContain('isFirstAttemptRegistration(');
     expect(read('src/hooks/ui/usePdfPreview.ts')).toContain('storeReviewAfterReaderClosed(');
     expect(read('src/hooks/ui/useRecentPdfOpen.ts')).toContain('storeReviewAfterReaderClosed(');
   });
