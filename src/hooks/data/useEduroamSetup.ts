@@ -15,6 +15,7 @@ import {
   type NetworkFailure,
 } from '../../services/eduroam/networkFailure';
 import { logError } from '../../utils/reportError';
+import { maybeAskForStoreReview } from '../../mobile/storeReview';
 import { trackFeatureSignal } from '../../api/featureUsage';
 import { useAutoSelectOnce, useRunGeneration } from './eduroamSetupLifecycle';
 
@@ -109,6 +110,8 @@ export function useEduroamSetup(autoSelectTarget?: EduroamTarget) {
           setOutcome(result);
           setPassword(extractionPw);
           setStatus(statusAfterNativeOutcome(result));
+          // Store-rating moment: the counter's `saved`, current run only.
+          if (result === 'saved') void maybeAskForStoreReview('eduroam_saved');
           return;
         }
 

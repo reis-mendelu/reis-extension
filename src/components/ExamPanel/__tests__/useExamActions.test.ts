@@ -28,6 +28,8 @@ vi.mock('../../../services/storage', () => ({
     EXAMS_LAST_MODIFIED: 'exams_last_modified',
   },
 }));
+const maybeAskForStoreReview = vi.hoisted(() => vi.fn(async () => false));
+vi.mock('../../../mobile/storeReview', () => ({ maybeAskForStoreReview }));
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
@@ -382,6 +384,52 @@ describe('useExamActions - Optimistic Updates', () => {
 
       // Should NOT update state on failure
       expect(mockSetExams).not.toHaveBeenCalled();
+    });
+  });
+
+  // The store-rating prompt follows a registration that went through, and only
+  // that: the helper itself decides whether this install is ready to be asked.
+  describe('Store rating moment', () => {
+    it('offers the moment after a successful registration', async () => {
+      const { result } = renderHook(() =>
+        useExamActions({ exams: mockExams, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      await act(async () => {
+        await result.current.handleRegisterDirect(mockExams[0].sections[0], 'term-2');
+      });
+      expect(maybeAskForStoreReview).toHaveBeenCalledWith('exam_registered');
+    });
+
+    it('not after a failed registration', async () => {
+      vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: false, error: 'plno' });
+      const { result } = renderHook(() =>
+        useExamActions({ exams: mockExams, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      await act(async () => {
+        await result.current.handleRegisterDirect(mockExams[0].sections[0], 'term-2');
+      });
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
+    });
+
+    it('not after unregistering', async () => {
+      const registered = createMockExams(
+        {},
+        {
+          status: 'registered',
+          registeredTerm: { id: 'term-1', date: '20.01.2026', time: '09:00', room: 'Q01' },
+        }
+      );
+      const { result } = renderHook(() =>
+        useExamActions({ exams: registered, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      await act(async () => {
+        result.current.handleUnregisterRequest(registered[0].sections[0]);
+      });
+      await act(async () => {
+        await result.current.handleConfirmAction();
+      });
+      await waitFor(() => expect(mockSetExams).toHaveBeenCalled());
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
     });
   });
 });

@@ -7,6 +7,7 @@ import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { logError } from '../../utils/reportError';
 import { useTranslation } from '../../hooks/useTranslation';
 import { reportToastOptions } from '../Feedback/reportPrefill';
+import { maybeAskForStoreReview } from '../../mobile/storeReview';
 
 interface PendingAction {
   type: 'register' | 'unregister';
@@ -62,6 +63,9 @@ export function useExamActions({
         setExams(updated);
         setExpandedSectionId(null);
         useAppStore.getState().triggerExamsRefresh();
+        // The store-rating moment. A no-op in the extension; on the phone the
+        // helper decides whether this install is ready to be asked.
+        void maybeAskForStoreReview('exam_registered');
         return;
       }
       // Registration failed. If we unregistered first, attempt best-effort rollback.

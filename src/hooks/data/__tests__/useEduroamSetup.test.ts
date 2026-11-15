@@ -41,6 +41,9 @@ vi.mock('../../../mobile/eduroamNative', () => ({
   nativeEduroamDeps: { configure: vi.fn() },
 }));
 
+const maybeAskForStoreReview = vi.hoisted(() => vi.fn(async () => false));
+vi.mock('../../../mobile/storeReview', () => ({ maybeAskForStoreReview }));
+
 /** Put the hook on the phone, with the plugin answering `perNetwork`. */
 async function onPhone(perNetwork: string, resultCode = -1) {
   const native = await import('../../../mobile/eduroamNative');
@@ -230,5 +233,36 @@ describe('useEduroamSetup', () => {
 
     expect(result.current.status).toBe('error');
     expect(result.current.outcome).toBe('renewal-blocked');
+  });
+
+  // The store-rating moment is a network the OS actually saved, the same
+  // condition the eduroam_wifi_configured counter uses.
+  describe('store rating moment', () => {
+    it('is offered when the OS saved the network', async () => {
+      await onPhone('0');
+      const { result } = renderHook(() => useEduroamSetup());
+      await act(async () => {
+        await result.current.run('android');
+      });
+      expect(maybeAskForStoreReview).toHaveBeenCalledWith('eduroam_saved');
+    });
+
+    it('not when the network was already there', async () => {
+      await onPhone('2');
+      const { result } = renderHook(() => useEduroamSetup());
+      await act(async () => {
+        await result.current.run('android');
+      });
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
+    });
+
+    it('not for a delivered profile file', async () => {
+      vi.mocked(deliverEduroamProfile).mockResolvedValueOnce('saved');
+      const { result } = renderHook(() => useEduroamSetup());
+      await act(async () => {
+        await result.current.run('mac');
+      });
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
+    });
   });
 });
