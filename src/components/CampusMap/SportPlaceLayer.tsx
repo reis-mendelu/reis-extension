@@ -3,14 +3,13 @@ import { createPortal } from 'react-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useEventPinPlacement } from './useEventPinPlacement';
-import { spreadPins, type PinObstacle } from './spreadPins';
+import { spreadPins } from './spreadPins';
 import { SportIcon } from './SportIcon';
 import { SPORT_PLACES } from './sportPlaces';
 import { getMapInstance } from './mapInstance';
 import { panPinClearOfSheet } from './sheetClearance';
 import { usePhoneViewport } from '../../hooks/ui/usePhoneViewport';
-import { venuePinLabel } from '../../utils/venues/venuePinLabel';
-import type { SocietyPin, SportPlace } from '../../types/campusMap';
+import type { SportPlace } from '../../types/campusMap';
 
 /**
  * The basemap is light in both themes (as SocietyPinLayer notes), so a pin
@@ -31,38 +30,32 @@ const TAP_PAD = 8;
  */
 const PIN_GAP = FACE_CHOSEN / 2 + TAP_PAD + FACE / 2 + 1;
 /**
- * Half a CHOSEN pin's reach: its 34px face and 3px ring. Sized for the chosen
- * pin, not the 28px resting one, because the chosen one grows in place and
- * covered the end of S-klub's name on an iPad.
+ * Places closer than this are one spot (the Schreberovy court and pitch, 6 m;
+ * the Lužánky table and gym, 37 m) and get their pins side by side. Every
+ * other pin stays exactly on its place, even where it meets another on screen.
  */
-const PIN_RADIUS = 20;
+const SAME_SPOT_M = 50;
 
-/**
- * The room a society pin or venue takes: its 36px logo and, for a venue, the
- * name label hanging under it (10px bold, ~6px a character; 6.6 leaves a
- * margin). `label` is the text SocietyPinLayer draws (`venuePinLabel`), so a
- * closed venue's "· zavřeno" is counted too.
- */
-function obstacleOf(pin: SocietyPin, x: number, y: number, label: string): PinObstacle {
-  if (!pin.venue) return { x, y, r: 18 + PIN_RADIUS };
-  return { x, y: y + 12, r: PIN_RADIUS + Math.max(23, label.length * 3.3) };
+function sameSpot(a: SportPlace, b: SportPlace): boolean {
+  const dx = (a.coord[0] - b.coord[0]) * 111_320 * Math.cos((a.coord[1] * Math.PI) / 180);
+  const dy = (a.coord[1] - b.coord[1]) * 111_320;
+  return Math.hypot(dx, dy) <= SAME_SPOT_M;
 }
 
 /**
  * The Sportera places, one pin each, always on the campus overview — no switch
  * in front of them (decided 2026-11-15). On the events' pane and
  * placement, like the society pins, so a tap on one never reaches the map's
- * tap-away. Pins a few metres apart (a court and the pitch beside it) are set
- * side by side rather than drawn on top of each other. Not over a floor plan.
+ * tap-away. Places at one spot (a court and the pitch beside it) are set side
+ * by side; every other pin stays on its place. A resting pin draws BELOW the
+ * society and event pins, so far out, where one meets S-klub, S-klub's name
+ * stays readable and its logo tappable; a chosen one comes to the top. Not
+ * over a floor plan.
  */
 export function SportPlaceLayer() {
-  const { t } = useTranslation();
-  const now = useAppStore((s) => s.now);
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const selection = useAppStore((s) => s.mapSelection);
   const select = useAppStore((s) => s.selectSportPlace);
-  const societyPins = useAppStore((s) => s.societyPins);
-  const venuePins = useAppStore((s) => s.venuePins);
   const items = useMemo(
     () =>
       activeBuildingId === null
@@ -71,28 +64,11 @@ export function SportPlaceLayer() {
     [activeBuildingId]
   );
   const { placed, pane } = useEventPinPlacement(items, null);
-  // Where SocietyPinLayer draws, so a sport pin never lands on S-klub's name.
-  const others = useMemo(
-    () =>
-      activeBuildingId === null
-        ? [...venuePins, ...societyPins].map((pin) => ({ key: pin.id, coord: pin.coord, pin }))
-        : [],
-    [activeBuildingId, venuePins, societyPins]
-  );
-  const { placed: othersPlaced } = useEventPinPlacement(others, null);
-  const otherPins = new Map(others.map((o) => [o.key, o.pin]));
-  const obstacles = othersPlaced
-    .filter((p) => otherPins.has(p.key))
-    .map((p) => {
-      const pin = otherPins.get(p.key)!;
-      const { label } = venuePinLabel(pin, now, t('map.venueClosedShort'));
-      return obstacleOf(pin, p.x, p.y, label);
-    });
   const live = new Map(items.map((i) => [i.key, i.place]));
   const visible = spreadPins(
     placed.filter((p) => live.has(p.key)),
     PIN_GAP,
-    obstacles
+    (a, b) => sameSpot(live.get(a.key)!, live.get(b.key)!)
   );
   if (!pane || visible.length === 0) return null;
   const selectedId = selection?.kind === 'sportPlace' ? selection.place.id : null;
@@ -147,21 +123,23 @@ function SportPin({
     <button
       type="button"
       data-testid="sport-pin"
-      // p-[8px] (TAP_PAD) around the 28px face keeps the tap target at 44px.
-      className="group pointer-events-auto absolute left-0 top-0 p-[8px] leaflet-zoom-animated"
+      // TAP_PAD around the face: a 44px tap target at rest. Sizes come from
+      // the constants PIN_GAP is computed from, so the two cannot drift.
+      className="group pointer-events-auto absolute left-0 top-0 leaflet-zoom-animated"
       style={{
         transform: `translate(${x}px, ${y}px) translate(-50%, -50%)`,
-        zIndex: selected ? 1 : 0,
+        padding: TAP_PAD,
+        zIndex: selected ? 1 : -1,
       }}
       aria-label={place.name}
       aria-pressed={selected}
       onClick={choose}
     >
       <span
-        className={`flex items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110 ${
-          selected ? 'h-[34px] w-[34px]' : 'h-7 w-7'
-        }`}
+        className="flex items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110"
         style={{
+          width: selected ? FACE_CHOSEN : FACE,
+          height: selected ? FACE_CHOSEN : FACE,
           color: PIN_INK,
           boxShadow: `0 0 0 ${selected ? 3 : 2}px ${PIN_INK}, 0 1px ${selected ? 7 : 4}px rgba(0,0,0,${selected ? 0.4 : 0.28})`,
         }}
