@@ -4,7 +4,7 @@
 // runs `npm run check` meanwhile would otherwise start a second copy over the
 // first: each would delete the other's staging directory, and either could
 // rename an unfinished tree into place.
-import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -25,6 +25,31 @@ const ownerOf = (lock) => {
     return 0;
   }
 };
+
+/**
+ * Remove a dead owner's lock so that only ONE of several callers does. A plain
+ * delete is not enough: a second caller that also saw the dead owner could
+ * delete the lock the first has just taken. The rename is atomic, so one caller
+ * gets the tombstone and the rest get ENOENT. A tombstone that turns out to
+ * hold another pid is a live lock taken by mistake, and goes straight back.
+ */
+function takeOver(lock, deadOwner) {
+  const tombstone = `${lock}.dead-${process.pid}`;
+  try {
+    renameSync(lock, tombstone);
+  } catch {
+    return; // someone else took it over first
+  }
+  if (ownerOf(tombstone) !== deadOwner) {
+    try {
+      renameSync(tombstone, lock);
+      return;
+    } catch {
+      // a new lock exists by now; there is nothing to give back
+    }
+  }
+  rmSync(tombstone, { recursive: true, force: true });
+}
 
 /**
  * Run `action` holding `<dir>/node_modules.lock`, or return `{ status: 'busy' }`
@@ -48,7 +73,7 @@ export function withInstallLock(dir, waitMs, action) {
     const age = Date.now() - (statSync(lock, { throwIfNoEntry: false })?.mtimeMs ?? Date.now());
     // No pid yet: the owner is between mkdir and its write. Give it a minute.
     if (owner ? !alive(owner) : age > 60_000) {
-      rmSync(lock, { recursive: true, force: true });
+      takeOver(lock, owner);
       continue;
     }
     if (Date.now() >= deadline) return { status: 'busy' };
@@ -58,6 +83,7 @@ export function withInstallLock(dir, waitMs, action) {
     writeFileSync(join(lock, 'pid'), String(process.pid));
     return action();
   } finally {
-    rmSync(lock, { recursive: true, force: true });
+    // Only a lock this process still owns: one taken over meanwhile is not ours.
+    if (ownerOf(lock) === process.pid) rmSync(lock, { recursive: true, force: true });
   }
 }

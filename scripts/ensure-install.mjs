@@ -124,10 +124,11 @@ export function ensureInstall(dir, options = {}) {
     const here = resolve(dir);
     const matching = (clone ? candidates : []).filter((other) => {
       const theirs = join(other, 'node_modules');
-      if (resolve(other) === here || !existsSync(theirs)) return false;
-      return (
-        !lstatSync(theirs).isSymbolicLink() && staleInstall(lock, installedIn(other)).length === 0
-      );
+      // One call, not exists-then-stat: another session may be deleting that
+      // install right now, and a throw here would end the whole check.
+      const entry = lstatSync(theirs, { throwIfNoEntry: false });
+      if (resolve(other) === here || !entry || entry.isSymbolicLink()) return false;
+      return staleInstall(lock, installedIn(other)).length === 0;
     });
 
     for (const other of matching) {

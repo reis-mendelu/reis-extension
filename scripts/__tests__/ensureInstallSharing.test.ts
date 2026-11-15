@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
-import { existsSync, lstatSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { ensureInstall } from '../ensure-install.mjs';
 import { copy, installFixture, marker } from './installFixture';
@@ -98,6 +106,24 @@ describe('two calls for the same checkout', () => {
     const result = ensureInstall(dir, { candidates: [sibling], clone: copy, waitMs: 0 });
     expect(result.status).toBe('copied');
     expect(existsSync(lockDir(dir))).toBe(false);
+  });
+
+  it('leaves no tombstone behind after a takeover', () => {
+    const dir = checkout('wt', '5.0.1', '3.2.7');
+    heldBy(dir, 999_999_999);
+    ensureInstall(dir, { candidates: [], clone: copy, waitMs: 0 });
+    expect(readdirSync(dir).filter((name) => name.startsWith('node_modules.lock'))).toEqual([]);
+  });
+
+  // Taken over while this call was still working: that lock is someone else's.
+  it('does not release a lock that another process holds by then', () => {
+    const dir = checkout('wt', '5.0.1', '3.2.7');
+    const npmCi = vi.fn(() => {
+      rmSync(lockDir(dir), { recursive: true });
+      heldBy(dir, process.ppid);
+    });
+    ensureInstall(dir, { candidates: [], clone: copy, npmCi, install: true });
+    expect(existsSync(lockDir(dir))).toBe(true);
   });
 
   it('releases the lock when it is done', () => {
