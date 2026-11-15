@@ -8,12 +8,19 @@ import { isLoginForm, type PageShape } from './isPage';
  * one had, so an empty subject list in a report can be told apart:
  *
  * - no `#tmtab_1` at all, or the list in another table → `table: false`
- * - rows that lack a document-server folder link → `folderLinks < rows`
+ * - subject rows that lack a document-server folder link → `folderLinks <
+ *   syllabusLinks`. NOT `folderLinks < rows`: `rows` also counts the
+ *   attendance row IS puts under a subject with tracked attendance (13 cells,
+ *   no link; `parseAttendance` reads it). A real page (2026-11-15) had 13
+ *   rows, 8 subjects with both links and 5 attendance rows, each under a
+ *   subject that was read.
  * - a signed-out page → `signedIn: false`, and `loginForm` when IS sent its
  *   login form instead
  *
  * `fetchDualLanguageSubjects` decides on it through `classifyIsPage`
- * (`./isPage.ts`): rows offered and none read is a failed read, not an empty list.
+ * (`./isPage.ts`): rows offered and none read is a failed read, not an empty
+ * list. An attendance row never stands alone, so it cannot turn a page with
+ * no subjects into "not understood".
  *
  * Counts and booleans only: no text, href or id leaves this function.
  */
