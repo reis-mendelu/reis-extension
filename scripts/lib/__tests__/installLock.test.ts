@@ -71,11 +71,39 @@ describe('takeOverFrom', () => {
 
     expect(ownerOf(lock)).toBe(dead);
     expect(takeOverFrom(lock, dead, 1111)).toBe(true);
-    expect(readdirSync(lock)).toEqual(['owner-1111']);
+    expect(readdirSync(lock).sort()).toEqual(['owner-1111', 'pid']);
+    expect(readFileSync(join(lock, 'pid'), 'utf8')).toBe('1111');
   });
 });
 
 describe('withInstallLock', () => {
+  // Greptile on #704: the bootstrap hook runs the main checkout's copy of this
+  // script and `npm run check` the worktree's, against the same checkout. Older
+  // copies read only `lock/pid`, and treat a lock without one as abandoned after
+  // a minute. So every lock this version holds names its owner there too.
+  it('keeps a pid file naming the live owner, for older copies of this script', async () => {
+    const { withInstallLock } = await import(LOCK_MODULE);
+    const dir = tempDir();
+    const lock = join(dir, 'node_modules.lock');
+
+    const seen = withInstallLock(dir, 1000, () => readFileSync(join(lock, 'pid'), 'utf8'));
+
+    expect(seen).toBe(String(process.pid));
+    expect(existsSync(lock)).toBe(false);
+  });
+
+  it('rewrites the pid file for the new owner on a takeover', async () => {
+    const { takeOverFrom } = await import(LOCK_MODULE);
+    const lock = join(tempDir(), 'node_modules.lock');
+    const dead = deadPid();
+    lockOwnedBy(lock, dead);
+    writeFileSync(join(lock, 'pid'), String(dead));
+
+    expect(takeOverFrom(lock, dead, 1111)).toBe(true);
+    expect(readFileSync(join(lock, 'pid'), 'utf8')).toBe('1111');
+    expect(readdirSync(lock).sort()).toEqual(['owner-1111', 'pid']);
+  });
+
   it('replaces an empty lock left by an owner killed while releasing', async () => {
     const { withInstallLock } = await import(LOCK_MODULE);
     const dir = tempDir();

@@ -5,8 +5,8 @@
 // first: each would delete the other's staging directory, and either could
 // rename an unfinished tree into place.
 //
-// The lock is `<dir>/node_modules.lock`, a directory holding exactly one entry,
-// `owner-<pid>`. Every state change is one rename(2) or rmdir(2), each atomic
+// The lock is `<dir>/node_modules.lock`, a directory holding `owner-<pid>`
+// (plus a `pid` file naming the same process, for older copies of this script). Every state change is one rename(2) or rmdir(2), each atomic
 // and each conditional on what is there, so no caller can act on a state it
 // read a moment ago:
 //
@@ -78,17 +78,34 @@ export function takeOverFrom(lock, deadOwner, me = process.pid) {
   if (!entry || entry.pid !== deadOwner) return false;
   try {
     renameSync(join(lock, entry.name), join(lock, `owner-${me}`));
-    return true;
   } catch {
     return false; // another caller took it first, or the owner released it
   }
+  writeLegacyPid(lock, me);
+  return true;
+}
+
+/**
+ * `lock/pid`, the only thing copies of this script from before #704 read. The
+ * bootstrap hook runs the main checkout's copy and `npm run check` the
+ * worktree's, against the same checkout, so the two formats meet; a lock
+ * without a pid file looks abandoned to the older copy after a minute.
+ * Written aside and renamed in, so a reader never sees it half written.
+ */
+function writeLegacyPid(lock, pid) {
+  const staged = join(lock, `pid.${pid}`);
+  writeFileSync(staged, String(pid));
+  renameSync(staged, join(lock, 'pid'));
 }
 
 function release(lock) {
+  // Ours until we unlink it: a takeover needs us dead.
+  if (ownerOf(lock) !== process.pid) return;
+  rmSync(join(lock, 'pid'), { force: true });
   try {
     unlinkSync(join(lock, `owner-${process.pid}`));
   } catch {
-    return; // not ours (taken over, which needs us dead) or already gone
+    return;
   }
   try {
     rmdirSync(lock);
@@ -109,6 +126,7 @@ export function withInstallLock(dir, waitMs, action) {
   rmSync(candidate, { recursive: true, force: true });
   mkdirSync(candidate);
   writeFileSync(join(candidate, `owner-${process.pid}`), '');
+  writeFileSync(join(candidate, 'pid'), String(process.pid)); // for older copies, see writeLegacyPid
   let held = false;
   try {
     for (;;) {
