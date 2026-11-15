@@ -79,6 +79,39 @@ describe('checkDrift', () => {
     const out = checkDrift('main', 'test', dir);
     expect(out.conflicts).toEqual(['version.txt']);
     expect(out.mainTreeInTest).toBe(true);
+    expect(out.mainAheadOfBase).toBe(true);
+  });
+
+  it('flags a squashed release before the bump, while merge-tree is still clean', () => {
+    // Right after the squash, main and test have the same tree: no conflict
+    // yet, but the next bump on test will conflict with the squash.
+    const { git, commit } = repo();
+    git('checkout', '-q', 'test');
+    commit('version.txt', '1.1.0\n', 'bump 1.1.0');
+    git('checkout', '-q', 'main');
+    git('merge', '-q', '--squash', 'test');
+    git('commit', '-q', '-m', 'Release 1.1.0 (#1)');
+
+    const out = checkDrift('main', 'test', dir);
+    expect(out.conflicts).toEqual([]);
+    expect(out.mainAheadOfBase).toBe(true);
+    expect(out.mainTreeInTest).toBe(true);
+  });
+
+  it('is clean after a squashed release is synced into test with -s ours', () => {
+    const { git, commit } = repo();
+    git('checkout', '-q', 'test');
+    commit('version.txt', '1.1.0\n', 'bump 1.1.0');
+    git('checkout', '-q', 'main');
+    git('merge', '-q', '--squash', 'test');
+    git('commit', '-q', '-m', 'Release 1.1.0 (#1)');
+    git('checkout', '-q', 'test');
+    git('merge', '-q', '-s', 'ours', '-m', 'sync', 'main');
+    commit('version.txt', '1.2.0\n', 'bump 1.2.0');
+
+    const out = checkDrift('main', 'test', dir);
+    expect(out.conflicts).toEqual([]);
+    expect(out.mainAheadOfBase).toBe(false);
   });
 
   it('is clean after a release merged with a merge commit', () => {
@@ -90,7 +123,9 @@ describe('checkDrift', () => {
     git('checkout', '-q', 'test');
     commit('version.txt', '1.2.0\n', 'bump 1.2.0');
 
-    expect(checkDrift('main', 'test', dir).conflicts).toEqual([]);
+    const out = checkDrift('main', 'test', dir);
+    expect(out.conflicts).toEqual([]);
+    expect(out.mainAheadOfBase).toBe(false);
   });
 
   it('says so when main holds something test lacks', () => {

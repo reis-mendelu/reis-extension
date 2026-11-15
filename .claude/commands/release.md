@@ -48,7 +48,8 @@ release PR is the last gate: walk its checklist before merging.
      fails the PR without it
    - Commit `chore: bump to X.Y.Z - <description>`, PR into `test`, merge it
 
-4. **Open the release PR** `test` → `main`. `release-checklist.yml` injects the
+4. **Re-run `npm run release:preflight -- --version X.Y.Z`**, then **open the
+   release PR** `test` → `main`. `release-checklist.yml` injects the
    checklist; `release-gate.yml` requires CI's *Build web preview* to have passed
    for that exact SHA, and the release notes file. Walk the checklist — the
    device item is the one that actually catches things. The Release gate fails

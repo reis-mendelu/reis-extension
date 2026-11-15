@@ -56,6 +56,12 @@ else an error, never "clean". It also says whether `main`'s tree is the tree of
 some commit in `test`'s history. Then `main` holds nothing `test` lacks, and the
 sync below is provably lossless.
 
+A clean `merge-tree` is not the whole answer. Right after a squashed release,
+`main` and `test` have the same tree and merge cleanly, but `main` changed the
+version files relative to the merge base, so the version bump on `test`
+conflicts with it. The preflight therefore also reports drift whenever `main`'s
+tree differs from the merge base's tree: `main` adds something beyond `test`.
+
 **Sync** (before the version bump: nothing may merge into `test` while a release
 PR is open):
 
@@ -98,7 +104,9 @@ Two choices. **Dominik picks, and withdrawing always needs his OK:**
 1. **Wait** until Apple finishes the review, then release. Or release anyway
    and run `npx tsx scripts/release/ios-submit.ts --version X.Y.Z` once the
    previous version is out of review.
-2. **Withdraw** the version in review, when the new release cannot wait (5.7.2):
+2. **Withdraw** the version in review, when the new release cannot wait (5.7.2).
+   `ios-submit.ts` only attaches a build that is already uploaded; it never
+   uploads one. So what you run depends on whether the release has merged:
    1. `PATCH /v1/reviewSubmissions/<submission id>` with
       `{"data":{"type":"reviewSubmissions","id":"<id>","attributes":{"canceled":true}}}`.
    2. Wait until the version reads `DEVELOPER_REJECTED`. It goes through
@@ -106,11 +114,15 @@ Two choices. **Dominik picks, and withdrawing always needs his OK:**
    3. Rename that version record to the new version, so no second editable
       record blocks: `PATCH /v1/appStoreVersions/<version record id>` with
       `{"data":{"type":"appStoreVersions","id":"<id>","attributes":{"versionString":"X.Y.Z"}}}`.
-   4. `npx tsx scripts/release/ios-submit.ts --version X.Y.Z --dry-run`, then
-      without `--dry-run`. It attaches the new build and submits.
+   4. **Before the merge (from the preflight): stop here.** Merge the release
+      PR; `ship.yml` uploads the build and `ios-submit.ts` reuses the renamed
+      record and submits it. **After the merge** (the iOS leg already uploaded
+      the build and stopped, as at 5.7.2):
+      `npx tsx scripts/release/ios-submit.ts --version X.Y.Z --dry-run`, then
+      without `--dry-run`.
 
    iOS users then skip the withdrawn version. Carry its What's new line into
-   this release's iOS notes (5.7.1's line went into 5.7.2's).
+   this release's notes (5.7.1's line went into 5.7.2's for iOS).
 
 ## One-time setup: repository secrets (Dominik adds these)
 

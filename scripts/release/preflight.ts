@@ -35,17 +35,20 @@ function driftFindings(remote: string): string[] {
   const main = `${remote}/main`;
   const test = `${remote}/test`;
   const drift = checkDrift(main, test);
-  if (!drift.conflicts.length) {
-    console.log(`ok   main/test: the release PR ${test} -> ${main} merges cleanly`);
+  if (!drift.conflicts.length && !drift.mainAheadOfBase) {
+    console.log(`ok   main/test: main adds nothing beyond test, the release PR merges cleanly`);
     return [];
   }
-  const files = drift.conflicts.map((f) => `       ${f}`).join('\n');
+  const what = drift.conflicts.length
+    ? `the release PR would conflict in\n${drift.conflicts.map((f) => `       ${f}`).join('\n')}`
+    : `main changes files beyond its merge base with test (a squashed release?).\n` +
+      `       No conflict yet, but the version bump on test will conflict with it.`;
   const how = drift.mainTreeInTest
     ? `main's tree is in test's history, so main holds nothing test lacks:\n` +
       `       sync with \`git merge -s ours ${main}\` on a branch off test (lossless).`
     : `main's tree is NOT in test's history: main holds something test lacks.\n` +
       `       Look at \`git diff ${test} ${main}\` before syncing; do not take --ours blindly.`;
-  return [`main/test drift: the release PR would conflict in\n${files}\n       ${how}`];
+  return [`main/test drift: ${what}\n       ${how}`];
 }
 
 async function iosFindings(version: string | undefined): Promise<string[]> {

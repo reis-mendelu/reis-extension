@@ -5,7 +5,9 @@
 //
 // `git merge-tree --write-tree` does the real merge in memory and its exit code
 // is the answer: 0 clean, 1 conflicts, anything else an error. Trust that, not
-// a parse of the messages.
+// a parse of the messages. A clean merge-tree right after a squashed release is
+// not enough, though: the next bump on test conflicts, so main adding anything
+// beyond the merge base counts as drift too.
 import { spawnSync } from 'node:child_process';
 
 export interface DriftReport {
@@ -16,6 +18,13 @@ export interface DriftReport {
    * nothing test lacks, so syncing with `git merge -s ours` loses nothing.
    */
   mainTreeInTest: boolean;
+  /**
+   * main changes something relative to its merge base with test (a squashed
+   * release, a fix pushed straight to main). Even with no conflict today, the
+   * next version bump on test edits the same lines and conflicts. False after a
+   * release merged with a merge commit or a main -> test sync.
+   */
+  mainAheadOfBase: boolean;
 }
 
 /** Read `git merge-tree --write-tree --name-only --no-messages` output. */
@@ -49,5 +58,11 @@ export function checkDrift(main = 'origin/main', test = 'origin/test', cwd?: str
   const conflicts = parseMergeTree(r.status, r.stdout, r.stderr);
   const mainTree = gitOut(['rev-parse', `${main}^{tree}`], cwd);
   const testTrees = gitOut(['log', '--format=%T', test], cwd).split('\n');
-  return { conflicts, mainTreeInTest: testTrees.includes(mainTree) };
+  const base = gitOut(['merge-base', main, test], cwd);
+  const baseTree = gitOut(['rev-parse', `${base}^{tree}`], cwd);
+  return {
+    conflicts,
+    mainTreeInTest: testTrees.includes(mainTree),
+    mainAheadOfBase: mainTree !== baseTree,
+  };
 }
