@@ -11,10 +11,11 @@ vi.mock('../../api/search/searchService', () => ({
 }));
 
 const PHOTO = 'data:image/jpeg;base64,AAAA';
+const ANCHOR = 'doc. Novák';
 
 // isTouch opens the card on click, so the test does not wait out the hover delay.
 async function openCard() {
-  fireEvent.click(screen.getByText('doc. Novák'));
+  fireEvent.click(screen.getByText(ANCHOR));
   return screen.findByRole('button', { name: 'Zvětšit fotku' });
 }
 
@@ -25,7 +26,7 @@ describe('PersonHoverCard photo', () => {
   });
 
   it('enlarges the photo and steps the card aside', async () => {
-    render(<PersonHoverCard personId="42">doc. Novák</PersonHoverCard>);
+    render(<PersonHoverCard personId="42">{ANCHOR}</PersonHoverCard>);
     fireEvent.click(await openCard());
     const lightbox = screen.getByTestId('person-photo-lightbox');
     expect(lightbox.querySelector('img')).toHaveAttribute('src', PHOTO);
@@ -33,7 +34,7 @@ describe('PersonHoverCard photo', () => {
   });
 
   it('survives the card going away, and the card opens again afterwards', async () => {
-    render(<PersonHoverCard personId="42">doc. Novák</PersonHoverCard>);
+    render(<PersonHoverCard personId="42">{ANCHOR}</PersonHoverCard>);
     fireEvent.click(await openCard());
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByTestId('person-photo-lightbox')).toBeNull();
@@ -43,8 +44,8 @@ describe('PersonHoverCard photo', () => {
 
   it('offers nothing to enlarge without a photo', async () => {
     usePersonPhoto.mockReturnValue(null);
-    render(<PersonHoverCard personId="42">doc. Novák</PersonHoverCard>);
-    fireEvent.click(screen.getByText('doc. Novák'));
+    render(<PersonHoverCard personId="42">{ANCHOR}</PersonHoverCard>);
+    fireEvent.click(screen.getByText(ANCHOR));
     await screen.findByText('Jan Novák');
     expect(screen.queryByRole('button', { name: 'Zvětšit fotku' })).toBeNull();
   });
