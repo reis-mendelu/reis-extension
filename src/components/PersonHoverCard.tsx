@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, ExternalLink, UserRound } from 'lucide-react';
 import { fetchPersonProfile } from '../api/search/searchService';
 import { useAppStore } from '../store/useAppStore';
 import { logError } from '../utils/reportError';
-import { PersonPhoto } from './ui/PersonPhoto';
-import { isPersonProfileUrl } from '../utils/isPersonProfileUrl';
+import { usePersonPhoto } from '../hooks/data/usePersonPhoto';
+import { PersonHoverCardBody } from './PersonHoverCardBody';
+import { PersonPhotoLightbox } from './ui/PersonPhotoLightbox';
 import type { Person } from '../api/search/types';
 
 interface PersonHoverCardProps {
@@ -51,8 +51,10 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
   const [profile, setProfile] = useState<Person | null>(null);
   const [loading, setLoading] = useState(false);
   const [pos, setPos] = useState<CardPosition | null>(null);
+  const [zoomed, setZoomed] = useState(false);
   const isTouch = useAppStore((s) => s.isTouch);
-  const language = useAppStore((s) => s.language);
+  // The id the avatar shows, cached for the session: enlarging fetches nothing.
+  const photo = usePersonPhoto(profile?.id || (/^\d+$/.test(personId) ? personId : null));
 
   const anchorRef = useRef<HTMLSpanElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -133,10 +135,14 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
     return () => document.removeEventListener('pointerdown', onDocPointerDown);
   }, [isTouch, visible]);
 
-  const email = profile?.email;
-  const messageUrl = email
-    ? `https://is.mendelu.cz/auth/posta/nova_zprava.pl?komu=${encodeURIComponent(email)}`
-    : null;
+  // The photo takes the screen and the card steps aside. The lightbox lives
+  // outside the card's AnimatePresence below: the cursor landing on the overlay
+  // fires the card's mouseleave, and a lightbox inside the card would go with it.
+  const enlarge = () => {
+    cancelTimers();
+    setVisible(false);
+    setZoomed(true);
+  };
 
   const card = (
     <AnimatePresence>
@@ -158,71 +164,13 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
           }}
           className="bg-base-100 border border-base-300 rounded-2xl shadow-popover-heavy p-4 flex items-center gap-4"
         >
-          {/* Avatar */}
-          <div className="avatar flex-shrink-0">
-            <div className="w-14 h-14 rounded-full ring-1 ring-base-200 ring-offset-2 ring-offset-base-100 overflow-hidden">
-              <PersonPhoto
-                personId={profile?.id || (/^\d+$/.test(personId) ? personId : null)}
-                alt=""
-                className="w-full h-full object-cover scale-[1.05]"
-                fallback={
-                  <div className="w-full h-full flex items-center justify-center bg-neutral text-neutral-content">
-                    <UserRound size={24} strokeWidth={1.5} />
-                  </div>
-                }
-              />
-            </div>
-          </div>
-
-          {/* Info */}
-          <div className="flex flex-col gap-1 min-w-0 flex-1">
-            {loading && !profile ? (
-              <div className="space-y-1.5">
-                <div className="h-3.5 bg-base-300 rounded animate-pulse w-3/4" />
-                <div className="h-3 bg-base-300 rounded animate-pulse w-1/2" />
-              </div>
-            ) : (
-              <>
-                <span className="font-bold text-sm text-base-content leading-tight">
-                  {profile?.name ?? '—'}
-                </span>
-                {profile?.faculty && (
-                  <span className="text-xs text-base-content/50 leading-tight">
-                    {profile.faculty}
-                  </span>
-                )}
-                {email && (
-                  <span className="text-xs text-base-content/40 font-mono break-all">{email}</span>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col gap-1 flex-shrink-0">
-            {messageUrl && (
-              <a
-                href={messageUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-circle btn-sm btn-ghost text-base-content/40 hover:text-primary hover:bg-primary/10"
-                title="Send message"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Mail size={16} />
-              </a>
-            )}
-            <a
-              href={isPersonProfileUrl(personId, language)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-circle btn-sm btn-ghost text-base-content/40 hover:text-primary hover:bg-primary/10"
-              title="Open profile"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink size={14} />
-            </a>
-          </div>
+          <PersonHoverCardBody
+            personId={personId}
+            profile={profile}
+            loading={loading}
+            photo={photo}
+            onEnlarge={enlarge}
+          />
         </motion.div>
       )}
     </AnimatePresence>
@@ -240,6 +188,11 @@ export function PersonHoverCard({ personId, children, className }: PersonHoverCa
         {children}
       </span>
       {typeof document !== 'undefined' && createPortal(card, document.body)}
+      <PersonPhotoLightbox
+        src={zoomed ? photo : null}
+        alt={profile?.name ?? ''}
+        onClose={() => setZoomed(false)}
+      />
     </>
   );
 }
