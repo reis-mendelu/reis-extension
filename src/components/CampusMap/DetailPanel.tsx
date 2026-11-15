@@ -5,6 +5,7 @@ import { landmarkGroupLabels, placeTitle, roomLabel } from './mapHelpers';
 import { EventDetailCard } from './EventDetailCard';
 import { GardenPlaceCard } from './GardenPlaceCard';
 import { SocietyPinCard } from './SocietyPinCard';
+import { SportPlaceCard } from './SportPlaceCard';
 import landmarksJson from '../../data/map/landmarks.json';
 import type { Landmark } from '../../types/campusMap';
 
@@ -33,6 +34,8 @@ export function DetailPanel() {
   if (sel.kind === 'gardenPlace') return <GardenPlaceCard place={sel.place} />;
 
   if (sel.kind === 'societyPin') return <SocietyPinCard pin={sel.pin} />;
+
+  if (sel.kind === 'sportPlace') return <SportPlaceCard place={sel.place} />;
 
   if (sel.kind === 'poi') {
     const p = sel.poi;

@@ -4,15 +4,16 @@ import { useAppStore } from '../../store/useAppStore';
 import { useSociety } from '../../hooks/useSociety';
 import { SocietyLogo } from '../SocietyLogo';
 import { useEventPinPlacement } from './useEventPinPlacement';
-import { useTranslation } from '../../hooks/useTranslation';
-import { venueStatus } from '../../utils/venues/venueStatus';
+import { PIN_FACE, PIN_FACE_CHOSEN, PIN_TAP_PAD } from './pinGeometry';
 import type { SocietyPin } from '../../types/campusMap';
 
 /**
  * Society pins (`map_pins`) and venues (`venues`) on the campus overview: the
  * society's logo in a white ring, opening `SocietyPinCard`. A venue's pin is
- * the same size, ringed in the society's colour (grey while it is closed) and named
- * underneath, because it is a place to walk to, not a notice. Their own layer over the events' pane
+ * the standard place pin (pinGeometry.ts, the same as a Sportera place's),
+ * ringed in the society's colour and named only once tapped. Whether it is
+ * open is not on the map either (no "· zavřeno", no grey ring, no dimmed logo
+ * — decided 2026-11-15): the card a tap opens says so. Their own layer over the events' pane
  * and placement, not EventLayer's groups, so a pin is never grouped with,
  * counted as or listed among the events. Not drawn over a floor plan.
  */
@@ -67,47 +68,48 @@ function SocietyPinButton({
 }) {
   // A non-empty id always resolves: unknown ids get the neutral society.
   const soc = useSociety(pin.societyId)!;
-  const { t } = useTranslation();
-  const now = useAppStore((s) => s.now);
   if (pin.venue) {
-    const open = venueStatus(pin.venue.hours, now, pin.venue.closure).open;
-    const ring = open ? soc.color : '#9ca3af';
+    // The standard place pin (pinGeometry.ts), the same as a Sportera place's:
+    // one size, no name until tapped. The society's colour rings it.
+    const face = selected ? PIN_FACE_CHOSEN : PIN_FACE;
     return (
       <button
         type="button"
         data-testid="society-pin"
-        data-venue-open={open}
-        // p-[5px] keeps the tap target at 46px around the 36px pin: a thumb
-        // that lands on the ring's edge must open S-klub, not the map.
-        className="group pointer-events-auto absolute left-0 top-0 p-[5px] leaflet-zoom-animated"
-        style={{ transform: `translate(${x}px, ${y}px) translate(-50%, -50%)` }}
-        aria-label={open ? pin.title : `${pin.title} · ${t('map.venueClosedShort')}`}
+        className="group pointer-events-auto absolute left-0 top-0 leaflet-zoom-animated"
+        style={{
+          transform: `translate(${x}px, ${y}px) translate(-50%, -50%)`,
+          padding: PIN_TAP_PAD,
+          zIndex: selected ? 2 : undefined,
+        }}
+        aria-label={pin.title}
         onClick={() => onSelect(pin)}
       >
-        {/* The same footprint as a society pin (32px logo in a white ring);
-            only the coloured ring and the name below set it apart. */}
         <span
-          className="block rounded-full bg-white p-0.5 transition-transform group-hover:scale-110"
+          className="block overflow-hidden rounded-full bg-white transition-transform group-hover:scale-110"
           style={{
-            boxShadow: `0 0 0 2px ${ring}, 0 1px ${selected ? 6 : 4}px rgba(0,0,0,${selected ? 0.4 : 0.28})`,
+            width: face,
+            height: face,
+            boxShadow: `0 0 0 ${selected ? 3 : 2}px ${soc.color}, 0 1px ${selected ? 7 : 4}px rgba(0,0,0,${selected ? 0.4 : 0.28})`,
           }}
         >
           <SocietyLogo
             society={soc}
             fit="contain"
-            className={`h-8 w-8 rounded-full bg-white text-xs ${open ? '' : 'opacity-60'}`}
+            className="h-full w-full rounded-full bg-white text-[10px]"
           />
         </span>
-        {/* The basemap is light in both themes, so the label carries its own
-            white surface and dark ink rather than the theme's — inline, as
-            the search bar's surface is, since no theme token means "ink on
-            the basemap". */}
-        <span
-          className="pointer-events-none absolute left-1/2 top-full -mt-0.5 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-1.5 py-px text-[10px] font-bold shadow"
-          style={{ color: '#111827' }}
-        >
-          {open ? pin.title : `${pin.title} · ${t('map.venueClosedShort')}`}
-        </span>
+        {/* Named only once chosen, as a Sportera pin is. The basemap is light
+            in both themes, so the label carries its own white surface and dark
+            ink rather than the theme's. */}
+        {selected && (
+          <span
+            className="pointer-events-none absolute left-1/2 top-full -mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-1.5 py-px text-[11px] font-bold shadow"
+            style={{ color: '#111827' }}
+          >
+            {pin.title}
+          </span>
+        )}
       </button>
     );
   }
