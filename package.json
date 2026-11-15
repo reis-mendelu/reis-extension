@@ -69,6 +69,7 @@
     "mcp:plugin": "vite build --config vite.mcp.plugin.config.ts && node scripts/mcp-plugin.mjs"
   },
   "dependencies": {
+    "@capacitor-community/in-app-review": "^8.0.0",
     "@capacitor/android": "^8.6.0",
     "@capacitor/app": "^8.1.2",
     "@capacitor/app-launcher": "^8.0.1",

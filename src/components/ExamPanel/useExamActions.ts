@@ -7,6 +7,8 @@ import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { logError } from '../../utils/reportError';
 import { useTranslation } from '../../hooks/useTranslation';
 import { reportToastOptions } from '../Feedback/reportPrefill';
+import { maybeAskForStoreReview } from '../../mobile/storeReview';
+import { isFirstAttemptRegistration } from '../../utils/exams/isFirstAttemptRegistration';
 
 interface PendingAction {
   type: 'register' | 'unregister';
@@ -62,6 +64,20 @@ export function useExamActions({
         setExams(updated);
         setExpandedSectionId(null);
         useAppStore.getState().triggerExamsRefresh();
+        // The store-rating moment: a zkouška, first attempts only, never a resit.
+        // A no-op in the extension; the helper decides if the install is ready.
+        const { gradeHistory, subjects } = useAppStore.getState();
+        const subjectCode = exams.find((x) => x.sections.some((y) => y.id === sec.id))?.code ?? '';
+        if (
+          sec.type === 'exam' &&
+          isFirstAttemptRegistration({
+            attemptTypes: t?.attemptTypes,
+            grades: gradeHistory?.grades ?? null,
+            courseCode: subjectCode,
+            predmetId: subjects?.data[subjectCode]?.subjectId,
+          })
+        )
+          void maybeAskForStoreReview('exam_registered');
         return;
       }
       // Registration failed. If we unregistered first, attempt best-effort rollback.

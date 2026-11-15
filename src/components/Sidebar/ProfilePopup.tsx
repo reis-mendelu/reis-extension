@@ -16,6 +16,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { User, Mail, Hash } from 'lucide-react';
 import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
+import { RateReisLink } from './Profile/RateReisLink';
 import { PartnersBlock } from '../Partners/PartnersBlock';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { useLongPress } from '../../hooks/ui/useLongPress';
@@ -194,6 +195,7 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
               <span className="text-xs font-medium opacity-70">{t('settings.reportBug')}</span>
             </button>
           )}
+          {currentSchool.has('storeRating') && <RateReisLink />}
 
           <div className="flex items-center gap-3 px-1 py-1.5 text-base-content/60">
             <LogOut size={16} className="text-base-content/30" />
