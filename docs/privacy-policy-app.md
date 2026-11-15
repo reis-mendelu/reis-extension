@@ -83,8 +83,9 @@ in the mobile app (Android, iPhone, iPad) and only when you ask for your ISIC
 balance or a top-up, the MENDELU sign-in you make on MENDELU's own page — your
 password goes to MENDELU, never to reIS. reIS keeps the sign-in encrypted on your
 device; while you are signed in the device's own web-cookie store holds it too,
-like any browser, and signing out deletes both. The balance is shown, never
-stored. A top-up sends WebISKAM the amount you typed and whether you chose card or
+like any browser, and signing out deletes both. The balance and your open dorm
+payments (pohledávky) are shown, never stored. To pay one, reIS opens WebISKAM's
+own page with its pay dialog up; you confirm it there, and reIS sends no payment. A top-up sends WebISKAM the amount you typed and whether you chose card or
 Google Pay, so it can create the payment; it then opens **GoPay**'s payment page
 in your device's browser view, and your card or Google Pay details go to GoPay
 and never to reIS.
@@ -127,7 +128,8 @@ backup, Outlook calendar sync, the earlier WebISKAM integration (dorm, meals and
 the rest), library study-room booking, AI syllabus comparison and automatic error
 reporting have all been removed from reIS, along with everything they sent. In
 October 2026 WebISKAM came back for one thing only — the ISIC balance and its
-top-up, described above.
+top-up, described above; since November 2026 that row also shows open dorm
+payments and opens WebISKAM's page to pay one.
 
 ## Contact
 

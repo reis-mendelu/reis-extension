@@ -1,0 +1,54 @@
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { parseClaims } from '../claimsParser';
+
+const fixture = readFileSync(resolve(__dirname, 'fixtures/pohledavky.html'), 'utf8');
+
+describe('parseClaims', () => {
+  it('reads the open claim from the live page (2026-11-15)', () => {
+    expect(parseClaims(fixture)).toEqual([
+      {
+        id: '00000000-0000-0000-0000-000000000001',
+        due: '2026-11-20',
+        description: 'Ubytování 31.10.2026 - 30.11.2026',
+        remaining: 4815,
+      },
+    ]);
+  });
+
+  it('skips the Celkem row, which has no pay button', () => {
+    expect(parseClaims(fixture)).toHaveLength(1);
+  });
+
+  // The empty page has not been seen yet: a missing table is "cannot tell",
+  // never "nothing owed".
+  it('returns null when the table is missing', () => {
+    expect(parseClaims('<html lang="cs"><body><p>Základní údaje</p></body></html>')).toBeNull();
+  });
+
+  it('leaves out a row whose amount or id cannot be read', () => {
+    const broken = fixture
+      .replace(
+        '4 815 Kč</td>\n <td class="tdRight moneyCol">0 Kč</td>\n <td class="tdRight bold moneyCol">4 815 Kč',
+        '4 815 Kč</td>\n <td class="tdRight moneyCol">0 Kč</td>\n <td class="tdRight bold moneyCol">??'
+      )
+      .replace('data-id="00000000-0000-0000-0000-000000000001"', 'data-id="x"');
+    expect(parseClaims(broken)).toEqual([]);
+  });
+
+  it('reads an English page, where the comma groups thousands', () => {
+    const en = fixture
+      .replace('<html lang="cs">', '<html lang="en">')
+      .replaceAll('4 815 Kč', '4,815 Kč');
+    expect(parseClaims(en)?.[0]?.remaining).toBe(4815);
+  });
+
+  it('never returns a GUID that could break out of the injected script', () => {
+    const evil = fixture.replace(
+      'data-id="00000000-0000-0000-0000-000000000001"',
+      `data-id="1'];alert(1);//"`
+    );
+    expect(parseClaims(evil)).toEqual([]);
+  });
+});

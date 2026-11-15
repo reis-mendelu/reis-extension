@@ -18,6 +18,12 @@ vi.mock('../iskamTopUp', () => ({
   initTopUp: (...a: unknown[]) => initTopUp(...a),
   openGateway: (...a: unknown[]) => openGateway(...a),
 }));
+const fetchClaims = vi.fn();
+const openClaimInIskam = vi.fn();
+vi.mock('../iskamClaims', () => ({ fetchClaims: (...a: unknown[]) => fetchClaims(...a) }));
+vi.mock('../iskamPayClaim', () => ({
+  openClaimInIskam: (...a: unknown[]) => openClaimInIskam(...a),
+}));
 vi.mock('../../../platform', () => ({ getPlatform: () => ({ kind: platformKind }) }));
 vi.mock('../../../errors/demoMode', () => ({ isDemoMode: () => demo }));
 vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
@@ -34,6 +40,9 @@ describe('useIskamStore', () => {
     signInToIskam.mockReset();
     initTopUp.mockReset();
     openGateway.mockReset();
+    fetchClaims.mockReset();
+    fetchClaims.mockResolvedValue(null);
+    openClaimInIskam.mockReset();
     platformKind = 'capacitor';
     demo = false;
     s().reset();
@@ -338,5 +347,72 @@ describe('startTopUp', () => {
     expect(runSilentChain).not.toHaveBeenCalled();
     expect(s().balance).toBeNull();
     expect(s().topUp).toBe('idle');
+  });
+});
+
+const CLAIM = {
+  id: '00000000-0000-0000-0000-000000000001',
+  due: '2026-11-20',
+  description: 'Ubytování 31.10.2026 - 30.11.2026',
+  remaining: 4815,
+};
+
+describe('useIskamStore claims', () => {
+  beforeEach(() => {
+    runSilentChain.mockReset();
+    fetchClaims.mockReset();
+    openClaimInIskam.mockReset();
+    platformKind = 'capacitor';
+    demo = false;
+    s().reset();
+  });
+
+  it('reads the claims after a live balance, in the same check', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockResolvedValue([CLAIM]);
+    await s().check();
+    expect(s().balance).toEqual({ amount: 245 });
+    expect(s().claims).toEqual([CLAIM]);
+  });
+
+  it('does not read claims without a balance', async () => {
+    runSilentChain.mockResolvedValue({ state: 'dead' });
+    await s().check();
+    expect(fetchClaims).not.toHaveBeenCalled();
+    expect(s().claims).toBeNull();
+  });
+
+  it('a failed claims read leaves the balance and shows no claim', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockRejectedValue(new Error('boom'));
+    await s().check();
+    expect(s().status).toBe('balance');
+    expect(s().claims).toBeNull();
+  });
+
+  it('Zaplatit opens WebISKAM, then reads balance and claims again', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockResolvedValueOnce([CLAIM]).mockResolvedValueOnce([]);
+    await s().check();
+    let finish!: () => void;
+    openClaimInIskam.mockReturnValue(new Promise<void>((r) => (finish = r)));
+    const p = s().payClaim(CLAIM.id);
+    expect(s().payingClaim).toBe(true);
+    // A second tap while WebISKAM is open does nothing.
+    await s().payClaim(CLAIM.id);
+    expect(openClaimInIskam).toHaveBeenCalledOnce();
+    finish();
+    await p;
+    expect(openClaimInIskam).toHaveBeenCalledWith(CLAIM.id);
+    expect(s().payingClaim).toBe(false);
+    expect(s().claims).toEqual([]);
+  });
+
+  it('sign-out clears the claims', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockResolvedValue([CLAIM]);
+    await s().check();
+    s().signOut();
+    expect(s().claims).toBeNull();
   });
 });

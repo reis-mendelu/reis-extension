@@ -3,9 +3,13 @@ import { isDemoMode } from '../../errors/demoMode';
 import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
 import { LoginCancelledError } from '../ensureSession';
+import type { Claim } from './claimsParser';
+import { fetchClaims } from './iskamClaims';
 import { buildIskamHttpDeps } from './iskamHttp';
 import { buildIskamLoginDeps, signInToIskam } from './iskamLogin';
 import { runSilentChain, type ChainResult } from './iskamSession';
+import { devForcedState } from './iskamDevState';
+import { openClaimInIskam } from './iskamPayClaim';
 import { initTopUp, openGateway } from './iskamTopUp';
 import { parseHlavniKonto, type KontoBalance } from './kontaParser';
 import type { PayMethod } from './topUp';
@@ -25,7 +29,13 @@ export interface IskamState {
   signingIn: boolean;
   topUp: TopUpPhase;
   lastTopUp: TopUpResult | null;
+  /** Open claims (pohledávky); null = not read or cannot tell. */
+  claims: Claim[] | null;
+  /** WebISKAM's pay page is open for a claim. */
+  payingClaim: boolean;
   check(): Promise<void>;
+  /** Opens WebISKAM's own pay dialog for the claim; the student pays there. */
+  payClaim(id: string): Promise<void>;
   signIn(): Promise<void>;
   startTopUp(amount: number, method: PayMethod): Promise<void>;
   /** Dobít pressed again after a credited top-up: the old result goes. */
@@ -64,30 +74,6 @@ function available(): boolean {
 }
 
 /**
- * `?iskam=balance|added|unseen|signed-out|checking|unavailable` on the dev webapp, and
- * nothing anywhere else — `import.meta.env.DEV` strips it from every shipped
- * build, like `?eduroam=` in eduroamNative. The row is Capacitor-gated, so
- * without this verify-ui could only ever report it absent.
- */
-function devForcedState(): Partial<IskamState> | null {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return null;
-  const v = new URLSearchParams(window.location.search).get('iskam');
-  if (v === 'balance') return { status: 'balance', balance: { amount: 2825.58 } };
-  // After a top-up: credited, or not showing yet.
-  if (v === 'added') {
-    const lastTopUp = { kind: 'added', amount: 250 } as const;
-    return { status: 'balance', balance: { amount: 3075.58 }, lastTopUp };
-  }
-  if (v === 'unseen') {
-    return { status: 'balance', balance: { amount: 2825.58 }, lastTopUp: { kind: 'unseen' } };
-  }
-  if (v === 'signed-out' || v === 'checking' || v === 'unavailable') {
-    return { status: v, balance: null };
-  }
-  return null;
-}
-
-/**
  * Whether to offer a way into the ISIC row at all — the profile's entry asks
  * before any check has run, when `status` is still 'hidden' everywhere. The
  * same order as check(): a dev-forced state first (verify-ui), then Capacitor
@@ -110,11 +96,13 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
   signingIn: false,
   topUp: 'idle',
   lastTopUp: null,
+  claims: null,
+  payingClaim: false,
 
   async check() {
     const forced = devForcedState();
     if (forced) {
-      set(forced);
+      set({ claims: null, ...forced });
       return;
     }
     if (!available()) {
@@ -122,10 +110,37 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       return;
     }
     const mine = ++seq;
-    set({ status: 'checking', balance: null });
-    const result = await runSilentChain(await buildIskamHttpDeps());
+    set({ status: 'checking', balance: null, claims: null });
+    const http = await buildIskamHttpDeps();
+    const result = await runSilentChain(http);
     if (mine !== seq) return;
     set(fromChain(result));
+    if (get().status !== 'balance') return;
+    const claims = await fetchClaims(http).catch((e: unknown) => {
+      logError('Iskam.fetchClaims', e);
+      return null;
+    });
+    if (mine === seq) set({ claims });
+  },
+
+  /**
+   * Zaplatit beside a claim. reIS only opens WebISKAM's page with its own
+   * dialog up; whether the student pays is theirs and WebISKAM's. Afterwards
+   * the balance and claims are read again, so a paid claim drops off the row.
+   */
+  async payClaim(id) {
+    if (get().payingClaim || !available()) return;
+    const openSheet = sheet;
+    const mine = account;
+    set({ payingClaim: true });
+    try {
+      await openClaimInIskam(id);
+    } catch (e) {
+      logError('Iskam.payClaim', e);
+    }
+    if (mine !== account) return;
+    set({ payingClaim: false });
+    if (openSheet === sheet) await get().check();
   },
 
   async signIn() {
@@ -238,6 +253,8 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       balance: null,
       signingIn: false,
       lastTopUp: null,
+      claims: null,
+      payingClaim: false,
       ...(inFlight ? {} : { topUp: 'idle' as const }),
     });
   },
@@ -245,6 +262,14 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
   signOut() {
     account++;
     seq++;
-    set({ status: 'hidden', balance: null, signingIn: false, topUp: 'idle', lastTopUp: null });
+    set({
+      status: 'hidden',
+      balance: null,
+      signingIn: false,
+      topUp: 'idle',
+      lastTopUp: null,
+      claims: null,
+      payingClaim: false,
+    });
   },
 }));
