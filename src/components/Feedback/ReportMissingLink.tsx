@@ -2,7 +2,7 @@ import { MessageSquarePlus } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { ReportPrefillKey } from './reportPrefill';
-import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
+import { currentSchool } from '../../utils/school';
 
 /**
  * The "something missing?" button under an empty state fed by parsed IS data.
@@ -21,7 +21,7 @@ export function ReportMissingLink({
   const { t } = useTranslation();
   const openReport = useAppStore((s) => s.openReport);
   // Reports go to Supabase, which another school's prototype has none of.
-  if (IS_OTHER_SCHOOL) return null;
+  if (!currentSchool.has('reports')) return null;
   return (
     <button
       type="button"

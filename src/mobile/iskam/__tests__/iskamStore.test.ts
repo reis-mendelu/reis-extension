@@ -18,6 +18,12 @@ vi.mock('../iskamTopUp', () => ({
   initTopUp: (...a: unknown[]) => initTopUp(...a),
   openGateway: (...a: unknown[]) => openGateway(...a),
 }));
+const fetchClaims = vi.fn();
+const openClaimInIskam = vi.fn();
+vi.mock('../iskamClaims', () => ({ fetchClaims: (...a: unknown[]) => fetchClaims(...a) }));
+vi.mock('../iskamPayClaim', () => ({
+  openClaimInIskam: (...a: unknown[]) => openClaimInIskam(...a),
+}));
 vi.mock('../../../platform', () => ({ getPlatform: () => ({ kind: platformKind }) }));
 vi.mock('../../../errors/demoMode', () => ({ isDemoMode: () => demo }));
 vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
@@ -34,6 +40,9 @@ describe('useIskamStore', () => {
     signInToIskam.mockReset();
     initTopUp.mockReset();
     openGateway.mockReset();
+    fetchClaims.mockReset();
+    fetchClaims.mockResolvedValue(null);
+    openClaimInIskam.mockReset();
     platformKind = 'capacitor';
     demo = false;
     s().reset();

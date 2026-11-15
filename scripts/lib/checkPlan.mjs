@@ -1,0 +1,137 @@
+// The pure half of `npm run check` (scripts/check.mjs): what is installed, what
+// changed, what to run, and the one line that says how it went. No I/O here, so
+// every decision the command makes is unit-tested.
+
+/**
+ * Packages whose installed version is not the locked one.
+ *
+ * `lock` is package-lock.json; `installed` is node_modules/.package-lock.json,
+ * the record npm writes last, when an install has finished — so a killed
+ * install or a half-copied tree has none, or an old one, and shows up here.
+ * A worktree keeps whatever was installed when it was made: one copied from an
+ * old install ran vitest 3 under a lockfile pinning 5 and failed in ways that
+ * looked like real bugs.
+ */
+export function staleInstall(lock, installed) {
+  const have = installed?.packages ?? {};
+  const stale = [];
+  for (const [path, entry] of Object.entries(lock.packages ?? {})) {
+    // The root, the native/ workspaces and their links carry no installed copy.
+    if (!path.startsWith('node_modules/') || entry.link) continue;
+    const found = have[path];
+    // npm skips another platform's optional binaries: absent is correct.
+    if (!found && entry.optional) continue;
+    if (found?.version === entry.version) continue;
+    stale.push({
+      name: path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length),
+      want: entry.version,
+      have: found?.version ?? null,
+    });
+  }
+  // The other direction: a package still installed that the lockfile dropped.
+  // An import of it resolves here and fails on CI's clean install.
+  for (const [path, entry] of Object.entries(have)) {
+    if (!path.startsWith('node_modules/') || path in (lock.packages ?? {})) continue;
+    stale.push({
+      name: path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length),
+      want: null,
+      have: entry.version ?? null,
+    });
+  }
+  return stale;
+}
+
+const LINTED = /\.tsx?$/;
+const CODE = /\.(?:[cm]?[jt]sx?|json)$/;
+
+/**
+ * What to run for a set of changed files.
+ *
+ * - `lint`: what eslint.config.js covers (`**\/*.{ts,tsx}`); CI lints the whole
+ *   repo, but only a changed file can have a new finding.
+ * - `format`: everything; prettier applies .prettierignore itself.
+ * - `tests`: arguments for `vitest related`. The guard tests are always in the
+ *   list: they read files through fs, so no import graph ties them to a change,
+ *   and a docs-only edit that breaks one would otherwise pass here and fail CI.
+ *   `extraTests` are the tests that name a deleted file (see deletedStems).
+ */
+export function planFromChanges(changed, alwaysRun, extraTests = []) {
+  return {
+    lint: changed.filter((f) => LINTED.test(f)),
+    format: [...changed],
+    tests: [...new Set([...changed.filter((f) => CODE.test(f)), ...extraTests, ...alwaysRun])],
+  };
+}
+
+/**
+ * git's `-z` output as paths. Without -z git quotes a non-ASCII name
+ * (`"docs/\303\272vod.md"`), and that string is not a file: it would drop out
+ * of lint, format and tests without a word.
+ */
+export const nulSeparated = (out) => out.split('\0').filter(Boolean);
+
+/**
+ * What an import of each deleted code file would contain: its name without the
+ * extension, or its folder for an index file. `vitest related` cannot relate a
+ * test to a file that no longer exists, and tsc does not cover scripts/, so the
+ * tests that mention these names are found by text and run as well.
+ */
+export function deletedStems(deleted) {
+  const stems = deleted
+    .filter((file) => CODE.test(file) && !/\.(?:test|spec)\.[^.]+$/.test(file))
+    .map((file) => {
+      const parts = file.split('/');
+      const stem = parts.pop().replace(/\.[^.]+$/, '');
+      return stem === 'index' ? (parts.pop() ?? '') : stem;
+    })
+    .filter((stem) => stem.length >= 3);
+  return [...new Set(stems)];
+}
+
+/**
+ * The base this branch sits closest to: `{ ref, sha, ahead }` candidates, where
+ * `ahead` counts the branch's commits on top of the merge-base with that ref.
+ *
+ * Both are tried because a session worktree is cut from main, and main is not
+ * an ancestor of test (releases squash): diffing such a branch against test
+ * would report every file changed since the last release.
+ */
+export function closestBase(candidates) {
+  const preferTest = (c) => (c.ref.endsWith('/test') ? 0 : 1);
+  return (
+    [...candidates].sort((a, b) => a.ahead - b.ahead || preferTest(a) - preferTest(b))[0] ?? null
+  );
+}
+
+/** The last line the command prints, and the only one a reader needs. */
+export function verdict(results) {
+  if (results.length === 0) return 'check: FAIL (nothing ran)';
+  const label = (r) => (r.detail ? `${r.step}: ${r.detail}` : r.step);
+  const failed = results.filter((r) => !r.ok);
+  const passed = results.filter((r) => r.ok);
+  if (failed.length === 0) return `check: PASS (${passed.map(label).join(', ')})`;
+  const tail = passed.length > 0 ? ` — passed: ${passed.map(label).join(', ')}` : '';
+  return `check: FAIL (${failed.map(label).join(', ')})${tail}`;
+}
+
+/** What scripts/ensure-install.mjs did, in one line for the hook or the check output. */
+export function describeInstall(result) {
+  if (result.status === 'copied')
+    return `install: copied node_modules from ${result.from} (copy-on-write; this checkout owns it)`;
+  if (result.status === 'installed')
+    return 'install: ran npm ci (node_modules did not match package-lock.json)';
+  if (result.status === 'shared')
+    return "install: node_modules is a link to another checkout's install. It matches the lockfile, but do not run 'npm ci' through it; 'npm run check' replaces the link with this checkout's own install.";
+  if (result.status === 'busy')
+    return 'install: another install is running in this checkout (node_modules.lock). Try again when it has finished.';
+  if (result.status === 'failed')
+    return 'install: npm ci failed (its output is above). node_modules cannot be trusted until it succeeds.';
+  if (result.status === 'stale') {
+    const [first] = result.stale;
+    const example = first
+      ? ` (e.g. ${first.name} ${first.have ?? 'missing'} → ${first.want ?? 'not in the lockfile'})`
+      : '';
+    return `install: STALE — ${result.stale.length} packages differ from package-lock.json${example}. Run 'npm ci' here; until then typecheck and test results are not about your code.`;
+  }
+  return null;
+}

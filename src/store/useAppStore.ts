@@ -31,6 +31,7 @@ import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSystemNotificationsSlice } from './slices/createSystemNotificationsSlice';
 import { createQuestionsSlice } from './slices/createQuestionsSlice';
 import { createSocietyPinsSlice } from './slices/createSocietyPinsSlice';
+import { createSportPlacesSlice } from './slices/createSportPlacesSlice';
 import { createSklubMenuSlice } from './slices/createSklubMenuSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
@@ -61,7 +62,7 @@ import { retireSocietyFeatures } from '../services/cleanup/retireSocietyFeatures
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
-import { IS_OTHER_SCHOOL } from '../utils/otherSchool';
+import { currentSchool } from '../utils/school';
 
 export const useAppStore = create<AppState>()(
   overlayGuard((...a) => ({
@@ -95,6 +96,7 @@ export const useAppStore = create<AppState>()(
     ...createSystemNotificationsSlice(...a),
     ...createQuestionsSlice(...a),
     ...createSocietyPinsSlice(...a),
+    ...createSportPlacesSlice(...a),
     ...createSklubMenuSlice(...a),
     ...createSearchSlice(...a),
     ...createRecentPdfsSlice(...a),
@@ -157,9 +159,9 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
-  // Novinky and questions are Supabase rows, which another school's
-  // prototype cannot reach (scripts/isHostSwap.ts).
-  if (!IS_OTHER_SCHOOL) {
+  // Novinky and questions are Supabase rows, which a build for another
+  // school cannot reach (scripts/isHostSwap.ts).
+  if (currentSchool.has('novinky')) {
     s.loadQuestions();
     s.fetchNotifications();
   }

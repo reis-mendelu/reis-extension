@@ -1,25 +1,37 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 
-// IS_HOST is read once at import, so each case imports a fresh module.
+// The school is read once at import, so each case imports a fresh module.
 async function load(env: Record<string, string>) {
   vi.resetModules();
   for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
   return import('../isHostSwap');
 }
 
+const defines = (m: Awaited<ReturnType<typeof load>>) =>
+  (m.isHostSwapPlugin().config as () => { define?: Record<string, string> })().define;
+
+const transform = (m: Awaited<ReturnType<typeof load>>, code: string, id = '/src/a.ts') =>
+  m.isHostSwapPlugin().transform?.call({} as never, code, id) as { code: string } | null;
+
 afterEach(() => vi.unstubAllEnvs());
 
 describe('isHostSwap', () => {
-  it('leaves a normal build alone: MENDELU, Supabase, no flag', async () => {
-    const m = await load({ REIS_IS_HOST: '', REIS_PROTOTYPE: '' });
+  it('leaves a normal build alone: MENDELU, Supabase, every feature', async () => {
+    const m = await load({ REIS_SCHOOL: '', REIS_PROTOTYPE: '', REIS_IS_HOST: '' });
+    expect(m.SCHOOL.id).toBe('mendelu');
     expect(m.isHostSwapped).toBe(false);
+    expect(defines(m)?.['import.meta.env.VITE_REIS_SCHOOL']).toBe('"mendelu"');
+    expect(transform(m, "'is.mendelu.cz'; 'https://zvbpgkmnrqyprtkyxkwn.supabase.co'")).toBeNull();
+    // Feature checks stay runtime calls: a MENDELU build's code is never rewritten.
     expect(
-      m.isHostSwapPlugin().transform?.call({} as never, "'is.mendelu.cz'", '/src/a.ts')
+      transform(m, "currentSchool.has('campusMap') && fetch('https://is.mendelu.cz/x')")
     ).toBeNull();
   });
 
-  it('points every IS address at the other school and cuts Supabase off', async () => {
-    const m = await load({ REIS_IS_HOST: 'is.czu.cz' });
+  it('takes the host from the profile table and cuts Supabase off', async () => {
+    const m = await load({ REIS_SCHOOL: 'czu' });
+    expect(m.SCHOOL.id).toBe('czu');
+    expect(m.IS_HOST).toBe('is.czu.cz');
     expect(m.isHostSwapped).toBe(true);
     expect(
       m.swapHost(
@@ -28,45 +40,55 @@ describe('isHostSwap', () => {
     ).toBe("fetch('https://is.czu.cz/auth/'); /^is\\.czu\\.cz$/; 'https://supabase.invalid'");
   });
 
-  it('rewrites modules and sets the flag through the plugin itself', async () => {
-    const m = await load({ REIS_IS_HOST: 'is.czu.cz' });
-    const plugin = m.isHostSwapPlugin();
-    const config = (plugin.config as () => { define?: Record<string, string> })();
-    expect(config.define?.['import.meta.env.VITE_REIS_OTHER_SCHOOL']).toBe('"1"');
-    const out = plugin.transform?.call(
-      {} as never,
-      "fetch('https://is.mendelu.cz/x')",
-      '/src/a.ts'
-    ) as {
-      code: string;
-    };
-    expect(out.code).toBe("fetch('https://is.czu.cz/x')");
-    // node_modules are never touched.
+  it('REIS_SCHOOL=vse builds for insis.vse.cz', async () => {
+    const m = await load({ REIS_SCHOOL: 'vse' });
+    expect(m.IS_HOST).toBe('insis.vse.cz');
+    expect(defines(m)?.['import.meta.env.VITE_REIS_SCHOOL']).toBe('"vse"');
+    // A swapped file keeps its feature checks as runtime calls; only the host changes.
     expect(
-      plugin.transform?.call({} as never, "'is.mendelu.cz'", '/x/node_modules/lib/index.js')
-    ).toBeNull();
+      transform(m, "currentSchool.has('campusMap') && fetch('https://is.mendelu.cz/x')")?.code
+    ).toBe("currentSchool.has('campusMap') && fetch('https://insis.vse.cz/x')");
   });
 
-  it('REIS_PROTOTYPE=1 builds the prototype for MENDELU itself: flag on, Supabase cut', async () => {
-    const m = await load({ REIS_IS_HOST: '', REIS_PROTOTYPE: '1' });
+  it('rewrites modules through the plugin itself', async () => {
+    const m = await load({ REIS_SCHOOL: 'czu' });
+    expect(transform(m, "fetch('https://is.mendelu.cz/x')")?.code).toBe(
+      "fetch('https://is.czu.cz/x')"
+    );
+    // Feature checks are left for runtime.
+    expect(transform(m, "currentSchool.has('campusMap') && x")).toBeNull();
+    // node_modules are never touched.
+    expect(transform(m, "'is.mendelu.cz'", '/x/node_modules/lib/index.js')).toBeNull();
+  });
+
+  it('REIS_PROTOTYPE=1 builds a school against MENDELU itself: its features, Supabase cut', async () => {
+    const m = await load({ REIS_SCHOOL: 'vse', REIS_PROTOTYPE: '1' });
+    expect(m.SCHOOL.id).toBe('vse');
     expect(m.isHostSwapped).toBe(true);
     expect(m.IS_HOST).toBe('is.mendelu.cz');
     expect(m.swapHost("'https://zvbpgkmnrqyprtkyxkwn.supabase.co'")).toBe(
       "'https://supabase.invalid'"
     );
-    const config = (m.isHostSwapPlugin().config as () => { define?: Record<string, string> })();
-    expect(config.define?.['import.meta.env.VITE_REIS_OTHER_SCHOOL']).toBe('"1"');
+    expect(defines(m)?.['import.meta.env.VITE_REIS_SCHOOL']).toBe('"vse"');
+  });
+
+  it('refuses a prototype without a school, an unknown school and the old REIS_IS_HOST', async () => {
+    await expect(load({ REIS_SCHOOL: '', REIS_PROTOTYPE: '1' })).rejects.toThrow(/REIS_SCHOOL/);
+    await expect(load({ REIS_SCHOOL: 'muni' })).rejects.toThrow(/muni/);
+    await expect(load({ REIS_SCHOOL: '', REIS_IS_HOST: 'insis.vse.cz' })).rejects.toThrow(
+      /REIS_SCHOOL=vse/
+    );
   });
 
   it('says just "IS" where the text said IS MENDELU', async () => {
-    const m = await load({ REIS_IS_HOST: 'insis.vse.cz' });
+    const m = await load({ REIS_SCHOOL: 'vse' });
     expect(m.swapHost('Otevřít v IS MENDELU · Původní IS Mendelu')).toBe(
       'Otevřít v IS · Původní IS'
     );
   });
 
   it('swaps the manifest and names the prototype', async () => {
-    const m = await load({ REIS_IS_HOST: 'is.czu.cz' });
+    const m = await load({ REIS_SCHOOL: 'czu' });
     const manifest: Record<string, unknown> = {
       name: 'reIS',
       host_permissions: ['https://is.mendelu.cz/*'],

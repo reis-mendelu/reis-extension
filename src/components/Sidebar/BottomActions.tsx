@@ -3,7 +3,7 @@ import { Settings } from 'lucide-react';
 import { OUTLOOK_ICON_PATH, TEAMS_ICON_PATH } from '../../constants/icons';
 import { ProfilePopup } from './ProfilePopup';
 import { useTranslation } from '../../hooks/useTranslation';
-import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
+import { currentSchool } from '../../utils/school';
 
 export function BottomActions() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +29,7 @@ export function BottomActions() {
 
   return (
     <div className="flex flex-col gap-2 mb-2 w-full px-2 items-center relative" ref={ref}>
-      {!IS_OTHER_SCHOOL && (
+      {currentSchool.has('teamsOutlook') && (
         <>
           <a
             href="https://teams.microsoft.com"

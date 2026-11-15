@@ -1,5 +1,5 @@
 import { useAppStore } from '../../store/useAppStore';
-import { IS_OTHER_SCHOOL } from '../../utils/otherSchool';
+import { currentSchool } from '../../utils/school';
 
 /**
  * One key per entry point. Reports are counted per entry point by grouping
@@ -15,7 +15,7 @@ export const REPORT_TOAST_DURATION_MS = 10_000;
  * string, never the toast's text: an IS error message can carry student data.
  */
 export function reportToastOptions(t: (key: string) => string, prefill: ReportPrefillKey) {
-  if (IS_OTHER_SCHOOL) return { duration: REPORT_TOAST_DURATION_MS };
+  if (!currentSchool.has('reports')) return { duration: REPORT_TOAST_DURATION_MS };
   return {
     duration: REPORT_TOAST_DURATION_MS,
     action: {

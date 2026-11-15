@@ -1,0 +1,81 @@
+{
+  "places": [
+    {
+      "id": "workout-bieblova",
+      "sport": "workout",
+      "name": "Workout Bieblova",
+      "coord": [16.61644, 49.21699],
+      "url": "https://sportera.cz/place/workout/f650-workout-bieblova",
+      "hours": null,
+      "surface": null,
+      "count": null,
+      "near": { "building": "Z", "metres": 200 }
+    },
+    {
+      "id": "basket-generala-piky",
+      "sport": "basketball",
+      "name": "Basket třída Generála Píky",
+      "coord": [16.61674, 49.217],
+      "url": "https://sportera.cz/place/basketbal/66b9-basket-trida-generala-piky",
+      "hours": null,
+      "surface": null,
+      "count": 2,
+      "near": { "building": "Z", "metres": 210 }
+    },
+    {
+      "id": "basketbal-schreberovy-zahradky",
+      "sport": "basketball",
+      "name": "Basketbal Schreberovy zahrádky",
+      "coord": [16.62111, 49.20788],
+      "url": "https://sportera.cz/place/basketbal/bfs-basketbal-schreberovy-zahradky",
+      "hours": "nonstop",
+      "surface": "tartan",
+      "count": 2,
+      "near": { "building": "E", "metres": 370 }
+    },
+    {
+      "id": "fotbal-schreberovy-zahradky",
+      "sport": "football",
+      "name": "Fotbal Schreberovy zahrádky",
+      "coord": [16.62111, 49.20783],
+      "url": "https://sportera.cz/place/fotbal/bfs-fotbal-schreberovy-zahradky",
+      "hours": "8:00–21:00",
+      "surface": "tartan",
+      "count": null,
+      "near": { "building": "E", "metres": 370 }
+    },
+    {
+      "id": "workout-luzanecka",
+      "sport": "workout",
+      "name": "Workout Lužánecká",
+      "coord": [16.61188, 49.20518],
+      "url": "https://sportera.cz/place/workout/wor-luzanecka",
+      "hours": "nonstop",
+      "surface": "gravel",
+      "count": null,
+      "near": { "building": "Q", "metres": 520 }
+    },
+    {
+      "id": "ping-pong-u-cukrarny",
+      "sport": "pingpong",
+      "name": "Ping-pong u cukrárny",
+      "coord": [16.60734, 49.20821],
+      "url": "https://sportera.cz/place/pingpong/e6d5-ping-pong-u-cukrarny",
+      "hours": "nonstop",
+      "surface": "gravel",
+      "count": 1,
+      "near": { "building": "M", "metres": 520 }
+    },
+    {
+      "id": "ping-pong-luzanky",
+      "sport": "pingpong",
+      "name": "Ping-pong Lužánky",
+      "coord": [16.61139, 49.20514],
+      "url": "https://sportera.cz/place/pingpong/a7fb-ping-pong-luzanky",
+      "hours": "nonstop",
+      "surface": null,
+      "count": 1,
+      "near": { "building": "Q", "metres": 540 }
+    }
+  ]
+}
