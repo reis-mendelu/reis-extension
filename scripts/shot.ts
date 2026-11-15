@@ -191,6 +191,18 @@ function parseCall(raw: string): { action: string; arg?: unknown } {
   }
 }
 
+/** Fails the run unless every `--init-script` ran to its end on this load. */
+async function assertInitScriptsRan(page: Page, expected: number): Promise<void> {
+  if (expected === 0) return;
+  const { ran, errors } = await page.evaluate(() => {
+    const g = globalThis as { __reisInitScriptsRan?: number; __reisInitScriptErrors?: string[] };
+    return { ran: g.__reisInitScriptsRan ?? 0, errors: g.__reisInitScriptErrors ?? [] };
+  });
+  if (ran === expected) return;
+  const why = errors.length > 0 ? errors.join('; ') : 'a script did not parse (syntax error?)';
+  throw new Error(`--init-script: ${ran} of ${expected} ran to the end: ${why}`);
+}
+
 /** Write a value into the app's `meta` IndexedDB store, then reload so the app
  *  boots with it. Deterministic where a nav click is not. */
 /**
@@ -544,11 +556,14 @@ async function run(): Promise<number> {
       await page.addInitScript({
         content: 'globalThis.__name = globalThis.__name || ((f) => f);',
       });
-      // Wrapped, so a script that throws fails the run below instead of leaving
-      // it to measure a page the script never set up.
+      // Each script counts itself in when it finishes, so a short count after a
+      // load means one threw OR never parsed (a syntax error skips the whole
+      // wrapper, catch included), and the run fails instead of measuring a page
+      // the script never set up. Checked after the last reload: seedMeta reloads,
+      // and init scripts run again on every load.
       for (const path of opts.initScripts) {
         await page.addInitScript({
-          content: `try {\n${readFileSync(path, 'utf8')}\n} catch (e) { (globalThis.__reisInitScriptErrors ??= []).push(${JSON.stringify(path)} + ': ' + e); }`,
+          content: `try {\n${readFileSync(path, 'utf8')}\n;globalThis.__reisInitScriptsRan = (globalThis.__reisInitScriptsRan ?? 0) + 1;\n} catch (e) { (globalThis.__reisInitScriptErrors ??= []).push(${JSON.stringify(path)} + ': ' + e); }`,
         });
       }
       const consoleErrors: string[] = [];
@@ -556,10 +571,6 @@ async function run(): Promise<number> {
 
       // See the note in seedMeta: 'networkidle' cannot settle against real data.
       await page.goto(opts.url, { waitUntil: 'load' });
-      const initErrors = await page.evaluate(
-        () => (globalThis as { __reisInitScriptErrors?: string[] }).__reisInitScriptErrors ?? []
-      );
-      if (initErrors.length > 0) throw new Error(`--init-script threw: ${initErrors.join('; ')}`);
       // Dismiss onboarding by default — otherwise every run screenshots the
       // welcome modal and measures the blurred page behind it.
       // `--onboarding` SEEDS false rather than leaving the key alone: the flag
@@ -573,6 +584,7 @@ async function run(): Promise<number> {
       // `--theme light` a no-op that looked like it had worked.
       if (opts.theme) seed['reis_theme'] = opts.theme === 'light' ? 'mendelu' : 'mendelu-dark';
       await seedMeta(page, seed);
+      await assertInitScriptsRan(page, opts.initScripts.length);
 
       // The modal appears 800ms after mount, which outlasts the default 600ms
       // settle — an `--onboarding` run used to need a hand-tuned `--wait` and
