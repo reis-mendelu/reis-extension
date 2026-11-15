@@ -1,3 +1,5 @@
+import { isLoginForm, type PageShape } from './isPage';
+
 /**
  * What `list.pl` looked like, as counts: read beside `parseSubjectFolders`
  * (`./subjects.ts`), never instead of it, and it changes nothing that parser
@@ -7,11 +9,15 @@
  *
  * - no `#tmtab_1` at all, or the list in another table → `table: false`
  * - rows that lack a document-server folder link → `folderLinks < rows`
- * - a signed-out page → `signedIn: false`
+ * - a signed-out page → `signedIn: false`, and `loginForm` when IS sent its
+ *   login form instead
+ *
+ * `fetchDualLanguageSubjects` decides on it through `classifyIsPage`
+ * (`./isPage.ts`): rows offered and none read is a failed read, not an empty list.
  *
  * Counts and booleans only: no text, href or id leaves this function.
  */
-export interface SubjectsPageShape {
+export interface SubjectsPageShape extends PageShape {
   /** `tmtab_*` tables on the page, of which the parser reads only `tmtab_1`. */
   tables: number;
   table: boolean;
@@ -19,6 +25,7 @@ export interface SubjectsPageShape {
   syllabusLinks: number;
   folderLinks: number;
   signedIn: boolean;
+  loginForm: boolean;
 }
 
 export function subjectsPageShape(html: string): SubjectsPageShape {
@@ -34,5 +41,6 @@ export function subjectsPageShape(html: string): SubjectsPageShape {
     folderLinks: count('a[href*="../dok_server/slozka.pl"]'),
     // The same signed-in marker the Capacitor transport checks for.
     signedIn: html.includes('logout.pl'),
+    loginForm: isLoginForm(html),
   };
 }
