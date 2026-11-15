@@ -122,12 +122,18 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     const early = readClaims(false);
     const result = await runSilentChain(http);
     if (mine !== seq) return;
-    set(fromChain(result));
-    if (get().status !== 'balance') return;
+    const next = fromChain(result);
+    if (next.status !== 'balance') {
+      set({ ...next, claims: null });
+      return;
+    }
     let claims = await early;
     // The chain had to log in again, so the early read was turned away: once more.
     if (claims === 'expired') claims = await readClaims(true);
-    if (mine === seq) set({ claims: claims === 'expired' ? null : claims });
+    if (mine !== seq) return;
+    // Balance and claims land together, under one skeleton (Dominik,
+    // 2026-11-15: the payment appearing a beat after the balance read as broken).
+    set({ ...next, claims: claims === 'expired' ? null : claims });
   },
 
   /**

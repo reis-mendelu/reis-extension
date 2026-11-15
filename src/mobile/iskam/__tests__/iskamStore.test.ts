@@ -439,4 +439,19 @@ describe('useIskamStore claims', () => {
     expect(fetchClaims).toHaveBeenLastCalledWith(expect.anything(), { persist: true });
     expect(s().claims).toEqual([CLAIM]);
   });
+
+  it('keeps the skeleton until the claims are read, then shows both at once', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    let claimsDone!: (v: unknown) => void;
+    fetchClaims.mockReturnValue(new Promise((r) => (claimsDone = r)));
+    const p = s().check();
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    expect(s().status).toBe('checking');
+    expect(s().balance).toBeNull();
+    claimsDone([CLAIM]);
+    await p;
+    expect(s().status).toBe('balance');
+    expect(s().balance).toEqual({ amount: 245 });
+    expect(s().claims).toEqual([CLAIM]);
+  });
 });
