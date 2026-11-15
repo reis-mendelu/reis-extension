@@ -1,53 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  cpSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { describe, expect, it, vi } from 'vitest';
+import { existsSync, lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { cloneTree, ensureInstall } from '../ensure-install.mjs';
+import { copy, installFixture, marker } from './installFixture';
 
-let root: string;
-
-const lockFor = (vitest: string) => ({ packages: { 'node_modules/vitest': { version: vitest } } });
-
-/** A checkout with a lockfile and, optionally, an install at some version. */
-function checkout(name: string, locked: string, installed?: string) {
-  const dir = join(root, name);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, 'package-lock.json'), JSON.stringify(lockFor(locked)));
-  if (installed) {
-    mkdirSync(join(dir, 'node_modules', 'vitest'), { recursive: true });
-    writeFileSync(join(dir, 'node_modules', 'vitest', 'marker'), installed);
-    writeFileSync(join(dir, 'node_modules', 'vitest', 'package.json'), '{}');
-    writeFileSync(
-      join(dir, 'node_modules', '.package-lock.json'),
-      JSON.stringify(lockFor(installed))
-    );
-  }
-  return dir;
-}
-
-const marker = (dir: string) => readFileSync(join(dir, 'node_modules', 'vitest', 'marker'), 'utf8');
-// A stand-in for the APFS clone, so the decisions are testable on any platform.
-// Like cloneTree it REPLACES the target: nothing of the old tree may survive.
-const copy = (from: string, to: string) => {
-  rmSync(to, { recursive: true, force: true });
-  cpSync(from, to, { recursive: true });
-};
-
-beforeEach(() => {
-  root = realpathSync(mkdtempSync(join(tmpdir(), 'reis-install-')));
-});
-afterEach(() => rmSync(root, { recursive: true, force: true }));
+const { checkout, root } = installFixture();
 
 describe('ensureInstall', () => {
   it('leaves an install that matches the lockfile alone', () => {
@@ -88,17 +45,6 @@ describe('ensureInstall', () => {
     expect(result.stale).toEqual([{ name: 'vitest', want: '5.0.1', have: null }]);
   });
 
-  it('reports a failed npm ci even when the tree it left looks complete', () => {
-    const dir = checkout('wt', '5.0.1');
-    const npmCi = vi.fn(() => {
-      checkout('wt', '5.0.1', '5.0.1');
-      return false;
-    });
-    expect(ensureInstall(dir, { candidates: [], clone: copy, npmCi, install: true })).toEqual({
-      status: 'failed',
-    });
-  });
-
   it('reports what is stale when there is nothing to copy and it may not install', () => {
     const dir = checkout('wt', '5.0.1', '3.2.7');
     const npmCi = vi.fn();
@@ -127,17 +73,15 @@ describe('ensureInstall', () => {
     expect(result.status).toBe('stale');
   });
 
-  // A linked install belongs to another checkout: installing through it rebuilds
-  // the tree under every session that shares it. Drop the link, never its target.
-  it('unlinks a stale shared install without touching the checkout it points at', () => {
-    const shared = checkout('main', '5.0.1', '3.2.7');
+  it('reports a failed npm ci even when the tree it left looks complete', () => {
     const dir = checkout('wt', '5.0.1');
-    symlinkSync(join(shared, 'node_modules'), join(dir, 'node_modules'));
-    const sibling = checkout('sibling', '5.0.1', '5.0.1');
-    ensureInstall(dir, { candidates: [sibling], clone: copy });
-    expect(lstatSync(join(dir, 'node_modules')).isSymbolicLink()).toBe(false);
-    expect(marker(dir)).toBe('5.0.1');
-    expect(marker(shared)).toBe('3.2.7');
+    const npmCi = vi.fn(() => {
+      checkout('wt', '5.0.1', '5.0.1');
+      return false;
+    });
+    expect(ensureInstall(dir, { candidates: [], clone: copy, npmCi, install: true })).toEqual({
+      status: 'failed',
+    });
   });
 
   it('never copies from itself or from a checkout with no install', () => {
@@ -153,8 +97,8 @@ describe.skipIf(process.platform !== 'darwin')('cloneTree (APFS)', () => {
   // node_modules would then be a partial tree that looks installed.
   it('fills the target only once the whole copy exists', () => {
     const from = join(checkout('main', '5.0.1', '5.0.1'), 'node_modules');
-    const to = join(root, 'wt', 'node_modules');
-    mkdirSync(join(root, 'wt'));
+    const to = join(root(), 'wt', 'node_modules');
+    mkdirSync(join(root(), 'wt'));
     cloneTree(from, to);
     expect(readFileSync(join(to, 'vitest', 'marker'), 'utf8')).toBe('5.0.1');
     expect(existsSync(`${to}.incoming`)).toBe(false);
@@ -162,8 +106,8 @@ describe.skipIf(process.platform !== 'darwin')('cloneTree (APFS)', () => {
 
   it('replaces a link with the copy and leaves the linked install untouched', () => {
     const shared = checkout('main', '5.0.1', '5.0.1');
-    mkdirSync(join(root, 'wt'));
-    const to = join(root, 'wt', 'node_modules');
+    mkdirSync(join(root(), 'wt'));
+    const to = join(root(), 'wt', 'node_modules');
     symlinkSync(join(shared, 'node_modules'), to);
     cloneTree(join(shared, 'node_modules'), to);
     expect(lstatSync(to).isSymbolicLink()).toBe(false);
@@ -173,91 +117,10 @@ describe.skipIf(process.platform !== 'darwin')('cloneTree (APFS)', () => {
 
   it('clears what a killed copy left behind', () => {
     const from = join(checkout('main', '5.0.1', '5.0.1'), 'node_modules');
-    const to = join(root, 'wt', 'node_modules');
+    const to = join(root(), 'wt', 'node_modules');
     mkdirSync(`${to}.incoming/half`, { recursive: true });
     cloneTree(from, to);
     expect(existsSync(join(to, 'half'))).toBe(false);
     expect(existsSync(join(to, 'vitest', 'marker'))).toBe(true);
-  });
-});
-
-// The old hook linked node_modules to the main checkout when it could not
-// clone. A link that matches the lockfile is still not this checkout's own:
-// `npm ci` here would rebuild it under every session that shares it.
-describe('a shared (linked) install', () => {
-  it('is replaced by a private copy even when it matches the lockfile', () => {
-    const shared = checkout('main', '5.0.1', '5.0.1');
-    const dir = checkout('wt', '5.0.1');
-    symlinkSync(join(shared, 'node_modules'), join(dir, 'node_modules'));
-    const result = ensureInstall(dir, { candidates: [shared], clone: copy });
-    expect(result).toEqual({ status: 'copied', from: shared });
-    expect(lstatSync(join(dir, 'node_modules')).isSymbolicLink()).toBe(false);
-    expect(marker(shared)).toBe('5.0.1');
-  });
-
-  // A volume without copy-on-write: the copy fails after a source was found.
-  // The link still works, so it stays until a whole private copy can replace it.
-  it('is kept when the copy fails', () => {
-    const shared = checkout('main', '5.0.1', '5.0.1');
-    const dir = checkout('wt', '5.0.1');
-    symlinkSync(join(shared, 'node_modules'), join(dir, 'node_modules'));
-    const clone = () => {
-      throw new Error('clone not supported on this volume');
-    };
-    const result = ensureInstall(dir, { candidates: [shared], clone });
-    expect(result.status).toBe('shared');
-    expect(lstatSync(join(dir, 'node_modules')).isSymbolicLink()).toBe(true);
-    expect(marker(dir)).toBe('5.0.1');
-  });
-
-  it('is kept, and reported, when no private copy can be made right now', () => {
-    const shared = checkout('main', '5.0.1', '5.0.1');
-    const dir = checkout('wt', '5.0.1');
-    symlinkSync(join(shared, 'node_modules'), join(dir, 'node_modules'));
-    const result = ensureInstall(dir, { candidates: [], clone: null });
-    expect(result.status).toBe('shared');
-    expect(lstatSync(join(dir, 'node_modules')).isSymbolicLink()).toBe(true);
-  });
-});
-
-// The hook's copy takes ~20 s. An agent that runs `npm run check` meanwhile
-// must not start a second copy over the first.
-describe('two calls for the same checkout', () => {
-  const lockDir = (dir: string) => join(dir, 'node_modules.lock');
-  const heldBy = (dir: string, pid: number) => {
-    mkdirSync(lockDir(dir));
-    writeFileSync(join(lockDir(dir), 'pid'), String(pid));
-  };
-
-  it('does not touch the install while another live call holds the lock', () => {
-    const dir = checkout('wt', '5.0.1', '3.2.7');
-    heldBy(dir, process.pid);
-    const npmCi = vi.fn();
-    const result = ensureInstall(dir, {
-      candidates: [],
-      clone: copy,
-      npmCi,
-      install: true,
-      waitMs: 0,
-    });
-    expect(result.status).toBe('busy');
-    expect(npmCi).not.toHaveBeenCalled();
-    expect(marker(dir)).toBe('3.2.7');
-  });
-
-  // A hook killed at its timeout leaves its lock behind.
-  it('takes over the lock of a process that no longer exists', () => {
-    const dir = checkout('wt', '5.0.1', '3.2.7');
-    const sibling = checkout('sibling', '5.0.1', '5.0.1');
-    heldBy(dir, 999_999_999);
-    const result = ensureInstall(dir, { candidates: [sibling], clone: copy, waitMs: 0 });
-    expect(result.status).toBe('copied');
-    expect(existsSync(lockDir(dir))).toBe(false);
-  });
-
-  it('releases the lock when it is done', () => {
-    const dir = checkout('wt', '5.0.1', '3.2.7');
-    ensureInstall(dir, { candidates: [], clone: copy });
-    expect(existsSync(lockDir(dir))).toBe(false);
   });
 });
