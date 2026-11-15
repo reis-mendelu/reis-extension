@@ -138,7 +138,7 @@ export interface OpenPdfWithInkInput {
 }
 
 export type OpenPdfWithInkResult =
-  | { kind: 'shown'; hasInk: boolean }
+  | { kind: 'shown'; hasInk: boolean; filesShown: number }
   /** PDFKit rejected the bytes; show them in the web viewer instead. */
   | { kind: 'unreadable'; blob: Blob }
   | { kind: 'notPdf' }
@@ -254,7 +254,7 @@ export async function openPdfWithInk(
     await savePositions(positions);
     // The sweep may not take an annotated file with it: see enforceCap.
     await enforceCap(deps.fs, undefined, deps.hasInk);
-    return { kind: 'shown', hasInk: false };
+    return { kind: 'shown', hasInk: false, filesShown: shown.length };
   } catch (error) {
     if (!isUnreadable(error)) return { kind: 'failed', error };
     // Bad bytes: drop the copy so the next open fetches afresh, and give the

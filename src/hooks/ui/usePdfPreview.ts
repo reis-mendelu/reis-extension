@@ -9,6 +9,7 @@ import { usePdfReadingPosition } from './usePdfReadingPosition';
 import { useAppStore } from '../../store/useAppStore';
 import type { SubjectPdfInput } from '../../mobile/pdfInkFiles';
 import { isPdfInkAvailable, nativePdfInkDeps } from '../../mobile/pdfInkNative';
+import { storeReviewAfterReaderClosed } from '../../mobile/storeReview';
 
 export interface PdfPreviewFile {
   link: string;
@@ -115,7 +116,11 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
       // The reader has closed by now (open resolves on Close) and the index has
       // the new lastOpenedAt: the calendar's strip should show this file.
       void useAppStore.getState().refreshRecentPdfs();
-      if (result.kind === 'shown') return { kind: 'handled' };
+      if (result.kind === 'shown') {
+        // The store-rating file moment: the reader is gone, reIS is back.
+        void storeReviewAfterReaderClosed(result.filesShown);
+        return { kind: 'handled' };
+      }
       if (result.kind === 'unreadable') {
         return { kind: 'viewer', blobUrl: URL.createObjectURL(result.blob) };
       }
@@ -165,9 +170,11 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   );
 
   const closePreview = useCallback(() => {
+    // The store-rating file moment, for the pdf.js viewer: a file was shown.
+    if (previewUrl) void storeReviewAfterReaderClosed(1);
     setPreviewUrl(null);
     setPreviewFile(null);
-  }, []);
+  }, [previewUrl]);
 
   return {
     previewUrl,

@@ -3,8 +3,10 @@ import {
   ASK_COOLDOWN_DAYS,
   MIN_DAYS_SINCE_FIRST,
   MIN_DAYS_USED,
+  MIN_FILES_OPENED,
   markAsked,
   noteDayUsed,
+  noteFilesOpened,
   shouldAskForReview,
   type StoreReviewState,
 } from '../storeReviewDecision';
@@ -23,6 +25,10 @@ describe('the gates are the ones agreed', () => {
     expect(MIN_DAYS_USED).toBe(5);
     expect(MIN_DAYS_SINCE_FIRST).toBe(7);
     expect(ASK_COOLDOWN_DAYS).toBe(120);
+  });
+
+  it('the file moment waits for the 3rd file opened in reIS', () => {
+    expect(MIN_FILES_OPENED).toBe(3);
   });
 });
 
@@ -95,5 +101,56 @@ describe('markAsked', () => {
     const asked = markAsked(seasoned(), '2026-11-10');
     expect(asked.lastAskedDay).toBe('2026-11-10');
     expect(shouldAskForReview(asked, '2026-11-11')).toBe(false);
+  });
+});
+
+describe('noteFilesOpened', () => {
+  it('adds up across days, starting from a record that never counted files', () => {
+    const once = noteFilesOpened(seasoned(), '2026-11-08', 1);
+    expect(once.filesOpened).toBe(1);
+    expect(noteFilesOpened(once, '2026-11-20', 2).filesOpened).toBe(3);
+  });
+
+  it('starts a record if the day was never counted', () => {
+    expect(noteFilesOpened(null, '2026-11-15', 1)).toEqual({
+      firstDay: '2026-11-15',
+      lastDay: '2026-11-15',
+      daysUsed: 1,
+      lastAskedDay: null,
+      filesOpened: 1,
+    });
+  });
+
+  it('ignores a count that is not a positive whole number', () => {
+    const s = seasoned({ filesOpened: 2 });
+    expect(noteFilesOpened(s, '2026-11-08', 0)).toBe(s);
+    expect(noteFilesOpened(s, '2026-11-08', Number.NaN)).toBe(s);
+  });
+});
+
+describe('shouldAskForReview — the file moment', () => {
+  it('waits for the 3rd file', () => {
+    expect(
+      shouldAskForReview(seasoned({ filesOpened: 2 }), '2026-11-08', { needsFiles: true })
+    ).toBe(false);
+    expect(
+      shouldAskForReview(seasoned({ filesOpened: 3 }), '2026-11-08', { needsFiles: true })
+    ).toBe(true);
+  });
+
+  it('a record from before files were counted has opened none', () => {
+    expect(shouldAskForReview(seasoned(), '2026-11-08', { needsFiles: true })).toBe(false);
+  });
+
+  it('still needs the day gates, the files alone are not enough', () => {
+    expect(
+      shouldAskForReview(seasoned({ filesOpened: 9, daysUsed: 4 }), '2026-11-08', {
+        needsFiles: true,
+      })
+    ).toBe(false);
+  });
+
+  it('other moments ignore the file count', () => {
+    expect(shouldAskForReview(seasoned({ filesOpened: 0 }), '2026-11-08')).toBe(true);
   });
 });

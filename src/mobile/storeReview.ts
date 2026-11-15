@@ -5,6 +5,7 @@ import { IndexedDBService } from '../services/storage/IndexedDBService';
 import {
   markAsked,
   noteDayUsed,
+  noteFilesOpened,
   shouldAskForReview,
   type StoreReviewState,
 } from '../utils/storeReviewDecision';
@@ -17,7 +18,7 @@ import {
  * whether the student rated, or even saw a dialog, is never known — neither OS
  * tells the app. So there is no feature counter and no disclosure change.
  *
- * The callers are shared code (useExamActions, useEduroamSetup), so every
+ * Some callers are shared code (useExamActions), so every
  * entry point returns early outside Capacitor, and the plugin is imported
  * dynamically so it never enters the extension's static graph.
  */
@@ -29,8 +30,14 @@ import {
 export const STORE_REVIEW_MOMENTS = {
   /** A manual exam registration IS confirmed (useExamActions.handleRegister). */
   exam_registered: true,
-  /** The OS saved the eduroam network reIS configured (useEduroamSetup.run). */
-  eduroam_saved: true,
+  /**
+   * reIS's PDF reader closed, once it has shown 3 files in all
+   * (storeReviewAfterReaderClosed). Asked after the reader is gone, never as a
+   * file opens. Only the readers count: a file handed to the iOS share sheet or
+   * saved into Android's Downloads never shows in reIS, and the share sheet can
+   * send the student into another app, where an ask would be wasted.
+   */
+  file_reader_closed: true,
 } as const;
 export type StoreReviewMoment = keyof typeof STORE_REVIEW_MOMENTS;
 
@@ -86,7 +93,8 @@ export async function maybeAskForStoreReview(moment: StoreReviewMoment): Promise
   try {
     const state = await read();
     const day = today();
-    if (!state || !shouldAskForReview(state, day)) {
+    const needsFiles = moment === 'file_reader_closed';
+    if (!state || !shouldAskForReview(state, day, { needsFiles })) {
       asking = false;
       return false;
     }
@@ -108,4 +116,23 @@ export async function maybeAskForStoreReview(moment: StoreReviewMoment): Promise
       });
   }, ASK_DELAY_MS);
   return true;
+}
+
+/**
+ * The file moment. Called once reIS's reader has closed and the screen under it
+ * is back: the iPad's PencilKit reader resolves its `open` on Close, the pdf.js
+ * viewer on the phone calls closePreview. `filesShown` is how many files that
+ * reader showed, the PencilKit reader's sidebar can show several.
+ */
+export async function storeReviewAfterReaderClosed(filesShown: number): Promise<boolean> {
+  if (!applies()) return false;
+  try {
+    const before = await read();
+    const after = noteFilesOpened(before, today(), filesShown);
+    if (after !== before) await IndexedDBService.set('meta', KEY, after);
+  } catch (e) {
+    logError('Mobile.storeReview.noteFile', e);
+    return false;
+  }
+  return maybeAskForStoreReview('file_reader_closed');
 }

@@ -83,7 +83,7 @@ describe('maybeAskForStoreReview', () => {
   it('does not ask before the usage gates pass', async () => {
     db.set(KEY, { ...seasoned, daysUsed: 2 });
     const { maybeAskForStoreReview } = await load();
-    expect(await maybeAskForStoreReview('eduroam_saved')).toBe(false);
+    expect(await maybeAskForStoreReview('exam_registered')).toBe(false);
     await vi.runAllTimersAsync();
     expect(requestReview).not.toHaveBeenCalled();
   });
@@ -121,5 +121,54 @@ describe('maybeAskForStoreReview', () => {
     await maybeAskForStoreReview('exam_registered');
     await vi.runAllTimersAsync();
     expect(logError).toHaveBeenCalledWith('Mobile.storeReview', expect.any(Error));
+  });
+});
+
+describe('storeReviewAfterReaderClosed', () => {
+  it('counts the files the reader showed, and asks on the close that reaches the 3rd', async () => {
+    db.set(KEY, seasoned);
+    const { storeReviewAfterReaderClosed, ASK_DELAY_MS } = await load();
+    expect(await storeReviewAfterReaderClosed(1)).toBe(false);
+    expect(await storeReviewAfterReaderClosed(1)).toBe(false);
+    expect((db.get(KEY) as StoreReviewState).filesOpened).toBe(2);
+    expect(await storeReviewAfterReaderClosed(1)).toBe(true);
+    expect((db.get(KEY) as StoreReviewState).filesOpened).toBe(3);
+    await vi.advanceTimersByTimeAsync(ASK_DELAY_MS);
+    expect(requestReview).toHaveBeenCalledTimes(1);
+  });
+
+  it('one reader session that showed three files is enough', async () => {
+    db.set(KEY, seasoned);
+    const { storeReviewAfterReaderClosed } = await load();
+    expect(await storeReviewAfterReaderClosed(3)).toBe(true);
+  });
+
+  it('counts files even before the day gates pass, and does not ask', async () => {
+    db.set(KEY, { ...seasoned, daysUsed: 2 });
+    const { storeReviewAfterReaderClosed } = await load();
+    expect(await storeReviewAfterReaderClosed(4)).toBe(false);
+    expect((db.get(KEY) as StoreReviewState).filesOpened).toBe(4);
+  });
+
+  it('counts nothing in the extension', async () => {
+    kind = 'extension';
+    db.set(KEY, seasoned);
+    const { storeReviewAfterReaderClosed } = await load();
+    expect(await storeReviewAfterReaderClosed(3)).toBe(false);
+    expect((db.get(KEY) as StoreReviewState).filesOpened).toBeUndefined();
+  });
+
+  it('the exam moment does not wait for files', async () => {
+    db.set(KEY, { ...seasoned, filesOpened: 0 });
+    const { maybeAskForStoreReview } = await load();
+    expect(await maybeAskForStoreReview('exam_registered')).toBe(true);
+  });
+
+  it('eduroam is no longer a moment', async () => {
+    const { STORE_REVIEW_MOMENTS } = await load();
+    expect(Object.keys(STORE_REVIEW_MOMENTS).sort()).toEqual([
+      'exam_registered',
+      'file_reader_closed',
+    ]);
   });
 });

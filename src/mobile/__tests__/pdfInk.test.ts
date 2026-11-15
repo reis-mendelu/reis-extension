@@ -134,7 +134,7 @@ describe('openPdfWithInk', () => {
 
     const result = await openPdfWithInk(deps, input);
 
-    expect(result).toEqual({ kind: 'shown', hasInk: false });
+    expect(result).toEqual({ kind: 'shown', hasInk: false, filesShown: 1 });
     expect(fetchPdf).toHaveBeenCalledTimes(1);
     expect(fetchPdf).toHaveBeenCalledWith(LINK);
     expect(open).toHaveBeenCalledWith({
@@ -413,7 +413,11 @@ describe('openPdfWithInk', () => {
   it('keeps its result when removing the listener fails', async () => {
     const { deps, input, remove } = harness();
     remove.mockRejectedValueOnce(new Error('bridge gone'));
-    expect(await openPdfWithInk(deps, input)).toEqual({ kind: 'shown', hasInk: false });
+    expect(await openPdfWithInk(deps, input)).toEqual({
+      kind: 'shown',
+      hasInk: false,
+      filesShown: 1,
+    });
   });
 
   it('records lastOpenedAt for every shown file, then stops listening', async () => {

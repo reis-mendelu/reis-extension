@@ -31,6 +31,9 @@ vi.mock('../../../mobile/pdfInk', () => ({
   openPdfWithInk: (...a: unknown[]) => openPdfWithInk(...a),
 }));
 
+const storeReviewAfterReaderClosed = vi.hoisted(() => vi.fn(async () => false));
+vi.mock('../../../mobile/storeReview', () => ({ storeReviewAfterReaderClosed }));
+
 // Read at factory time, so it must be hoisted with vi.mock.
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
@@ -252,5 +255,48 @@ describe('usePdfPreview', () => {
     await act(async () => void (await result.current.viewPdf('/x.pdf', { name: 'Notes' })));
 
     expect(refreshRecentPdfs).toHaveBeenCalledTimes(1);
+  });
+});
+
+// The store-rating file moment: counted when a reader that showed a file has
+// closed, never when a file opens. The helper decides whether to ask.
+describe('usePdfPreview — store rating', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    URL.revokeObjectURL = vi.fn();
+    URL.createObjectURL = vi.fn(() => 'blob:from-ink');
+  });
+
+  it('the web viewer: on close, not on open', async () => {
+    isPdfInkAvailable.mockResolvedValue(false);
+    openPdfInline.mockResolvedValue('blob:x');
+    const { result } = renderHook(() => usePdfPreview('EBC-MT'));
+    await act(async () => void (await result.current.viewPdf('/x.pdf', { name: 'X' })));
+    expect(result.current.previewUrl).toBe('blob:x');
+    expect(storeReviewAfterReaderClosed).not.toHaveBeenCalled();
+    act(() => result.current.closePreview());
+    expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(1);
+  });
+
+  it('a close with no file shown counts nothing', () => {
+    const { result } = renderHook(() => usePdfPreview('EBC-MT'));
+    act(() => result.current.closePreview());
+    expect(storeReviewAfterReaderClosed).not.toHaveBeenCalled();
+  });
+
+  it('the iPad reader: after it resolves on Close, with every file it showed', async () => {
+    isPdfInkAvailable.mockResolvedValue(true);
+    openPdfWithInk.mockResolvedValue({ kind: 'shown', hasInk: false, filesShown: 2 });
+    const { result } = renderHook(() => usePdfPreview('EBC-MT'));
+    await act(async () => void (await result.current.viewPdf('/x.pdf', { name: 'X' })));
+    expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(2);
+  });
+
+  it('the iPad reader: not when it failed to open', async () => {
+    isPdfInkAvailable.mockResolvedValue(true);
+    openPdfWithInk.mockResolvedValue({ kind: 'failed', error: new Error('x') });
+    const { result } = renderHook(() => usePdfPreview('EBC-MT'));
+    await act(async () => void (await result.current.viewPdf('/x.pdf', { name: 'X' })));
+    expect(storeReviewAfterReaderClosed).not.toHaveBeenCalled();
   });
 });

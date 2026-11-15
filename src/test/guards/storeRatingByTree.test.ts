@@ -48,9 +48,15 @@ describe('store rating, by tree', () => {
     expect(read('src/components/ExamPanel/useExamActions.ts')).toContain(
       "maybeAskForStoreReview('exam_registered')"
     );
-    expect(read('src/hooks/data/useEduroamSetup.ts')).toContain(
-      "maybeAskForStoreReview('eduroam_saved')"
-    );
+    expect(read('src/hooks/ui/usePdfPreview.ts')).toContain('storeReviewAfterReaderClosed(');
+    expect(read('src/hooks/ui/useRecentPdfOpen.ts')).toContain('storeReviewAfterReaderClosed(');
+  });
+
+  // Dominik, 2026-11-15: eduroam is a day-one setup step, not a moment where
+  // reIS paid off. Never after grades either.
+  it('eduroam and grades are not moments', () => {
+    expect(read('src/hooks/data/useEduroamSetup.ts')).not.toContain('StoreReview');
+    expect(read('src/mobile/storeReview.ts')).not.toMatch(/eduroam|grade/i);
   });
 
   it('days of use are counted at boot after the demo return, and on resume', () => {

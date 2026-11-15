@@ -24,6 +24,9 @@ vi.mock('../../../mobile/pdfInk', () => ({
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock('sonner', () => ({ toast }));
 
+const storeReviewAfterReaderClosed = vi.hoisted(() => vi.fn(async () => false));
+vi.mock('../../../mobile/storeReview', () => ({ storeReviewAfterReaderClosed }));
+
 import { useRecentPdfOpen } from '../useRecentPdfOpen';
 import { useAppStore } from '../../../store/useAppStore';
 import type { RecentPdf } from '../../../utils/mobile/recentPdfs';
@@ -148,5 +151,19 @@ describe('useRecentPdfOpen', () => {
     await act(async () => void (await result.current.openRecentPdf(row('a', 'EBC-AP', 'A'))));
     expect(toast.error).toHaveBeenCalledTimes(1);
     expect(refreshRecentPdfs).toHaveBeenCalledTimes(1);
+  });
+
+  it('offers the store-rating file moment after the reader closes, with every file it showed', async () => {
+    openPdfWithInk.mockResolvedValue({ kind: 'shown', hasInk: false, filesShown: 3 });
+    const { result } = renderHook(() => useRecentPdfOpen());
+    await act(async () => void (await result.current.openRecentPdf(row('a', 'EBC-AP', 'A'))));
+    expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(3);
+  });
+
+  it('not when the reader failed to open', async () => {
+    openPdfWithInk.mockResolvedValue({ kind: 'failed', error: new Error('x') });
+    const { result } = renderHook(() => useRecentPdfOpen());
+    await act(async () => void (await result.current.openRecentPdf(row('a', 'EBC-AP', 'A'))));
+    expect(storeReviewAfterReaderClosed).not.toHaveBeenCalled();
   });
 });

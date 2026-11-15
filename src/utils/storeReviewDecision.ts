@@ -21,6 +21,8 @@ export const MIN_DAYS_USED = 5;
 export const MIN_DAYS_SINCE_FIRST = 7;
 /** reIS asks at most once in this many days, whatever the OS would allow. */
 export const ASK_COOLDOWN_DAYS = 120;
+/** The file moment waits for this many files opened in reIS's reader, ever. */
+export const MIN_FILES_OPENED = 3;
 
 export interface StoreReviewState {
   /** The first day this install was counted. For an existing install that is
@@ -30,6 +32,9 @@ export interface StoreReviewState {
   daysUsed: number;
   /** The day reIS last asked the OS, or null if it never has. */
   lastAskedDay: string | null;
+  /** Files reIS's reader has shown, across days. Absent on a record written
+   *  before files were counted, which reads as none. */
+  filesOpened?: number;
 }
 
 const DAY_MS = 86_400_000;
@@ -48,10 +53,29 @@ export function noteDayUsed(state: StoreReviewState | null, today: string): Stor
   return { ...state, lastDay: today, daysUsed: state.daysUsed + 1 };
 }
 
-/** Whether a success moment on `today` may ask the OS for the rating dialog. */
-export function shouldAskForReview(state: StoreReviewState | null, today: string): boolean {
+/** The record after the reader showed `count` more files on `today`. */
+export function noteFilesOpened(
+  state: StoreReviewState | null,
+  today: string,
+  count: number
+): StoreReviewState {
+  const base = state ?? noteDayUsed(null, today);
+  if (!Number.isInteger(count) || count < 1) return base;
+  return { ...base, filesOpened: (base.filesOpened ?? 0) + count };
+}
+
+/**
+ * Whether a success moment on `today` may ask the OS for the rating dialog.
+ * `needsFiles` is the file moment's extra gate: the 3rd file opened in reIS.
+ */
+export function shouldAskForReview(
+  state: StoreReviewState | null,
+  today: string,
+  { needsFiles = false }: { needsFiles?: boolean } = {}
+): boolean {
   if (!state) return false;
   if (state.daysUsed < MIN_DAYS_USED) return false;
+  if (needsFiles && (state.filesOpened ?? 0) < MIN_FILES_OPENED) return false;
   // A comparison with NaN is false, so a garbled day refuses rather than asks.
   if (!(daysFrom(state.firstDay, today) >= MIN_DAYS_SINCE_FIRST)) return false;
   if (state.lastAskedDay === null) return true;
