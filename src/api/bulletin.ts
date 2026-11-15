@@ -25,13 +25,10 @@ export function parseBulletinHtml(html: string): BulletinPost[] {
 
     // Locate cells by content, not by column index: CZ locale omits the
     // ordinal column that EN includes, so fixed indices break across locales.
-    // Specifically: the title cell is the one whose <font> wraps breadcrumb
-    // folder anchors (<a href*="slozka.pl?id=">). Matching on bare <font>
-    // would mis-fire on any unrelated <font> tag IS Mendelu might add later.
-    const titleCell = Array.from(row.querySelectorAll(':scope > td')).find((c) => {
-      const font = c.querySelector('font');
-      return !!font && !!font.querySelector('a[href*="slozka.pl?id="]');
-    });
+    // Specifically: the title cell is the one whose breadcrumb wrapper holds
+    // folder anchors (<a href*="slozka.pl?id=">). Matching on a bare wrapper
+    // would mis-fire on any unrelated tag IS Mendelu might add later.
+    const titleCell = Array.from(row.querySelectorAll(':scope > td')).find((c) => !!crumbsOf(c));
     if (!titleCell) continue;
 
     const title = extractTitle(titleCell);
@@ -79,10 +76,24 @@ function extractTitle(cell: Element): string {
   return '';
 }
 
+/**
+ * The breadcrumb under a post's title: `<font size="-2">` before the UIS
+ * redesign, `<span style="font-size: 0.625rem;">` since (is.mendelu.cz,
+ * 2026-11-15, real nove_prispevky.pl in both locales). Only a wrapper that
+ * actually holds folder links counts.
+ */
+function crumbsOf(cell: Element): Element | null {
+  return (
+    Array.from(cell.querySelectorAll('font, span')).find(
+      (el) => !!el.querySelector('a[href*="slozka.pl?id="]')
+    ) ?? null
+  );
+}
+
 function extractCategories(cell: Element): string[] {
-  const font = cell.querySelector('font');
-  if (!font) return [];
-  return Array.from(font.querySelectorAll('a'))
+  const crumbs = crumbsOf(cell);
+  if (!crumbs) return [];
+  return Array.from(crumbs.querySelectorAll('a'))
     .map((a) => a.textContent?.trim() ?? '')
     .filter(Boolean);
 }

@@ -1,4 +1,5 @@
 import { fetchWithAuth, BASE_URL } from './client';
+import { boldSpans } from './studyPlanHeading';
 import { logError } from '../utils/reportError';
 
 const PROFILE_URL = `${BASE_URL}/auth/lide/clovek.pl`;
@@ -100,10 +101,24 @@ function labelled(rows: Map<string, HTMLTableCellElement>, ...aliases: string[])
   return undefined;
 }
 
+/**
+ * The person's name on clovek.pl: `<b><font size="+1">` before the UIS redesign,
+ * a bold `<span style="font-size: 1.125rem; font-weight: bold;">` since
+ * (is.mendelu.cz, 2026-11-15, real page in both locales). The old path stays
+ * first; the span is consulted only where it finds nothing.
+ */
+export function personNameElement(doc: ParentNode): Element | null {
+  return (
+    doc.querySelector('td.odsazena b font[size="+1"]') ??
+    boldSpans(doc).find((el) => !!el.closest('td.odsazena')) ??
+    null
+  );
+}
+
 export function parsePersonProfile(html: string, personId: number): PersonProfile | null {
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
-  const nameEl = doc.querySelector('td.odsazena b font[size="+1"]');
+  const nameEl = personNameElement(doc);
   const name = nameEl?.textContent?.trim() ?? '';
   if (!name) return null;
 

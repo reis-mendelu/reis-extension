@@ -172,4 +172,28 @@ describe('parseBulletinHtml', () => {
         </tbody></table></body></html>`;
     expect(parseBulletinHtml(html)).toEqual([]);
   });
+
+  // The UIS redesign (is.mendelu.cz, 2026-11-15) wraps the breadcrumb in
+  // <span style="font-size: 0.625rem;"> instead of <font size="-2">. Matching
+  // on <font> skipped every row and Vývěska showed "no new posts" while IS had
+  // ten. Row shape from a real nove_prispevky.pl that day, ids and names
+  // replaced; the EN page has the same cells.
+  it('reads rows from the redesigned IS, where the breadcrumb is a <span>', () => {
+    const row = (title: string, id: number) => `
+      <tr class=" uis-hl-table lbn" ><td class="odsazena" align="center"><input value="${id}" name="oznacene" type="checkbox"/></td><td class="odsazena" align="center"><span class="uf-icon xs" role="img" data-sysid="informace-normalni" title="Normální informace" > </span></td><td class="odsazena" align="left">${title}<br /><span style="font-size: 0.625rem;"><a href="slozka.pl?id=17;lang=cz">Inzerce</a> / <a href="slozka.pl?id=80;lang=cz">Ostatní</a></span></td><td class="odsazena" nowrap="1" align="left"><a href="/auth/lide/clovek.pl?id=120344;lang=cz">J. Novák</a></td><td class="odsazena" align="center" nowrap="1">15.11.2026</td><td class="odsazena" align="center"><a href="slozka.pl?zobrazeni=1;id=80;zalozka=1;klic=${id};nove=1;lang=cz"><span class="uf-icon sm" role="img" title="Prohlížení informací" > </span></a></td></tr>`;
+    const html = `<html><body><table id="tmtab_1"><tbody>${row('Konference o&nbsp;podnikání', 900001)}${row('Nabídka stáže', 900002)}</tbody></table></body></html>`;
+
+    expect(parseBulletinHtml(html)).toEqual([
+      {
+        title: 'Konference o\u00a0podnikání',
+        categories: ['Inzerce', 'Ostatní'],
+        url: 'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;id=80;zalozka=1;klic=900001;nove=1;lang=cz',
+      },
+      {
+        title: 'Nabídka stáže',
+        categories: ['Inzerce', 'Ostatní'],
+        url: 'https://is.mendelu.cz/auth/vyveska/slozka.pl?zobrazeni=1;id=80;zalozka=1;klic=900002;nove=1;lang=cz',
+      },
+    ]);
+  });
 });

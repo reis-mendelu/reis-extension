@@ -1,8 +1,9 @@
+import { personNameElement } from '../personProfile';
 import { sanitizeString, validateUrl } from '../../utils/validation/index';
 import type { Person } from './types';
 
 export function parseMendeluProfileResult(doc: Document, baseUrl: string): Person[] {
-  const nameElement = doc.querySelector('td.odsazena b font[size="+1"]');
+  const nameElement = personNameElement(doc);
   if (!nameElement) return [];
 
   const name = nameElement.textContent?.trim() ?? 'Unknown Name';
