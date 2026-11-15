@@ -25,6 +25,7 @@ describe('subjectsPageShape', () => {
       syllabusLinks: 2,
       folderLinks: 1,
       signedIn: true,
+      loginForm: false,
     });
   });
 

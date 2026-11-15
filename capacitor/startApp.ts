@@ -18,6 +18,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { RAIL_MIN_WIDTH } from '@/utils/mapRail';
 import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
+import { noteAppUsedToday } from '@/mobile/storeReview';
 import { installNotificationTaps } from '@/mobile/notificationTaps';
 import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
 import {
@@ -125,6 +126,11 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   installNotificationTaps();
   installExamReminders();
 
+  // A day of use for the store-rating gates (utils/storeReviewDecision.ts).
+  // After the demo return, so App Review's demo build never becomes eligible;
+  // again on every resume below, for the same reason the daily count is.
+  void noteAppUsedToday();
+
   // "Nové body" from the záznamník as a system notification. After the demo
   // return (the demo never syncs, so it has nothing new) and before the sync
   // starts, so its first batch already has somewhere to go.
@@ -173,5 +179,6 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     // Returning to the app is a day of use: this process can outlive many
     // days, and only boots used to be counted. Writes at most once a day.
     void trackDailyUsage();
+    void noteAppUsedToday();
   });
 }
