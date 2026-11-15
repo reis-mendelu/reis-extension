@@ -25,7 +25,7 @@ import {
 } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { staleInstall } from './lib/checkPlan.mjs';
+import { describeInstall, staleInstall } from './lib/checkPlan.mjs';
 import { withInstallLock } from './lib/installLock.mjs';
 
 const readJson = (file) => {
@@ -61,7 +61,9 @@ export function cloneTree(from, to) {
   const incoming = `${to}.incoming`;
   rmSync(incoming, { recursive: true, force: true });
   execFileSync('cp', ['-Rc', from, incoming], { stdio: 'ignore' });
-  rmSync(to, { recursive: true, force: true });
+  // `to` may be a link to another checkout's install: drop the link, not the tree.
+  if (lstatSync(to, { throwIfNoEntry: false })?.isSymbolicLink()) unlinkSync(to);
+  else rmSync(to, { recursive: true, force: true });
   renameSync(incoming, to);
 }
 
@@ -128,13 +130,6 @@ export function ensureInstall(dir, options = {}) {
       );
     });
 
-    if (linked()) {
-      // A working link is only given up for something better; a stale one is
-      // no use to anyone. Only the link goes, never the install it points at.
-      if (stale().length === 0 && !install && matching.length === 0) return { status: 'shared' };
-      unlinkSync(modules);
-    }
-
     for (const other of matching) {
       try {
         clone(join(other, 'node_modules'), modules);
@@ -142,6 +137,15 @@ export function ensureInstall(dir, options = {}) {
         continue; // not APFS, or the source vanished mid-copy: try the next
       }
       if (stale().length === 0) return { status: 'copied', from: other };
+    }
+
+    if (linked()) {
+      // No private copy could be made (nothing matched, or the volume cannot
+      // clone). A working link stays until something whole can replace it; a
+      // stale one is no use to anyone, and npm ci must never run through one.
+      // Only the link goes, never the install it points at.
+      if (stale().length === 0 && !install) return { status: 'shared' };
+      unlinkSync(modules);
     }
 
     if (install) {
@@ -152,28 +156,6 @@ export function ensureInstall(dir, options = {}) {
     }
     return { status: 'stale', stale: stale() };
   });
-}
-
-/** One line for whoever reads the hook or the check output. */
-export function describeInstall(result) {
-  if (result.status === 'copied')
-    return `install: copied node_modules from ${result.from} (copy-on-write; this checkout owns it)`;
-  if (result.status === 'installed')
-    return 'install: ran npm ci (node_modules did not match package-lock.json)';
-  if (result.status === 'shared')
-    return "install: node_modules is a link to another checkout's install. It matches the lockfile, but do not run 'npm ci' through it; 'npm run check' replaces the link with this checkout's own install.";
-  if (result.status === 'busy')
-    return 'install: another install is running in this checkout (node_modules.lock). Try again when it has finished.';
-  if (result.status === 'failed')
-    return 'install: npm ci failed (its output is above). node_modules cannot be trusted until it succeeds.';
-  if (result.status === 'stale') {
-    const [first] = result.stale;
-    const example = first
-      ? ` (e.g. ${first.name} ${first.have ?? 'missing'} → ${first.want ?? 'not in the lockfile'})`
-      : '';
-    return `install: STALE — ${result.stale.length} packages differ from package-lock.json${example}. Run 'npm ci' here; until then typecheck and test results are not about your code.`;
-  }
-  return null;
 }
 
 // Real paths on both sides: /tmp is a symlink on macOS, and a mismatch here

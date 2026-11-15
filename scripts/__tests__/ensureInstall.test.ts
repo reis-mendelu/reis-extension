@@ -160,6 +160,17 @@ describe.skipIf(process.platform !== 'darwin')('cloneTree (APFS)', () => {
     expect(existsSync(`${to}.incoming`)).toBe(false);
   });
 
+  it('replaces a link with the copy and leaves the linked install untouched', () => {
+    const shared = checkout('main', '5.0.1', '5.0.1');
+    mkdirSync(join(root, 'wt'));
+    const to = join(root, 'wt', 'node_modules');
+    symlinkSync(join(shared, 'node_modules'), to);
+    cloneTree(join(shared, 'node_modules'), to);
+    expect(lstatSync(to).isSymbolicLink()).toBe(false);
+    expect(marker(shared)).toBe('5.0.1');
+    expect(readFileSync(join(to, 'vitest', 'marker'), 'utf8')).toBe('5.0.1');
+  });
+
   it('clears what a killed copy left behind', () => {
     const from = join(checkout('main', '5.0.1', '5.0.1'), 'node_modules');
     const to = join(root, 'wt', 'node_modules');
@@ -182,6 +193,21 @@ describe('a shared (linked) install', () => {
     expect(result).toEqual({ status: 'copied', from: shared });
     expect(lstatSync(join(dir, 'node_modules')).isSymbolicLink()).toBe(false);
     expect(marker(shared)).toBe('5.0.1');
+  });
+
+  // A volume without copy-on-write: the copy fails after a source was found.
+  // The link still works, so it stays until a whole private copy can replace it.
+  it('is kept when the copy fails', () => {
+    const shared = checkout('main', '5.0.1', '5.0.1');
+    const dir = checkout('wt', '5.0.1');
+    symlinkSync(join(shared, 'node_modules'), join(dir, 'node_modules'));
+    const clone = () => {
+      throw new Error('clone not supported on this volume');
+    };
+    const result = ensureInstall(dir, { candidates: [shared], clone });
+    expect(result.status).toBe('shared');
+    expect(lstatSync(join(dir, 'node_modules')).isSymbolicLink()).toBe(true);
+    expect(marker(dir)).toBe('5.0.1');
   });
 
   it('is kept, and reported, when no private copy can be made right now', () => {

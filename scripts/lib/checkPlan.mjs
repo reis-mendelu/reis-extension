@@ -113,3 +113,25 @@ export function verdict(results) {
   const tail = passed.length > 0 ? ` — passed: ${passed.map(label).join(', ')}` : '';
   return `check: FAIL (${failed.map(label).join(', ')})${tail}`;
 }
+
+/** What scripts/ensure-install.mjs did, in one line for the hook or the check output. */
+export function describeInstall(result) {
+  if (result.status === 'copied')
+    return `install: copied node_modules from ${result.from} (copy-on-write; this checkout owns it)`;
+  if (result.status === 'installed')
+    return 'install: ran npm ci (node_modules did not match package-lock.json)';
+  if (result.status === 'shared')
+    return "install: node_modules is a link to another checkout's install. It matches the lockfile, but do not run 'npm ci' through it; 'npm run check' replaces the link with this checkout's own install.";
+  if (result.status === 'busy')
+    return 'install: another install is running in this checkout (node_modules.lock). Try again when it has finished.';
+  if (result.status === 'failed')
+    return 'install: npm ci failed (its output is above). node_modules cannot be trusted until it succeeds.';
+  if (result.status === 'stale') {
+    const [first] = result.stale;
+    const example = first
+      ? ` (e.g. ${first.name} ${first.have ?? 'missing'} → ${first.want ?? 'not in the lockfile'})`
+      : '';
+    return `install: STALE — ${result.stale.length} packages differ from package-lock.json${example}. Run 'npm ci' here; until then typecheck and test results are not about your code.`;
+  }
+  return null;
+}

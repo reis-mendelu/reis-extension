@@ -22,11 +22,12 @@ import { join } from 'node:path';
 import {
   closestBase,
   deletedStems,
+  describeInstall,
   nulSeparated,
   planFromChanges,
   verdict,
 } from './lib/checkPlan.mjs';
-import { describeInstall, ensureInstall } from './ensure-install.mjs';
+import { ensureInstall } from './ensure-install.mjs';
 
 const git = (...args) => {
   try {
