@@ -25,7 +25,17 @@ export function IskamClaims() {
   const claims = useIskamStore((s) => s.claims);
   const balance = useIskamStore((s) => s.balance);
   const paying = useIskamStore((s) => s.payingClaim);
-  if (!claims?.length || balance === null) return null;
+  const paid = useIskamStore((s) => s.lastClaimPaid);
+  if (balance === null) return null;
+  if (!claims?.length) {
+    // WebISKAM shows nothing after paying, so reIS says it — once the re-read
+    // balance shows the claim gone.
+    return paid ? (
+      <p role="status" className="mt-2 text-2sm font-bold text-[var(--tone-success)]">
+        {t('iskam.claimPaid', { amount: formatKc(paid.amount, language, { whole: true }) })}
+      </p>
+    ) : null;
+  }
 
   return (
     <ul data-testid="iskam-claims" className="mt-2.5 border-t border-base-content/10 pt-2.5">

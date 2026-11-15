@@ -22,9 +22,13 @@ describe('parseClaims', () => {
     expect(parseClaims(fixture)).toHaveLength(1);
   });
 
-  // The empty page has not been seen yet: a missing table is "cannot tell",
-  // never "nothing owed".
-  it('returns null when the table is missing', () => {
+  it('reads the page with nothing owed (just after paying) as no claims', () => {
+    const empty = readFileSync(resolve(__dirname, 'fixtures/pohledavky-empty.html'), 'utf8');
+    expect(parseClaims(empty)).toEqual([]);
+  });
+
+  // Neither the table nor the signed-in page's pay dialog: "cannot tell".
+  it('returns null when it is not the signed-in claims page', () => {
     expect(parseClaims('<html lang="cs"><body><p>Základní údaje</p></body></html>')).toBeNull();
   });
 

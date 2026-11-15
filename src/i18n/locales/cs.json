@@ -40,7 +40,8 @@
     "unseen": "Zůstatek se zatím nezměnil. Pokud jsi zaplatil(a), brzy se aktualizuje.",
     "claimDue": "splatné do {date}",
     "payClaim": "Zaplatit",
-    "claimShort": "Na kontě chybí {amount}. Nejdřív dobij, pak zaplať."
+    "claimShort": "Na kontě chybí {amount}. Nejdřív dobij, pak zaplať.",
+    "claimPaid": "Zaplaceno {amount}"
   },
   "settings": {
     "title": "Nastavení",

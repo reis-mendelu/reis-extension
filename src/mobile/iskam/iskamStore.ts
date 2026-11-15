@@ -33,6 +33,11 @@ export interface IskamState {
   claims: Claim[] | null;
   /** WebISKAM's pay page is open for a claim. */
   payingClaim: boolean;
+  /**
+   * The claim WebISKAM's page was opened for is gone after the re-check: it
+   * was paid (WebISKAM itself says nothing). What it was, to say "Zaplaceno".
+   */
+  lastClaimPaid: { amount: number } | null;
   check(): Promise<void>;
   /** Opens WebISKAM's own pay dialog for the claim; the student pays there. */
   payClaim(id: string): Promise<void>;
@@ -98,6 +103,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
   lastTopUp: null,
   claims: null,
   payingClaim: false,
+  lastClaimPaid: null,
 
   async check() {
     const forced = devForcedState();
@@ -145,7 +151,8 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     if (get().payingClaim || !available()) return;
     const openSheet = sheet;
     const mine = account;
-    set({ payingClaim: true });
+    const claim = get().claims?.find((c) => c.id === id) ?? null;
+    set({ payingClaim: true, lastClaimPaid: null });
     try {
       await openClaimInIskam(id);
     } catch (e) {
@@ -153,7 +160,14 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     }
     if (mine !== account) return;
     set({ payingClaim: false });
-    if (openSheet === sheet) await get().check();
+    if (openSheet !== sheet) return;
+    await get().check();
+    if (mine !== account || openSheet !== sheet) return;
+    // Paid only when WebISKAM's own page no longer lists it — never assumed.
+    const after = get().claims;
+    if (claim && after !== null && !after.some((c) => c.id === id)) {
+      set({ lastClaimPaid: { amount: claim.remaining } });
+    }
   },
 
   async signIn() {
@@ -268,6 +282,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       lastTopUp: null,
       claims: null,
       payingClaim: false,
+      lastClaimPaid: null,
       ...(inFlight ? {} : { topUp: 'idle' as const }),
     });
   },
@@ -283,6 +298,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       lastTopUp: null,
       claims: null,
       payingClaim: false,
+      lastClaimPaid: null,
     });
   },
 }));

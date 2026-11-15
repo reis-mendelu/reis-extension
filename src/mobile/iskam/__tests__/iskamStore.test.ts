@@ -454,4 +454,31 @@ describe('useIskamStore claims', () => {
     expect(s().balance).toEqual({ amount: 245 });
     expect(s().claims).toEqual([CLAIM]);
   });
+
+  it('says paid only when the re-read no longer lists the claim', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockResolvedValueOnce([CLAIM]).mockResolvedValueOnce([]);
+    await s().check();
+    openClaimInIskam.mockResolvedValue(undefined);
+    await s().payClaim(CLAIM.id);
+    expect(s().lastClaimPaid).toEqual({ amount: CLAIM.remaining });
+  });
+
+  it('closing WebISKAM without paying says nothing', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockResolvedValue([CLAIM]);
+    await s().check();
+    openClaimInIskam.mockResolvedValue(undefined);
+    await s().payClaim(CLAIM.id);
+    expect(s().lastClaimPaid).toBeNull();
+  });
+
+  it('a failed re-read is not taken for a payment', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockResolvedValueOnce([CLAIM]).mockResolvedValueOnce(null);
+    await s().check();
+    openClaimInIskam.mockResolvedValue(undefined);
+    await s().payClaim(CLAIM.id);
+    expect(s().lastClaimPaid).toBeNull();
+  });
 });

@@ -1,7 +1,7 @@
 import type { IskamState } from './iskamStore';
 
 /**
- * `?iskam=balance|claim|claim-short|added|unseen|signed-out|checking|unavailable` on the dev webapp, and
+ * `?iskam=balance|claim|claim-short|claim-paid|added|unseen|signed-out|checking|unavailable` on the dev webapp, and
  * nothing anywhere else — `import.meta.env.DEV` strips it from every shipped
  * build, like `?eduroam=` in eduroamNative. The row is Capacitor-gated, so
  * without this verify-ui could only ever report it absent.
@@ -20,6 +20,14 @@ export function devForcedState(): Partial<IskamState> | null {
       },
     ];
     return { status: 'balance', balance: { amount: v === 'claim' ? 6940.16 : 2825.58 }, claims };
+  }
+  if (v === 'claim-paid') {
+    return {
+      status: 'balance',
+      balance: { amount: 1570.16 },
+      claims: [],
+      lastClaimPaid: { amount: 5370 },
+    };
   }
   // After a top-up: credited, or not showing yet.
   if (v === 'added') {

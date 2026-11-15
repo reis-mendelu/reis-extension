@@ -19,6 +19,11 @@ const NONCE = /^[a-z0-9]{1,32}$/i;
  * counted in the page's sessionStorage under a key unique to this opening,
  * and none at all if that storage is unavailable. Once the claims page has been
  * reached it never navigates again, so whatever page follows a payment stays.
+ *
+ * After paying, WebISKAM reloads the claims page without the claim and says
+ * nothing (seen on the Pixel, 2026-11-15). So when the claims page comes back
+ * without the claim this view opened, the script closes the view, and reIS
+ * reports what the balance did (iskamStore.payClaim).
  */
 export function buildPayScript(claimId: string, nonce: string): string {
   if (!GUID.test(claimId)) throw new Error('claim id is not a GUID');
@@ -33,7 +38,17 @@ export function buildPayScript(claimId: string, nonce: string): string {
   if (/^\\/InformaceOKlientovi\\/?$/i.test(location.pathname)) {
     if (st) { st.reached = 1; save(); }
     var btn = document.querySelector('.payfrommainaccount[data-id="' + ID + '"]');
-    if (!btn) return;
+    if (!btn) {
+      // Opened earlier in this view, and now the signed-in claims page has no
+      // such claim: it was paid. Hand the student back to reIS, which re-reads
+      // the balance and says so.
+      if (st && st.opened && document.getElementById('ZaplatitZKonta') &&
+          window.mobileApp && window.mobileApp.close) {
+        setTimeout(function () { window.mobileApp.close(); }, 600);
+      }
+      return;
+    }
+    if (st) { st.opened = 1; save(); }
     btn.click();
     setTimeout(function () {
       var f = document.getElementById('IDPolozky');

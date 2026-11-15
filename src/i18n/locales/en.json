@@ -40,7 +40,8 @@
     "unseen": "The balance has not changed yet. If you paid, it will update shortly.",
     "claimDue": "due {date}",
     "payClaim": "Pay",
-    "claimShort": "Your account is {amount} short. Top up first, then pay."
+    "claimShort": "Your account is {amount} short. Top up first, then pay.",
+    "claimPaid": "Paid {amount}"
   },
   "settings": {
     "title": "Settings",

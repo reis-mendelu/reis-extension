@@ -11,8 +11,9 @@
  * English: the same table then says "11/20/2026" and "5,370 Kč". Both are read
  * (fixtures/pohledavky.html and pohledavky-en.html).
  *
- * null when the table is missing: the page with nothing owed has not been
- * seen yet, so a missing table means "cannot tell", and the app shows nothing.
+ * [] when nothing is owed: the panel disappears and only the hidden pay dialog
+ * stays (seen 2026-11-15, fixtures/pohledavky-empty.html). null when neither is
+ * there: not the signed-in claims page, so "cannot tell".
  *
  * reIS never pays a claim. The id is only used to open WebISKAM's own
  * "Uhradit" dialog for it, where the student taps WebISKAM's button
@@ -65,7 +66,9 @@ function amountOf(text: string, english: boolean): number | null {
 export function parseClaims(html: string): Claim[] | null {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const table = doc.querySelector('#omezeniPohledavkyTable');
-  if (!table) return null;
+  // Nothing owed: the panel is gone but the signed-in page's pay dialog is not
+  // (fixtures/pohledavky-empty.html). Without either, it is not that page.
+  if (!table) return doc.getElementById('ZaplatitZKonta') ? [] : null;
   const english = /^en\b/i.test(doc.documentElement.lang);
   const claims: Claim[] = [];
   for (const row of Array.from(table.querySelectorAll('tbody tr'))) {

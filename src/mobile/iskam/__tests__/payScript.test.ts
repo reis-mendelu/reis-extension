@@ -24,9 +24,10 @@ function run(path: string, store: Map<string, string> | null, host = 'webiskam.m
       };
   const hide = vi.fn();
   const jq = vi.fn(() => ({ modal: hide }));
-  const win = { jQuery: jq };
+  const close = vi.fn();
+  const win = { jQuery: jq, mobileApp: { close } };
   new Function('location', 'sessionStorage', 'window', buildPayScript(ID, 'n1'))(loc, storage, win);
-  return { loc, hide };
+  return { loc, hide, close };
 }
 
 describe('buildPayScript', () => {
@@ -93,5 +94,22 @@ describe('buildPayScript', () => {
   it('refuses anything but a GUID as the id', () => {
     expect(() => buildPayScript("x'];alert(1)//", 'n1')).toThrow();
     expect(() => buildPayScript(ID, 'a b')).toThrow();
+  });
+
+  it('closes the view when the claims page comes back without the opened claim (paid)', () => {
+    const store = new Map<string, string>();
+    run('/InformaceOKlientovi', store);
+    document.querySelector('#omezeniPohledavkyTable')!.closest('.panel')!.remove();
+    const { close, loc } = run('/InformaceOKlientovi', store);
+    vi.advanceTimersByTime(700);
+    expect(close).toHaveBeenCalledOnce();
+    expect(loc.href).toBe('');
+  });
+
+  it('does not close a view that never opened the claim', () => {
+    document.querySelector('#omezeniPohledavkyTable')!.closest('.panel')!.remove();
+    const { close } = run('/InformaceOKlientovi', new Map());
+    vi.advanceTimersByTime(700);
+    expect(close).not.toHaveBeenCalled();
   });
 });

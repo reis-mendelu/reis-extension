@@ -1,0 +1,39 @@
+<!doctype html>
+<!--
+  The same page with NOTHING owed, seen live on 2026-11-15 right after the claim
+  in pohledavky.html was paid: the whole "Pohledávky před splatností" panel is
+  gone (no table, no heading), while the hidden #ZaplatitZKonta dialog is still
+  in the markup. That dialog is what tells a signed-in claims page from
+  anything else. Only those two parts are reproduced; the personal panels
+  (Základní údaje, Kontaktní osoba) are left out.
+-->
+<html lang="cs">
+  <body>
+    <div id="ZaplatitZKonta" class="modal fade" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">×</span>
+            </button>
+            <h4 class="modal-title">Uhradit</h4>
+          </div>
+          <div class="modal-body modal-body-custom">
+            <form action="/InformaceOKlientovi/ZaplatitZKonta" method="post">
+              <div class="form-horizontal">
+                <input type="hidden" id="IDPolozky" name="IDPolozky" value="" />
+                <div class="form-group modal-form-group-submit">
+                  <input
+                    type="submit"
+                    value="Zaplatit pohledávku z Hlavní konto"
+                    class="btn btn-default center-block"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
