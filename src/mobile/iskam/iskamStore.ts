@@ -112,15 +112,22 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     const mine = ++seq;
     set({ status: 'checking', balance: null, claims: null });
     const http = await buildIskamHttpDeps();
+    const readClaims = (persist: boolean) =>
+      fetchClaims(http, { persist }).catch((e: unknown) => {
+        logError('Iskam.fetchClaims', e);
+        return null;
+      });
+    // Started with the chain, not after it: the claim then shows with the
+    // balance instead of a second wait later (see fetchClaims).
+    const early = readClaims(false);
     const result = await runSilentChain(http);
     if (mine !== seq) return;
     set(fromChain(result));
     if (get().status !== 'balance') return;
-    const claims = await fetchClaims(http).catch((e: unknown) => {
-      logError('Iskam.fetchClaims', e);
-      return null;
-    });
-    if (mine === seq) set({ claims });
+    let claims = await early;
+    // The chain had to log in again, so the early read was turned away: once more.
+    if (claims === 'expired') claims = await readClaims(true);
+    if (mine === seq) set({ claims: claims === 'expired' ? null : claims });
   },
 
   /**

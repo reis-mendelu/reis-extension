@@ -375,10 +375,12 @@ describe('useIskamStore claims', () => {
     expect(s().claims).toEqual([CLAIM]);
   });
 
-  it('does not read claims without a balance', async () => {
+  it('shows no claims without a balance, and reads no second time', async () => {
     runSilentChain.mockResolvedValue({ state: 'dead' });
+    fetchClaims.mockResolvedValue([CLAIM]);
     await s().check();
-    expect(fetchClaims).not.toHaveBeenCalled();
+    expect(fetchClaims).toHaveBeenCalledTimes(1);
+    expect(fetchClaims).toHaveBeenCalledWith(expect.anything(), { persist: false });
     expect(s().claims).toBeNull();
   });
 
@@ -414,5 +416,27 @@ describe('useIskamStore claims', () => {
     await s().check();
     s().signOut();
     expect(s().claims).toBeNull();
+  });
+
+  it('reads the claims alongside the chain, without saving the jar', async () => {
+    let chainDone!: (v: unknown) => void;
+    runSilentChain.mockReturnValue(new Promise((r) => (chainDone = r)));
+    fetchClaims.mockResolvedValue([CLAIM]);
+    const p = s().check();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(fetchClaims).toHaveBeenCalledWith(expect.anything(), { persist: false });
+    chainDone({ state: 'live', kontaHtml: KONTA });
+    await p;
+    expect(fetchClaims).toHaveBeenCalledOnce();
+    expect(s().claims).toEqual([CLAIM]);
+  });
+
+  it('reads once more, saving, when the early read met an expired login', async () => {
+    runSilentChain.mockResolvedValue({ state: 'live', kontaHtml: KONTA });
+    fetchClaims.mockResolvedValueOnce('expired').mockResolvedValueOnce([CLAIM]);
+    await s().check();
+    expect(fetchClaims).toHaveBeenLastCalledWith(expect.anything(), { persist: true });
+    expect(s().claims).toEqual([CLAIM]);
   });
 });
