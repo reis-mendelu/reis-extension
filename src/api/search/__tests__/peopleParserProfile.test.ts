@@ -13,11 +13,14 @@ describe('parseMendeluProfileResult', () => {
   // page; on the redesigned IS (2026-11-15) its name is a bold <span>.
   it('reads a single-match profile page from the redesigned IS', () => {
     const doc = new DOMParser().parseFromString(REDESIGNED_EN, 'text/html');
-    const people = parseMendeluProfileResult(
-      doc,
-      'https://is.mendelu.cz/auth/lide/clovek.pl?id=900349'
-    );
+    // The callers pass the directory URL; the parser appends clovek.pl?id=…
+    const people = parseMendeluProfileResult(doc, 'https://is.mendelu.cz/auth/lide/');
     expect(people).toHaveLength(1);
-    expect(people[0]!.name).toBe('Jakub Dvořák');
+    expect(people[0]).toMatchObject({
+      id: '900349',
+      name: 'Jakub Dvořák',
+      email: 'xdvorak@node.mendelu.cz',
+      link: 'https://is.mendelu.cz/auth/lide/clovek.pl?id=900349;lang=cz',
+    });
   });
 });
