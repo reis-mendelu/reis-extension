@@ -4,7 +4,7 @@
 // runs `npm run check` meanwhile would otherwise start a second copy over the
 // first: each would delete the other's staging directory, and either could
 // rename an unfinished tree into place.
-import { mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
@@ -26,29 +26,38 @@ const ownerOf = (lock) => {
   }
 };
 
+const ageOf = (path) =>
+  Date.now() - (statSync(path, { throwIfNoEntry: false })?.mtimeMs ?? Date.now());
+
 /**
- * Remove a dead owner's lock so that only ONE of several callers does. A plain
- * delete is not enough: a second caller that also saw the dead owner could
- * delete the lock the first has just taken. The rename is atomic, so one caller
- * gets the tombstone and the rest get ENOENT. A tombstone that turns out to
- * hold another pid is a live lock taken by mistake, and goes straight back.
+ * Remove a dead owner's lock, never a live one. A caller acts on what it saw a
+ * moment ago, and by now another caller may have cleared the dead lock and
+ * taken its own. Moving the lock aside to look (the earlier tombstone rename)
+ * briefly took a LIVE lock away: a third caller could take the empty slot, the
+ * move back then failed, and two installs ran (Greptile on #703).
+ *
+ * So the check and the delete happen under `<lock>.takeover`, a second mkdir
+ * mutex: only its holder removes the lock, and only while the lock still names
+ * the owner it saw dead. A new owner cannot appear while it does, because
+ * nobody can take a lock that still exists. Everyone else just retries.
  */
-function takeOver(lock, deadOwner) {
-  const tombstone = `${lock}.dead-${process.pid}`;
+export function clearDeadLock(lock, deadOwner) {
+  const guard = `${lock}.takeover`;
   try {
-    renameSync(lock, tombstone);
-  } catch {
-    return; // someone else took it over first
+    mkdirSync(guard);
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    // A takeover killed between its two syscalls leaves the guard behind.
+    if (ageOf(guard) > 60_000) rmSync(guard, { recursive: true, force: true });
+    return;
   }
-  if (ownerOf(tombstone) !== deadOwner) {
-    try {
-      renameSync(tombstone, lock);
-      return;
-    } catch {
-      // a new lock exists by now; there is nothing to give back
-    }
+  try {
+    const owner = ownerOf(lock);
+    const stillDead = owner ? !alive(owner) : ageOf(lock) > 60_000;
+    if (owner === deadOwner && stillDead) rmSync(lock, { recursive: true, force: true });
+  } finally {
+    rmSync(guard, { recursive: true, force: true });
   }
-  rmSync(tombstone, { recursive: true, force: true });
 }
 
 /**
@@ -70,10 +79,10 @@ export function withInstallLock(dir, waitMs, action) {
       if (error.code !== 'EEXIST') throw error;
     }
     const owner = ownerOf(lock);
-    const age = Date.now() - (statSync(lock, { throwIfNoEntry: false })?.mtimeMs ?? Date.now());
     // No pid yet: the owner is between mkdir and its write. Give it a minute.
-    if (owner ? !alive(owner) : age > 60_000) {
-      takeOver(lock, owner);
+    if (owner ? !alive(owner) : ageOf(lock) > 60_000) {
+      clearDeadLock(lock, owner);
+      sleep(50);
       continue;
     }
     if (Date.now() >= deadline) return { status: 'busy' };
