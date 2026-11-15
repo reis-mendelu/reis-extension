@@ -1,7 +1,7 @@
 import { getPlatform } from '../platform';
 import { isDemoMode } from '../errors/demoMode';
 import { logError } from '../utils/reportError';
-import { IndexedDBService } from '../services/storage/IndexedDBService';
+import { IndexedDBService, STORE_REVIEW_KEY } from '../services/storage/IndexedDBService';
 import {
   markAsked,
   noteDayUsed,
@@ -45,7 +45,7 @@ export type StoreReviewMoment = keyof typeof STORE_REVIEW_MOMENTS;
 /** Lets the success toast land and the sheet close before the OS dialog. */
 export const ASK_DELAY_MS = 1500;
 
-const KEY = 'store_review';
+const KEY = STORE_REVIEW_KEY;
 
 /** Prague calendar day, the day the daily count uses. */
 function today(): string {
@@ -69,19 +69,38 @@ async function read(): Promise<StoreReviewState | null> {
   return ((await IndexedDBService.get('meta', KEY)) as StoreReviewState | undefined) ?? null;
 }
 
+/**
+ * Every read-and-rewrite of the record runs one after another. Returning from
+ * the background counts a day while a success moment may be asking; unserialised,
+ * the later write was built on the earlier read and erased the other's change —
+ * a lost `lastAskedDay` meant asking again inside the 120-day break.
+ */
+let queue: Promise<unknown> = Promise.resolve();
+function serially<T>(step: () => Promise<T>): Promise<T> {
+  const run = queue.then(step);
+  queue = run.catch(() => undefined);
+  return run;
+}
+
 /** Counts today as a day of use. Called at boot and on every resume. */
 export async function noteAppUsedToday(): Promise<void> {
   if (!applies()) return;
   try {
-    const before = await read();
-    const after = noteDayUsed(before, today());
-    if (after !== before) await IndexedDBService.set('meta', KEY, after);
+    await serially(async () => {
+      const before = await read();
+      const after = noteDayUsed(before, today());
+      if (after !== before) await IndexedDBService.set('meta', KEY, after);
+    });
   } catch (e) {
     logError('Mobile.storeReview.noteDay', e);
   }
 }
 
-/** One ask at a time: two successes in a row must not stack two dialogs. */
+/**
+ * One ask at a time: two successes in a row must not stack two dialogs. A
+ * module-level latch, like the plugin-availability caches elsewhere in mobile/:
+ * it is not app state anything renders, and it has to span the 1.5 s timer.
+ */
 let asking = false;
 
 /**
@@ -92,16 +111,20 @@ export async function maybeAskForStoreReview(moment: StoreReviewMoment): Promise
   if (!STORE_REVIEW_MOMENTS[moment] || !applies() || asking) return false;
   asking = true;
   try {
-    const state = await read();
-    const day = today();
-    const needsFiles = moment === 'file_reader_closed';
-    if (!state || !shouldAskForReview(state, day, { needsFiles })) {
+    const ask = await serially(async () => {
+      const state = await read();
+      const day = today();
+      const needsFiles = moment === 'file_reader_closed';
+      if (!state || !shouldAskForReview(state, day, { needsFiles })) return false;
+      // Written BEFORE the OS is asked, so a crash or a rejection cannot turn
+      // into an ask on every following success.
+      await IndexedDBService.set('meta', KEY, markAsked(state, day));
+      return true;
+    });
+    if (!ask) {
       asking = false;
       return false;
     }
-    // Written BEFORE the OS is asked, so a crash or a rejection cannot turn
-    // into an ask on every following success.
-    await IndexedDBService.set('meta', KEY, markAsked(state, day));
   } catch (e) {
     asking = false;
     logError('Mobile.storeReview', e);
@@ -121,9 +144,10 @@ export async function maybeAskForStoreReview(moment: StoreReviewMoment): Promise
 
 /**
  * The file moment. Called once reIS's reader has closed and the screen under it
- * is back: the iPad's PencilKit reader resolves its `open` on Close, the pdf.js
- * viewer on the phone calls closePreview. `openMs` is how long the reader was
- * up, `filesShown` how many files it showed (the PencilKit sidebar can show
+ * is back: the iPad's PencilKit reader resolves its `open` on Close; the pdf.js
+ * viewer on the phone reports when it is closed or its sheet goes (Android
+ * Back). `openMs` is how long the reader was up (for pdf.js, from the document
+ * loading), `filesShown` how many files it showed (the PencilKit sidebar can show
  * several). A session under 30 s counts nothing and asks nothing, so closing
  * file 3 to open file 4 never brings up stars.
  */
@@ -135,9 +159,11 @@ export async function storeReviewAfterReaderClosed(
   const credited = filesToCredit(openMs, filesShown);
   if (credited === 0) return false;
   try {
-    const before = await read();
-    const after = noteFilesOpened(before, today(), credited);
-    if (after !== before) await IndexedDBService.set('meta', KEY, after);
+    await serially(async () => {
+      const before = await read();
+      const after = noteFilesOpened(before, today(), credited);
+      if (after !== before) await IndexedDBService.set('meta', KEY, after);
+    });
   } catch (e) {
     logError('Mobile.storeReview.noteFile', e);
     return false;

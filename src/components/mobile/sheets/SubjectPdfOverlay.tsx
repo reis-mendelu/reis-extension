@@ -17,10 +17,13 @@ export function SubjectPdfOverlay({
   url,
   position,
   onClose,
+  onLoaded,
 }: {
   url: string;
   position: ReturnType<typeof usePdfPreview>['previewPosition'];
   onClose: () => void;
+  /** pdf.js loaded the file (starts the store-rating dwell clock). */
+  onLoaded?: () => void;
 }) {
   return (
     <div
@@ -31,7 +34,13 @@ export function SubjectPdfOverlay({
           this flex column rather than overflowing past the screen. */}
       <div className="min-h-0 flex-1">
         <Suspense fallback={null}>
-          <PdfViewer key={url} blobUrl={url} onClose={onClose} {...position} />
+          <PdfViewer
+            key={url}
+            blobUrl={url}
+            onClose={onClose}
+            onDocumentLoaded={onLoaded}
+            {...position}
+          />
         </Suspense>
       </div>
     </div>

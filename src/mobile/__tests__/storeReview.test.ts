@@ -9,10 +9,20 @@ const logError = vi.hoisted(() => vi.fn());
 vi.mock('../../utils/reportError', () => ({ logError }));
 
 const db = vi.hoisted(() => new Map<string, unknown>());
+// A few awaits per call, like a real IndexedDB round trip, so two callers that
+// are not serialised really do interleave their reads and writes.
+const tick = async () => {
+  for (let i = 0; i < 3; i++) await Promise.resolve();
+};
 vi.mock('../../services/storage/IndexedDBService', () => ({
+  STORE_REVIEW_KEY: 'store_review',
   IndexedDBService: {
-    get: vi.fn(async (_store: string, key: string) => db.get(key)),
+    get: vi.fn(async (_store: string, key: string) => {
+      await tick();
+      return db.get(key);
+    }),
     set: vi.fn(async (_store: string, key: string, value: unknown) => {
+      await tick();
       db.set(key, value);
     }),
   },
@@ -182,5 +192,28 @@ describe('storeReviewAfterReaderClosed', () => {
       'exam_registered',
       'file_reader_closed',
     ]);
+  });
+});
+
+// Returning from the background runs the day count while a success moment may
+// be asking. Both rewrite the same record; neither may undo the other.
+describe('concurrent updates', () => {
+  it('a day count racing an ask keeps both the new day and the ask', async () => {
+    db.set(KEY, seasoned); // lastDay 2026-11-08, today is the 15th
+    const { maybeAskForStoreReview, noteAppUsedToday } = await load();
+    await Promise.all([maybeAskForStoreReview('exam_registered'), noteAppUsedToday()]);
+    const after = db.get(KEY) as StoreReviewState;
+    expect(after.lastAskedDay).toBe('2026-11-15');
+    expect(after.lastDay).toBe('2026-11-15');
+    expect(after.daysUsed).toBe(6);
+  });
+
+  it('a day count racing a reader close keeps the counted file', async () => {
+    db.set(KEY, { ...seasoned, filesOpened: 1 });
+    const { storeReviewAfterReaderClosed, noteAppUsedToday } = await load();
+    await Promise.all([storeReviewAfterReaderClosed(45_000, 1), noteAppUsedToday()]);
+    const after = db.get(KEY) as StoreReviewState;
+    expect(after.filesOpened).toBe(2);
+    expect(after.daysUsed).toBe(6);
   });
 });

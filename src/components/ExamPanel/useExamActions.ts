@@ -64,11 +64,12 @@ export function useExamActions({
         setExams(updated);
         setExpandedSectionId(null);
         useAppStore.getState().triggerExamsRefresh();
-        // The store-rating moment, first attempts only: never after a resit.
+        // The store-rating moment: a zkouška, first attempts only, never a resit.
         // A no-op in the extension; the helper decides if the install is ready.
         const { gradeHistory, subjects } = useAppStore.getState();
         const subjectCode = exams.find((x) => x.sections.some((y) => y.id === sec.id))?.code ?? '';
         if (
+          sec.type === 'exam' &&
           isFirstAttemptRegistration({
             attemptTypes: t?.attemptTypes,
             grades: gradeHistory?.grades ?? null,

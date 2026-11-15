@@ -269,22 +269,51 @@ describe('usePdfPreview — store rating', () => {
     URL.createObjectURL = vi.fn(() => 'blob:from-ink');
   });
 
-  it('the web viewer: on close, with the time since it was shown (not since the tap)', async () => {
+  async function openInViewer() {
     isPdfInkAvailable.mockResolvedValue(false);
-    const now = vi.spyOn(Date, 'now');
-    now.mockReturnValue(1_000); // the tap
-    openPdfInline.mockImplementation(async () => {
-      now.mockReturnValue(4_000); // the IS fetch took 3 s
-      return 'blob:x';
-    });
-    const { result } = renderHook(() => usePdfPreview('EBC-MT'));
-    await act(async () => void (await result.current.viewPdf('/x.pdf', { name: 'X' })));
-    expect(result.current.previewUrl).toBe('blob:x');
+    openPdfInline.mockResolvedValue('blob:x');
+    const hook = renderHook(() => usePdfPreview('EBC-MT'));
+    await act(async () => void (await hook.result.current.viewPdf('/x.pdf', { name: 'X' })));
+    return hook;
+  }
+
+  it('the web viewer: times from the document loading, not from the tap or the fetch', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+    const { result } = await openInViewer();
+    now.mockReturnValue(9_000); // pdf.js parsed it 8 s after the tap
+    act(() => result.current.onPreviewLoaded());
     expect(storeReviewAfterReaderClosed).not.toHaveBeenCalled();
     now.mockReturnValue(40_000);
     act(() => result.current.closePreview());
-    expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(36_000, 1);
+    expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(31_000, 1);
     now.mockRestore();
+  });
+
+  it('the web viewer: a PDF that never loaded reports nothing on close', async () => {
+    const { result } = await openInViewer();
+    act(() => result.current.closePreview());
+    expect(storeReviewAfterReaderClosed).not.toHaveBeenCalled();
+  });
+
+  // Android Back pops the whole subject sheet, so the viewer goes without
+  // closePreview ever running.
+  it('the web viewer: leaving with Back (the sheet unmounts) still reports, once', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(5_000);
+    const { result, unmount } = await openInViewer();
+    act(() => result.current.onPreviewLoaded());
+    now.mockReturnValue(50_000);
+    unmount();
+    expect(storeReviewAfterReaderClosed).toHaveBeenCalledTimes(1);
+    expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(45_000, 1);
+    now.mockRestore();
+  });
+
+  it('the web viewer: close then unmount reports once', async () => {
+    const { result, unmount } = await openInViewer();
+    act(() => result.current.onPreviewLoaded());
+    act(() => result.current.closePreview());
+    unmount();
+    expect(storeReviewAfterReaderClosed).toHaveBeenCalledTimes(1);
   });
 
   it('a close with no file shown reports nothing', () => {
@@ -293,16 +322,26 @@ describe('usePdfPreview — store rating', () => {
     expect(storeReviewAfterReaderClosed).not.toHaveBeenCalled();
   });
 
-  it('the iPad reader: after it resolves on Close, with its open time and files', async () => {
+  it('the iPad reader: nothing while it is up, then its open time and files once it resolves on Close', async () => {
     isPdfInkAvailable.mockResolvedValue(true);
-    openPdfWithInk.mockResolvedValue({
-      kind: 'shown',
-      hasInk: false,
-      filesShown: 2,
-      openMs: 50_000,
-    });
+    let finish!: (v: {
+      kind: 'shown';
+      hasInk: boolean;
+      filesShown: number;
+      openMs: number;
+    }) => void;
+    openPdfWithInk.mockReturnValue(new Promise((resolve) => (finish = resolve)));
     const { result } = renderHook(() => usePdfPreview('EBC-MT'));
-    await act(async () => void (await result.current.viewPdf('/x.pdf', { name: 'X' })));
+    let viewing!: Promise<void>;
+    await act(async () => {
+      viewing = result.current.viewPdf('/x.pdf', { name: 'X' });
+      await Promise.resolve();
+    });
+    expect(storeReviewAfterReaderClosed).not.toHaveBeenCalled();
+    await act(async () => {
+      finish({ kind: 'shown', hasInk: false, filesShown: 2, openMs: 50_000 });
+      await viewing;
+    });
     expect(storeReviewAfterReaderClosed).toHaveBeenCalledWith(50_000, 2);
   });
 

@@ -444,6 +444,15 @@ describe('useExamActions - Optimistic Updates', () => {
       expect(maybeAskForStoreReview).toHaveBeenCalledWith('exam_registered');
     });
 
+    // Only a zkouška: a credit test, a defence or a seminar-group signup goes
+    // through the same register call but is not the exam moment.
+    it('not after registering a term of a non-exam section', async () => {
+      const exams = withTypes(['regular']);
+      exams[0].sections[0] = { ...exams[0].sections[0], type: 'test' };
+      await register(exams);
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
+    });
+
     it('not after registering a retake-only term', async () => {
       await register(withTypes(['retake1']));
       expect(maybeAskForStoreReview).not.toHaveBeenCalled();

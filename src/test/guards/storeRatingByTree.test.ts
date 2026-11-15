@@ -45,10 +45,11 @@ describe('store rating, by tree', () => {
   });
 
   it('the success moments call the helper', () => {
-    const exam = read('src/components/ExamPanel/useExamActions.ts');
-    expect(exam).toContain("maybeAskForStoreReview('exam_registered')");
-    // Never after a resit (Dominik, 2026-11-15).
-    expect(exam).toContain('isFirstAttemptRegistration(');
+    // Only for a zkouška, and never after a resit (Dominik, 2026-11-15): both
+    // gates sit in the same condition as the ask, not merely in the file.
+    expect(read('src/components/ExamPanel/useExamActions.ts')).toMatch(
+      /if \(\s*sec\.type === 'exam' &&\s*isFirstAttemptRegistration\(\{[\s\S]*?\}\)\s*\)\s*void maybeAskForStoreReview\('exam_registered'\)/
+    );
     expect(read('src/hooks/ui/usePdfPreview.ts')).toContain('storeReviewAfterReaderClosed(');
     expect(read('src/hooks/ui/useRecentPdfOpen.ts')).toContain('storeReviewAfterReaderClosed(');
   });
@@ -56,7 +57,7 @@ describe('store rating, by tree', () => {
   // Dominik, 2026-11-15: eduroam is a day-one setup step, not a moment where
   // reIS paid off. Never after grades either.
   it('eduroam and grades are not moments', () => {
-    expect(read('src/hooks/data/useEduroamSetup.ts')).not.toContain('StoreReview');
+    expect(read('src/hooks/data/useEduroamSetup.ts')).not.toMatch(/storeReview/i);
     expect(read('src/mobile/storeReview.ts')).not.toMatch(/eduroam|grade/i);
   });
 
@@ -67,6 +68,9 @@ describe('store rating, by tree', () => {
     expect(demoReturn).toBeGreaterThan(-1);
     expect(boot).toBeGreaterThan(demoReturn);
     const resume = src.indexOf("CapApp.addListener('resume'");
-    expect(src.slice(resume)).toMatch(/\bnoteAppUsedToday\(\)/);
+    expect(resume, 'the resume listener is gone').toBeGreaterThan(-1);
+    const end = src.indexOf('\n  });', resume);
+    expect(end).toBeGreaterThan(resume);
+    expect(src.slice(resume, end)).toMatch(/\bnoteAppUsedToday\(\)/);
   });
 });

@@ -88,8 +88,17 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     };
   }, []);
 
-  // When the web viewer put the current file on screen (store-rating dwell).
-  const shownAt = useRef(0);
+  // When pdf.js finished loading the file in the web viewer, for the
+  // store-rating dwell; null while nothing readable is on screen. Reported once,
+  // by whichever comes first: the viewer's close, or the sheet going away
+  // (Android Back pops the whole subject sheet without closePreview).
+  const readingSince = useRef<number | null>(null);
+  const endReading = useCallback(() => {
+    const since = readingSince.current;
+    readingSince.current = null;
+    if (since !== null) void storeReviewAfterReaderClosed(Date.now() - since, 1);
+  }, []);
+  useEffect(() => endReading, [endReading]);
 
   const inkStrings = usePdfInkStrings();
   // The web viewer's page. The iPad reader keeps its own, in the PDF cache index.
@@ -158,8 +167,6 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
         }
         if (blobUrl) {
           await loadPosition(link);
-          // The dwell clock starts when the file is on screen, not at the tap.
-          shownAt.current = Date.now();
           setPreviewUrl(blobUrl);
           setPreviewFile({ link, name });
         } else {
@@ -175,11 +182,16 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
   );
 
   const closePreview = useCallback(() => {
-    // The store-rating file moment, for the pdf.js viewer: a file was shown.
-    if (previewUrl) void storeReviewAfterReaderClosed(Date.now() - shownAt.current, 1);
+    // The store-rating file moment, for the pdf.js viewer.
+    endReading();
     setPreviewUrl(null);
     setPreviewFile(null);
-  }, [previewUrl]);
+  }, [endReading]);
+
+  /** The viewer's pdf.js loaded the file: the dwell clock starts now. */
+  const onPreviewLoaded = useCallback(() => {
+    readingSince.current = Date.now();
+  }, []);
 
   return {
     previewUrl,
@@ -190,6 +202,7 @@ export function usePdfPreview(courseCode?: string, subject?: PdfPreviewSubject) 
     isPreviewLoading: openingLink !== null,
     viewPdf,
     closePreview,
+    onPreviewLoaded,
     openFile,
     downloadSingle,
     isDownloading,
