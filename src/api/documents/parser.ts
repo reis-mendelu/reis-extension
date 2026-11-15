@@ -129,8 +129,12 @@ export function parseServerFiles(html: string): {
             'is.mendelu.cz'
           );
 
+          // The WHOLE name, optionally with IS's count ("Nové dokumenty (436)",
+          // brackets stripped by validateFileName). Unanchored, it also matched
+          // a real document, "Přednáška 10, 11 -- Řazení (a vyhledávání)", and
+          // dropped it (__tests__/documentNamedLikeNav.test.ts).
           const isSystemLabel =
-            /Všechny moje složky|Nadřazená složka|All my folders|Parent folder|Document tree|New documents|DS settings|Searching|Dokumentový strom|Nové dokumenty|Nastavení stromu|Vyhledávání/i.test(
+            /^(?:Všechny moje složky|Nadřazená složka|All my folders|Parent folder|Document tree|New documents|DS settings|Searching|Dokumentový strom|Nové dokumenty|Nastavení stromu|Vyhledávání)(?:\s*\(?\d+\)?)?$/i.test(
               file_name
             );
           const isSystemUrl =

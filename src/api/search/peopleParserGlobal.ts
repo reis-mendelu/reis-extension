@@ -6,11 +6,16 @@ export function parseGlobalPeopleResults(htmlString: string): Person[] {
   const doc = parser.parseFromString(htmlString, 'text/html');
   const baseUrl = 'https://is.mendelu.cz/auth/lide/';
 
-  const personLinks = doc.querySelectorAll('a[href*="lide/clovek.pl"]');
+  // Not the redesigned header's own link to the signed-in student
+  // (`#menu-popup .user-info`, on every page since 2026-11-15). Pages from
+  // before the redesign have no such container, so nothing changes for them.
+  const personLinks = Array.from(doc.querySelectorAll('a[href*="lide/clovek.pl"]')).filter(
+    (link) => !link.closest('#menu-popup, .user-info')
+  );
   if (personLinks.length === 0) return [];
 
   const seen = new Set<string>();
-  return Array.from(personLinks)
+  return personLinks
     .map((link) => {
       const name = link.textContent?.trim() ?? 'Unknown Name';
       const href = link.getAttribute('href') ?? '';
