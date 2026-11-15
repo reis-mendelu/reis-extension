@@ -40,6 +40,13 @@ edge-function deploy already has. A dry run only lists what would apply.
   Release gate goes red without it, and the tag job checks again before tagging.
   Agree the words with Dominik per release, as before.
 
+## Before the release PR
+
+`npm run release:preflight -- --version X.Y.Z` reports main/test drift and an App
+Store version that would block the submit, read-only. What each finding means
+and the recipes (sync main into test; wait, withdraw or rename an App Store
+version): [`docs/release-preflight.md`](release-preflight.md).
+
 ## One-time setup: repository secrets (Dominik adds these)
 
 Nobody and nothing else may add them: they are credentials. A job whose secrets

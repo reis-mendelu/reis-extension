@@ -53,6 +53,7 @@
     "android:push": "node scripts/android-push.mjs",
     "android:feature-graphic": "node scripts/gen-feature-graphic.mjs",
     "release:ios": "tsx --tsconfig tsconfig.app.json scripts/release-ios.ts",
+    "release:preflight": "tsx scripts/release/preflight.ts",
     "ios:version": "tsx --tsconfig tsconfig.app.json scripts/sync-ios-version.ts",
     "store:shots": "node scripts/store-shots.mjs",
     "check:native": "node scripts/check-native-plugins.mjs",
