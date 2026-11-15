@@ -32,14 +32,14 @@ describe('parseClaims', () => {
     expect(parseClaims('<html lang="cs"><body><p>Základní údaje</p></body></html>')).toBeNull();
   });
 
-  it('leaves out a row whose amount or id cannot be read', () => {
+  it('a claim row that cannot be read makes it "cannot tell" (null), never a shorter list', () => {
     const broken = fixture
       .replace(
         '4 815 Kč</td>\n <td class="tdRight moneyCol">0 Kč</td>\n <td class="tdRight bold moneyCol">4 815 Kč',
         '4 815 Kč</td>\n <td class="tdRight moneyCol">0 Kč</td>\n <td class="tdRight bold moneyCol">??'
       )
       .replace('data-id="00000000-0000-0000-0000-000000000001"', 'data-id="x"');
-    expect(parseClaims(broken)).toEqual([]);
+    expect(parseClaims(broken)).toBeNull();
   });
 
   it('reads an English page, where the comma groups thousands', () => {
@@ -54,7 +54,7 @@ describe('parseClaims', () => {
       'data-id="00000000-0000-0000-0000-000000000001"',
       `data-id="1'];alert(1);//"`
     );
-    expect(parseClaims(evil)).toEqual([]);
+    expect(parseClaims(evil)).toBeNull();
   });
 
   // A phone in English gets WebISKAM in English: month-first date, comma
@@ -70,13 +70,13 @@ describe('parseClaims', () => {
     ]);
   });
 
-  it('rejects a date that is neither format, or out of range', () => {
+  it('a date that is neither format, or out of range, is "cannot tell"', () => {
     for (const bad of ['2026-11-20', '13/20/2026', '20.13.2026', '']) {
       const page = fixture.replace(
         '<td class="dateCol">20.11.2026</td>',
         `<td class="dateCol">${bad}</td>`
       );
-      expect(parseClaims(page)).toEqual([]);
+      expect(parseClaims(page)).toBeNull();
     }
   });
 });

@@ -1,36 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { buildPayScript } from '../payScript';
+import {
+  INITIAL_PAY_STATE,
+  asProbe,
+  buildOpenDialogScript,
+  buildProbeScript,
+  nextPayStep,
+  type PayProbe,
+  type PayState,
+} from '../payScript';
 
 const ID = '00000000-0000-0000-0000-000000000001';
 const fixture = readFileSync(resolve(__dirname, 'fixtures/pohledavky.html'), 'utf8');
 
-/** Runs the script with a fake location/sessionStorage, against the fixture's DOM. */
-function run(path: string, store: Map<string, string> | null, host = 'webiskam.mendelu.cz') {
-  const loc = { hostname: host, pathname: path, href: '' };
-  const storage = store
-    ? {
-        getItem: (k: string) => store.get(k) ?? null,
-        setItem: (k: string, v: string) => void store.set(k, v),
-      }
-    : {
-        getItem: () => {
-          throw new Error('blocked');
-        },
-        setItem: () => {
-          throw new Error('blocked');
-        },
-      };
+/** Runs an injected script with a fake location/window, against the current DOM. */
+function run(code: string, host = 'webiskam.mendelu.cz', path = '/InformaceOKlientovi') {
   const hide = vi.fn();
-  const jq = vi.fn(() => ({ modal: hide }));
-  const close = vi.fn();
-  const win = { jQuery: jq, mobileApp: { close } };
-  new Function('location', 'sessionStorage', 'window', buildPayScript(ID, 'n1'))(loc, storage, win);
-  return { loc, hide, close };
+  const postMessage = vi.fn();
+  const win = { jQuery: vi.fn(() => ({ modal: hide })), mobileApp: { postMessage } };
+  new Function('location', 'window', code)({ hostname: host, pathname: path }, win);
+  return { hide, postMessage };
 }
 
-describe('buildPayScript', () => {
+describe('the injected scripts', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     document.documentElement.innerHTML = new DOMParser().parseFromString(
@@ -40,7 +33,7 @@ describe('buildPayScript', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('presses the claim’s € button on the claims page, and nothing else', () => {
+  it('open: presses the claim’s € button, and never the pay button', () => {
     const opener = document.querySelector<HTMLButtonElement>('.payfrommainaccount')!;
     const pay = document.querySelector<HTMLInputElement>('#ZaplatitZKonta input[type=submit]')!;
     const form = document.querySelector('#ZaplatitZKonta form') as HTMLFormElement;
@@ -55,61 +48,107 @@ describe('buildPayScript', () => {
       e.preventDefault();
       paid();
     });
-    const { loc, hide } = run('/InformaceOKlientovi', new Map());
+    const { hide } = run(buildOpenDialogScript(ID));
     vi.advanceTimersByTime(600);
     expect(opened).toHaveBeenCalledOnce();
     expect(paid).not.toHaveBeenCalled();
     expect(hide).not.toHaveBeenCalled();
-    expect(loc.href).toBe('');
   });
 
-  it('closes the dialog again when it did not take this claim’s id', () => {
-    const { hide } = run('/InformaceOKlientovi', new Map());
+  it('open: closes the dialog again when it did not take this claim’s id', () => {
+    const { hide } = run(buildOpenDialogScript(ID));
     vi.advanceTimersByTime(600);
     expect(hide).toHaveBeenCalledWith('hide');
   });
 
-  it('after a lapsed session: sign-in, then the claims page, then never again', () => {
-    const store = new Map<string, string>();
-    expect(run('/Home/Index', store).loc.href).toBe('/Prihlaseni/AuthShibb');
-    expect(run('/Prihlaseni/AuthShibb', store).loc.href).toBe('');
-    expect(run('/Home/Index', store).loc.href).toBe('/InformaceOKlientovi');
-    expect(run('/Home/Index', store).loc.href).toBe('');
+  it('open: does nothing on another host or without the claim', () => {
+    const clicked = vi.fn();
+    document.querySelector('.payfrommainaccount')!.addEventListener('click', clicked);
+    run(buildOpenDialogScript(ID), 'alibaba.mendelu.cz');
+    run(buildOpenDialogScript('00000000-0000-0000-0000-000000000002'));
+    expect(clicked).not.toHaveBeenCalled();
   });
 
-  it('stays wherever WebISKAM goes once the claims page was reached (after paying)', () => {
-    const store = new Map<string, string>();
-    run('/InformaceOKlientovi', store);
-    expect(run('/Konta', store).loc.href).toBe('');
+  it('probe: reports where the page is and whether the claim is on it', () => {
+    const { postMessage } = run(buildProbeScript(ID));
+    expect(postMessage).toHaveBeenCalledWith({
+      reisClaimProbe: true,
+      path: '/InformaceOKlientovi',
+      hasClaim: true,
+      claimsPage: true,
+    });
   });
 
-  it('does not navigate when sessionStorage is unavailable (no loop)', () => {
-    expect(run('/Home/Index', null).loc.href).toBe('');
-  });
-
-  it('does nothing on the MENDELU sign-in page', () => {
-    expect(run('/idp/profile', new Map(), 'alibaba.mendelu.cz').loc.href).toBe('');
+  it('probe: silent on the MENDELU sign-in', () => {
+    expect(run(buildProbeScript(ID), 'alibaba.mendelu.cz').postMessage).not.toHaveBeenCalled();
   });
 
   it('refuses anything but a GUID as the id', () => {
-    expect(() => buildPayScript("x'];alert(1)//", 'n1')).toThrow();
-    expect(() => buildPayScript(ID, 'a b')).toThrow();
+    expect(() => buildOpenDialogScript("x'];alert(1)//")).toThrow();
+    expect(() => buildProbeScript('nope')).toThrow();
+  });
+});
+
+const page = (path: string, hasClaim = false, claimsPage = false): PayProbe => ({
+  path,
+  hasClaim,
+  claimsPage,
+});
+function walk(...probes: PayProbe[]): { actions: string[]; state: PayState } {
+  let state = INITIAL_PAY_STATE;
+  const actions: string[] = [];
+  for (const p of probes) {
+    const step = nextPayStep(state, p);
+    state = step.state;
+    actions.push(step.action);
+  }
+  return { actions, state };
+}
+
+describe('nextPayStep', () => {
+  it('claims page with the claim: nothing to do (the open script opened it)', () => {
+    expect(walk(page('/InformaceOKlientovi', true, true)).actions).toEqual(['none']);
   });
 
-  it('closes the view when the claims page comes back without the opened claim (paid)', () => {
-    const store = new Map<string, string>();
-    run('/InformaceOKlientovi', store);
-    document.querySelector('#omezeniPohledavkyTable')!.closest('.panel')!.remove();
-    const { close, loc } = run('/InformaceOKlientovi', store);
-    vi.advanceTimersByTime(700);
-    expect(close).toHaveBeenCalledOnce();
-    expect(loc.href).toBe('');
+  it('after paying (claim gone from the signed-in claims page): close, once', () => {
+    const { actions } = walk(
+      page('/InformaceOKlientovi', true, true),
+      page('/InformaceOKlientovi', false, true),
+      page('/InformaceOKlientovi', false, true)
+    );
+    expect(actions).toEqual(['none', 'close', 'none']);
   });
 
-  it('does not close a view that never opened the claim', () => {
-    document.querySelector('#omezeniPohledavkyTable')!.closest('.panel')!.remove();
-    const { close } = run('/InformaceOKlientovi', new Map());
-    vi.advanceTimersByTime(700);
-    expect(close).not.toHaveBeenCalled();
+  it('never closes a view that never had the claim', () => {
+    expect(walk(page('/InformaceOKlientovi', false, true)).actions).toEqual(['none']);
+  });
+
+  it('a lapsed session: sign-in, then the claims page, then never again', () => {
+    expect(
+      walk(
+        page('/Home/Index'),
+        page('/Prihlaseni/AuthShibb'),
+        page('/ObjednavkyStravovani'),
+        page('/Home/Index')
+      ).actions
+    ).toEqual(['auth', 'none', 'claims', 'none']);
+  });
+
+  it('stays wherever WebISKAM goes once the claims page was reached', () => {
+    expect(walk(page('/InformaceOKlientovi', true, true), page('/Konta')).actions).toEqual([
+      'none',
+      'none',
+    ]);
+  });
+
+  it('accepts only the probe’s exact shape from the bridge', () => {
+    expect(asProbe({ reisClaimProbe: true, path: '/x', hasClaim: true })).toEqual({
+      path: '/x',
+      hasClaim: true,
+      claimsPage: false,
+    });
+    expect(asProbe({ path: '/x' })).toBeNull();
+    expect(asProbe({ reisClaimProbe: 'yes', path: '/x' })).toBeNull();
+    expect(asProbe(null)).toBeNull();
   });
 });

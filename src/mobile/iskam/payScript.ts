@@ -1,67 +1,109 @@
 const GUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const NONCE = /^[a-z0-9]{1,32}$/i;
+
+function claimLiteral(claimId: string): string {
+  if (!GUID.test(claimId)) throw new Error('claim id is not a GUID');
+  return JSON.stringify(claimId);
+}
 
 /**
- * The script injected into WebISKAM on every page load of the pay web view.
- *
- * It only ever does what the student could do with a finger: on
- * /InformaceOKlientovi it presses the claim's € button, which opens WebISKAM's
- * own "Uhradit" dialog. Paying is the dialog's button, and only the student
- * presses that. The script never sends a form and never presses that button
- * (src/test/guards/iskamNeverPays.test.ts reads this file).
- *
- * If the dialog did not pick up this claim's id, it is closed again, so the
- * student is never shown a dialog for a different claim.
- *
- * When the session in the web view has lapsed, WebISKAM lands elsewhere. Then
- * the script goes to the sign-in (AuthShibb, which is silent while the MENDELU
- * sign-in lives) and afterwards back to the claims page: two steps at most,
- * counted in the page's sessionStorage under a key unique to this opening,
- * and none at all if that storage is unavailable. Once the claims page has been
- * reached it never navigates again, so whatever page follows a payment stays.
- *
- * After paying, WebISKAM reloads the claims page without the claim and says
- * nothing (seen on the Pixel, 2026-11-15). So when the claims page comes back
- * without the claim this view opened, the script closes the view, and reIS
- * reports what the balance did (iskamStore.payClaim).
+ * Injected on every page load of the pay web view. It only REPORTS where the
+ * page is, through the plugin's bridge, and keeps no state: what to do next is
+ * decided in the app (nextPayStep), which keeps the state for this opening.
  */
-export function buildPayScript(claimId: string, nonce: string): string {
-  if (!GUID.test(claimId)) throw new Error('claim id is not a GUID');
-  if (!NONCE.test(nonce)) throw new Error('bad nonce');
+export function buildProbeScript(claimId: string): string {
   return `(function () {
-  var ID = ${JSON.stringify(claimId)};
-  var KEY = ${JSON.stringify(`reisClaim_${nonce}`)};
+  var ID = ${claimLiteral(claimId)};
   if (location.hostname !== 'webiskam.mendelu.cz') return;
-  var st = null;
-  try { st = JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch (e) { st = null; }
-  function save() { try { sessionStorage.setItem(KEY, JSON.stringify(st)); return true; } catch (e) { return false; } }
-  if (/^\\/InformaceOKlientovi\\/?$/i.test(location.pathname)) {
-    if (st) { st.reached = 1; save(); }
-    var btn = document.querySelector('.payfrommainaccount[data-id="' + ID + '"]');
-    if (!btn) {
-      // Opened earlier in this view, and now the signed-in claims page has no
-      // such claim: it was paid. Hand the student back to reIS, which re-reads
-      // the balance and says so.
-      if (st && st.opened && document.getElementById('ZaplatitZKonta') &&
-          window.mobileApp && window.mobileApp.close) {
-        setTimeout(function () { window.mobileApp.close(); }, 600);
-      }
-      return;
-    }
-    if (st) { st.opened = 1; save(); }
-    btn.click();
-    setTimeout(function () {
-      var f = document.getElementById('IDPolozky');
-      if (!f || f.value !== ID) {
-        if (window.jQuery) window.jQuery('#ZaplatitZKonta').modal('hide');
-      }
-    }, 500);
-    return;
-  }
-  if (!st || st.reached) return;
-  if (/^\\/(Prihlaseni|Shibboleth\\.sso)/i.test(location.pathname)) return;
-  st.hops = (st.hops || 0) + 1;
-  if (st.hops > 2 || !save()) return;
-  location.href = st.hops === 1 ? '/Prihlaseni/AuthShibb' : '/InformaceOKlientovi';
+  if (!window.mobileApp || !window.mobileApp.postMessage) return;
+  window.mobileApp.postMessage({
+    reisClaimProbe: true,
+    path: location.pathname,
+    hasClaim: !!document.querySelector('.payfrommainaccount[data-id="' + ID + '"]'),
+    claimsPage: !!document.getElementById('ZaplatitZKonta')
+  });
 })();`;
+}
+
+/**
+ * Injected on every page load, beside the probe, needing no bridge: the part
+ * proven on a device (Pixel 9a, 2026-11-15). Without the claim on the page it
+ * does nothing, so it never needs to know where it is.
+ *
+ * Presses the claim's € button, which opens WebISKAM's own "Uhradit" dialog —
+ * what the student could do with a finger. Paying is the dialog's button, and
+ * only the student presses that: this sends no form and never presses it
+ * (src/test/guards/iskamNeverPays.test.ts reads this file). A dialog that did
+ * not pick up this claim's id is closed again.
+ */
+export function buildOpenDialogScript(claimId: string): string {
+  return `(function () {
+  var ID = ${claimLiteral(claimId)};
+  if (location.hostname !== 'webiskam.mendelu.cz') return;
+  var btn = document.querySelector('.payfrommainaccount[data-id="' + ID + '"]');
+  if (!btn) return;
+  btn.click();
+  setTimeout(function () {
+    var f = document.getElementById('IDPolozky');
+    if (!f || f.value !== ID) {
+      if (window.jQuery) window.jQuery('#ZaplatitZKonta').modal('hide');
+    }
+  }, 500);
+})();`;
+}
+
+export interface PayProbe {
+  path: string;
+  hasClaim: boolean;
+  claimsPage: boolean;
+}
+
+export interface PayState {
+  hops: number;
+  reached: boolean;
+  opened: boolean;
+  done: boolean;
+}
+
+export type PayAction = 'none' | 'auth' | 'claims' | 'close';
+
+export const INITIAL_PAY_STATE: PayState = { hops: 0, reached: false, opened: false, done: false };
+
+/** A bridge message is page-sent data: only this exact shape counts. */
+export function asProbe(detail: unknown): PayProbe | null {
+  if (!detail || typeof detail !== 'object') return null;
+  const d = detail as Record<string, unknown>;
+  if (d.reisClaimProbe !== true || typeof d.path !== 'string') return null;
+  return { path: d.path, hasClaim: d.hasClaim === true, claimsPage: d.claimsPage === true };
+}
+
+/**
+ * What the pay view does after a page reported itself.
+ *
+ * - On the claims page with the claim: its dialog is opened by the open
+ *   script on every load; here it is only remembered that this view had it.
+ * - On the signed-in claims page WITHOUT the claim this view opened: it was
+ *   paid. WebISKAM reloads silently after paying (seen 2026-11-15), so the view
+ *   closes and reIS re-reads the balance and says so (iskamStore).
+ * - Anywhere else before the claims page was reached: the session lapsed, so
+ *   the sign-in (AuthShibb, silent while the MENDELU sign-in lives), then the
+ *   claims page — two steps at most. After it was reached, never navigate.
+ */
+export function nextPayStep(
+  state: PayState,
+  probe: PayProbe
+): { state: PayState; action: PayAction } {
+  if (state.done) return { state, action: 'none' };
+  if (/^\/InformaceOKlientovi\/?$/i.test(probe.path)) {
+    const reached = { ...state, reached: true };
+    if (probe.hasClaim) return { state: { ...reached, opened: true }, action: 'none' };
+    if (state.opened && probe.claimsPage) {
+      return { state: { ...reached, done: true }, action: 'close' };
+    }
+    return { state: reached, action: 'none' };
+  }
+  if (state.reached) return { state, action: 'none' };
+  if (/^\/(Prihlaseni|Shibboleth\.sso)/i.test(probe.path)) return { state, action: 'none' };
+  const hops = state.hops + 1;
+  if (hops > 2) return { state: { ...state, hops }, action: 'none' };
+  return { state: { ...state, hops }, action: hops === 1 ? 'auth' : 'claims' };
 }

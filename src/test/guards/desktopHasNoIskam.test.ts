@@ -41,6 +41,8 @@ const MOBILE_ONLY = [
   'src/mobile/iskam/payScript.ts',
   'src/mobile/iskam/iskamPayClaim.ts',
   'src/mobile/iskam/iskamDevState.ts',
+  'src/mobile/iskam/iskamClaimFlow.ts',
+  'src/mobile/iskam/iskamTypes.ts',
   'src/components/mobile/sheets/IskamClaims.tsx',
   'src/components/mobile/sheets/formatKc.ts',
   'src/components/mobile/sheets/IskamBalanceRow.tsx',

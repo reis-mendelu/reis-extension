@@ -13,7 +13,8 @@
  *
  * [] when nothing is owed: the panel disappears and only the hidden pay dialog
  * stays (seen 2026-11-15, fixtures/pohledavky-empty.html). null when neither is
- * there: not the signed-in claims page, so "cannot tell".
+ * there: not the signed-in claims page, so "cannot tell". Also null when a
+ * claim row is there but cannot be read: leaving it out would look "paid".
  *
  * reIS never pays a claim. The id is only used to open WebISKAM's own
  * "Uhradit" dialog for it, where the student taps WebISKAM's button
@@ -72,10 +73,14 @@ export function parseClaims(html: string): Claim[] | null {
   const english = /^en\b/i.test(doc.documentElement.lang);
   const claims: Claim[] = [];
   for (const row of Array.from(table.querySelectorAll('tbody tr'))) {
-    const id = row.querySelector('.payfrommainaccount')?.getAttribute('data-id') ?? '';
+    const button = row.querySelector('.payfrommainaccount');
+    if (!button) continue; // the Celkem row
+    const id = button.getAttribute('data-id') ?? '';
     const due = isoDate(cellText(row, 0));
     const remaining = amountOf(cellText(row, 4), english);
-    if (!GUID.test(id) || !due || remaining === null || remaining <= 0) continue;
+    // A claim row that cannot be read makes the whole answer "cannot tell":
+    // a list without it would read as "paid" after the pay view closes.
+    if (!GUID.test(id) || !due || remaining === null || remaining <= 0) return null;
     claims.push({
       id,
       due,

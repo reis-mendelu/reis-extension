@@ -1,4 +1,4 @@
-import type { IskamState } from './iskamStore';
+import type { IskamState } from './iskamTypes';
 
 /**
  * `?iskam=balance|claim|claim-short|claim-paid|added|unseen|signed-out|checking|unavailable` on the dev webapp, and

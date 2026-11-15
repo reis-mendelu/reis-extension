@@ -13,7 +13,8 @@ vi.mock('../../../../mobile/iskam/iskamLogin', () => ({
 }));
 
 import { IskamBalanceRow } from '../IskamBalanceRow';
-import { useIskamStore, type IskamState } from '../../../../mobile/iskam/iskamStore';
+import { useIskamStore } from '../../../../mobile/iskam/iskamStore';
+import type { IskamState } from '../../../../mobile/iskam/iskamTypes';
 import { useAppStore } from '../../../../store/useAppStore';
 
 const setState = (p: Partial<IskamState>) => useIskamStore.setState(p);

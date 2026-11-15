@@ -3,52 +3,14 @@ import { isDemoMode } from '../../errors/demoMode';
 import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
 import { LoginCancelledError } from '../ensureSession';
-import type { Claim } from './claimsParser';
-import { fetchClaims } from './iskamClaims';
+import { beginClaimsRead, payClaimFlow } from './iskamClaimFlow';
 import { buildIskamHttpDeps } from './iskamHttp';
 import { buildIskamLoginDeps, signInToIskam } from './iskamLogin';
 import { runSilentChain, type ChainResult } from './iskamSession';
 import { devForcedState } from './iskamDevState';
-import { openClaimInIskam } from './iskamPayClaim';
 import { initTopUp, openGateway } from './iskamTopUp';
-import { parseHlavniKonto, type KontoBalance } from './kontaParser';
-import type { PayMethod } from './topUp';
-
-export type IskamStatus = 'hidden' | 'checking' | 'signed-out' | 'balance' | 'unavailable';
-export type TopUpPhase = 'idle' | 'starting' | 'paying' | 'failed';
-/**
- * What the last top-up came to, as far as the balance can tell: `added` when
- * it rose (by that much), `unseen` when it had not moved after the re-check —
- * which is also what closing GoPay without paying looks like.
- */
-export type TopUpResult = { kind: 'added'; amount: number } | { kind: 'unseen' };
-
-export interface IskamState {
-  status: IskamStatus;
-  balance: KontoBalance | null;
-  signingIn: boolean;
-  topUp: TopUpPhase;
-  lastTopUp: TopUpResult | null;
-  /** Open claims (pohledávky); null = not read or cannot tell. */
-  claims: Claim[] | null;
-  /** WebISKAM's pay page is open for a claim. */
-  payingClaim: boolean;
-  /**
-   * The claim WebISKAM's page was opened for is gone after the re-check: it
-   * was paid (WebISKAM itself says nothing). What it was, to say "Zaplaceno".
-   */
-  lastClaimPaid: { amount: number } | null;
-  check(): Promise<void>;
-  /** Opens WebISKAM's own pay dialog for the claim; the student pays there. */
-  payClaim(id: string): Promise<void>;
-  signIn(): Promise<void>;
-  startTopUp(amount: number, method: PayMethod): Promise<void>;
-  /** Dobít pressed again after a credited top-up: the old result goes. */
-  clearTopUpResult(): void;
-  reset(): void;
-  /** Sign-out: like reset, and also abandons a top-up in flight. */
-  signOut(): void;
-}
+import { parseHlavniKonto } from './kontaParser';
+import type { IskamState, TopUpResult } from './iskamTypes';
 
 /** One more look at the balance when it has not moved yet after the payment page closed. */
 export const RECHECK_MS = 3000;
@@ -118,14 +80,7 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     const mine = ++seq;
     set({ status: 'checking', balance: null, claims: null });
     const http = await buildIskamHttpDeps();
-    const readClaims = (persist: boolean) =>
-      fetchClaims(http, { persist }).catch((e: unknown) => {
-        logError('Iskam.fetchClaims', e);
-        return null;
-      });
-    // Started with the chain, not after it: the claim then shows with the
-    // balance instead of a second wait later (see fetchClaims).
-    const early = readClaims(false);
+    const claimsRead = beginClaimsRead(http);
     const result = await runSilentChain(http);
     if (mine !== seq) return;
     const next = fromChain(result);
@@ -133,41 +88,24 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       set({ ...next, claims: null });
       return;
     }
-    let claims = await early;
-    // The chain had to log in again, so the early read was turned away: once more.
-    if (claims === 'expired') claims = await readClaims(true);
+    const claims = await claimsRead.settle();
     if (mine !== seq) return;
     // Balance and claims land together, under one skeleton (Dominik,
     // 2026-11-15: the payment appearing a beat after the balance read as broken).
-    set({ ...next, claims: claims === 'expired' ? null : claims });
+    set({ ...next, claims });
   },
 
-  /**
-   * Zaplatit beside a claim. reIS only opens WebISKAM's page with its own
-   * dialog up; whether the student pays is theirs and WebISKAM's. Afterwards
-   * the balance and claims are read again, so a paid claim drops off the row.
-   */
   async payClaim(id) {
     if (get().payingClaim || !available()) return;
     const openSheet = sheet;
     const mine = account;
-    const claim = get().claims?.find((c) => c.id === id) ?? null;
-    set({ payingClaim: true, lastClaimPaid: null });
-    try {
-      await openClaimInIskam(id);
-    } catch (e) {
-      logError('Iskam.payClaim', e);
-    }
-    if (mine !== account) return;
-    set({ payingClaim: false });
-    if (openSheet !== sheet) return;
-    await get().check();
-    if (mine !== account || openSheet !== sheet) return;
-    // Paid only when WebISKAM's own page no longer lists it — never assumed.
-    const after = get().claims;
-    if (claim && after !== null && !after.some((c) => c.id === id)) {
-      set({ lastClaimPaid: { amount: claim.remaining } });
-    }
+    await payClaimFlow(id, {
+      claims: () => get().claims,
+      set,
+      check: () => get().check(),
+      sameAccount: () => mine === account,
+      sameSheet: () => openSheet === sheet,
+    });
   },
 
   async signIn() {

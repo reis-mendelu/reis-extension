@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildPayScript } from '../../mobile/iskam/payScript';
+import { buildOpenDialogScript, buildProbeScript } from '../../mobile/iskam/payScript';
 
 /**
  * reIS shows a student's open WebISKAM claims and opens WebISKAM's own
@@ -43,8 +43,8 @@ describe('reIS never pays a WebISKAM claim', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('the injected script sends nothing and presses only the € opener', () => {
-    const code = buildPayScript(ID, 'n1');
+  it('the injected scripts send nothing and press only the € opener', () => {
+    const code = buildOpenDialogScript(ID) + buildProbeScript(ID);
     expect(code).not.toMatch(
       /submit|requestSubmit|fetch\(|XMLHttpRequest|\$\.(ajax|post)|\.post\(/i
     );
