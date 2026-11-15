@@ -1,0 +1,128 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+
+// The SessionStart hook, run against throwaway repositories: a bare `origin`
+// with `main` (the last release) and `test` ahead of it, a main checkout, and a
+// session worktree cut from main — the layout every Claude session starts in.
+const HOOK = resolve(__dirname, '../../.claude/hooks/worktree-bootstrap.sh');
+
+const env = {
+  ...process.env,
+  GIT_AUTHOR_NAME: 'reIS test',
+  GIT_AUTHOR_EMAIL: 'test@example.com',
+  GIT_COMMITTER_NAME: 'reIS test',
+  GIT_COMMITTER_EMAIL: 'test@example.com',
+  GIT_CONFIG_GLOBAL: '/dev/null',
+  GIT_CONFIG_SYSTEM: '/dev/null',
+  // The hook moves the main checkout in the background; a test has to see it.
+  REIS_BOOTSTRAP_SYNC: '1',
+};
+const git = (cwd: string, ...args: string[]) =>
+  execFileSync('git', args, {
+    cwd,
+    env,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim();
+const hook = (cwd: string) => execFileSync('bash', [HOOK], { cwd, env, encoding: 'utf8' });
+const commit = (cwd: string, file: string) => {
+  writeFileSync(join(cwd, file), file);
+  git(cwd, 'add', file);
+  git(cwd, 'commit', '-q', '-m', file);
+  return git(cwd, 'rev-parse', 'HEAD');
+};
+
+let root: string;
+let seed: string;
+let main: string;
+let wt: string;
+let testTip: string;
+
+beforeEach(() => {
+  root = realpathSync(mkdtempSync(join(tmpdir(), 'reis-bootstrap-')));
+  seed = join(root, 'seed');
+  main = join(root, 'main');
+  wt = join(root, 'wt');
+  git(root, 'init', '-q', '-b', 'main', seed);
+  commit(seed, 'release');
+  git(seed, 'checkout', '-q', '-b', 'test');
+  testTip = commit(seed, 'merged-pr');
+  git(root, 'clone', '-q', '--bare', seed, join(root, 'origin.git'));
+  git(seed, 'remote', 'add', 'origin', join(root, 'origin.git'));
+  git(root, 'clone', '-q', '-b', 'main', join(root, 'origin.git'), main);
+  git(main, 'worktree', 'add', '-q', '-b', 'claude/session', wt, 'origin/main');
+});
+afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+describe('a session worktree cut from main', () => {
+  it('starts on origin/test when the branch has nothing of its own', () => {
+    const out = hook(wt);
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(testTip);
+    expect(git(wt, 'symbolic-ref', '--short', 'HEAD')).toBe('claude/session');
+    expect(out).toContain('origin/test');
+  });
+
+  it('is left alone once the branch has a commit', () => {
+    const mine = commit(wt, 'my-work');
+    hook(wt);
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(mine);
+  });
+
+  it('is left alone while the tree has uncommitted work', () => {
+    const before = git(wt, 'rev-parse', 'HEAD');
+    writeFileSync(join(wt, 'draft.txt'), 'draft');
+    hook(wt);
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(before);
+  });
+
+  it('is left alone when checked out detached, the way to read released code', () => {
+    git(wt, 'checkout', '-q', '--detach', 'origin/main');
+    const before = git(wt, 'rev-parse', 'HEAD');
+    hook(wt);
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(before);
+  });
+});
+
+// Skills, slash commands and hooks are read from the main checkout whatever
+// worktree a session works in; it sat 374 commits behind for 54 days.
+describe('the main checkout', () => {
+  const mergeAnotherPr = () => {
+    const tip = commit(seed, 'another-pr');
+    git(seed, 'push', '-q', 'origin', 'test');
+    return tip;
+  };
+
+  it('follows origin/test while parked (detached)', () => {
+    git(main, 'checkout', '-q', '--detach', 'origin/test');
+    const tip = mergeAnotherPr();
+    hook(wt);
+    expect(git(main, 'rev-parse', 'HEAD')).toBe(tip);
+  });
+
+  it('is never moved off a branch someone checked out, and the hook says it is behind', () => {
+    const before = git(main, 'rev-parse', 'HEAD');
+    const out = hook(wt);
+    expect(git(main, 'rev-parse', 'HEAD')).toBe(before);
+    expect(git(main, 'symbolic-ref', '--short', 'HEAD')).toBe('main');
+    expect(out).toMatch(/main checkout is on 'main'.*behind origin\/test/);
+  });
+
+  it('is never moved while it has uncommitted changes to tracked files', () => {
+    git(main, 'checkout', '-q', '--detach', 'origin/test');
+    const before = git(main, 'rev-parse', 'HEAD');
+    writeFileSync(join(main, 'release'), 'edited by hand');
+    mergeAnotherPr();
+    hook(wt);
+    expect(git(main, 'rev-parse', 'HEAD')).toBe(before);
+  });
+
+  it('follows origin/test when the session starts in the main checkout itself', () => {
+    git(main, 'checkout', '-q', '--detach', 'origin/test');
+    const tip = mergeAnotherPr();
+    hook(main);
+    expect(git(main, 'rev-parse', 'HEAD')).toBe(tip);
+  });
+});

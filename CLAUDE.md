@@ -138,47 +138,53 @@ When a task involves IS Mendelu data, a new scraper, or the CDN data shape: read
 
 ### What to run locally, and what CI owns
 
-CI runs four jobs on every PR — `lint`, `typecheck` + `nuia:gate`, the full
-`test:run`, and `build:web` + `check:app`. Running all of that locally as well
-is duplicated work, and for some of it the local answer is the *less* reliable
-one.
+**Before every push: `npm run check`.** One command, about a minute. It makes
+`node_modules` match the lockfile, then runs `typecheck`, the nuia ratchet,
+eslint and prettier on the files the branch changed, and the tests related to
+them plus every guard test. The **last line is the verdict** (`check: PASS …` /
+`check: FAIL …`) and the exit code agrees with it. It exists because 35 of the 82
+red CI runs in ten weeks were the nuia ratchet or typecheck: seconds to catch
+here, a seven-minute round in CI.
 
-**Run locally, every time:**
+While iterating, `npx vitest run <pattern>` on what you touched is the fast
+loop. It is not a substitute: a pattern run skips the guards and the ratchet.
 
-- the tests covering what you touched — `npx vitest run <pattern>`, not `test:run`
-- `npm run typecheck`
-
-That is the evidence your change works. It takes seconds.
-
-**Leave to CI:** repo-wide `lint` and `format:check`, the full `test:run`,
+**Leave to CI:** the full `test:run`, repo-wide `lint` and `format:check`,
 `build:web`, `check:app` and the e2e suites. They are slow here, and CI runs
-them in a clean checkout, which is the only place they mean anything —
-`format:check` reports differently after an Android build has touched the tree,
-and the nuia ratchet fails PRs that pass locally either way. A local green on
-those is not the signal; the PR's is.
+them in a clean checkout, which is the only place they mean anything. A local
+green on those is not the signal; the PR's is.
 
 **Exception:** when a change is *about* one of those gates (a lint rule, the
 formatter, a build script, `check:app` itself), run that gate locally — you are
 changing the thing it measures.
 
-This machine often has a dozen sibling worktrees running at once. At load 40+,
-vitest's worker handshake times out before a test file loads; `--no-file-parallelism
---maxWorkers=1` gets a run through when that happens.
+This machine often has a dozen sibling worktrees running at once, which is why
+`npm run check` caps vitest at three workers. At load 40+, vitest's worker
+handshake still times out before a test file loads; that is the machine, not
+your change.
 
-### Worktrees own their node_modules
+### Worktrees and the main checkout
 
-`.claude/hooks/worktree-bootstrap.sh` gives each worktree its own `node_modules`
-by APFS-cloning the main checkout's (copy-on-write: instant, and near-zero disk
-until the trees diverge). A cloned `node_modules` belongs to the worktree, so
-`npm ci` there touches nothing else.
+`.claude/hooks/worktree-bootstrap.sh` (SessionStart) does three things, and
+`scripts/__tests__/worktreeBootstrap.test.ts` pins each:
 
-Check `test -L node_modules` before installing. A symlink means the install is
-shared with the main checkout, either because clonefile was unavailable (the
-hook then prints `node_modules is SHARED`) or because the worktree predates
-cloning (the hook leaves a working symlink alone, silently). Do not install
-through a symlink: a shared install is rebuilt under every session at once, and
-two concurrent installs leave every worktree half-installed, with npm failing on
-`ENOTEMPTY`.
+- **The branch starts from `test`.** A session worktree is cut from `main`. A
+  branch with no commits of its own and a clean tree is moved to `origin/test`.
+  To read released code, check out detached: `git checkout --detach origin/main`.
+- **`node_modules` matches the lockfile.** `scripts/ensure-install.mjs` leaves a
+  matching install alone and otherwise copies a matching one from another
+  checkout (an APFS copy-on-write clone: ~20 s, near-zero disk). It never copies
+  a stale install. When nothing matches, the hook says so and `npm run check`
+  runs `npm ci`. The install belongs to the worktree, so `npm ci` there touches
+  nothing else. Do not judge an install by `test -L node_modules` or by the
+  directory existing: an old tree passes both. `node scripts/ensure-install.mjs`
+  is the check.
+- **The main checkout follows `test`.** Claude reads this repo's skills, slash
+  commands and hooks from the main checkout, whatever worktree a session is in.
+  While it is *parked* (detached HEAD, no edits to tracked files) the hook moves
+  it to `origin/test`. On a branch it is left alone and the hook reports how far
+  behind it is; park it with `git checkout --detach origin/test`. Do not work
+  in it.
 
 The dev snapshot and `.env` are still symlinks, deliberately: they are read and
 never rewritten, so a fresh scrape in the main checkout reaches every worktree.
