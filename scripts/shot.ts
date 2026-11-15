@@ -22,7 +22,7 @@
  */
 
 import { chromium, type Page } from '@playwright/test';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { analyzeProbe, assertShell, type Finding, type ProbeResult } from './lib/uiFindings';
 import { probeSource } from './lib/uiProbe';
@@ -71,6 +71,10 @@ interface Options {
    *  invoke a store action through the dev store handle after the settle, e.g.
    *  `--call 'focusRoomByCode:"Q301"'`. The same intent a tap would send. */
   calls: { action: string; arg?: unknown }[];
+  /** JS files run in the page before any app code (`--init-script`, repeatable):
+   *  stand in for the content script, e.g. answer the proxy's photo fetch,
+   *  which the dev webapp has nobody to answer. */
+  initScripts: string[];
   /** Fail unless this selector is on the page before measuring — the presence
    *  proof a clean run never gives on its own. */
   waitFor?: string;
@@ -112,6 +116,7 @@ function parseArgs(argv: string[]): Options {
   const clicks: string[] = [];
   const routes: Options['routes'] = [];
   const calls: Options['calls'] = [];
+  const initScripts: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a.startsWith('--')) {
@@ -123,6 +128,7 @@ function parseArgs(argv: string[]): Options {
       if (a === '--click') clicks.push(value);
       else if (a === '--route') routes.push(parseRoute(value));
       else if (a === '--call') calls.push(parseCall(value));
+      else if (a === '--init-script') initScripts.push(value);
       else flags.set(a.slice(2), value);
     } else positional.push(a);
   }
@@ -157,6 +163,7 @@ function parseArgs(argv: string[]): Options {
     seedStore: flags.get('seed-store'),
     routes,
     calls,
+    initScripts,
     waitFor: flags.get('wait-for') || undefined,
     hover: flags.get('hover') || undefined,
     noWebgl: flags.has('no-webgl'),
@@ -182,6 +189,18 @@ function parseCall(raw: string): { action: string; arg?: unknown } {
     console.error(`--call: the argument after ":" must be JSON (${(err as Error).message})`);
     process.exit(2);
   }
+}
+
+/** Fails the run unless every `--init-script` ran to its end on this load. */
+async function assertInitScriptsRan(page: Page, expected: number): Promise<void> {
+  if (expected === 0) return;
+  const { ran, errors } = await page.evaluate(() => {
+    const g = globalThis as { __reisInitScriptsRan?: number; __reisInitScriptErrors?: string[] };
+    return { ran: g.__reisInitScriptsRan ?? 0, errors: g.__reisInitScriptErrors ?? [] };
+  });
+  if (ran === expected) return;
+  const why = errors.length > 0 ? errors.join('; ') : 'a script did not parse (syntax error?)';
+  throw new Error(`--init-script: ${ran} of ${expected} ran to the end: ${why}`);
 }
 
 /** Write a value into the app's `meta` IndexedDB store, then reload so the app
@@ -537,6 +556,16 @@ async function run(): Promise<number> {
       await page.addInitScript({
         content: 'globalThis.__name = globalThis.__name || ((f) => f);',
       });
+      // Each script counts itself in when it finishes, so a short count after a
+      // load means one threw OR never parsed (a syntax error skips the whole
+      // wrapper, catch included), and the run fails instead of measuring a page
+      // the script never set up. Checked after the last reload: seedMeta reloads,
+      // and init scripts run again on every load.
+      for (const path of opts.initScripts) {
+        await page.addInitScript({
+          content: `try {\n${readFileSync(path, 'utf8')}\n;globalThis.__reisInitScriptsRan = (globalThis.__reisInitScriptsRan ?? 0) + 1;\n} catch (e) { (globalThis.__reisInitScriptErrors ??= []).push(${JSON.stringify(path)} + ': ' + e); }`,
+        });
+      }
       const consoleErrors: string[] = [];
       page.on('console', (m) => m.type() === 'error' && consoleErrors.push(m.text()));
 
@@ -555,6 +584,7 @@ async function run(): Promise<number> {
       // `--theme light` a no-op that looked like it had worked.
       if (opts.theme) seed['reis_theme'] = opts.theme === 'light' ? 'mendelu' : 'mendelu-dark';
       await seedMeta(page, seed);
+      await assertInitScriptsRan(page, opts.initScripts.length);
 
       // The modal appears 800ms after mount, which outlasts the default 600ms
       // settle — an `--onboarding` run used to need a hand-tuned `--wait` and
