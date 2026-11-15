@@ -189,3 +189,5 @@ dist-plugin/
 node_modules.incoming
 node_modules.lock
 node_modules.lock.dead-*
+node_modules.install.lock
+node_modules.install.lock.cand-*
