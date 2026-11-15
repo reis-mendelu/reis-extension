@@ -1,0 +1,3 @@
+• reIS funguje s novým vzhledem ISu: tvoje jméno, eduroam i pokyny k odevzdávárnám jsou zpět.
+• Pod zůstatkem ISIC vidíš nezaplacené platby za kolej a zaplatíš je jedním klepnutím.
+• Sportovní místa Sportery u kampusu najdeš na mapě.
