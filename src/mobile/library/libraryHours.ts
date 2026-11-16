@@ -88,3 +88,32 @@ export function toggleHour(
 /** A pick as one span, `to` exclusive. */
 export const rangeOf = (sel: readonly number[]): { from: number; to: number } | null =>
   sel.length === 0 ? null : { from: sel[0]!, to: sel[sel.length - 1]! + 1 };
+
+/** The calendar fields a library booking keeps (a `CalendarCustomEvent`). */
+interface OwnBooking {
+  date: string;
+  startTime: string;
+  endTime: string;
+  libraryBooking?: { featureId: number };
+}
+
+/**
+ * The library's answer with the student's own bookings laid over it as taken.
+ * Bookings shows a fresh booking as free for a while (seen 2026-11-16: two
+ * rooms booked for Friday 9:00 still offered at 9:00 minutes later), and only
+ * this device knows better, so its calendar wins over the library's lag.
+ */
+export function withOwnBookings(blocks: RoomBlocks, events: readonly OwnBooking[]): RoomBlocks {
+  const out: RoomBlocks = { ...blocks };
+  for (const e of events) {
+    const id = e.libraryBooking?.featureId;
+    const list = id === undefined ? undefined : out[id];
+    if (!list) continue;
+    const day = `${e.date.slice(0, 4)}-${e.date.slice(4, 6)}-${e.date.slice(6, 8)}`;
+    out[id!] = [
+      ...list,
+      { status: 'busy', start: `${day}T${e.startTime}`, end: `${day}T${e.endTime}` },
+    ];
+  }
+  return out;
+}

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { CalendarDays, Clock, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useAppStore } from '../../../store/useAppStore';
+import { useLibraryStore } from '../../../mobile/library/libraryStore';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 import { bookAndRecord } from '../../../mobile/library/bookingActions';
 import { logError } from '../../../utils/reportError';
@@ -85,6 +87,11 @@ export function LibraryConfirm({
       )
         logError('Library.book', new Error(r.kind === 'failed' ? `status ${r.status}` : r.kind));
       say(r);
+      // Booked: the pick is spent, and the card lists the booking at its top.
+      if (r.kind === 'ok' || r.kind === 'partial' || r.kind === 'unconfirmed') {
+        useLibraryStore.getState().setPicked([]);
+        useAppStore.getState().selectMapLibrary();
+      }
     } catch (err) {
       logError('Library.book', err);
       toast.error(t('mobile.library.failed'));

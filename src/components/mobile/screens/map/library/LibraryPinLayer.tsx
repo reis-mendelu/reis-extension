@@ -9,11 +9,10 @@ import { roomsOpenCount } from '../../../../../mobile/library/libraryModel';
 import { shownDay } from '../../../../../mobile/library/libraryDay';
 import { canBookLibrary } from '../../../../../mobile/library/transport';
 import { isDemoMode } from '../../../../../errors/demoMode';
-import { openLibrary } from './openLibrary';
+import { LIBRARY_COORD, openLibrary } from './openLibrary';
+import { withOwnBookings } from '../../../../../mobile/library/libraryHours';
 import { chipOffset } from './chipPlacement';
 
-/** The library, where building A stands on the campus overview. */
-const LIBRARY_COORD: [number, number] = [16.6152, 49.20996];
 /** The chip's hit box: 44 px tall for a finger, wide enough for its name and count. */
 const CHIP_W = 124;
 const CHIP_H = 44;
@@ -34,7 +33,9 @@ export function LibraryPinLayer() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const societyPins = useAppStore((s) => s.societyPins);
   const venuePins = useAppStore((s) => s.venuePins);
-  const blocks = useLibraryStore((s) => s.blocks);
+  const raw = useLibraryStore((s) => s.blocks);
+  const mine = useAppStore((s) => s.customEvents);
+  const blocks = useMemo(() => withOwnBookings(raw, mine), [raw, mine]);
   const status = useLibraryStore((s) => s.status);
   const load = useLibraryStore((s) => s.load);
   const bookable = canBookLibrary() && !isDemoMode();

@@ -7,3 +7,11 @@ export function libraryBlockId(lesson: BlockLesson): string | null {
   const e = useAppStore.getState().customEvents.find((c) => c.id === lesson.customEventId);
   return e?.libraryBooking ? e.id : null;
 }
+
+/** The library room behind a calendar block, when it is a library booking. */
+export function libraryRoomOfBlock(lesson: BlockLesson): number | null {
+  const id = libraryBlockId(lesson);
+  if (!id) return null;
+  const e = useAppStore.getState().customEvents.find((c) => c.id === id);
+  return e?.libraryBooking?.featureId ?? null;
+}

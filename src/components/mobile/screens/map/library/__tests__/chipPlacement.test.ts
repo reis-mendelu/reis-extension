@@ -7,10 +7,10 @@ const H = 44;
 
 describe('chipOffset', () => {
   it('sits on its coordinate when no other pin is near', () => {
-    expect(chipOffset(LIB, [[16.62, 49.21]], W, H)).toEqual({ x: 0, y: 0 });
+    expect(chipOffset(LIB, [[16.614393, 49.218171]], W, H)).toEqual({ x: 0, y: 0 });
   });
-  it('steps west of a pin just east of it (Vazbič on building A)', () => {
-    expect(chipOffset(LIB, [[16.6155, 49.20996]], W, H)).toEqual({ x: -(W / 2 + 11), y: 0 });
+  it('steps west of Vazbič, 60 m east of it on building A', () => {
+    expect(chipOffset(LIB, [[16.61602, 49.210034]], W, H)).toEqual({ x: -(W / 2 + 11), y: 0 });
   });
   it('steps below a pin just north of it (screen y grows down)', () => {
     expect(chipOffset(LIB, [[16.6152, 49.2102]], W, H)).toEqual({ x: 0, y: H / 2 + 4 });

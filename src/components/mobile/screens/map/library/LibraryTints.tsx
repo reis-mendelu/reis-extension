@@ -4,6 +4,7 @@ import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { libraryTints } from '../../../../../mobile/library/libraryModel';
 import { canBookLibrary } from '../../../../../mobile/library/transport';
 import { shownDay } from '../../../../../mobile/library/libraryDay';
+import { withOwnBookings } from '../../../../../mobile/library/libraryHours';
 import { LIBRARY_BUILDING_ID, LIBRARY_FLOOR_ID } from '../../../../../data/map/libraryRooms';
 
 /**
@@ -14,7 +15,8 @@ import { LIBRARY_BUILDING_ID, LIBRARY_FLOOR_ID } from '../../../../../data/map/l
  * canvas, which paints in place without moving the camera.
  */
 export function LibraryTints() {
-  const blocks = useLibraryStore((s) => s.blocks);
+  const raw = useLibraryStore((s) => s.blocks);
+  const mine = useAppStore((s) => s.customEvents);
   const day = useLibraryStore((s) => s.day);
   const picked = useLibraryStore((s) => s.picked);
   const building = useAppStore((s) => s.activeBuildingId);
@@ -24,8 +26,9 @@ export function LibraryTints() {
   const open = canBookLibrary() && building === LIBRARY_BUILDING_ID && floor === LIBRARY_FLOOR_ID;
   useEffect(() => {
     const now = new Date();
+    const blocks = withOwnBookings(raw, mine);
     set(open ? libraryTints(blocks, day ?? shownDay(now), now, language, picked) : {});
     return () => set({});
-  }, [open, blocks, day, picked, language, set]);
+  }, [open, raw, mine, day, picked, language, set]);
   return null;
 }

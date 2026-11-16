@@ -259,6 +259,8 @@ export function MapCanvas() {
         const sel = state.mapSelection;
         // Exiting a drilled-in remote site collapses it again (redraw) via
         // focusCampus; a plain selection just clears.
+        // The library's card is left by its own Back, never by a stray tap.
+        if (sel?.kind === 'library') return;
         if (sel?.kind === 'poi' && REMOTE_IDS.has(sel.poi.id)) select.focusCampus();
         else if (sel) select.clearMapSelection();
       };

@@ -39,6 +39,7 @@ const MOBILE_ONLY = [
   'src/components/mobile/screens/map/library/LibraryTints.tsx',
   'src/components/mobile/screens/map/library/LibraryCard.tsx',
   'src/components/mobile/screens/map/library/FreeRooms.tsx',
+  'src/components/mobile/screens/map/library/MyBookings.tsx',
   'src/components/mobile/screens/map/library/DayChips.tsx',
   'src/components/mobile/screens/map/library/HourGrid.tsx',
   'src/components/mobile/screens/map/library/chipPlacement.ts',
@@ -80,6 +81,8 @@ const ALLOWED_IMPORTERS = new Set<string>([
   // Tapping a booking's calendar block opens the cancel sheet (Den and Týden).
   'src/components/mobile/screens/calendar/useOpenLesson.ts',
   'src/components/mobile/screens/calendar/useOpenWeekLesson.ts',
+  // Its map pin opens the library card on the booked room.
+  'src/components/mobile/screens/calendar/useShowLessonOnMap.ts',
 ]);
 
 const root = process.cwd();

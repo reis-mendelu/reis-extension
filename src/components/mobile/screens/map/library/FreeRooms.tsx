@@ -5,6 +5,7 @@ import { useTranslation } from '../../../../../hooks/useTranslation';
 import { useWideViewport } from '../../../../../hooks/ui/useWideViewport';
 import { LIBRARY_ROOMS } from '../../../../../data/map/libraryRooms';
 import { LibraryConfirm } from '../../../sheets/LibraryConfirm';
+import { openLibrary } from './openLibrary';
 
 const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 
@@ -33,7 +34,7 @@ export function FreeRooms({
     if (wide && chosen !== null) confirmRef.current?.scrollIntoView?.({ block: 'nearest' });
   }, [wide, chosen]);
   const pick = (featureId: number) => {
-    useAppStore.getState().selectMapLibrary(featureId);
+    openLibrary(featureId);
     if (!wide) pushSheet({ kind: 'libraryBook', featureId, day, ...span });
   };
   return (

@@ -13,7 +13,7 @@ export const TINT_FULL = '#9ca3af';
 /** Not known yet: faint, dashed (roomTints.ts), never a colour that reads as free. */
 export const TINT_PENDING = '#cbd5e1';
 
-type Blocks = Record<number, Block[] | null>;
+type Blocks = Record<number, Block[] | null | undefined>;
 
 /**
  * Each room coloured for the day, or for the picked hours once there are some:

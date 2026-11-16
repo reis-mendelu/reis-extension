@@ -4,8 +4,12 @@ export interface Pt {
   y: number;
 }
 
-/** Another pin closer than this (metres) pushes the chip aside. */
-const NEAR_M = 60;
+/**
+ * Another pin closer than this (metres) pushes the chip aside. The chip is
+ * 124 px wide, about 100 m at the campus zoom (~1.6 m/px), so anything within
+ * that reach would sit on it. 60 m let Vazbič, 60.2 m away, cover it.
+ */
+const NEAR_M = 150;
 const M_PER_DEG_LAT = 111_320;
 
 /**

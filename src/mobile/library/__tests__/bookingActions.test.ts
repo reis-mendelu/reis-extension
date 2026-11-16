@@ -61,7 +61,7 @@ describe('bookAndRecord', () => {
     const events = useAppStore.getState().customEvents;
     expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
-      title: 'Studovna – Individuální 1',
+      title: 'Studovna v knihovně',
       libraryBooking: { selfServiceIds: ['S1'] },
     });
     expect(

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { holidayOf, lessonHours, shownDay, weekdaysFrom } from '../libraryDay';
-import { hourCells, rangeOf, roomsFreeFor, toggleHour } from '../libraryHours';
+import { hourCells, rangeOf, roomsFreeFor, toggleHour, withOwnBookings } from '../libraryHours';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 import type { Block } from '../availability';
 
@@ -118,5 +118,29 @@ describe('lessonHours', () => {
       { date: '20261117', startTime: '07:00', endTime: '08:50' },
     ];
     expect([...lessonHours(lessons, MON)]).toEqual([17, 18]);
+  });
+});
+
+describe('withOwnBookings', () => {
+  it('takes the student’s own booked hours away even while the library still offers them', () => {
+    const blocks = {
+      [ind1!.featureId]: [free('2026-11-20', 7, 19)],
+      [ind2!.featureId]: [free('2026-11-20', 7, 19)],
+    };
+    const mine = [
+      {
+        date: '20261120',
+        startTime: '09:00',
+        endTime: '10:00',
+        libraryBooking: { featureId: ind1!.featureId },
+      },
+      { date: '20261120', startTime: '09:00', endTime: '11:00' },
+    ];
+    const seen = withOwnBookings(blocks, mine);
+    expect(roomsFreeFor(seen, '2026-11-20', at(8), [9])).toEqual([ind2!.featureId]);
+    expect(roomsFreeFor(seen, '2026-11-20', at(8), [10])).toEqual([
+      ind1!.featureId,
+      ind2!.featureId,
+    ]);
   });
 });

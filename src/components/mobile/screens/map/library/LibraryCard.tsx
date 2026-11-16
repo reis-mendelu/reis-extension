@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
@@ -16,7 +16,9 @@ import {
   rangeOf,
   roomsFreeFor,
   toggleHour,
+  withOwnBookings,
 } from '../../../../../mobile/library/libraryHours';
+import { MyBookings } from './MyBookings';
 import { DayChips } from './DayChips';
 import { HourGrid } from './HourGrid';
 import { FreeRooms } from './FreeRooms';
@@ -31,12 +33,15 @@ import type { LibraryView } from './libraryOf';
  */
 export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolean }) {
   const { t, language } = useTranslation();
-  const blocks = useLibraryStore((s) => s.blocks);
+  const raw = useLibraryStore((s) => s.blocks);
   const status = useLibraryStore((s) => s.status);
   const storeDay = useLibraryStore((s) => s.day);
   const picked = useLibraryStore((s) => s.picked);
   const lessons = useAppStore((s) => s.schedule.data);
   const mine = useAppStore((s) => s.customEvents);
+  // The student's own bookings count as taken: the library shows a fresh one
+  // as free for minutes.
+  const blocks = useMemo(() => withOwnBookings(raw, mine), [raw, mine]);
   const now = new Date();
   const day = storeDay ?? shownDay(now);
   const first = isoDay(now);
@@ -61,6 +66,7 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   return (
     <div ref={top} data-testid="library-card" className={`space-y-3 ${flush ? 'px-5' : 'px-4'}`}>
       <p className="text-sm text-base-content/70">{t('mobile.library.place')}</p>
+      <MyBookings day={day} />
       <DayChips
         days={days}
         day={day}
@@ -77,9 +83,19 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
           {t('mobile.library.offline')}
         </p>
       ) : !known ? (
-        <p role="status" className="text-sm text-base-content/70">
-          {t('mobile.library.loading')}
-        </p>
+        // The library takes 10–20 s to answer. A line of text alone read as
+        // nothing happening; the grid's shape says what is coming.
+        <div className="space-y-2">
+          <p role="status" className="flex items-center gap-2 text-sm text-base-content/70">
+            <span className="loading loading-spinner loading-xs" aria-hidden="true" />
+            {t('mobile.library.loading')}
+          </p>
+          <div className="grid grid-cols-4 gap-1.5" aria-hidden="true">
+            {Array.from({ length: 12 }, (_, i) => (
+              <div key={i} className="skeleton h-11 rounded-xl" />
+            ))}
+          </div>
+        </div>
       ) : (
         <>
           <HourGrid

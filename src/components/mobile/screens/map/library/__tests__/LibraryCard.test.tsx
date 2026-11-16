@@ -141,12 +141,42 @@ describe('LibraryCard', () => {
   it('says it is loading, and calls nothing free, before the library answers', () => {
     useLibraryStore.setState({ blocks: {}, status: 'loading', fetchedAt: null });
     render(<LibraryCard view={{ featureId: null }} />);
-    expect(screen.getByRole('status')).toHaveTextContent('Načítám volné hodiny…');
+    expect(screen.getByRole('status')).toHaveTextContent('Načítám volné hodiny z knihovny…');
   });
 
   it('says so when the library cannot be reached', () => {
     useLibraryStore.setState({ status: 'offline', blocks: {} });
     render(<LibraryCard view={{ featureId: null }} />);
     expect(screen.getByRole('status')).toHaveTextContent('Zkontroluj připojení');
+  });
+
+  it('lists the student’s own bookings for the day on top, and never offers their hours again', () => {
+    useAppStore.setState({
+      customEvents: [
+        {
+          id: 'library:A1',
+          title: 'Studovna v knihovně',
+          date: '20261116',
+          startTime: '14:00',
+          endTime: '15:00',
+          room: 'Individuální 1',
+          libraryBooking: { featureId: ind1!.featureId, selfServiceIds: ['S1'] },
+        },
+      ],
+    } as never);
+    render(<LibraryCard view={{ featureId: null }} />);
+    expect(screen.getByText('Máš rezervováno')).toBeTruthy();
+    expect(screen.getByText('14:00–15:00')).toBeTruthy();
+    fireEvent.click(hour('14:00'));
+    const section = screen.getByText('Volné 14:00–15:00').closest('section')!;
+    const free = within(section)
+      .getAllByRole('listitem')
+      .map((li) => li.querySelector('span')?.textContent);
+    expect(free).toEqual(['Individuální 2', 'Týmová 1']);
+    fireEvent.click(screen.getByText('14:00–15:00'));
+    expect(useAppStore.getState().mobileSheets[0]).toEqual({
+      kind: 'libraryCancel',
+      eventId: 'library:A1',
+    });
   });
 });
