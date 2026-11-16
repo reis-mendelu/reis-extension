@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
-// A VŠE build: the guides are MENDELU's own, so none of their doors exist.
+// A VŠE build: the guides on reisapp.cz are MENDELU's own, so Nápověda is absent.
 vi.mock('../../../utils/school', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../../utils/school')>();
   const { SCHOOL_PROFILES } = await import('../../../utils/schoolProfiles');
@@ -15,18 +15,12 @@ vi.mock('../../../services/storage', () => ({
 }));
 vi.mock('../../../hooks/useUserParams', () => ({ useUserParams: () => ({ params: null }) }));
 
-const { GuideLink } = await import('../GuideLink');
 const { HelpRow } = await import('../../mobile/screens/profile/HelpRow');
-const { ProfilePopup } = await import('../../Sidebar/ProfilePopup');
+const { ProfilePopup } = await import('../ProfilePopup');
 const { useAppStore } = await import('../../../store/useAppStore');
 
-describe('guides outside MENDELU', () => {
+describe('Nápověda outside MENDELU', () => {
   beforeEach(() => useAppStore.setState({ language: 'cz' }));
-
-  it('renders no contextual link', () => {
-    render(<GuideLink guide="eduroam" section="troubleshoot" />);
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
-  });
 
   it('has no Nápověda row on the phone', () => {
     render(<HelpRow />);

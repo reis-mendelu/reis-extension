@@ -1,6 +1,6 @@
 import { LifeBuoy } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { guideUrl } from '../../../utils/guideUrl';
+import { guidesIndexUrl } from '../../../utils/guideUrl';
 
 /**
  * "Nápověda" in the profile popup's support block, above "Nahlásit chybu":
@@ -11,7 +11,7 @@ export function HelpLink() {
   const { t, language } = useTranslation();
   return (
     <a
-      href={guideUrl('index', language)}
+      href={guidesIndexUrl(language)}
       target="_blank"
       rel="noopener noreferrer"
       className="w-full flex items-center gap-3 px-1 py-1.5 hover:bg-base-200 rounded-lg transition-colors"

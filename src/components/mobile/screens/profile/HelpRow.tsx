@@ -3,7 +3,7 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { openExternal } from '../../../../mobile/openExternal';
 import { logError } from '../../../../utils/reportError';
 import { currentSchool } from '../../../../utils/school';
-import { guideUrl } from '../../../../utils/guideUrl';
+import { guidesIndexUrl } from '../../../../utils/guideUrl';
 import { NavRow } from '../../primitives/NavRow';
 
 /**
@@ -22,9 +22,7 @@ export function HelpRow() {
       icon={LifeBuoy}
       label={t('guides.help')}
       onClick={() =>
-        void openExternal(guideUrl('index', language)).catch((e) =>
-          logError('HelpRow.openGuides', e)
-        )
+        void openExternal(guidesIndexUrl(language)).catch((e) => logError('HelpRow.openGuides', e))
       }
     />
   );

@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { CloudOff } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -11,16 +10,7 @@ import { useTranslation } from '../hooks/useTranslation';
  * the sync, a drawer tab refetches its own subject — a whole `user` crawl is
  * about a hundred IS requests to retry one folder.
  */
-export function LoadFailed({
-  testId,
-  onRetry,
-  children,
-}: {
-  testId: string;
-  onRetry?: () => void;
-  /** A way round the failure under the retry, e.g. the Files tab's guide link. */
-  children?: ReactNode;
-}) {
+export function LoadFailed({ testId, onRetry }: { testId: string; onRetry?: () => void }) {
   const { t } = useTranslation();
 
   return (
@@ -43,7 +33,6 @@ export function LoadFailed({
           {t('mobile.loadFailed.retry')}
         </button>
       )}
-      {children}
     </div>
   );
 }

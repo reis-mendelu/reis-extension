@@ -20,8 +20,8 @@
  * - eduroam (MENDELU's RADIUS server), welcome (its eduroam set-up),
  *   studyDocuments, practiceTests: MENDELU only;
  * - storeRating ("Ohodnotit reIS"): the store listings are MENDELU's reIS;
- * - guides (Nápověda and the "Proč to nejde?" links): reisapp.cz's guides
- *   describe MENDELU's IS, eduroam and ISIC.
+ * - guides (Nápověda): reisapp.cz's guides describe MENDELU's IS, eduroam
+ *   and ISIC.
  */
 export const ALL_FEATURES = [
   'campusMap',

@@ -17,7 +17,7 @@ describe('ProfilePopup — Nápověda', () => {
   it('links the guide index in the support block, above Nahlásit chybu', () => {
     render(<ProfilePopup isOpen />);
     const help = screen.getByRole('link', { name: 'Nápověda' });
-    expect(help).toHaveAttribute('href', 'https://reisapp.cz/navody?z=app&utm_source=reis-app');
+    expect(help).toHaveAttribute('href', 'https://reisapp.cz/navody?z=app');
     expect(help).toHaveAttribute('target', '_blank');
     const report = screen.getByRole('button', { name: /Nahlásit chybu/ });
     expect(help.compareDocumentPosition(report) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -28,7 +28,7 @@ describe('ProfilePopup — Nápověda', () => {
     render(<ProfilePopup isOpen />);
     expect(screen.getByRole('link', { name: 'Help' })).toHaveAttribute(
       'href',
-      'https://reisapp.cz/en/guides?z=app&utm_source=reis-app'
+      'https://reisapp.cz/en/guides?z=app'
     );
   });
 });

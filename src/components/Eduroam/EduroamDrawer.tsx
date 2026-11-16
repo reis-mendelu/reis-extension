@@ -7,7 +7,6 @@ import { useEduroamSetup } from '../../hooks/data/useEduroamSetup';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
 import type { DesktopEduroamTarget } from './manual';
 import { DeviceAccordion } from './DeviceAccordion';
-import { GuideLink } from '../Guides/GuideLink';
 
 /** Side-drawer host for the eduroam setup flow. Self-connects to the store. */
 export function EduroamDrawer() {
@@ -88,8 +87,7 @@ export function EduroamDrawer() {
             <span>
               {networkFailure
                 ? t('eduroam.network.desktop')
-                : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}{' '}
-              <GuideLink guide="eduroam" section="troubleshoot" />
+                : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}
             </span>
           </div>
         )}

@@ -2,7 +2,6 @@ import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { formatOpensAtBare } from '../../../../utils/mobile/examOpening';
 import { parseRegistrationStart } from '../../../../utils/termUtils';
-import { GuideLink } from '../../../Guides/GuideLink';
 
 export interface TermRowStatusProps {
   term: ExamTerm;
@@ -39,23 +38,14 @@ export function TermRowStatus({
   // to say here" rather than "too late".
   const regEnd = term.registrationEnd ? parseRegistrationStart(term.registrationEnd) : null;
   const isClosed = !!regEnd && regEnd.getTime() < now.getTime();
-  const guide = (
-    <GuideLink
-      guide="exams"
-      section="troubleshoot"
-      className="whitespace-nowrap text-2sm text-base-content"
-    />
-  );
 
   return isRegHere ? (
     <span className="flex-shrink-0 text-sm font-bold text-[var(--tone-success)]">
       {t('mobile.exams.yourTerm')}
     </span>
   ) : isClosed ? (
-    // The exam guide under it: what a student can still do once it closed.
-    <span className="flex flex-shrink-0 flex-col items-end leading-tight">
-      <span className="text-sm font-semibold text-base-content/60">{t('mobile.exams.closed')}</span>
-      {guide}
+    <span className="flex-shrink-0 text-sm font-semibold text-base-content/60">
+      {t('mobile.exams.closed')}
     </span>
   ) : term.cannotRegister ? (
     // From "Kam se přihlásit nemohu?": its registration may open later on
@@ -75,9 +65,6 @@ export function TermRowStatus({
           {t('mobile.exams.whyNot')}
         </a>
       )}
-      {/* Under IS's own reason, when it gives one: that says what is
-          missing, the guide what to do about it. */}
-      {guide}
     </span>
   ) : isFull ? (
     <span className="flex-shrink-0 text-sm font-semibold text-base-content/60">

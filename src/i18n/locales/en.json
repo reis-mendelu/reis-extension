@@ -1715,8 +1715,6 @@
     "badge": "New"
   },
   "guides": {
-    "help": "Help",
-    "troubleshoot": "Why isn't it working?",
-    "official": "Another way"
+    "help": "Help"
   }
 }

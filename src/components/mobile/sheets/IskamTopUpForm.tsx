@@ -4,7 +4,6 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useIskamStore } from '../../../mobile/iskam/iskamStore';
 import { validateAmount, type PayMethod } from '../../../mobile/iskam/topUp';
 import { keepDraftOnEscape } from '../../../hooks/ui/keepDraftOnEscape';
-import { GuideLink } from '../../Guides/GuideLink';
 
 /**
  * One amount, two ways to pay. Google Pay only on Android: WebISKAM offers no
@@ -48,8 +47,7 @@ export function IskamTopUpForm() {
       )}
       {phase === 'failed' && (
         <p role="alert" className="text-2sm text-[var(--tone-error)]">
-          {t('iskam.failed')}{' '}
-          <GuideLink guide="isic" section="official" className="text-base-content" />
+          {t('iskam.failed')}
         </p>
       )}
       <div className="flex gap-2">

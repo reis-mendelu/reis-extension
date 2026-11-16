@@ -2,7 +2,6 @@ import { AlertTriangle, Clock, RefreshCw } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { formatDate } from '../../utils/date';
 import type { EduroamStatus } from '../../hooks/data/useEduroamSetup';
-import { GuideLink } from '../Guides/GuideLink';
 
 export interface EduroamExpiredNoticeProps {
   /** The certificate's notAfter. */
@@ -43,13 +42,6 @@ export function EduroamExpiredNotice({
           {t(kind === 'expired' ? 'eduroam.expired.text' : 'eduroam.expired.soon', {
             date: formatDate(at),
           })}
-          {/* Only once it has stopped working; `soon` is information. */}
-          {kind === 'expired' && (
-            <>
-              {' '}
-              <GuideLink guide="eduroam" section="troubleshoot" />
-            </>
-          )}
         </span>
       </div>
       <button type="button" onClick={onRenew} className="btn btn-sm btn-neutral gap-2 self-start">

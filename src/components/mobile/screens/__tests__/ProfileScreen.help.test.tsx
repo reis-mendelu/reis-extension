@@ -25,17 +25,13 @@ describe('Nápověda on Profil', () => {
     const report = screen.getByRole('button', { name: /Nahlásit chybu/ });
     expect(help.compareDocumentPosition(report) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(help);
-    expect(openExternal).toHaveBeenCalledWith(
-      'https://reisapp.cz/navody?z=app&utm_source=reis-app'
-    );
+    expect(openExternal).toHaveBeenCalledWith('https://reisapp.cz/navody?z=app');
   });
 
   it('opens the English index in English', () => {
     useAppStore.setState({ language: 'en' });
     render(<ProfileScreen />);
     fireEvent.click(screen.getByRole('button', { name: 'Help' }));
-    expect(openExternal).toHaveBeenCalledWith(
-      'https://reisapp.cz/en/guides?z=app&utm_source=reis-app'
-    );
+    expect(openExternal).toHaveBeenCalledWith('https://reisapp.cz/en/guides?z=app');
   });
 });
