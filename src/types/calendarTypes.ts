@@ -60,6 +60,13 @@ export interface CalendarCustomEvent {
   startTime: string; // HH:MM
   endTime: string; // HH:MM
   room?: string;
+  /**
+   * Set only on the block reIS adds for a library study-room booking (phone and
+   * iPad). `selfServiceIds` are the keys that cancel the real booking, one per
+   * booked hour, in order: they stay on this device, in this row, and are sent
+   * nowhere but the cancel call.
+   */
+  libraryBooking?: { featureId: number; selfServiceIds: string[] };
 }
 
 export interface FileObject {

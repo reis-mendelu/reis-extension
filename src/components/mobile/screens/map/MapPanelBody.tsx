@@ -4,6 +4,8 @@ import { SocietyPinCard } from '../../../CampusMap/SocietyPinCard';
 import { SportPlaceCard } from '../../../CampusMap/SportPlaceCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
 import { RoomDirections } from '../../../CampusMap/RoomDirections';
+import { LibraryCard } from './library/LibraryCard';
+import type { LibraryView } from './library/libraryOf';
 import type { MapEvent } from '../../../../types/events';
 import type { GardenPlace, SocietyPin, SportPlace } from '../../../../types/campusMap';
 
@@ -16,6 +18,8 @@ export interface MapPanelBodyProps {
   selectedSocietyPin?: SocietyPin | null;
   /** A Sportera place, tapped on the map. Optional, as above. */
   selectedSportPlace?: SportPlace | null;
+  /** The library's rooms, or one of them (`featureId`), on phone and iPad. */
+  selectedLibrary?: LibraryView | null;
   /** The rail frames its own content, so the card inside it renders flush. */
   flush?: boolean;
 }
@@ -41,6 +45,7 @@ export function MapPanelBody({
   selectedGardenPlace = null,
   selectedSocietyPin = null,
   selectedSportPlace = null,
+  selectedLibrary = null,
   flush = false,
 }: MapPanelBodyProps) {
   if (selectedEvent) {
@@ -49,6 +54,9 @@ export function MapPanelBody({
         <EventDetailCard event={selectedEvent} flush={flush} />
       </div>
     );
+  }
+  if (selectedLibrary) {
+    return <LibraryCard view={selectedLibrary} flush={flush} />;
   }
   if (selectedGardenPlace) {
     return (

@@ -7,6 +7,7 @@ const CARD_KINDS = new Set<MapSelection['kind']>([
   'gardenPlace',
   'societyPin',
   'sportPlace',
+  'library',
 ]);
 const ROOM_KINDS = new Set<MapSelection['kind']>(['room', 'roomRef']);
 

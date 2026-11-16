@@ -15,6 +15,8 @@ import { IskamSheet } from './IskamSheet';
 import { VenueSheet } from './VenueSheet';
 import { ImpersonationSheet } from './ImpersonationSheet';
 import { HideLessonSheet } from './HideLessonSheet';
+import { LibraryBookSheet } from './LibraryBookSheet';
+import { LibraryCancelSheet } from './LibraryCancelSheet';
 import { useEscapeClosesSheet } from './useEscapeClosesSheet';
 
 /**
@@ -69,6 +71,10 @@ export function SheetHost() {
             return <ImpersonationSheet key={index} onClose={popSheet} />;
           case 'hideLesson':
             return <HideLessonSheet key={index} lesson={sheet.lesson} onClose={popSheet} />;
+          case 'libraryBook':
+            return <LibraryBookSheet key={index} sheet={sheet} onClose={popSheet} />;
+          case 'libraryCancel':
+            return <LibraryCancelSheet key={index} eventId={sheet.eventId} onClose={popSheet} />;
           default:
             return null;
         }

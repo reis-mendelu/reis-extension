@@ -97,6 +97,16 @@ Jídelníček and on its map card. The request carries no reIS identifier, sign-
 or academic data; like any web request, it shows S-klub's server your IP address
 and app version.
 
+**Microsoft Bookings** (the library's booking system, in MENDELU's Microsoft
+tenant) receives, only in the mobile app (Android, iPhone, iPad) and only when you
+reserve or cancel a library study room, your name, MENDELU e-mail, student number
+and faculty code, which is what the library asks for, plus a short marker ("reIS")
+so the librarians can tell the booking came from the app. The request goes from
+your device straight to the library's booking page, never through reIS, and
+Microsoft e-mails you the confirmation or the cancellation. The app keeps the
+booking's cancellation key and a calendar entry on your device only. Looking at
+which rooms are free sends the room and the dates, nothing about you.
+
 We do **not** sell or trade your personal information, and transfer it to no one
 else.
 
@@ -125,11 +135,12 @@ and we will delete it; the daily-count rows hold nothing that identifies you.
 
 We may update this policy; changes appear here with a new date. Google Drive
 backup, Outlook calendar sync, the earlier WebISKAM integration (dorm, meals and
-the rest), library study-room booking, AI syllabus comparison and automatic error
-reporting have all been removed from reIS, along with everything they sent. In
-October 2026 WebISKAM came back for one thing only — the ISIC balance and its
-top-up, described above; since November 2026 that row also shows open dorm
-payments and opens WebISKAM's page to pay one.
+the rest), AI syllabus comparison and automatic error reporting have all been
+removed from reIS, along with everything they sent. In October 2026 WebISKAM came
+back for one thing only — the ISIC balance and its top-up, described above; since
+November 2026 that row also shows open dorm payments and opens WebISKAM's page to
+pay one. Library study-room booking, removed in September 2026, returned in the
+mobile app, described above.
 
 ## Contact
 
