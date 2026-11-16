@@ -393,7 +393,8 @@ describe('TermRow — a term the student cannot sign up for', () => {
         onRegister={vi.fn()}
       />
     );
-    const link = screen.getByRole('link', { name: /Proč/ });
+    // Exactly "Proč?": the guide's "Proč to nejde?" sits under it.
+    const link = screen.getByRole('link', { name: 'Proč?' });
     expect(link).toHaveAttribute('href', blocked.blockReasonUrl);
     expect(link).toHaveAttribute('target', '_blank');
   });
