@@ -37,6 +37,8 @@ export function LibraryConfirm({
 }) {
   const { t, language } = useTranslation();
   const [sending, setSendingState] = useState(false);
+  // Another booking or cancel from this device is still running.
+  const writing = useLibraryStore((s) => s.writing);
   const setSending = (v: boolean) => {
     setSendingState(v);
     onSending?.(v);
@@ -59,6 +61,7 @@ export function LibraryConfirm({
           time: r.events.map((e) => `${e.startTime}–${e.endTime}`).join(', '),
         })
       );
+    else if (r.kind === 'busy') toast.error(t('mobile.library.busy'));
     else if (r.kind === 'taken') toast.error(t('mobile.library.taken'));
     else if (r.kind === 'cap') toast.error(t('mobile.library.cap', { cap: r.cap }));
     else if (r.kind === 'offline') toast.error(t('mobile.library.checkFailed'));
@@ -127,7 +130,7 @@ export function LibraryConfirm({
         <button
           type="button"
           onClick={() => void confirm()}
-          disabled={sending}
+          disabled={sending || writing}
           className="btn btn-primary min-h-11 flex-1 rounded-xl text-base"
         >
           {sending ? t('mobile.library.sending') : t('mobile.library.confirm')}

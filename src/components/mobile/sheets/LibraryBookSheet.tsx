@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useAppStore } from '../../../store/useAppStore';
 import { LibraryConfirm, type LibraryPick } from './LibraryConfirm';
 
 /**
@@ -13,11 +14,17 @@ export function LibraryBookSheet({ sheet, onClose }: { sheet: LibraryPick; onClo
   const { t } = useTranslation();
   const [sending, setSending] = useState(false);
   const close = sending ? () => undefined : onClose;
+  // The booking's answer can arrive after Android Back closed this sheet; then
+  // the sheet on top is someone else's and stays.
+  const closeIfTop = () => {
+    const st = useAppStore.getState();
+    if (st.mobileSheets.at(-1) === sheet) st.popSheet();
+  };
   return (
     <Sheet size="content" onClose={close} elevated>
       <SheetHeader title={t('mobile.library.confirmTitle')} onClose={close} />
       <div className="px-4 pb-5">
-        <LibraryConfirm pick={sheet} onClose={onClose} onSending={setSending} />
+        <LibraryConfirm pick={sheet} onClose={closeIfTop} onSending={setSending} />
       </div>
     </Sheet>
   );

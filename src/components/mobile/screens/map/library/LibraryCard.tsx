@@ -1,14 +1,13 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
-import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
+import { cardPick, useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { DAILY_CAP } from '../../../../../mobile/library/slots';
 import { bookedOn } from '../../../../../mobile/library/bookingService';
 import {
   holidayOf,
   isoDay,
   lessonHours,
-  shownDay,
   weekdaysFrom,
 } from '../../../../../mobile/library/libraryDay';
 import {
@@ -36,7 +35,7 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   const raw = useLibraryStore((s) => s.blocks);
   const status = useLibraryStore((s) => s.status);
   const storeDay = useLibraryStore((s) => s.day);
-  const picked = useLibraryStore((s) => s.picked);
+  const storePicked = useLibraryStore((s) => s.picked);
   const lessons = useAppStore((s) => s.schedule.data);
   const mine = useAppStore((s) => s.customEvents);
   // The student's own bookings count as taken: the library shows a fresh one
@@ -44,9 +43,7 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   const blocks = useMemo(() => withOwnBookings(raw, mine), [raw, mine]);
   const now = new Date();
   const first = isoDay(now);
-  // A day picked earlier (or set by a booking's "Na mapě") that has since
-  // passed is dropped for the next open day.
-  const day = storeDay && storeDay >= first ? storeDay : shownDay(now);
+  const { day, picked } = cardPick({ day: storeDay, picked: storePicked }, now);
   // Five weekdays from today; a later day (a booking up to a week ahead) starts
   // the row itself, so the chosen day always has its chip.
   const fromToday = weekdaysFrom(first);
@@ -106,7 +103,10 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
           <HourGrid
             cells={cells}
             picked={sel}
-            onTap={(h) => useLibraryStore.getState().setPicked(toggleHour(sel, h, fits, left))}
+            onTap={(h) =>
+              // The day is pinned with the pick, so a pick never moves to another day.
+              useLibraryStore.setState({ day, picked: toggleHour(sel, h, fits, left) })
+            }
           />
           {left === 0 && (
             <p className="text-xs text-base-content/70">

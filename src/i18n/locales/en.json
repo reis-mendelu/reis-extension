@@ -1671,7 +1671,8 @@
       "noKey": "reIS cannot cancel it",
       "extend": "Extend until {time}",
       "extended": "Extended until {time}",
-      "otherTime": "Another time or room"
+      "otherTime": "Another time or room",
+      "busy": "Wait, the previous booking is still being processed."
     }
   },
   "session": {

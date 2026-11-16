@@ -42,6 +42,7 @@ yourself — see *Report attachments* below.
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
 | Week view used | when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day | the random install identifier and the fixed `calendar_week_view` label |
 | Screen opened | when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session (again only if a send fails); stored as one row per install per day | the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed |
+| Library study-room booking (mobile app only) | you book or cancel a study room | your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS |
 <!-- END generated:flows -->
 
 Which partner company you are shown, if any, is decided on your device from your

@@ -79,6 +79,8 @@ const ALLOWED_IMPORTERS = new Set<string>([
   'src/components/mobile/sheets/LibraryBookSheet.tsx',
   'src/components/mobile/sheets/LibraryCancelSheet.tsx',
   'src/components/mobile/sheets/LibraryBookingSheet.tsx',
+  // The map panel's view of a selection, behind the same gate as the pin.
+  'src/components/mobile/screens/map/library/libraryOf.ts',
   // The map's search opens the library card for "knihovna" or one of its rooms.
   'src/components/mobile/screens/MapScreen.tsx',
   // Tapping a booking's calendar block opens the cancel sheet (Den and Týden).

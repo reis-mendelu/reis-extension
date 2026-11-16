@@ -27,6 +27,16 @@ export interface BookAction {
  * the xlogin address as the fallback every MENDELU account has.
  */
 export async function bookAndRecord(a: BookAction): Promise<BookResult> {
+  const lib = useLibraryStore.getState();
+  if (!lib.startWrite()) return { kind: 'busy' };
+  try {
+    return await bookUnlocked(a);
+  } finally {
+    useLibraryStore.getState().endWrite();
+  }
+}
+
+async function bookUnlocked(a: BookAction): Promise<BookResult> {
   const me = await getUserParams();
   const email = me?.email || (me?.username ? `${me.username}@mendelu.cz` : '');
   if (!me || !email) return { kind: 'failed', status: 0 };
@@ -61,31 +71,67 @@ export async function bookAndRecord(a: BookAction): Promise<BookResult> {
 
 /**
  * Cancels the real booking behind a calendar block, then drops the block. Hours
- * that could not be cancelled stay in it, so it never claims less than exists.
+ * that could not be cancelled stay, each still tied to its own key: a key at
+ * index i holds the hour startTime + i, so a block keeps exactly the hours it
+ * can still cancel, split where a cancelled hour leaves a gap.
  */
 export async function cancelAndRemove(
   eventId: string,
   http: BookingsHttp = nativeBookingsHttp
 ): Promise<BlockCancel> {
-  const app = useAppStore.getState();
-  const block = app.customEvents.find((e) => e.id === eventId);
-  if (!block?.libraryBooking) return { kind: 'ok', left: [] };
-  const r = await cancelLibraryBlock(http, block);
-  if (r.left.length === block.libraryBooking.selfServiceIds.length) return r;
-  await app.removeCalendarCustomEvent(eventId);
-  if (r.left.length > 0)
-    await app.addCalendarCustomEvent({
-      ...block,
-      libraryBooking: { ...block.libraryBooking, selfServiceIds: r.left },
-    });
-  return r;
+  const lib = useLibraryStore.getState();
+  if (!lib.startWrite()) return { kind: 'busy', left: [] };
+  try {
+    const app = useAppStore.getState();
+    const block = app.customEvents.find((e) => e.id === eventId);
+    const lb = block?.libraryBooking;
+    if (!block || !lb) return { kind: 'ok', left: [] };
+    const r = await cancelLibraryBlock(http, block);
+    const left: string[] = r.left;
+    if (left.length === lb.selfServiceIds.length) return r;
+    const start = Number(block.startTime.slice(0, 2));
+    const day = `${block.date.slice(0, 4)}-${block.date.slice(4, 6)}-${block.date.slice(6, 8)}`;
+    const hours = lb.selfServiceIds.map((key, i) => ({ key, hour: start + i }));
+    const kept = hours.filter((h) => left.includes(h.key));
+    await app.removeCalendarCustomEvent(eventId);
+    for (const run of runsOf(kept)) {
+      const first = run[0]!.hour;
+      await app.addCalendarCustomEvent({
+        ...block,
+        id: first === start ? block.id : `${block.id}-${first}`,
+        startTime: `${String(first).padStart(2, '0')}:00`,
+        endTime: `${String(first + run.length).padStart(2, '0')}:00`,
+        libraryBooking: { ...lb, selfServiceIds: run.map((h) => h.key) },
+      });
+    }
+    useLibraryStore.getState().markFree(
+      lb.featureId,
+      day,
+      hours.filter((h) => !left.includes(h.key)).map((h) => h.hour)
+    );
+    return r;
+  } finally {
+    useLibraryStore.getState().endWrite();
+  }
+}
+
+/** Consecutive hours, grouped. */
+function runsOf<T extends { hour: number }>(items: T[]): T[][] {
+  const out: T[][] = [];
+  for (const it of items) {
+    const last = out[out.length - 1];
+    if (last && last[last.length - 1]!.hour + 1 === it.hour) last.push(it);
+    else out.push([it]);
+  }
+  return out;
 }
 
 /**
  * One more hour on the end of a booking, from its drawer. Booked like any
  * hour (re-checked fresh, the daily cap counted); when it goes through it is
  * folded into the same calendar block, so the block reads 17:00–19:00 rather
- * than two blocks side by side, and cancelling it cancels both hours.
+ * than two blocks side by side, and cancelling it cancels both hours. If the
+ * original block is gone by then, the new hour keeps its own block and key.
  */
 export async function extendBooking(
   eventId: string,
@@ -99,18 +145,25 @@ export async function extendBooking(
   if (!block || !lb || !room) return { kind: 'failed', status: 0 };
   const day = `${block.date.slice(0, 4)}-${block.date.slice(4, 6)}-${block.date.slice(6, 8)}`;
   const from = Number(block.endTime.slice(0, 2));
-  const r = await bookAndRecord({ room, day, from, to: from + 1, lang, http, now });
-  const added = r.kind === 'ok' && r.events.length === 1 ? r.events[0]! : null;
-  if (added && !lb.unconfirmed) {
+  if (!useLibraryStore.getState().startWrite()) return { kind: 'busy' };
+  try {
+    const r = await bookUnlocked({ room, day, from, to: from + 1, lang, http, now });
+    const added = r.kind === 'ok' && r.events.length === 1 ? r.events[0]! : null;
     const app = useAppStore.getState();
-    await app.removeCalendarCustomEvent(added.id);
-    await app.updateCalendarCustomEvent(eventId, {
-      endTime: added.endTime,
-      libraryBooking: {
-        ...lb,
-        selfServiceIds: [...lb.selfServiceIds, ...(added.libraryBooking?.selfServiceIds ?? [])],
-      },
-    });
+    const current = app.customEvents.find((e) => e.id === eventId);
+    const cur = current?.libraryBooking;
+    if (added && current && cur && !cur.unconfirmed && current.endTime === block.endTime) {
+      await app.updateCalendarCustomEvent(eventId, {
+        endTime: added.endTime,
+        libraryBooking: {
+          ...cur,
+          selfServiceIds: [...cur.selfServiceIds, ...(added.libraryBooking?.selfServiceIds ?? [])],
+        },
+      });
+      await app.removeCalendarCustomEvent(added.id);
+    }
+    return r;
+  } finally {
+    useLibraryStore.getState().endWrite();
   }
-  return r;
 }

@@ -1,7 +1,10 @@
 import { useAppStore } from '../../store/useAppStore';
 import { create } from 'zustand';
 import { fetchAllBlocks, type Block } from './availability';
-import { nativeBookingsHttp } from './transport';
+import { isoDay, shownDay } from './libraryDay';
+import { canBookLibrary, nativeBookingsHttp } from './transport';
+import { isDemoMode } from '../../errors/demoMode';
+import type { MapSelection } from '../../types/campusMap';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
 
@@ -24,6 +27,17 @@ export interface LibraryState {
   picked: number[];
   setDay(day: string): void;
   setPicked(hours: number[]): void;
+  /**
+   * A booking, extension or cancel is running. Held here, not in the form that
+   * started it: leaving the form (another room on the iPad, Android Back) must
+   * not let a second write start against the same, not yet updated, calendar.
+   */
+  writing: boolean;
+  /** Takes the write lock; false when another write holds it. */
+  startWrite(): boolean;
+  endWrite(): void;
+  /** After a cancel: those hours are ours no more, and the next open reads afresh. */
+  markFree(featureId: number, day: string, hours: number[]): void;
   /** After a booking of ours: the hour is gone without waiting for the next read. */
   markTaken(featureId: number, day: string, hour: number): void;
   reset(): void;
@@ -47,6 +61,29 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   fetchedAt: null,
   day: null,
   picked: [],
+  writing: false,
+  startWrite: () => {
+    if (get().writing) return false;
+    set({ writing: true });
+    return true;
+  },
+  endWrite: () => set({ writing: false }),
+  markFree(featureId, day, hours) {
+    const list = get().blocks[featureId];
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const gone = new Set(hours.map((h) => `${day}T${pad(h)}:00`));
+    set({
+      fetchedAt: null,
+      ...(list
+        ? {
+            blocks: {
+              ...get().blocks,
+              [featureId]: list.filter((b) => !(b.status === 'busy' && gone.has(b.start))),
+            },
+          }
+        : {}),
+    });
+  },
   setDay: (day) => set({ day, picked: [] }),
   setPicked: (picked) => set({ picked }),
 
@@ -94,10 +131,32 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 }));
 
-// The card also opens from a tap on a library room of the floor plan, in shared
-// map code that cannot reach into the phone tree; the read follows the map's
-// selection here instead of in a component effect (CLAUDE.md).
+// The card also opens from a tap on a library room of the floor plan, a search
+// result or a deep link, in shared map code that cannot reach into the phone
+// tree; the read follows the map's selection here instead of in a component
+// effect (CLAUDE.md), behind the same gate as every other way in.
+const libraryRoomIn = (sel: MapSelection | null): boolean => {
+  if (sel?.kind === 'library') return true;
+  const id =
+    sel?.kind === 'room' ? sel.room.id : sel?.kind === 'roomRef' ? sel.entry.placeId : null;
+  return LIBRARY_ROOMS.some((r) => r.featureId === id);
+};
 useAppStore.subscribe((s, prev) => {
-  if (s.mapSelection?.kind === 'library' && prev.mapSelection?.kind !== 'library')
-    void useLibraryStore.getState().load();
+  if (s.mapSelection === prev.mapSelection || !libraryRoomIn(s.mapSelection)) return;
+  if (canBookLibrary() && !isDemoMode()) void useLibraryStore.getState().load();
 });
+
+/**
+ * The day and picked hours the card and the map's colours both use. A stored
+ * day that has passed (the app left open overnight, or a booking's day) gives
+ * way to the next open day, and its pick goes with it, so the card and the
+ * map never disagree about which day is shown.
+ */
+export function cardPick(
+  s: Pick<LibraryState, 'day' | 'picked'>,
+  now: Date
+): { day: string; picked: number[] } {
+  if (!s.day) return { day: shownDay(now), picked: s.picked };
+  if (s.day >= isoDay(now)) return { day: s.day, picked: s.picked };
+  return { day: shownDay(now), picked: [] };
+}

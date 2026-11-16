@@ -31,7 +31,9 @@ describe('LibraryBookSheet', () => {
     let done!: (v: unknown) => void;
     bookAndRecord.mockReturnValue(new Promise((r) => (done = r)));
     const onClose = vi.fn();
-    render(<LibraryBookSheet sheet={sheet} onClose={onClose} />);
+    const own = { kind: 'libraryBook' as const, ...sheet };
+    useAppStore.setState({ mobileSheets: [own] } as never);
+    render(<LibraryBookSheet sheet={own} onClose={onClose} />);
     expect(screen.getByText('15:00–17:00')).toBeInTheDocument();
     expect(screen.getByText('Budova A, −1. patro')).toBeInTheDocument();
     const btn = screen.getByRole('button', { name: 'Rezervovat' });
@@ -42,8 +44,9 @@ describe('LibraryBookSheet', () => {
     // Swiping the sheet away mid-booking does nothing.
     fireEvent.click(screen.getByRole('button', { name: /zavřít|close/i }));
     expect(onClose).not.toHaveBeenCalled();
-    done({ kind: 'ok', event: {} });
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    done({ kind: 'ok', events: [] });
+    // Closed by the answer, as the sheet on top.
+    await waitFor(() => expect(useAppStore.getState().mobileSheets).toEqual([]));
     expect(toast.success).toHaveBeenCalled();
   });
 

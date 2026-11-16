@@ -30,6 +30,7 @@ import {
   type RoomPoly,
 } from './roomTints';
 import { dimsOtherRooms } from './dimsOtherRooms';
+import { useTintedRooms } from './useTintedRooms';
 import { drawRoomRouteChip, chipShown, clampRoomChip } from './roomRouteChip';
 import { translate } from '../../i18n/translate';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled';
@@ -490,9 +491,13 @@ export function MapCanvas() {
       SELECTED_STYLE,
       dimsOtherRooms(sel, select.mapRoomTints)
     );
-    // The library's card frames all six rooms (or the one picked), not the building.
+    // The library's card frames the room picked from it, or all six, not the building.
     const tinted =
-      sel?.kind === 'library' ? tintedBoundsOf(roomPolysRef.current, select.mapRoomTints) : null;
+      sel?.kind === 'library'
+        ? // A room chosen from the card (the floor opens at that moment) is the
+          // frame; otherwise all six.
+          (targetBounds ?? tintedBoundsOf(roomPolysRef.current, select.mapRoomTints))
+        : null;
     const rail = railPaddingPx(
       map.getSize().x,
       isPhone,
@@ -527,20 +532,7 @@ export function MapCanvas() {
     // re-run this whole effect sixty times a second, and it resets the camera.
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget, isPhone]);
 
-  // The library's tints arrive after the floor is drawn as often as before it
-  // (its free hours take 10–16 s), so they are applied in place, camera untouched.
-  const roomTints = useAppStore((s) => s.mapRoomTints);
-  useEffect(() => {
-    const sel = useAppStore.getState().mapSelection;
-    applyRoomTints(
-      roomPolysRef.current,
-      roomTints,
-      selectedRoomId(sel),
-      SELECTED_STYLE,
-      dimsOtherRooms(sel, roomTints)
-    );
-    declutterTintLabels(roomPolysRef.current, roomTints, selectedRoomId(sel));
-  }, [roomTints, mapSelection]);
+  useTintedRooms({ polys: roomPolysRef, mapRef, railRef, isPhone, mapSelection });
 
   // A building with no outline of its own (D05 → building D) still has to
   // show which one it is; the camera move alone left the map looking unchanged.
@@ -571,30 +563,6 @@ export function MapCanvas() {
         poly.bringToFront();
         selected = poly;
       } else poly.setStyle(base);
-    }
-    // The library's card: a room picked from its list closes in on that room,
-    // Back to the list frames all six again, above the sheet or left of the rail.
-    const lens = mapRef.current;
-    if (mapSelection?.kind === 'library' && lens) {
-      const box =
-        selected?.getBounds() ??
-        tintedBoundsOf(roomPolysRef.current, useAppStore.getState().mapRoomTints);
-      if (box) {
-        const rail = railPaddingPx(
-          lens.getSize().x,
-          isPhone,
-          railRef.current.width,
-          railRef.current.open
-        );
-        const view = groupFocusView<L.LatLngBoundsExpression>(box, rail);
-        lens.fitBounds(view.bounds, {
-          maxZoom: view.maxZoom,
-          paddingTopLeft: view.paddingTopLeft,
-          paddingBottomRight: view.paddingBottomRight,
-          animate: false,
-        });
-        if (isPhone) fitAboveSheet(lens, box, view.maxZoom);
-      }
     }
     // The offer belongs where the question was asked, and ONLY when the
     // question came from the timetable. `routeSuggestion` is set by the pin

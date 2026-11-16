@@ -6,6 +6,12 @@ vi.mock('../../../../../../hooks/ui/useWideViewport', () => ({
   useWideViewport: () => wide.value,
 }));
 
+// The app's gate: on in the phone and iPad apps, which is what these tests are.
+vi.mock('../../../../../../mobile/library/transport', () => ({
+  canBookLibrary: () => true,
+  nativeBookingsHttp: vi.fn(),
+}));
+
 import { LibraryCard } from '../LibraryCard';
 import { libraryOf } from '../libraryOf';
 import { useAppStore } from '../../../../../../store/useAppStore';
@@ -59,6 +65,12 @@ describe('libraryOf', () => {
     const tapped = { kind: 'room', room: { id: ind2!.featureId } as RoomProperties } as const;
     expect(libraryOf(tapped)).toEqual({ featureId: ind2!.featureId });
     expect(libraryOf({ kind: 'room', room: { id: 1 } as RoomProperties })).toBeNull();
+  });
+  it('opens no card in a demo build', async () => {
+    const demo = await import('../../../../../../errors/demoMode');
+    const spy = vi.spyOn(demo, 'isDemoMode').mockReturnValue(true);
+    expect(libraryOf({ kind: 'library' })).toBeNull();
+    spy.mockRestore();
   });
 });
 

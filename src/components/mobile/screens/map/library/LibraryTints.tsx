@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { useAppStore } from '../../../../../store/useAppStore';
-import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
+import { cardPick, useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { libraryTints } from '../../../../../mobile/library/libraryModel';
 import { canBookLibrary } from '../../../../../mobile/library/transport';
-import { shownDay } from '../../../../../mobile/library/libraryDay';
+import { isDemoMode } from '../../../../../errors/demoMode';
 import { withOwnBookings } from '../../../../../mobile/library/libraryHours';
 import { LIBRARY_BUILDING_ID, LIBRARY_FLOOR_ID } from '../../../../../data/map/libraryRooms';
 
@@ -23,11 +23,16 @@ export function LibraryTints() {
   const floor = useAppStore((s) => s.activeFloorId);
   const language = useAppStore((s) => s.language);
   const set = useAppStore((s) => s.setMapRoomTints);
-  const open = canBookLibrary() && building === LIBRARY_BUILDING_ID && floor === LIBRARY_FLOOR_ID;
+  const open =
+    canBookLibrary() &&
+    !isDemoMode() &&
+    building === LIBRARY_BUILDING_ID &&
+    floor === LIBRARY_FLOOR_ID;
   useEffect(() => {
     const now = new Date();
     const blocks = withOwnBookings(raw, mine);
-    set(open ? libraryTints(blocks, day ?? shownDay(now), now, language, picked) : {});
+    const pick = cardPick({ day, picked }, now);
+    set(open ? libraryTints(blocks, pick.day, now, language, pick.picked) : {});
     return () => set({});
   }, [open, raw, mine, day, picked, language, set]);
   return null;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useLibraryStore, STALE_MS } from '../libraryStore';
+import { cardPick, useLibraryStore, STALE_MS } from '../libraryStore';
 import type { BookingsHttp } from '../bookingsBase';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 
@@ -62,5 +62,24 @@ describe('libraryStore.load', () => {
     useLibraryStore.getState().markTaken(id, '2026-11-10', 15);
     const blocks = useLibraryStore.getState().blocks[id]!;
     expect(blocks.some((b) => b.status === 'busy' && b.start === '2026-11-10T15:00')).toBe(true);
+  });
+});
+
+describe('cardPick', () => {
+  const now = new Date(2026, 10, 18, 9, 0);
+  it('keeps the stored day and its pick while the day is today or later', () => {
+    expect(cardPick({ day: '2026-11-19', picked: [9] }, now)).toEqual({
+      day: '2026-11-19',
+      picked: [9],
+    });
+  });
+  it('drops a past day for the next open day, and its pick with it', () => {
+    expect(cardPick({ day: '2026-11-16', picked: [9] }, now)).toEqual({
+      day: '2026-11-18',
+      picked: [],
+    });
+  });
+  it('uses the shown day before one was picked, keeping a pick', () => {
+    expect(cardPick({ day: null, picked: [10] }, now)).toEqual({ day: '2026-11-18', picked: [10] });
   });
 });

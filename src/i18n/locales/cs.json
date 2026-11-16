@@ -1671,7 +1671,8 @@
       "noKey": "reIS ji zrušit neumí",
       "extend": "Prodloužit do {time}",
       "extended": "Prodlouženo do {time}",
-      "otherTime": "Jiný čas nebo studovna"
+      "otherTime": "Jiný čas nebo studovna",
+      "busy": "Počkej, předchozí rezervace se ještě vyřizuje."
     }
   },
   "session": {

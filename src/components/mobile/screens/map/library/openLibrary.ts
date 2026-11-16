@@ -1,8 +1,7 @@
 import { useAppStore } from '../../../../../store/useAppStore';
 import { LIBRARY_BUILDING_ID, LIBRARY_FLOOR_ID } from '../../../../../data/map/libraryRooms';
-import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
+import { cardPick, useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { libraryTints } from '../../../../../mobile/library/libraryModel';
-import { shownDay } from '../../../../../mobile/library/libraryDay';
 import { withOwnBookings } from '../../../../../mobile/library/libraryHours';
 import { getMapInstance } from '../../../../CampusMap/mapInstance';
 import { panPinClearOfSheet } from '../../../../CampusMap/sheetClearance';
@@ -43,13 +42,14 @@ export function openLibrary(featureId?: number): void {
   }
   const lib = useLibraryStore.getState();
   const now = new Date();
+  const pick = cardPick(lib, now);
   app.setMapRoomTints(
     libraryTints(
       withOwnBookings(lib.blocks, app.customEvents),
-      lib.day ?? shownDay(now),
+      pick.day,
       now,
       app.language,
-      lib.picked
+      pick.picked
     )
   );
   if (app.activeBuildingId !== LIBRARY_BUILDING_ID) app.setMapBuilding(LIBRARY_BUILDING_ID);

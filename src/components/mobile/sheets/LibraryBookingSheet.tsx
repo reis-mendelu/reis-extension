@@ -33,6 +33,8 @@ export function LibraryBookingSheet({
   const pushSheet = useAppStore((s) => s.pushSheet);
   const blocks = useLibraryStore((s) => s.blocks);
   const [busy, setBusy] = useState(false);
+  // Any booking write from this device (this extension, or one started elsewhere).
+  const writing = useLibraryStore((s) => s.writing);
   const lb = block?.libraryBooking;
   // Also a booking saved before storage kept its room (recognised by id and name).
   const roomId = block ? libraryRoomOf(block) : null;
@@ -67,6 +69,7 @@ export function LibraryBookingSheet({
         toast.success(
           t('mobile.library.extended', { time: `${String(next).padStart(2, '0')}:00` })
         );
+      else if (r.kind === 'busy') toast.error(t('mobile.library.busy'));
       else if (r.kind === 'taken') toast.error(t('mobile.library.taken'));
       else if (r.kind === 'cap') toast.error(t('mobile.library.cap', { cap: r.cap }));
       else if (r.kind === 'unconfirmed') toast.warning(t('mobile.library.unconfirmed'));
@@ -129,7 +132,7 @@ export function LibraryBookingSheet({
         {next !== null && (
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || writing}
             onClick={() => void extend()}
             className="btn btn-primary min-h-12 rounded-xl"
           >
@@ -147,6 +150,7 @@ export function LibraryBookingSheet({
         </button>
         <button
           type="button"
+          disabled={busy || writing}
           onClick={() => pushSheet({ kind: 'libraryCancel', eventId })}
           className="btn btn-ghost mt-4 min-h-12 rounded-xl text-error ring-1 ring-error/40"
         >

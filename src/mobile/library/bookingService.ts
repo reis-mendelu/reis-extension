@@ -32,6 +32,8 @@ export type BookResult =
    */
   | { kind: 'unconfirmed'; events: CalendarCustomEvent[] }
   | { kind: 'cap'; cap: number; left: number }
+  /** Another booking or cancel is still running on this device: nothing was sent. */
+  | { kind: 'busy' }
   /** Gone between the list and the tap, or Bookings says someone has it. */
   | { kind: 'taken' }
   /** The re-check could not be made: nothing was booked. */
@@ -155,6 +157,7 @@ function blocksOf(i: BookInput, results: HourOutcome[]): CalendarCustomEvent[] {
 
 export type BlockCancel =
   | { kind: 'ok'; left: [] }
+  | { kind: 'busy'; left: [] }
   | { kind: 'unknown'; left: string[] }
   | { kind: 'failed'; status: number; left: string[] };
 
