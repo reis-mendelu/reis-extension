@@ -44,7 +44,10 @@ describe('school profiles in the build', () => {
       'partners',
       'reports',
       'storeRating',
+      'guides',
     ],
+    // The phone's Nápověda row gates itself.
+    'components/mobile/screens/profile/HelpRow.tsx': ['guides'],
     'components/SubjectFileDrawer/Header/CourseMeta.tsx': ['campusMap'],
     'components/SubjectFileDrawer/Header/HeaderTabs.tsx': ['successRates'],
     'components/Feedback/ReportMissingLink.tsx': ['reports'],

@@ -1713,5 +1713,8 @@
   "newBox": {
     "kind": "Nová odevzdávárna",
     "badge": "Nová"
+  },
+  "guides": {
+    "help": "Nápověda"
   }
 }
