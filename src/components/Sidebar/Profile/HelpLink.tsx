@@ -1,4 +1,4 @@
-import { LifeBuoy } from 'lucide-react';
+import { ExternalLink, LifeBuoy } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { guidesIndexUrl } from '../../../utils/guideUrl';
 
@@ -18,6 +18,7 @@ export function HelpLink() {
     >
       <LifeBuoy size={16} className="text-base-content/50" />
       <span className="text-xs font-medium opacity-70">{t('guides.help')}</span>
+      <ExternalLink size={12} className="ml-auto text-base-content/40" aria-hidden="true" />
     </a>
   );
 }

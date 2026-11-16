@@ -23,6 +23,12 @@ describe('ProfilePopup — Nápověda', () => {
     expect(help.compareDocumentPosition(report) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('shows the external-link icon, since it opens reisapp.cz in a new tab', () => {
+    render(<ProfilePopup isOpen />);
+    const help = screen.getByRole('link', { name: 'Nápověda' });
+    expect(help.querySelector('svg.lucide-external-link')).not.toBeNull();
+  });
+
   it('links the English index in English', () => {
     useAppStore.setState({ language: 'en' });
     render(<ProfilePopup isOpen />);

@@ -21,6 +21,7 @@ export function HelpRow() {
     <NavRow
       icon={LifeBuoy}
       label={t('guides.help')}
+      external
       onClick={() =>
         void openExternal(guidesIndexUrl(language)).catch((e) => logError('HelpRow.openGuides', e))
       }

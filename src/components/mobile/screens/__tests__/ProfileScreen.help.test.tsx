@@ -28,6 +28,15 @@ describe('Nápověda on Profil', () => {
     expect(openExternal).toHaveBeenCalledWith('https://reisapp.cz/navody?z=app');
   });
 
+  // It leaves the app for reisapp.cz, so it wears the external-link mark, not the chevron that means "opens a page here".
+  it('shows the external-link icon instead of the chevron', () => {
+    useAppStore.setState({ language: 'cz' });
+    render(<ProfileScreen />);
+    const help = screen.getByRole('button', { name: 'Nápověda' });
+    expect(help.querySelector('svg.lucide-external-link')).not.toBeNull();
+    expect(help.querySelector('svg.lucide-chevron-right')).toBeNull();
+  });
+
   it('opens the English index in English', () => {
     useAppStore.setState({ language: 'en' });
     render(<ProfileScreen />);
