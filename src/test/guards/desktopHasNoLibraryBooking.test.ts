@@ -46,6 +46,7 @@ const MOBILE_ONLY = [
   'src/components/mobile/sheets/LibraryConfirm.tsx',
   'src/components/mobile/sheets/LibraryBookSheet.tsx',
   'src/components/mobile/sheets/LibraryCancelSheet.tsx',
+  'src/components/mobile/sheets/LibraryBookingSheet.tsx',
 ];
 
 /**
@@ -75,6 +76,7 @@ const ALLOWED_IMPORTERS = new Set<string>([
   'src/components/mobile/sheets/LibraryConfirm.tsx',
   'src/components/mobile/sheets/LibraryBookSheet.tsx',
   'src/components/mobile/sheets/LibraryCancelSheet.tsx',
+  'src/components/mobile/sheets/LibraryBookingSheet.tsx',
   // The map's search opens the library card for "knihovna" or one of its rooms.
   'src/components/mobile/screens/MapScreen.tsx',
   // Tapping a booking's calendar block opens the cancel sheet (Den and Týden).

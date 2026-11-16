@@ -42,6 +42,7 @@ export const PHONE_SHEET_CAPABILITY = {
   hideLesson: 'hideLesson',
   libraryBook: 'libraryBooking',
   libraryCancel: 'libraryBooking',
+  libraryBooking: 'libraryBooking',
   confirm: {
     unrendered:
       "Exam register/unregister confirm: ConfirmSheet mounts inside ExamsScreen from useExamActions' pendingAction, so this union member is unused (components/mobile/sheets/ConfirmSheet.tsx).",

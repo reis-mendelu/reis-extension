@@ -1663,7 +1663,15 @@
       "holiday": "{name}: the library is closed.",
       "unconfirmed": "The library did not answer in time, but the booking most likely exists. It is in your calendar; the confirmation comes by e-mail.",
       "cancelUnconfirmed": "reIS cannot cancel this booking: it has no key for it from the library. Cancel it through the library; here you can remove it from your calendar.",
-      "removeFromCalendar": "Remove from calendar"
+      "removeFromCalendar": "Remove from calendar",
+      "onMap": "On the map",
+      "kindTeam": "team study room",
+      "kindIndividual": "individual study room",
+      "confirmed": "Confirmed",
+      "noKey": "reIS cannot cancel it",
+      "extend": "Extend until {time}",
+      "extended": "Extended until {time}",
+      "otherTime": "Another time or room"
     }
   },
   "session": {

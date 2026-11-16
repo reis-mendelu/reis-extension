@@ -1663,7 +1663,15 @@
       "holiday": "{name}: knihovna má zavřeno.",
       "unconfirmed": "Knihovna neodpověděla včas, rezervace ale nejspíš vznikla. Je v kalendáři, potvrzení přijde e-mailem.",
       "cancelUnconfirmed": "Tuhle rezervaci reIS zrušit neumí, nemá k ní klíč od knihovny. Zrušit ji jde přes knihovnu; z kalendáře ji tady odebereš.",
-      "removeFromCalendar": "Odebrat z kalendáře"
+      "removeFromCalendar": "Odebrat z kalendáře",
+      "onMap": "Na mapě",
+      "kindTeam": "týmová studovna",
+      "kindIndividual": "individuální studovna",
+      "confirmed": "Potvrzeno",
+      "noKey": "reIS ji zrušit neumí",
+      "extend": "Prodloužit do {time}",
+      "extended": "Prodlouženo do {time}",
+      "otherTime": "Jiný čas nebo studovna"
     }
   },
   "session": {

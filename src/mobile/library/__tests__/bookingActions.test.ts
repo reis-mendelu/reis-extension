@@ -10,7 +10,7 @@ vi.mock('../../../utils/userParams', () => ({
   })),
 }));
 
-import { bookAndRecord, cancelAndRemove } from '../bookingActions';
+import { bookAndRecord, cancelAndRemove, extendBooking } from '../bookingActions';
 import { useLibraryStore } from '../libraryStore';
 import { useAppStore } from '../../../store/useAppStore';
 import type { BookingsHttp } from '../bookingsBase';
@@ -121,5 +121,36 @@ describe('cancelAndRemove', () => {
     const r = await cancelAndRemove('library:A1', h);
     expect(r).toEqual({ kind: 'failed', status: 500, left: ['S2'] });
     expect(useAppStore.getState().customEvents[0]?.libraryBooking?.selfServiceIds).toEqual(['S2']);
+  });
+});
+
+describe('extendBooking', () => {
+  it('books the next hour and folds it into the same block', async () => {
+    useAppStore.setState({
+      customEvents: [
+        {
+          id: 'library:A1',
+          title: 't',
+          date: '20261110',
+          startTime: '15:00',
+          endTime: '16:00',
+          libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1'] },
+        },
+      ],
+    });
+    const h = http({
+      status: 200,
+      data: { appointment: { id: 'A2', selfServiceAppointmentId: 'S2' } },
+    });
+    const r = await extendBooking('library:A1', 'cz', h, now);
+    expect(r.kind).toBe('ok');
+    const events = useAppStore.getState().customEvents;
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      id: 'library:A1',
+      startTime: '15:00',
+      endTime: '17:00',
+      libraryBooking: { selfServiceIds: ['S1', 'S2'] },
+    });
   });
 });

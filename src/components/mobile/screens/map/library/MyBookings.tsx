@@ -29,7 +29,7 @@ export function MyBookings({ day }: { day: string }) {
             <li key={e.id}>
               <button
                 type="button"
-                onClick={() => pushSheet({ kind: 'libraryCancel', eventId: e.id })}
+                onClick={() => pushSheet({ kind: 'libraryBooking', eventId: e.id })}
                 className="flex min-h-11 w-full items-center gap-2.5 rounded-xl bg-success/10 px-3 text-left ring-1 ring-success/40"
               >
                 <CircleCheck size={16} className="flex-shrink-0 text-success" aria-hidden="true" />

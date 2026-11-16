@@ -175,7 +175,7 @@ describe('LibraryCard', () => {
     expect(free).toEqual(['Individuální 2', 'Týmová 1']);
     fireEvent.click(screen.getByText('14:00–15:00'));
     expect(useAppStore.getState().mobileSheets[0]).toEqual({
-      kind: 'libraryCancel',
+      kind: 'libraryBooking',
       eventId: 'library:A1',
     });
   });

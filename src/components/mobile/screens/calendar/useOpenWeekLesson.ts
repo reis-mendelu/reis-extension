@@ -24,7 +24,7 @@ export function useOpenWeekLesson(): (lesson: BlockLesson) => void {
   return (lesson) => {
     const booking = libraryBlockId(lesson);
     if (booking) {
-      pushSheet({ kind: 'libraryCancel', eventId: booking });
+      pushSheet({ kind: 'libraryBooking', eventId: booking });
       return;
     }
     if (lesson.isCustom) {

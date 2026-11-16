@@ -14,10 +14,10 @@ import { libraryBlockId } from '../../../../mobile/library/libraryBlock';
 export function useOpenLesson(): (lesson: BlockLesson) => void {
   const pushSheet = useAppStore((s) => s.pushSheet);
   return (lesson) => {
-    // A library booking's block offers cancelling the booking, and only that.
+    // A library booking's block opens its own drawer (the subject drawer's shape).
     const booking = libraryBlockId(lesson);
     if (booking) {
-      pushSheet({ kind: 'libraryCancel', eventId: booking });
+      pushSheet({ kind: 'libraryBooking', eventId: booking });
       return;
     }
     if (lesson.isCustom) return;

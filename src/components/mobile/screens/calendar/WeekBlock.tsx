@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react';
+import { Library, MapPin } from 'lucide-react';
 import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useAppStore } from '../../../../store/useAppStore';
@@ -45,16 +45,21 @@ export function WeekBlock({ block, wide, gridPx, onOpen }: WeekBlockProps) {
   const nicknames = useAppStore((s) => s.courseNicknames);
   const name = lessonDisplayName(nicknames, lesson, localizedCourseName(lesson, language));
   // The campus in brackets dropped, the trim routeSuggestionFor makes too.
-  const room = lessonPlace(lesson, language)
+  const place = lessonPlace(lesson, language)
     .label.replace(/\s*\([^)]*\)\s*$/, '')
     .trim();
+  // A library booking: the room's name with no "Knihovna" line, so a one-hour
+  // block in a shared column still says which room; a book before the name
+  // where the column is wide enough to spare it.
+  const library = !!lesson.customEventId?.startsWith('library:');
+  const room = library ? '' : place;
   const styles = eventStyles(lesson);
   const box = blockBox(block.lane, block.lanes);
   const hold = useHoldToHide(lesson);
   const blockPx = (block.height / 100) * gridPx;
   // A phone block shows as many whole lines of the name as fit above the room;
   // the iPad's wider block wraps less and keeps two.
-  const lines = wide ? 2 : nameLines(blockPx, NAME_LINE_PX, RESERVED_PX);
+  const lines = wide ? 2 : nameLines(blockPx, NAME_LINE_PX, library ? 0 : RESERVED_PX);
   const time = `${lesson.startTime} – ${lesson.endTime}`;
   // The day, so the same lesson on two days does not announce the same: the
   // column it sits in has no name of its own (PR #618 review). "St 7. 10."
@@ -71,7 +76,7 @@ export function WeekBlock({ block, wide, gridPx, onOpen }: WeekBlockProps) {
   return (
     <button
       type="button"
-      aria-label={[name, day, time, room].filter(Boolean).join(', ')}
+      aria-label={[name, day, time, place].filter(Boolean).join(', ')}
       onClick={() => onOpen(lesson)}
       // A hold opens the hide menu (#43); see useHoldToHide.
       {...hold}
@@ -88,6 +93,9 @@ export function WeekBlock({ block, wide, gridPx, onOpen }: WeekBlockProps) {
         style={{ WebkitLineClamp: lines }}
         className="line-clamp-2 hyphens-auto break-words text-[11px] font-bold leading-3 text-content-primary max-[359px]:text-[10px] md:text-[13px] md:leading-4"
       >
+        {library && wide && (
+          <Library size={11} aria-hidden="true" className="mr-0.5 inline-block align-[-1px]" />
+        )}
         {name}
       </span>
       {room && (

@@ -546,7 +546,9 @@ export type MobileSheet =
   // Library study rooms (phone): confirm a stretch of hours (`to` exclusive), or
   // cancel a booking from its calendar block. The iPad confirms in its side panel.
   | { kind: 'libraryBook'; featureId: number; day: string; from: number; to: number }
-  | { kind: 'libraryCancel'; eventId: string };
+  | { kind: 'libraryCancel'; eventId: string }
+  // A library booking's own drawer (from its calendar block or "Máš rezervováno").
+  | { kind: 'libraryBooking'; eventId: string };
 
 export type MobileCalendarView = 'day' | 'week';
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { holidayOf, lessonHours, shownDay, weekdaysFrom } from '../libraryDay';
-import { hourCells, rangeOf, roomsFreeFor, toggleHour, withOwnBookings } from '../libraryHours';
+import {
+  canExtend,
+  hourCells,
+  rangeOf,
+  roomsFreeFor,
+  toggleHour,
+  withOwnBookings,
+} from '../libraryHours';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 import type { Block } from '../availability';
 
@@ -142,5 +149,28 @@ describe('withOwnBookings', () => {
       ind1!.featureId,
       ind2!.featureId,
     ]);
+  });
+});
+
+describe('canExtend', () => {
+  const block = {
+    date: '20261120',
+    startTime: '09:00',
+    endTime: '10:00',
+    libraryBooking: { featureId: ind1!.featureId },
+  };
+  it('offers the next hour of the same room while it is free and under the cap', () => {
+    const blocks = { [ind1!.featureId]: [free('2026-11-20', 7, 19)] };
+    expect(canExtend(blocks, [block], block, at(8))).toBe(11);
+  });
+  it('offers nothing when that hour is taken, the day is capped, or nothing is known', () => {
+    expect(
+      canExtend({ [ind1!.featureId]: [free('2026-11-20', 9, 10)] }, [block], block, at(8))
+    ).toBeNull();
+    const four = { ...block, startTime: '13:00', endTime: '16:00' };
+    expect(
+      canExtend({ [ind1!.featureId]: [free('2026-11-20', 7, 19)] }, [block, four], block, at(8))
+    ).toBeNull();
+    expect(canExtend({}, [block], block, at(8))).toBeNull();
   });
 });

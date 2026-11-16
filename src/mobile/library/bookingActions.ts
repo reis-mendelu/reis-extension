@@ -5,7 +5,7 @@ import { bookHours, cancelLibraryBlock, type BlockCancel, type BookResult } from
 import { useLibraryStore } from './libraryStore';
 import { nativeBookingsHttp } from './transport';
 import type { BookingsHttp } from './bookingsBase';
-import type { LibraryRoom } from '../../data/map/libraryRooms';
+import { LIBRARY_ROOMS, type LibraryRoom } from '../../data/map/libraryRooms';
 
 export interface BookAction {
   room: LibraryRoom;
@@ -78,5 +78,39 @@ export async function cancelAndRemove(
       ...block,
       libraryBooking: { ...block.libraryBooking, selfServiceIds: r.left },
     });
+  return r;
+}
+
+/**
+ * One more hour on the end of a booking, from its drawer. Booked like any
+ * hour (re-checked fresh, the daily cap counted); when it goes through it is
+ * folded into the same calendar block, so the block reads 17:00–19:00 rather
+ * than two blocks side by side, and cancelling it cancels both hours.
+ */
+export async function extendBooking(
+  eventId: string,
+  lang: 'cz' | 'en',
+  http?: BookingsHttp,
+  now?: Date
+): Promise<BookResult> {
+  const block = useAppStore.getState().customEvents.find((e) => e.id === eventId);
+  const lb = block?.libraryBooking;
+  const room = LIBRARY_ROOMS.find((r) => r.featureId === lb?.featureId);
+  if (!block || !lb || !room) return { kind: 'failed', status: 0 };
+  const day = `${block.date.slice(0, 4)}-${block.date.slice(4, 6)}-${block.date.slice(6, 8)}`;
+  const from = Number(block.endTime.slice(0, 2));
+  const r = await bookAndRecord({ room, day, from, to: from + 1, lang, http, now });
+  const added = r.kind === 'ok' && r.events.length === 1 ? r.events[0]! : null;
+  if (added && !lb.unconfirmed) {
+    const app = useAppStore.getState();
+    await app.removeCalendarCustomEvent(added.id);
+    await app.updateCalendarCustomEvent(eventId, {
+      endTime: added.endTime,
+      libraryBooking: {
+        ...lb,
+        selfServiceIds: [...lb.selfServiceIds, ...(added.libraryBooking?.selfServiceIds ?? [])],
+      },
+    });
+  }
   return r;
 }

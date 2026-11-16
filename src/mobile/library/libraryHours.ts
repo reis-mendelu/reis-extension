@@ -1,6 +1,6 @@
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
 import type { Block } from './availability';
-import { freeHours } from './slots';
+import { DAILY_CAP, freeHours } from './slots';
 import { HOURS, hourGone } from './libraryDay';
 
 /** Per map room id; `undefined` = not read yet, `null` = could not ask. */
@@ -116,4 +116,27 @@ export function withOwnBookings(blocks: RoomBlocks, events: readonly OwnBooking[
     ];
   }
   return out;
+}
+
+/**
+ * The new end hour if a booking can take one more hour: the next hour of that
+ * room is free (the student's own bookings counted), inside opening hours and
+ * under the daily cap. `null` otherwise, and while the library has not answered.
+ */
+export function canExtend(
+  blocks: RoomBlocks,
+  events: readonly (OwnBooking & { libraryBooking?: { featureId: number } })[],
+  block: OwnBooking,
+  now: Date
+): number | null {
+  const id = block.libraryBooking?.featureId;
+  if (id === undefined) return null;
+  const day = `${block.date.slice(0, 4)}-${block.date.slice(4, 6)}-${block.date.slice(6, 8)}`;
+  const end = Number(block.endTime.slice(0, 2));
+  const seen = withOwnBookings(blocks, events)[id];
+  if (!seen || !freeHours(seen, day, now).includes(end)) return null;
+  const booked = events
+    .filter((e) => e.libraryBooking && e.date === block.date)
+    .reduce((n, e) => n + Number(e.endTime.slice(0, 2)) - Number(e.startTime.slice(0, 2)), 0);
+  return booked < DAILY_CAP ? end + 1 : null;
 }
