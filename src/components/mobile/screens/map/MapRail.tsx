@@ -16,6 +16,7 @@ import { MapPanelBody } from './MapPanelBody';
 import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
+import { libraryOf } from './library/libraryOf';
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -63,8 +64,14 @@ export function MapRail() {
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
   // A Sportera place likewise.
   const selectedSportPlace = selection?.kind === 'sportPlace' ? selection.place : null;
+  // The library's room list, or one of its rooms (also when tapped on the plan).
+  const selectedLibrary = libraryOf(selection);
   const selectedCard =
-    selectedEvent || selectedGardenPlace || selectedSocietyPin || selectedSportPlace;
+    selectedEvent ||
+    selectedGardenPlace ||
+    selectedSocietyPin ||
+    selectedSportPlace ||
+    selectedLibrary;
   const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
@@ -80,11 +87,14 @@ export function MapRail() {
   // corner was what they saw instead (Dominik, 11 November 2026). The open
   // button stays, one tap away.
   const showsRoom = selection?.kind === 'room' || selection?.kind === 'roomRef';
+  // A boolean, not the card: the library's view is a new object on every
+  // render, and as a dependency it reopened a rail the student had just closed.
+  const hasCard = !!selectedCard;
   useEffect(() => {
-    if (selectedCard || showsRoomNote) setOpen(true);
+    if (hasCard || showsRoomNote) setOpen(true);
     else if (showsRoom) setOpen(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
-  }, [selectedCard, selection, setOpen]);
+  }, [hasCard, selection, setOpen]);
 
   if (!open) return <MapRailOpenButton onOpen={() => setOpen(true)} />;
 
@@ -160,12 +170,16 @@ export function MapRail() {
         {selectedCard ? (
           <button
             type="button"
-            onClick={clearMapSelection}
+            onClick={
+              selectedLibrary?.featureId != null
+                ? () => useAppStore.getState().selectMapLibrary()
+                : clearMapSelection
+            }
             className="-ml-1.5 flex min-w-0 flex-1 items-center gap-1 rounded-lg px-1.5 py-1 text-left hover:bg-base-200"
           >
             <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />
             <span className="truncate font-display text-lg font-bold tracking-tight">
-              {t('mobile.map.tabEvents')}
+              {selectedLibrary ? t('mobile.library.title') : t('mobile.map.tabEvents')}
             </span>
           </button>
         ) : (
@@ -205,6 +219,7 @@ export function MapRail() {
           selectedGardenPlace={selectedGardenPlace}
           selectedSocietyPin={selectedSocietyPin}
           selectedSportPlace={selectedSportPlace}
+          selectedLibrary={selectedLibrary}
           flush
         />
       </div>

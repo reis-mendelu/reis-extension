@@ -61,6 +61,14 @@ export const CAPABILITIES = {
     },
     mobile: 'present',
   },
+  /** Phone + iPad: the library card on the map, its confirm sheet and the cancel from a calendar block. */
+  libraryBooking: {
+    desktop: {
+      omitted:
+        "The extension cannot make the call: the library's Microsoft Bookings refuses foreign web origins (CORS), so booking runs only through native HTTP. Decided 2026-10-30 (src/test/guards/desktopHasNoLibraryBooking.test.ts).",
+    },
+    mobile: 'present',
+  },
   erasmus: {
     desktop: 'present',
     mobile: {

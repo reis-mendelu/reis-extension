@@ -1,4 +1,6 @@
 import type { BlockLesson, CalendarCustomEvent } from '../types/calendarTypes';
+import { LIBRARY_ROOMS } from '../data/map/libraryRooms';
+import { translate } from '../i18n/translate';
 
 /**
  * A calendar custom event, expressed as the lesson shape every calendar view
@@ -19,6 +21,34 @@ import type { BlockLesson, CalendarCustomEvent } from '../types/calendarTypes';
  * every consumer's existing "is there one?" check reads them as absent.
  */
 export function customEventToLesson(event: CalendarCustomEvent): BlockLesson {
+  const library = libraryNames(event);
+  if (library) return { ...plainLesson(event), ...library };
+  return plainLesson(event);
+}
+
+/**
+ * A library booking names the ROOM, and the place line says the library: in a
+ * narrow Týden column "Studovna v knihovně" took the space and the room read
+ * "Týmová…" (Dominik on the Pixel, 2026-11-16). Worked out here, from the room,
+ * so blocks already saved show it too, in either language.
+ */
+function libraryNames(event: CalendarCustomEvent): Partial<BlockLesson> | null {
+  const r = LIBRARY_ROOMS.find((x) => x.featureId === event.libraryBooking?.featureId);
+  if (!r) return null;
+  const cz = translate('cz', 'mobile.library.title');
+  const en = translate('en', 'mobile.library.title');
+  return {
+    courseName: r.nameCs,
+    courseNameCs: r.nameCs,
+    courseNameEn: r.nameEn,
+    room: cz,
+    roomCs: cz,
+    roomEn: en,
+    roomStructured: { name: cz, id: '' },
+  };
+}
+
+function plainLesson(event: CalendarCustomEvent): BlockLesson {
   const room = event.room || '';
   return {
     id: event.id,

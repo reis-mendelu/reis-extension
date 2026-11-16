@@ -1,12 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useAppStore } from '../../../../store/useAppStore';
 import type { MapSelection } from '../../../../types/campusMap';
+import { libraryOf } from './library/libraryOf';
 
 const CARD_KINDS = new Set<MapSelection['kind']>([
   'event',
   'gardenPlace',
   'societyPin',
   'sportPlace',
+  'library',
 ]);
 const ROOM_KINDS = new Set<MapSelection['kind']>(['room', 'roomRef']);
 
@@ -35,7 +37,9 @@ export function useMapCardDetent() {
   const hadCard = useRef(false);
 
   useEffect(() => {
-    if (selection && CARD_KINDS.has(selection.kind)) {
+    // A library room reached as a plain room (a deep link) opens the library
+    // card like a library selection does, not a peek.
+    if (selection && (CARD_KINDS.has(selection.kind) || libraryOf(selection))) {
       // One card replacing another keeps the first one's way back.
       if (!hadCard.current) setCardReturn(useAppStore.getState().mapSheetState);
       hadCard.current = true;
