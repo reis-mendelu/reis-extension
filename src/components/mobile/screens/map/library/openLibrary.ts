@@ -27,6 +27,9 @@ export const LIBRARY_COORD: [number, number] = [16.615184, 49.209955];
  * The building change clears the selection, so the selection goes last.
  */
 export function openLibrary(featureId?: number): void {
+  // The free hours are read where the library is opened, never by a component
+  // effect (CLAUDE.md); a fresh read inside STALE_MS is a no-op in the store.
+  void useLibraryStore.getState().load();
   const app = useAppStore.getState();
   if (featureId === undefined) {
     app.selectMapLibrary();
@@ -52,4 +55,10 @@ export function openLibrary(featureId?: number): void {
   if (app.activeBuildingId !== LIBRARY_BUILDING_ID) app.setMapBuilding(LIBRARY_BUILDING_ID);
   if (useAppStore.getState().activeFloorId !== LIBRARY_FLOOR_ID) app.setMapFloor(LIBRARY_FLOOR_ID);
   app.selectMapLibrary(featureId);
+}
+
+/** Opens a booking's drawer, reading the free hours its "Prodloužit" needs. */
+export function openBooking(eventId: string): void {
+  void useLibraryStore.getState().load();
+  useAppStore.getState().pushSheet({ kind: 'libraryBooking', eventId });
 }

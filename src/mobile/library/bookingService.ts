@@ -5,17 +5,16 @@ import { DAILY_CAP, freeHours } from './slots';
 import type { BookingsHttp } from './bookingsBase';
 import type { LibraryRoom } from '../../data/map/libraryRooms';
 import type { CalendarCustomEvent } from '../../types/calendarTypes';
+import { hoursOf, libraryRoomOf, type OwnBooking } from './ownBooking';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const compact = (day: string) => day.replaceAll('-', '');
 
 /** How many library HOURS this device already booked for `day` (`YYYY-MM-DD`). */
-export const bookedOn = (events: CalendarCustomEvent[], day: string): number =>
+export const bookedOn = (events: OwnBooking[], day: string): number =>
   events
-    .filter((e) => e.libraryBooking && e.date === compact(day))
-    .reduce((n, e) => n + hoursOf(e.startTime, e.endTime), 0);
-const hoursOf = (start: string, end: string) =>
-  Math.max(1, Number(end.slice(0, 2)) - Number(start.slice(0, 2)));
+    .filter((e) => libraryRoomOf(e) !== null && e.date === compact(day))
+    .reduce((n, e) => n + hoursOf(e), 0);
 
 /** Why part of a stretch did not go through. */
 type Stop = 'taken' | 'unknown' | 'failed';

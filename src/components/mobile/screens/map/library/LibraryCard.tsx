@@ -43,9 +43,14 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   // as free for minutes.
   const blocks = useMemo(() => withOwnBookings(raw, mine), [raw, mine]);
   const now = new Date();
-  const day = storeDay ?? shownDay(now);
   const first = isoDay(now);
-  const days = weekdaysFrom(first <= day ? first : day);
+  // A day picked earlier (or set by a booking's "Na mapě") that has since
+  // passed is dropped for the next open day.
+  const day = storeDay && storeDay >= first ? storeDay : shownDay(now);
+  // Five weekdays from today; a later day (a booking up to a week ahead) starts
+  // the row itself, so the chosen day always has its chip.
+  const fromToday = weekdaysFrom(first);
+  const days = fromToday.includes(day) ? fromToday : weekdaysFrom(day);
   const holiday = holidayOf(day, language);
   const known = anyAnswer(blocks);
   const cells = known ? hourCells(blocks, day, now, lessonHours(lessons, day)) : [];

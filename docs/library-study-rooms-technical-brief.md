@@ -1,5 +1,11 @@
 # Library study rooms, native booking: technical brief
 
+> **Shipped design (2026-11-16, PR #711).** The UI below the API sections describes the first build
+> (#625: Knihovna A / IC chips, a room-first list, one hour per booking), since replaced after a
+> student walkthrough and Dominik's tests on a Pixel: one library card, time first (day → hours →
+> free rooms), several hours per booking, a booking drawer shaped like the subject drawer, the library
+> as a plain map pin. The current code is the source for the UI; the Bookings facts here still hold.
+
 > **Built (2026-10-30), on branch `claude/study-rooms-rias-integration-698ae3`, not merged.**
 > Code: `src/mobile/library/` (Bookings client, slots, store, `bookAndRecord`, `cancelAndRemove`),
 > `src/components/mobile/screens/map/library/` (pin, tints, room list and hours),

@@ -86,10 +86,11 @@ describe('LibraryBookingSheet', () => {
     expect(screen.getByRole('button', { name: 'Odebrat z kalendáře' })).toBeTruthy();
   });
 
-  it('closes itself once the booking is gone', () => {
-    const onClose = vi.fn();
+  it('draws nothing once the booking is gone (its confirm closes both)', () => {
     useAppStore.setState({ customEvents: [] } as never);
-    render(<LibraryBookingSheet eventId="library:A1" onClose={onClose} />);
-    expect(onClose).toHaveBeenCalled();
+    const { container } = render(
+      <LibraryBookingSheet eventId="library:A1" onClose={() => undefined} />
+    );
+    expect(container.textContent).toBe('');
   });
 });

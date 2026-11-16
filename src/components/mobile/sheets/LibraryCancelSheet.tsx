@@ -23,16 +23,21 @@ export function LibraryCancelSheet({ eventId, onClose }: { eventId: string; onCl
   // Also a block that lost its keys (saved before storage kept them).
   const unconfirmed =
     !!block.libraryBooking?.unconfirmed || !block.libraryBooking?.selfServiceIds.length;
+  // Opened from the booking's drawer: once the booking is gone, the drawer
+  // has nothing left to show, so both close together, never by stack position.
+  const closeAll = () => useAppStore.getState().closeAllSheets();
   const forget = async () => {
     await useAppStore.getState().removeCalendarCustomEvent(eventId);
-    onClose();
+    closeAll();
   };
 
   const cancel = async () => {
     if (sending) return;
     setSending(true);
+    let gone = false;
     try {
       const r = await cancelAndRemove(eventId);
+      gone = r.kind === 'ok';
       if (r.kind === 'ok') toast.success(t('mobile.library.cancelled'));
       else if (r.kind === 'unknown') toast.error(t('mobile.library.cancelUnknown'));
       else {
@@ -43,7 +48,8 @@ export function LibraryCancelSheet({ eventId, onClose }: { eventId: string; onCl
       logError('Library.cancel', err);
       toast.error(t('mobile.library.cancelFailed'));
     }
-    onClose();
+    if (gone) closeAll();
+    else onClose();
   };
 
   return (

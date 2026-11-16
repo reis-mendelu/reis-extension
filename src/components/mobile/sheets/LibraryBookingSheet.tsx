@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CircleCheck, MapPin, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { Sheet } from '../primitives/Sheet';
@@ -9,6 +9,7 @@ import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 import { useLibraryStore } from '../../../mobile/library/libraryStore';
 import { extendBooking } from '../../../mobile/library/bookingActions';
 import { canExtend } from '../../../mobile/library/libraryHours';
+import { libraryRoomOf } from '../../../mobile/library/ownBooking';
 import { logError } from '../../../utils/reportError';
 import { openLibrary } from '../screens/map/library/openLibrary';
 
@@ -31,17 +32,11 @@ export function LibraryBookingSheet({
   const events = useAppStore((s) => s.customEvents);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const blocks = useLibraryStore((s) => s.blocks);
-  const load = useLibraryStore((s) => s.load);
   const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    void load();
-  }, [load]);
-  // Cancelled (or removed) underneath: nothing left to show.
-  useEffect(() => {
-    if (!block) onClose();
-  }, [block, onClose]);
   const lb = block?.libraryBooking;
-  const room = LIBRARY_ROOMS.find((r) => r.featureId === lb?.featureId);
+  // Also a booking saved before storage kept its room (recognised by id and name).
+  const roomId = block ? libraryRoomOf(block) : null;
+  const room = LIBRARY_ROOMS.find((r) => r.featureId === roomId);
   const day = block
     ? `${block.date.slice(0, 4)}-${block.date.slice(4, 6)}-${block.date.slice(6, 8)}`
     : '';

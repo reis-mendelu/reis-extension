@@ -87,10 +87,16 @@ describe('LibraryCancelSheet', () => {
   it('cancels, confirms and closes', async () => {
     useAppStore.setState({ customEvents: [block] } as never);
     cancelAndRemove.mockResolvedValue({ kind: 'ok' });
-    const onClose = vi.fn();
-    render(<LibraryCancelSheet eventId="library:A1" onClose={onClose} />);
+    // Opened from the booking's drawer: both close once the booking is gone.
+    useAppStore.setState({
+      mobileSheets: [
+        { kind: 'libraryBooking', eventId: 'library:A1' },
+        { kind: 'libraryCancel', eventId: 'library:A1' },
+      ],
+    } as never);
+    render(<LibraryCancelSheet eventId="library:A1" onClose={() => undefined} />);
     fireEvent.click(screen.getByRole('button', { name: 'Zrušit rezervaci v knihovně' }));
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    await waitFor(() => expect(useAppStore.getState().mobileSheets).toEqual([]));
     expect(cancelAndRemove).toHaveBeenCalledWith('library:A1');
     expect(toast.success).toHaveBeenCalledWith('Rezervace zrušena.');
   });
@@ -116,11 +122,13 @@ describe('LibraryCancelSheet', () => {
       room: 'Týmová 2',
     };
     useAppStore.setState({ customEvents: [legacy] } as never);
-    const onClose = vi.fn();
-    render(<LibraryCancelSheet eventId="library:OLD" onClose={onClose} />);
+    useAppStore.setState({
+      mobileSheets: [{ kind: 'libraryCancel', eventId: 'library:OLD' }],
+    } as never);
+    render(<LibraryCancelSheet eventId="library:OLD" onClose={() => undefined} />);
     expect(screen.getByText(/nemá k ní klíč/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Odebrat z kalendáře' }));
-    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    await waitFor(() => expect(useAppStore.getState().mobileSheets).toEqual([]));
     expect(cancelAndRemove).not.toHaveBeenCalled();
     expect(useAppStore.getState().customEvents).toEqual([]);
   });

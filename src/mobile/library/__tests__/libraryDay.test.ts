@@ -10,6 +10,7 @@ import {
 } from '../libraryHours';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 import type { Block } from '../availability';
+import { libraryRoomOf } from '../ownBooking';
 
 // Monday 16 November 2026; Tuesday 17 November is a public holiday.
 const MON = '2026-11-16';
@@ -136,12 +137,13 @@ describe('withOwnBookings', () => {
     };
     const mine = [
       {
+        id: 'library:a',
         date: '20261120',
         startTime: '09:00',
         endTime: '10:00',
         libraryBooking: { featureId: ind1!.featureId },
       },
-      { date: '20261120', startTime: '09:00', endTime: '11:00' },
+      { id: 'own', date: '20261120', startTime: '09:00', endTime: '11:00' },
     ];
     const seen = withOwnBookings(blocks, mine);
     expect(roomsFreeFor(seen, '2026-11-20', at(8), [9])).toEqual([ind2!.featureId]);
@@ -154,6 +156,7 @@ describe('withOwnBookings', () => {
 
 describe('canExtend', () => {
   const block = {
+    id: 'library:b',
     date: '20261120',
     startTime: '09:00',
     endTime: '10:00',
@@ -172,5 +175,28 @@ describe('canExtend', () => {
       canExtend({ [ind1!.featureId]: [free('2026-11-20', 7, 19)] }, [block, four], block, at(8))
     ).toBeNull();
     expect(canExtend({}, [block], block, at(8))).toBeNull();
+  });
+});
+
+describe('libraryRoomOf', () => {
+  it('recognises a booking saved before storage kept its room, by its id and room name', () => {
+    expect(
+      libraryRoomOf({
+        id: 'library:OLD',
+        date: '20261120',
+        startTime: '09:00',
+        endTime: '11:00',
+        room: 'Týmová 2',
+      })
+    ).toBe(57627);
+    expect(
+      libraryRoomOf({
+        id: 'mine',
+        date: '20261120',
+        startTime: '09:00',
+        endTime: '11:00',
+        room: 'Týmová 2',
+      })
+    ).toBeNull();
   });
 });

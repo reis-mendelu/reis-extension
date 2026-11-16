@@ -1,11 +1,10 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Library } from 'lucide-react';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { useEventPinPlacement } from '../../../../CampusMap/useEventPinPlacement';
 import { PIN_FACE, PIN_FACE_CHOSEN, PIN_TAP_PAD } from '../../../../CampusMap/pinGeometry';
-import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { canBookLibrary } from '../../../../../mobile/library/transport';
 import { isDemoMode } from '../../../../../errors/demoMode';
 import { LIBRARY_COORD, openLibrary } from './openLibrary';
@@ -20,18 +19,14 @@ const PIN_INK = '#6D28D9';
  * map is just a pin, and the study rooms should be exactly that"). Not drawn
  * once a building is open: there the rooms themselves are the way in.
  *
- * Reading the free hours is a store action; this only asks for it when the map
- * is shown. Nothing about the student is sent to read them.
+ * The free hours are read when the library is opened (openLibrary.ts).
+ * Nothing about the student is sent to read them.
  */
 export function LibraryPinLayer() {
   const { t } = useTranslation();
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
   const chosen = useAppStore((s) => s.mapSelection?.kind === 'library');
-  const load = useLibraryStore((s) => s.load);
   const bookable = canBookLibrary() && !isDemoMode();
-  useEffect(() => {
-    if (bookable) void load();
-  }, [bookable, load]);
 
   const items = useMemo(
     () => (bookable && activeBuildingId === null ? [{ key: 'library', coord: LIBRARY_COORD }] : []),

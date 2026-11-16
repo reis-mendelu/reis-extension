@@ -2,6 +2,8 @@ import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
 import type { Block } from './availability';
 import { DAILY_CAP, freeHours } from './slots';
 import { HOURS, hourGone } from './libraryDay';
+import { libraryRoomOf, type OwnBooking } from './ownBooking';
+import { bookedOn } from './bookingService';
 
 /** Per map room id; `undefined` = not read yet, `null` = could not ask. */
 export type RoomBlocks = Record<number, Block[] | null | undefined>;
@@ -89,14 +91,6 @@ export function toggleHour(
 export const rangeOf = (sel: readonly number[]): { from: number; to: number } | null =>
   sel.length === 0 ? null : { from: sel[0]!, to: sel[sel.length - 1]! + 1 };
 
-/** The calendar fields a library booking keeps (a `CalendarCustomEvent`). */
-interface OwnBooking {
-  date: string;
-  startTime: string;
-  endTime: string;
-  libraryBooking?: { featureId: number };
-}
-
 /**
  * The library's answer with the student's own bookings laid over it as taken.
  * Bookings shows a fresh booking as free for a while (seen 2026-11-16: two
@@ -106,8 +100,8 @@ interface OwnBooking {
 export function withOwnBookings(blocks: RoomBlocks, events: readonly OwnBooking[]): RoomBlocks {
   const out: RoomBlocks = { ...blocks };
   for (const e of events) {
-    const id = e.libraryBooking?.featureId;
-    const list = id === undefined ? undefined : out[id];
+    const id = libraryRoomOf(e);
+    const list = id === null ? undefined : out[id];
     if (!list) continue;
     const day = `${e.date.slice(0, 4)}-${e.date.slice(4, 6)}-${e.date.slice(6, 8)}`;
     out[id!] = [
@@ -125,18 +119,15 @@ export function withOwnBookings(blocks: RoomBlocks, events: readonly OwnBooking[
  */
 export function canExtend(
   blocks: RoomBlocks,
-  events: readonly (OwnBooking & { libraryBooking?: { featureId: number } })[],
+  events: readonly OwnBooking[],
   block: OwnBooking,
   now: Date
 ): number | null {
-  const id = block.libraryBooking?.featureId;
-  if (id === undefined) return null;
+  const id = libraryRoomOf(block);
+  if (id === null) return null;
   const day = `${block.date.slice(0, 4)}-${block.date.slice(4, 6)}-${block.date.slice(6, 8)}`;
   const end = Number(block.endTime.slice(0, 2));
   const seen = withOwnBookings(blocks, events)[id];
   if (!seen || !freeHours(seen, day, now).includes(end)) return null;
-  const booked = events
-    .filter((e) => e.libraryBooking && e.date === block.date)
-    .reduce((n, e) => n + Number(e.endTime.slice(0, 2)) - Number(e.startTime.slice(0, 2)), 0);
-  return booked < DAILY_CAP ? end + 1 : null;
+  return bookedOn([...events], day) < DAILY_CAP ? end + 1 : null;
 }

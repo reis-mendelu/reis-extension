@@ -179,4 +179,14 @@ describe('LibraryCard', () => {
       eventId: 'library:A1',
     });
   });
+
+  it('drops a stored day once it has passed, and gives a later day its own chip', () => {
+    useLibraryStore.setState({ day: '2026-11-13' });
+    const { unmount } = render(<LibraryCard view={{ featureId: null }} />);
+    expect(screen.getByRole('button', { name: 'Dnes' }).getAttribute('aria-pressed')).toBe('true');
+    unmount();
+    useLibraryStore.setState({ day: '2026-11-23' });
+    render(<LibraryCard view={{ featureId: null }} />);
+    expect(screen.getByRole('button', { name: 'Po 23' }).getAttribute('aria-pressed')).toBe('true');
+  });
 });

@@ -1,3 +1,4 @@
+import { useAppStore } from '../../store/useAppStore';
 import { create } from 'zustand';
 import { fetchAllBlocks, type Block } from './availability';
 import { nativeBookingsHttp } from './transport';
@@ -92,3 +93,11 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({ blocks: {}, status: 'idle', fetchedAt: null, day: null, picked: [] });
   },
 }));
+
+// The card also opens from a tap on a library room of the floor plan, in shared
+// map code that cannot reach into the phone tree; the read follows the map's
+// selection here instead of in a component effect (CLAUDE.md).
+useAppStore.subscribe((s, prev) => {
+  if (s.mapSelection?.kind === 'library' && prev.mapSelection?.kind !== 'library')
+    void useLibraryStore.getState().load();
+});

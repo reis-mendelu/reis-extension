@@ -2,6 +2,7 @@ import type { BlockLesson } from '../../../../types/calendarTypes';
 import { useAppStore } from '../../../../store/useAppStore';
 import { subjectSheetFor } from '../../../../utils/mobile/lessonActions';
 import { libraryBlockId } from '../../../../mobile/library/libraryBlock';
+import { openBooking } from '../map/library/openLibrary';
 
 /**
  * What tapping a lesson does — one answer for the day agenda's row and the
@@ -17,7 +18,7 @@ export function useOpenLesson(): (lesson: BlockLesson) => void {
     // A library booking's block opens its own drawer (the subject drawer's shape).
     const booking = libraryBlockId(lesson);
     if (booking) {
-      pushSheet({ kind: 'libraryBooking', eventId: booking });
+      openBooking(booking);
       return;
     }
     if (lesson.isCustom) return;

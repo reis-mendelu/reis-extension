@@ -2,6 +2,8 @@ import { CircleCheck } from 'lucide-react';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { LIBRARY_ROOMS } from '../../../../../data/map/libraryRooms';
+import { libraryRoomOf } from '../../../../../mobile/library/ownBooking';
+import { openBooking } from './openLibrary';
 
 /**
  * The student's own library bookings on the card's day, at the top: the
@@ -11,10 +13,9 @@ import { LIBRARY_ROOMS } from '../../../../../data/map/libraryRooms';
 export function MyBookings({ day }: { day: string }) {
   const { t, language } = useTranslation();
   const events = useAppStore((s) => s.customEvents);
-  const pushSheet = useAppStore((s) => s.pushSheet);
   const compact = day.replaceAll('-', '');
   const mine = events
-    .filter((e) => e.libraryBooking && e.date === compact)
+    .filter((e) => libraryRoomOf(e) !== null && e.date === compact)
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
   if (mine.length === 0) return null;
   return (
@@ -24,12 +25,12 @@ export function MyBookings({ day }: { day: string }) {
       </h3>
       <ul className="space-y-1">
         {mine.map((e) => {
-          const r = LIBRARY_ROOMS.find((x) => x.featureId === e.libraryBooking!.featureId);
+          const r = LIBRARY_ROOMS.find((x) => x.featureId === libraryRoomOf(e));
           return (
             <li key={e.id}>
               <button
                 type="button"
-                onClick={() => pushSheet({ kind: 'libraryBooking', eventId: e.id })}
+                onClick={() => openBooking(e.id)}
                 className="flex min-h-11 w-full items-center gap-2.5 rounded-xl bg-success/10 px-3 text-left ring-1 ring-success/40"
               >
                 <CircleCheck size={16} className="flex-shrink-0 text-success" aria-hidden="true" />
