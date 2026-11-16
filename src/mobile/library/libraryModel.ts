@@ -1,4 +1,4 @@
-import { LIBRARY_ROOMS, type LibraryRoom } from '../../data/map/libraryRooms';
+import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
 import type { RoomTint } from '../../types/campusMap';
 import type { Block } from './availability';
 import { freeHours } from './slots';
@@ -15,20 +15,28 @@ export const TINT_PENDING = '#cbd5e1';
 
 type Blocks = Record<number, Block[] | null>;
 
+/**
+ * Each room coloured for the day, or for the picked hours once there are some:
+ * green when it is free for all of them, grey when not.
+ */
 export function libraryTints(
   blocks: Blocks,
   day: string,
   now: Date,
-  lang: 'cz' | 'en'
+  lang: 'cz' | 'en',
+  picked: readonly number[] = []
 ): Record<number, RoomTint> {
   const out: Record<number, RoomTint> = {};
   for (const r of LIBRARY_ROOMS) {
     const label = lang === 'cz' ? r.nameCs : r.nameEn;
     const b = blocks[r.featureId];
-    out[r.featureId] =
-      b == null
-        ? { fill: TINT_PENDING, label, pending: true }
-        : { fill: freeHours(b, day, now).length > 0 ? TINT_FREE : TINT_FULL, label };
+    if (b == null) {
+      out[r.featureId] = { fill: TINT_PENDING, label, pending: true };
+      continue;
+    }
+    const hours = freeHours(b, day, now);
+    const free = picked.length ? picked.every((h) => hours.includes(h)) : hours.length > 0;
+    out[r.featureId] = { fill: free ? TINT_FREE : TINT_FULL, label };
   }
   return out;
 }
@@ -39,11 +47,4 @@ export function roomsOpenCount(blocks: Blocks, day: string, now: Date): number {
     const b = blocks[r.featureId];
     return b != null && freeHours(b, day, now).length > 0;
   }).length;
-}
-
-/** The rooms by how many people they hold: the question a student actually has. */
-export function sizeGroups(): { seats: number; rooms: LibraryRoom[] }[] {
-  const by = new Map<number, LibraryRoom[]>();
-  for (const r of LIBRARY_ROOMS) by.set(r.seats, [...(by.get(r.seats) ?? []), r]);
-  return [...by.entries()].sort(([a], [b]) => a - b).map(([seats, rooms]) => ({ seats, rooms }));
 }

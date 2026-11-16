@@ -1,129 +1,112 @@
 import { describe, expect, it } from 'vitest';
-import {
-  hourStates,
-  lessonHours,
-  nextFree,
-  rangeOf,
-  roomStatus,
-  shownDay,
-  toggleHour,
-  weekdaysFrom,
-} from '../libraryDay';
+import { holidayOf, lessonHours, shownDay, weekdaysFrom } from '../libraryDay';
+import { hourCells, rangeOf, roomsFreeFor, toggleHour } from '../libraryHours';
+import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 import type { Block } from '../availability';
 
-// Monday 16 November 2026.
+// Monday 16 November 2026; Tuesday 17 November is a public holiday.
 const MON = '2026-11-16';
+const WED = '2026-11-18';
 const at = (h: number, m = 0) => new Date(2026, 10, 16, h, m);
 const free = (day: string, from: number, to: number): Block => ({
   status: 'free',
   start: `${day}T${String(from).padStart(2, '0')}:00`,
   end: `${day}T${String(to).padStart(2, '0')}:00`,
 });
+const [ind1, ind2, team1] = LIBRARY_ROOMS;
 
 describe('shownDay', () => {
   it('is today while an hour of today can still be booked', () => {
-    expect(shownDay(at(9))).toEqual({ day: MON, today: true });
-    expect(shownDay(at(17, 0))).toEqual({ day: MON, today: true });
+    expect(shownDay(at(9))).toBe(MON);
+    expect(shownDay(at(17, 0))).toBe(MON);
   });
-
-  it('moves to the next weekday once today has nothing left to book, and says so', () => {
-    expect(shownDay(at(17, 1))).toEqual({ day: '2026-11-17', today: false });
-    expect(shownDay(at(19, 30))).toEqual({ day: '2026-11-17', today: false });
-  });
-
-  it('skips the weekend', () => {
-    expect(shownDay(new Date(2026, 10, 20, 18))).toEqual({ day: '2026-11-23', today: false });
-    expect(shownDay(new Date(2026, 10, 21, 10))).toEqual({ day: '2026-11-23', today: false });
+  it('moves past the evening, the weekend and a public holiday', () => {
+    expect(shownDay(at(19, 30))).toBe(WED);
+    expect(shownDay(new Date(2026, 10, 20, 18))).toBe('2026-11-23');
   });
 });
 
-describe('weekdaysFrom', () => {
-  it('lists five weekdays from the shown day', () => {
-    expect(weekdaysFrom('2026-11-19')).toEqual([
-      '2026-11-19',
-      '2026-11-20',
-      '2026-11-23',
-      '2026-11-24',
-      '2026-11-25',
+describe('weekdaysFrom / holidayOf', () => {
+  it('lists five weekdays, the holiday among them, named', () => {
+    expect(weekdaysFrom(MON)).toEqual([MON, '2026-11-17', WED, '2026-11-19', '2026-11-20']);
+    expect(holidayOf('2026-11-17', 'cz')).toBe('Den boje za svobodu a demokracii');
+    expect(holidayOf(WED, 'cz')).toBeNull();
+  });
+});
+
+describe('hourCells', () => {
+  it('counts the free rooms per hour, and tells gone from taken', () => {
+    const blocks = {
+      [ind1!.featureId]: [free(MON, 13, 19)],
+      [ind2!.featureId]: [free(MON, 14, 16)],
+    };
+    const c = hourCells(blocks, MON, at(11, 30), new Set([14]));
+    expect(c.find((x) => x.hour === 9)).toEqual({ hour: 9, state: 'past', free: 0, lesson: false });
+    expect(c.find((x) => x.hour === 13)).toEqual({
+      hour: 13,
+      state: 'free',
+      free: 1,
+      lesson: false,
+    });
+    expect(c.find((x) => x.hour === 14)).toEqual({
+      hour: 14,
+      state: 'free',
+      free: 2,
+      lesson: true,
+    });
+    expect(c.find((x) => x.hour === 16)?.free).toBe(1);
+  });
+  it('calls an hour no room has free taken', () => {
+    const c = hourCells({ [ind1!.featureId]: [free(WED, 9, 10)] }, WED, at(19), new Set());
+    expect(c.find((x) => x.hour === 8)?.state).toBe('taken');
+  });
+});
+
+describe('roomsFreeFor', () => {
+  it('lists the rooms free for the whole stretch, smallest first', () => {
+    const blocks = {
+      [team1!.featureId]: [free(WED, 9, 12)],
+      [ind1!.featureId]: [free(WED, 9, 10)],
+      [ind2!.featureId]: [free(WED, 8, 12)],
+    };
+    expect(roomsFreeFor(blocks, WED, at(9), [9])).toEqual([
+      ind1!.featureId,
+      ind2!.featureId,
+      team1!.featureId,
     ]);
-  });
-});
-
-describe('hourStates', () => {
-  it('tells a past hour from one someone took, and marks the student’s classes', () => {
-    const blocks = [free(MON, 13, 19)];
-    const s = hourStates(blocks, MON, at(11, 30), new Set([14]));
-    expect(s.find((h) => h.hour === 9)).toEqual({ hour: 9, state: 'past', lesson: false });
-    // 12:00 starts within the hour's notice: no longer bookable, and it is not "taken".
-    expect(s.find((h) => h.hour === 12)?.state).toBe('past');
-    expect(s.find((h) => h.hour === 13)).toEqual({ hour: 13, state: 'free', lesson: false });
-    expect(s.find((h) => h.hour === 14)).toEqual({ hour: 14, state: 'free', lesson: true });
-  });
-
-  it('calls an hour of a later day that is not free taken, never past', () => {
-    const s = hourStates([free('2026-11-17', 9, 10)], '2026-11-17', at(19), new Set());
-    expect(s.find((h) => h.hour === 7)?.state).toBe('taken');
-    expect(s.find((h) => h.hour === 9)?.state).toBe('free');
+    expect(roomsFreeFor(blocks, WED, at(9), [9, 10, 11])).toEqual([
+      ind2!.featureId,
+      team1!.featureId,
+    ]);
+    expect(roomsFreeFor(blocks, WED, at(9), [])).toEqual([]);
   });
 });
 
 describe('toggleHour', () => {
-  const freeHours = [9, 10, 11, 12, 15];
-  it('starts a selection, grows it by a neighbour and shrinks it from an end', () => {
-    let sel = toggleHour([], 10, freeHours, 4);
+  const fits = (hs: number[]) => hs.every((h) => [9, 10, 11, 12, 15].includes(h));
+  it('starts a pick, grows it by a neighbour and shrinks it from an end', () => {
+    let sel = toggleHour([], 10, fits, 4);
     expect(sel).toEqual([10]);
-    sel = toggleHour(sel, 11, freeHours, 4);
-    expect(sel).toEqual([10, 11]);
-    sel = toggleHour(sel, 9, freeHours, 4);
+    sel = toggleHour(sel, 11, fits, 4);
+    sel = toggleHour(sel, 9, fits, 4);
     expect(sel).toEqual([9, 10, 11]);
-    sel = toggleHour(sel, 9, freeHours, 4);
-    expect(sel).toEqual([10, 11]);
+    expect(toggleHour(sel, 9, fits, 4)).toEqual([10, 11]);
   });
-
-  it('starts over on an hour that does not touch the selection', () => {
-    expect(toggleHour([10, 11], 15, freeHours, 4)).toEqual([15]);
+  it('starts over on an hour that does not touch the pick, and ignores one no room fits', () => {
+    expect(toggleHour([10, 11], 15, fits, 4)).toEqual([15]);
+    expect(toggleHour([10], 13, fits, 4)).toEqual([10]);
   });
-
-  it('never grows past what is left of the daily cap', () => {
-    expect(toggleHour([9, 10], 11, freeHours, 2)).toEqual([9, 10]);
+  it('only grows while one room has the whole stretch free, and within the cap', () => {
+    const oneRoom = (hs: number[]) => hs.length <= 2;
+    expect(toggleHour([9, 10], 11, oneRoom, 4)).toEqual([9, 10]);
+    expect(toggleHour([9, 10], 11, fits, 2)).toEqual([9, 10]);
   });
-
-  it('ignores an hour that is not free', () => {
-    expect(toggleHour([10], 13, freeHours, 4)).toEqual([10]);
+  it('keeps the middle of a pick', () => {
+    expect(toggleHour([9, 10, 11], 10, fits, 4)).toEqual([9, 10, 11]);
   });
-
-  it('keeps the middle of a range: dropping it would split one booking in two', () => {
-    expect(toggleHour([9, 10, 11], 10, freeHours, 4)).toEqual([9, 10, 11]);
-  });
-});
-
-describe('rangeOf', () => {
-  it('reads a selection as one span', () => {
+  it('reads a pick as one span', () => {
     expect(rangeOf([14, 15])).toEqual({ from: 14, to: 16 });
     expect(rangeOf([])).toBeNull();
-  });
-});
-
-describe('roomStatus', () => {
-  it('says nothing about free or full until it knows', () => {
-    expect(roomStatus(undefined, MON, at(9), true)).toEqual({ kind: 'loading' });
-    expect(roomStatus(null, MON, at(9), false)).toEqual({ kind: 'unknown' });
-  });
-
-  it('names the first bookable hour, or full', () => {
-    expect(roomStatus([free(MON, 13, 15)], MON, at(9), false)).toEqual({ kind: 'from', hour: 13 });
-    expect(roomStatus([], MON, at(9), false)).toEqual({ kind: 'full' });
-  });
-});
-
-describe('nextFree', () => {
-  it('finds the first free hour after a full day', () => {
-    const blocks = [free('2026-11-18', 9, 11)];
-    expect(nextFree(blocks, ['2026-11-17', '2026-11-18'], at(9))).toEqual({
-      day: '2026-11-18',
-      hour: 9,
-    });
-    expect(nextFree([], ['2026-11-17'], at(9))).toBeNull();
   });
 });
 

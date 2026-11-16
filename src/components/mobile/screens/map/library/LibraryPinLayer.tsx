@@ -22,7 +22,8 @@ const CHIP_H = 44;
  * The library on the campus overview: a white chip that says "Studovny" and,
  * once the library has answered, how many rooms still have an hour on the shown
  * day. It replaced a 30 px dot that sat under the same fingertip as Vazbič's
- * pin; the chip steps aside from any society pin or venue (chipPlacement.ts).
+ * pin; the chip steps aside from any society pin or venue (chipPlacement.ts),
+ * on the ground, so it does not jump while the map moves.
  * Not drawn once a building is open: there the rooms themselves are the way in.
  *
  * Reading the free hours is a store action; this only asks for it when the map
@@ -42,23 +43,27 @@ export function LibraryPinLayer() {
   }, [bookable, load]);
 
   const items = useMemo(
+    () => (bookable && activeBuildingId === null ? [{ key: 'library', coord: LIBRARY_COORD }] : []),
+    [bookable, activeBuildingId]
+  );
+  // Which side the chip takes depends only on where the other pins stand, so it
+  // is worked out once per set of pins, never per frame.
+  const off = useMemo(
     () =>
-      bookable && activeBuildingId === null
-        ? [
-            { key: 'library', coord: LIBRARY_COORD },
-            ...[...venuePins, ...societyPins].map((p) => ({ key: `o:${p.id}`, coord: p.coord })),
-          ]
-        : [],
-    [bookable, activeBuildingId, venuePins, societyPins]
+      chipOffset(
+        LIBRARY_COORD,
+        [...venuePins, ...societyPins].map((p) => p.coord),
+        CHIP_W,
+        CHIP_H
+      ),
+    [venuePins, societyPins]
   );
   const { placed, pane } = useEventPinPlacement(items, null);
   const at = placed.find((p) => p.key === 'library');
   if (!pane || !at || items.length === 0) return null;
 
-  const others = placed.filter((p) => p.key !== 'library');
-  const off = chipOffset(at, others, CHIP_W, CHIP_H);
   const now = new Date();
-  const count = roomsOpenCount(blocks, shownDay(now).day, now);
+  const count = roomsOpenCount(blocks, shownDay(now), now);
   const ready = status === 'ready';
   return createPortal(
     <button

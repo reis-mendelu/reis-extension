@@ -49,11 +49,12 @@ export async function bookAndRecord(a: BookAction): Promise<BookResult> {
     existing: app.customEvents,
     now: a.now ?? new Date(),
   });
-  if (r.kind === 'ok' || r.kind === 'partial') {
-    await app.addCalendarCustomEvent(r.event);
-    const n = r.event.libraryBooking?.selfServiceIds.length ?? 0;
-    for (let h = a.from; h < a.from + n; h++)
-      useLibraryStore.getState().markTaken(a.room.featureId, a.day, h);
+  if (r.kind === 'ok' || r.kind === 'partial' || r.kind === 'unconfirmed') {
+    for (const e of r.events) {
+      await app.addCalendarCustomEvent(e);
+      for (let h = Number(e.startTime.slice(0, 2)); h < Number(e.endTime.slice(0, 2)); h++)
+        useLibraryStore.getState().markTaken(a.room.featureId, a.day, h);
+    }
   }
   return r;
 }

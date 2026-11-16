@@ -16,7 +16,7 @@ import { MapPanelBody } from './MapPanelBody';
 import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
-import { libraryOf, libraryTitle } from './library/libraryOf';
+import { libraryOf } from './library/libraryOf';
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -45,7 +45,7 @@ import { libraryOf, libraryTitle } from './library/libraryOf';
  * positioned canvas.
  */
 export function MapRail() {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const open = useAppStore((s) => s.mapRailOpen);
   const setOpen = useAppStore((s) => s.setMapRailOpen);
   const width = useAppStore((s) => s.mapRailWidth);
@@ -176,9 +176,7 @@ export function MapRail() {
           >
             <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />
             <span className="truncate font-display text-lg font-bold tracking-tight">
-              {selectedLibrary
-                ? libraryTitle(selectedLibrary, language, t('mobile.library.title'))
-                : t('mobile.map.tabEvents')}
+              {selectedLibrary ? t('mobile.library.title') : t('mobile.map.tabEvents')}
             </span>
           </button>
         ) : (

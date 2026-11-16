@@ -51,9 +51,12 @@ export function LibraryConfirm({
 
   const say = (r: BookResult) => {
     if (r.kind === 'ok') toast.success(t('mobile.library.booked', { room: name, time: when }));
+    else if (r.kind === 'unconfirmed') toast.warning(t('mobile.library.unconfirmed'));
     else if (r.kind === 'partial')
       toast.warning(
-        t('mobile.library.partial', { time: `${r.event.startTime}–${r.event.endTime}` })
+        t('mobile.library.partial', {
+          time: r.events.map((e) => `${e.startTime}–${e.endTime}`).join(', '),
+        })
       );
     else if (r.kind === 'taken') toast.error(t('mobile.library.taken'));
     else if (r.kind === 'cap') toast.error(t('mobile.library.cap', { cap: r.cap }));
@@ -73,7 +76,14 @@ export function LibraryConfirm({
         to: pick.to,
         lang: language,
       });
-      if (r.kind === 'failed') logError('Library.book', new Error(`status ${r.status}`));
+      // Kept in the device's diagnostic log, which the student may attach to a report.
+      if (
+        r.kind === 'failed' ||
+        r.kind === 'unknown' ||
+        r.kind === 'unconfirmed' ||
+        r.kind === 'partial'
+      )
+        logError('Library.book', new Error(r.kind === 'failed' ? `status ${r.status}` : r.kind));
       say(r);
     } catch (err) {
       logError('Library.book', err);
@@ -118,6 +128,11 @@ export function LibraryConfirm({
           {sending ? t('mobile.library.sending') : t('mobile.library.confirm')}
         </button>
       </div>
+      {sending && (
+        <p role="status" className="text-xs text-base-content/70">
+          {t('mobile.library.slow')}
+        </p>
+      )}
     </div>
   );
 }

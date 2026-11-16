@@ -66,41 +66,72 @@ describe('bookHours', () => {
     const r = await bookHours(input(h));
     expect(r).toEqual({
       kind: 'ok',
-      event: {
-        id: 'library:A1',
-        title: 'Studovna – Individuální 1',
-        date: '20261110',
-        startTime: '15:00',
-        endTime: '16:00',
-        room: 'Individuální 1',
-        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1'] },
-      },
+      events: [
+        {
+          id: 'library:A1',
+          title: 'Studovna – Individuální 1',
+          date: '20261110',
+          startTime: '15:00',
+          endTime: '16:00',
+          room: 'Individuální 1',
+          libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1'] },
+        },
+      ],
     });
   });
 
-  it('books a stretch of hours one hour at a time and records it as ONE block', async () => {
+  it('books every hour of a stretch at once and records it as ONE block', async () => {
     const h = http(freeAll, created(1), created(2), created(3));
     const r = await bookHours(input(h, 14, 17));
     expect(creates(h)).toHaveLength(3);
     expect(r.kind).toBe('ok');
     if (r.kind !== 'ok') return;
-    expect(r.event.startTime).toBe('14:00');
-    expect(r.event.endTime).toBe('17:00');
-    expect(r.event.libraryBooking?.selfServiceIds).toEqual(['S1', 'S2', 'S3']);
+    expect(r.events).toHaveLength(1);
+    expect(r.events[0]!.startTime).toBe('14:00');
+    expect(r.events[0]!.endTime).toBe('17:00');
+    expect(r.events[0]!.libraryBooking?.selfServiceIds).toEqual(['S1', 'S2', 'S3']);
   });
 
-  it('keeps what was booked when an hour is lost half-way, and says which part', async () => {
+  it('keeps what was booked when an hour is lost, and says so', async () => {
     const h = http(freeAll, created(1), {
       status: 400,
       data: { error: { message: 'Staff not available' } },
     });
     const r = await bookHours(input(h, 14, 17));
-    expect(creates(h)).toHaveLength(2);
+    expect(creates(h)).toHaveLength(3);
     expect(r.kind).toBe('partial');
     if (r.kind !== 'partial') return;
-    expect(r.event.endTime).toBe('15:00');
-    expect(r.event.libraryBooking?.selfServiceIds).toEqual(['S1']);
+    expect(r.events.map((e) => `${e.startTime}-${e.endTime}`)).toEqual(['14:00-15:00']);
+    expect(r.events[0]!.libraryBooking?.selfServiceIds).toEqual(['S1']);
     expect(r.stopped).toBe('taken');
+  });
+
+  it('records an hour the library never answered for, once a fresh read shows it taken', async () => {
+    // The first real booking (2026-11-16): made at the library, nothing in reIS.
+    let reads = 0;
+    const h = vi.fn<BookingsHttp>(async (req) => {
+      if (req.url.endsWith('GetStaffAvailability'))
+        return reads++ === 0 ? freeAll : availability(16, 19);
+      throw new Error('timeout');
+    });
+    const r = await bookHours(input(h, 15, 16));
+    expect(r.kind).toBe('unconfirmed');
+    if (r.kind !== 'unconfirmed') return;
+    expect(r.events[0]).toMatchObject({
+      startTime: '15:00',
+      endTime: '16:00',
+      libraryBooking: { featureId: room.featureId, selfServiceIds: [], unconfirmed: true },
+    });
+  });
+
+  it('reads a create answer that arrives as text', async () => {
+    const h = http(freeAll, {
+      status: 200,
+      data: JSON.stringify({ appointment: { id: 'A9', selfServiceAppointmentId: 'S9' } }),
+    });
+    const r = await bookHours(input(h));
+    expect(r.kind).toBe('ok');
+    if (r.kind === 'ok') expect(r.events[0]!.libraryBooking?.selfServiceIds).toEqual(['S9']);
   });
 
   it('does not book anything when one hour of the stretch went meanwhile', async () => {
@@ -152,7 +183,7 @@ describe('bookedOn', () => {
       title: 't',
       date,
       startTime: '10:00',
-      endTime: '11:00',
+      endTime: ids ? `1${ids.length}:00` : '11:00',
       ...(ids ? { libraryBooking: { featureId: 1, selfServiceIds: ids } } : {}),
     });
     expect(

@@ -66,7 +66,12 @@ export interface CalendarCustomEvent {
    * booked hour, in order: they stay on this device, in this row, and are sent
    * nowhere but the cancel call.
    */
-  libraryBooking?: { featureId: number; selfServiceIds: string[] };
+  libraryBooking?: {
+    featureId: number;
+    selfServiceIds: string[];
+    /** The library never answered; a fresh read showed the hours taken. No cancel key. */
+    unconfirmed?: boolean;
+  };
 }
 
 export interface FileObject {

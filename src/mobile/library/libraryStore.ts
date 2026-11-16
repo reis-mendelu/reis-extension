@@ -17,6 +17,12 @@ export interface LibraryState {
   status: LibraryStatus;
   fetchedAt: number | null;
   load(http?: BookingsHttp, now?: Date): Promise<void>;
+  /** The card's day (`YYYY-MM-DD`), null until the student picks one. */
+  day: string | null;
+  /** The picked run of hours on that day: the map colours rooms by it. */
+  picked: number[];
+  setDay(day: string): void;
+  setPicked(hours: number[]): void;
   /** After a booking of ours: the hour is gone without waiting for the next read. */
   markTaken(featureId: number, day: string, hour: number): void;
   reset(): void;
@@ -38,6 +44,10 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   blocks: {},
   status: 'idle',
   fetchedAt: null,
+  day: null,
+  picked: [],
+  setDay: (day) => set({ day, picked: [] }),
+  setPicked: (picked) => set({ picked }),
 
   async load(http = nativeBookingsHttp, now = new Date()) {
     const { status, fetchedAt } = get();
@@ -79,6 +89,6 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   reset() {
     seq++;
-    set({ blocks: {}, status: 'idle', fetchedAt: null });
+    set({ blocks: {}, status: 'idle', fetchedAt: null, day: null, picked: [] });
   },
 }));

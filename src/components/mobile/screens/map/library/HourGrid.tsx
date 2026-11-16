@@ -1,12 +1,12 @@
 import { useTranslation } from '../../../../../hooks/useTranslation';
-import type { HourCell } from '../../../../../mobile/library/libraryDay';
+import type { HourCell } from '../../../../../mobile/library/libraryHours';
 
 const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 
 /**
- * One day's hours. Four looks, because they are four answers: gone (the clock
- * closed it), taken (someone else has it), free, and picked. An hour with one of
- * the student's own classes is ringed amber and says so, and can still be booked.
+ * One day's hours across the library. Gone hours are plain, taken ones crossed
+ * out, picked ones filled; an hour with one of the student's classes says
+ * "výuka" under it. No legend: each of those reads on its own.
  */
 export function HourGrid({
   cells,
@@ -46,8 +46,8 @@ export function HourGrid({
             className={`flex min-h-11 flex-col items-center justify-center rounded-xl text-sm font-semibold tabular-nums ${look}`}
           >
             {hh(hour)}
-            {lesson && state !== 'past' && (
-              <span className="text-[10px] font-semibold leading-none no-underline">
+            {lesson && state === 'free' && (
+              <span className="text-[10px] font-semibold leading-none">
                 {t('mobile.library.lessonTag')}
               </span>
             )}

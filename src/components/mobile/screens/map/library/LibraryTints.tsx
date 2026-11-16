@@ -8,12 +8,15 @@ import { LIBRARY_BUILDING_ID, LIBRARY_FLOOR_ID } from '../../../../../data/map/l
 
 /**
  * Colours and names the six bookable rooms while building A's floor -1 is open:
- * green with an hour to book on the shown day, grey without, faint and dashed
- * while the library has not answered. Renders nothing; it only hands the map's `mapRoomTints` to the
+ * green with an hour to book on the card's day (or free for all of the picked
+ * hours once there are some), grey without, faint and dashed while the library
+ * has not answered. Renders nothing; it only hands the map's `mapRoomTints` to the
  * canvas, which paints in place without moving the camera.
  */
 export function LibraryTints() {
   const blocks = useLibraryStore((s) => s.blocks);
+  const day = useLibraryStore((s) => s.day);
+  const picked = useLibraryStore((s) => s.picked);
   const building = useAppStore((s) => s.activeBuildingId);
   const floor = useAppStore((s) => s.activeFloorId);
   const language = useAppStore((s) => s.language);
@@ -21,8 +24,8 @@ export function LibraryTints() {
   const open = canBookLibrary() && building === LIBRARY_BUILDING_ID && floor === LIBRARY_FLOOR_ID;
   useEffect(() => {
     const now = new Date();
-    set(open ? libraryTints(blocks, shownDay(now).day, now, language) : {});
+    set(open ? libraryTints(blocks, day ?? shownDay(now), now, language, picked) : {});
     return () => set({});
-  }, [open, blocks, language, set]);
+  }, [open, blocks, day, picked, language, set]);
   return null;
 }

@@ -13,21 +13,31 @@ const compact = (day: string) => day.replaceAll('-', '');
 export const bookedOn = (events: CalendarCustomEvent[], day: string): number =>
   events
     .filter((e) => e.libraryBooking && e.date === compact(day))
-    .reduce((n, e) => n + (e.libraryBooking?.selfServiceIds.length ?? 0), 0);
+    .reduce((n, e) => n + hoursOf(e.startTime, e.endTime), 0);
+const hoursOf = (start: string, end: string) =>
+  Math.max(1, Number(end.slice(0, 2)) - Number(start.slice(0, 2)));
 
-/** Why a stretch stopped before its end. */
+/** Why part of a stretch did not go through. */
 type Stop = 'taken' | 'unknown' | 'failed';
 
 export type BookResult =
-  | { kind: 'ok'; event: CalendarCustomEvent }
-  /** The first hours were booked, then one was not: `event` holds what was. */
-  | { kind: 'partial'; event: CalendarCustomEvent; stopped: Stop }
+  /** Every hour booked, with its cancel key. */
+  | { kind: 'ok'; events: CalendarCustomEvent[] }
+  /** Some hours booked, the rest not: `events` holds what was. */
+  | { kind: 'partial'; events: CalendarCustomEvent[]; stopped: Stop }
+  /**
+   * The library never answered for some hours, and a fresh read shows them
+   * taken: almost certainly ours. They go in the calendar without a cancel key
+   * rather than vanish, which is what happened on the first real booking
+   * (2026-11-16): a booking in the library, an e-mail, nothing in reIS.
+   */
+  | { kind: 'unconfirmed'; events: CalendarCustomEvent[] }
   | { kind: 'cap'; cap: number; left: number }
   /** Gone between the list and the tap, or Bookings says someone has it. */
   | { kind: 'taken' }
   /** The re-check could not be made: nothing was booked. */
   | { kind: 'offline' }
-  /** The create call got no answer. The booking may exist; never retried here. */
+  /** The create call got no answer and nothing shows it took. Never retried here. */
   | { kind: 'unknown' }
   | { kind: 'failed'; status: number };
 
@@ -46,62 +56,102 @@ export interface BookInput {
   now: Date;
 }
 
+const nextDayOf = (day: string) => {
+  const next = new Date(`${day}T12:00:00`);
+  next.setDate(next.getDate() + 1);
+  return `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`;
+};
+
+/** One hour's outcome: booked (with its keys), likely ours (no answer, now taken), or not. */
+type HourOutcome =
+  | { hour: number; kind: 'ok'; appointmentId: string; selfServiceId: string }
+  | { hour: number; kind: 'likely' }
+  | { hour: number; kind: Stop; status?: number };
+
 /**
- * A stretch of hours in one room, checked twice: the cap on the device, then
- * every hour itself, read fresh, because the list the student picked from can be
- * minutes old. Only then is anything created, one hour at a time, because each
- * of the library's services is an hour long. If an hour fails half-way the hours
- * already booked are kept and recorded, never silently dropped.
+ * A stretch of hours in one room. Checked twice first: the cap on the device,
+ * then every hour, read fresh, because the list the student picked from can be
+ * minutes old. Then every hour is created at once (each library service is one
+ * hour long, and the service takes 10–40 s to answer, so one after another made
+ * three hours take two minutes). Whatever was booked is kept and recorded,
+ * never dropped: an hour with no answer is read again, and if it is now taken
+ * it is recorded too, without a cancel key.
  */
 export async function bookHours(i: BookInput): Promise<BookResult> {
   const hours = Array.from({ length: i.to - i.from }, (_, k) => i.from + k);
   const left = DAILY_CAP - bookedOn(i.existing, i.day);
   if (hours.length > left) return { kind: 'cap', cap: DAILY_CAP, left: Math.max(0, left) };
-  const next = new Date(`${i.day}T12:00:00`);
-  next.setDate(next.getDate() + 1);
-  const toDay = `${next.getFullYear()}-${pad(next.getMonth() + 1)}-${pad(next.getDate())}`;
-  const blocks = await fetchRoomBlocks(i.http, i.room.staffMemberId, i.day, toDay);
+  const blocks = await fetchRoomBlocks(i.http, i.room.staffMemberId, i.day, nextDayOf(i.day));
   if (blocks === null) return { kind: 'offline' };
   const free = freeHours(blocks, i.day, i.now);
   if (!hours.every((h) => free.includes(h))) return { kind: 'taken' };
 
-  const ids: { appointmentId: string; selfServiceId: string }[] = [];
-  for (const h of hours) {
-    const r = await createBooking(
-      i.http,
-      i.room,
-      {
-        start: `${i.day}T${pad(h)}:00:00`,
-        end: `${i.day}T${pad(h + 1)}:00:00`,
-      },
-      i.who
-    );
-    if (r.kind === 'ok') {
-      ids.push(r);
-      continue;
-    }
-    if (ids.length === 0) return r;
-    return { kind: 'partial', event: blockOf(i, ids), stopped: r.kind };
+  const results: HourOutcome[] = await Promise.all(
+    hours.map(async (hour): Promise<HourOutcome> => {
+      const r = await createBooking(
+        i.http,
+        i.room,
+        { start: `${i.day}T${pad(hour)}:00:00`, end: `${i.day}T${pad(hour + 1)}:00:00` },
+        i.who
+      );
+      return r.kind === 'ok'
+        ? { hour, ...r }
+        : { hour, kind: r.kind, status: 'status' in r ? r.status : undefined };
+    })
+  );
+  if (results.some((r) => r.kind === 'unknown')) {
+    const after = await fetchRoomBlocks(i.http, i.room.staffMemberId, i.day, nextDayOf(i.day));
+    const stillFree = after ? freeHours(after, i.day, i.now) : null;
+    for (const [k, r] of results.entries())
+      if (r.kind === 'unknown' && stillFree && !stillFree.includes(r.hour))
+        results[k] = { hour: r.hour, kind: 'likely' };
   }
-  return { kind: 'ok', event: blockOf(i, ids) };
+
+  const events = blocksOf(i, results);
+  const stops = results.filter((r) => r.kind !== 'ok' && r.kind !== 'likely');
+  if (events.length === 0) {
+    const s = stops[0]!;
+    return s.kind === 'failed'
+      ? { kind: 'failed', status: s.status ?? 0 }
+      : { kind: s.kind as 'taken' | 'unknown' };
+  }
+  if (stops.length) return { kind: 'partial', events, stopped: stops[0]!.kind as Stop };
+  if (results.some((r) => r.kind === 'likely')) return { kind: 'unconfirmed', events };
+  return { kind: 'ok', events };
 }
 
-function blockOf(
-  i: BookInput,
-  ids: { appointmentId: string; selfServiceId: string }[]
-): CalendarCustomEvent {
-  return {
-    id: `library:${ids[0]!.appointmentId}`,
-    title: i.title,
-    date: compact(i.day),
-    startTime: `${pad(i.from)}:00`,
-    endTime: `${pad(i.from + ids.length)}:00`,
-    room: i.room.nameCs,
-    libraryBooking: {
-      featureId: i.room.featureId,
-      selfServiceIds: ids.map((x) => x.selfServiceId),
-    },
+/** One calendar block per run of consecutive hours that are booked the same way. */
+function blocksOf(i: BookInput, results: HourOutcome[]): CalendarCustomEvent[] {
+  const out: CalendarCustomEvent[] = [];
+  let run: HourOutcome[] = [];
+  const flush = () => {
+    if (!run.length) return;
+    const first = run[0]!;
+    const keys = run.flatMap((r) => (r.kind === 'ok' ? [r.selfServiceId] : []));
+    const likely = first.kind === 'likely';
+    out.push({
+      id: `library:${first.kind === 'ok' ? first.appointmentId : `${i.room.featureId}-${i.day}-${first.hour}`}`,
+      title: i.title,
+      date: compact(i.day),
+      startTime: `${pad(first.hour)}:00`,
+      endTime: `${pad(first.hour + run.length)}:00`,
+      room: i.room.nameCs,
+      libraryBooking: {
+        featureId: i.room.featureId,
+        selfServiceIds: keys,
+        ...(likely ? { unconfirmed: true } : {}),
+      },
+    });
+    run = [];
   };
+  for (const r of results) {
+    const booked = r.kind === 'ok' || r.kind === 'likely';
+    const prev = run[run.length - 1];
+    if (!booked || (prev && (prev.kind !== r.kind || prev.hour + 1 !== r.hour))) flush();
+    if (booked) run.push(r);
+  }
+  flush();
+  return out;
 }
 
 export type BlockCancel =

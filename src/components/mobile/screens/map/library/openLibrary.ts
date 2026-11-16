@@ -18,7 +18,7 @@ export function openLibrary(featureId?: number): void {
   const app = useAppStore.getState();
   const now = new Date();
   app.setMapRoomTints(
-    libraryTints(useLibraryStore.getState().blocks, shownDay(now).day, now, app.language)
+    libraryTints(useLibraryStore.getState().blocks, shownDay(now), now, app.language)
   );
   app.setMapBuilding(LIBRARY_BUILDING_ID);
   app.setMapFloor(LIBRARY_FLOOR_ID);

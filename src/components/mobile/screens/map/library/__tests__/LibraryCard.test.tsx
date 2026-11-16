@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
+
+const wide = vi.hoisted(() => ({ value: false }));
+vi.mock('../../../../../../hooks/ui/useWideViewport', () => ({
+  useWideViewport: () => wide.value,
+}));
+
 import { LibraryCard } from '../LibraryCard';
 import { libraryOf } from '../libraryOf';
 import { useAppStore } from '../../../../../../store/useAppStore';
@@ -8,28 +14,19 @@ import { LIBRARY_ROOMS } from '../../../../../../data/map/libraryRooms';
 import type { Block } from '../../../../../../mobile/library/availability';
 import type { RoomProperties } from '../../../../../../types/campusMap';
 
-// Monday 16 November 2026, 09:30.
+// Monday 16 November 2026, 09:30. Tuesday 17 November is a public holiday.
 const NOW = new Date(2026, 10, 16, 9, 30);
-const iso = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-/** Free all day on each of the next 14 days. */
-function openBlocks(): Block[] {
-  const out: Block[] = [];
-  for (let i = 0; i < 14; i++) {
-    const d = iso(new Date(2026, 10, 16 + i));
-    out.push({ status: 'free', start: `${d}T07:00`, end: `${d}T19:00` });
-  }
-  return out;
-}
-
-const ind1 = LIBRARY_ROOMS[0]!;
-const ind2 = LIBRARY_ROOMS[1]!;
-const team1 = LIBRARY_ROOMS[2]!;
-const hourButtons = () =>
-  screen.getAllByRole('button').filter((b) => /^\d\d:00/.test(b.textContent ?? ''));
+const day = (d: number, from: number, to: number): Block => ({
+  status: 'free',
+  start: `2026-11-${d}T${String(from).padStart(2, '0')}:00`,
+  end: `2026-11-${d}T${String(to).padStart(2, '0')}:00`,
+});
+const [ind1, ind2, team1] = LIBRARY_ROOMS;
+const hour = (t: string) =>
+  screen.getAllByRole('button').find((b) => b.textContent?.startsWith(t) && /^\d\d:00/.test(t))!;
 
 beforeEach(() => {
+  wide.value = false;
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(NOW);
   useAppStore.setState({
@@ -40,132 +37,116 @@ beforeEach(() => {
     schedule: { data: [], status: 'success' },
   } as never);
   useLibraryStore.setState({
-    blocks: Object.fromEntries(LIBRARY_ROOMS.map((r) => [r.featureId, openBlocks()])),
+    blocks: {
+      [ind1!.featureId]: [day(16, 13, 19), day(18, 7, 19)],
+      [ind2!.featureId]: [day(16, 14, 16)],
+      [team1!.featureId]: [day(16, 14, 19)],
+    },
     status: 'ready',
     fetchedAt: Date.now(),
+    day: null,
+    picked: [],
   });
 });
 afterEach(() => vi.useRealTimers());
 
 describe('libraryOf', () => {
-  it('knows the list, one room, and a bookable room reached another way', () => {
+  it('knows the card, a chosen room, and a bookable room reached another way', () => {
     expect(libraryOf({ kind: 'library' })).toEqual({ featureId: null });
-    expect(libraryOf({ kind: 'library', featureId: ind1.featureId })).toEqual({
-      featureId: ind1.featureId,
+    expect(libraryOf({ kind: 'library', featureId: ind1!.featureId })).toEqual({
+      featureId: ind1!.featureId,
     });
-    const tapped = { kind: 'room', room: { id: ind2.featureId } as RoomProperties } as const;
-    expect(libraryOf(tapped)).toEqual({ featureId: ind2.featureId });
-  });
-  it('ignores every other room and selection', () => {
+    const tapped = { kind: 'room', room: { id: ind2!.featureId } as RoomProperties } as const;
+    expect(libraryOf(tapped)).toEqual({ featureId: ind2!.featureId });
     expect(libraryOf({ kind: 'room', room: { id: 1 } as RoomProperties })).toBeNull();
-    expect(libraryOf(null)).toBeNull();
   });
 });
 
-describe('LibraryCard list', () => {
-  it('is one place: where it is, and all six rooms in one list, no A/IC chips', () => {
+describe('LibraryCard', () => {
+  it('is time first: where it is, five days, the hours, and no room list until hours are picked', () => {
     render(<LibraryCard view={{ featureId: null }} />);
     expect(screen.getByText('Budova A, −1. patro')).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Knihovna (A|IC)/ })).toBeNull();
-    expect(screen.getAllByRole('listitem')).toHaveLength(6);
+    const chips = within(screen.getAllByRole('group')[0]!).getAllByRole('button');
+    expect(chips.map((c) => c.textContent)).toEqual(['Dnes', 'Út 17', 'St 18', 'Čt 19', 'Pá 20']);
+    expect(screen.queryByRole('listitem')).toBeNull();
+    // No explainers.
+    expect(screen.queryByText(/uplynuly|obsazeno|Klepni/)).toBeNull();
   });
-  it('groups the rooms by how many people they hold, each under its one name', () => {
+
+  it('shows the rooms free for the picked hours, smallest first', () => {
     render(<LibraryCard view={{ featureId: null }} />);
-    const groups = screen.getAllByRole('heading').map((h) => h.textContent);
-    expect(groups).toEqual(['Pro jednoho', 'Pro skupinu · 6 míst', 'Pro skupinu · 10 míst']);
-    for (const name of [
-      'Individuální 1',
-      'Individuální 2',
-      'Týmová 1',
-      'Týmová 2',
-      'IC levá',
-      'IC pravá',
-    ])
-      expect(screen.getByText(name)).toBeTruthy();
+    fireEvent.click(hour('14:00'));
+    expect(screen.getByText('Volné 14:00–15:00')).toBeTruthy();
+    expect(
+      screen.getAllByRole('listitem').map((li) => li.querySelector('span')?.textContent)
+    ).toEqual(['Individuální 1', 'Individuální 2', 'Týmová 1']);
+    fireEvent.click(hour('15:00'));
+    fireEvent.click(hour('16:00'));
+    expect(screen.getByText('Volné 14:00–17:00')).toBeTruthy();
+    expect(screen.getAllByRole('listitem')).toHaveLength(2);
   });
-  it('names the first bookable hour of each room', () => {
+
+  it('books a room on the phone through the confirm sheet, and shows the room on the map', () => {
     render(<LibraryCard view={{ featureId: null }} />);
-    // 09:30 plus the library's hour of notice: 11:00 is the first bookable start.
-    expect(screen.getAllByText('od 11:00')).toHaveLength(6);
-  });
-  it('says nothing is known while the library answers, and calls no room free', () => {
-    useLibraryStore.setState({ blocks: {}, status: 'loading', fetchedAt: null });
-    render(<LibraryCard view={{ featureId: null }} />);
-    expect(screen.getAllByText('zjišťuji…')).toHaveLength(6);
-    expect(screen.queryByText(/^od /)).toBeNull();
-  });
-  it('after the last bookable hour shows tomorrow, and says so', () => {
-    vi.setSystemTime(new Date(2026, 10, 16, 19, 30));
-    render(<LibraryCard view={{ featureId: null }} />);
-    expect(screen.getByRole('status')).toHaveTextContent('Na dnešek už rezervovat nejde');
-    expect(screen.getByRole('status')).toHaveTextContent('úterý');
-    expect(screen.getAllByText('od 07:00')).toHaveLength(6);
-  });
-  it('opens a room on tap', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    fireEvent.click(hour('14:00'));
+    fireEvent.click(hour('15:00'));
     fireEvent.click(screen.getByText('Týmová 1'));
     expect(useAppStore.getState().mapSelection).toEqual({
       kind: 'library',
-      featureId: team1.featureId,
+      featureId: team1!.featureId,
     });
-  });
-  it('says so when the library cannot be reached', () => {
-    useLibraryStore.setState({ status: 'offline', blocks: {} });
-    render(<LibraryCard view={{ featureId: null }} />);
-    expect(screen.getByRole('status')).toHaveTextContent('Zkontroluj připojení');
-  });
-});
-
-describe('LibraryCard room', () => {
-  it('shows five weekdays at once, starting today', () => {
-    render(<LibraryCard view={{ featureId: ind1.featureId }} />);
-    const chips = within(screen.getAllByRole('group')[0]!).getAllByRole('button');
-    expect(chips.map((c) => c.textContent)).toEqual(['Dnes', 'Út 17', 'St 18', 'Čt 19', 'Pá 20']);
-  });
-  it('tells a past hour from a taken one, and marks the student’s class', () => {
-    useAppStore.setState({
-      schedule: {
-        data: [{ date: '20261116', startTime: '13:00', endTime: '14:50' }],
-        status: 'success',
-      },
-    } as never);
-    useLibraryStore.setState({
-      blocks: {
-        [ind1.featureId]: [{ status: 'free', start: '2026-11-16T12:00', end: '2026-11-16T19:00' }],
-      },
-    });
-    render(<LibraryCard view={{ featureId: ind1.featureId }} />);
-    const h = (t: string) => hourButtons().find((b) => b.textContent?.startsWith(t))!;
-    expect(h('08:00').className).not.toContain('line-through');
-    expect(h('11:00').className).toContain('line-through');
-    expect(h('13:00').textContent).toContain('výuka');
-    expect((h('13:00') as HTMLButtonElement).disabled).toBe(false);
-  });
-  it('picks a stretch of hours and sends it to the confirm sheet in one go', () => {
-    render(<LibraryCard view={{ featureId: ind1.featureId }} />);
-    const h = (t: string) => hourButtons().find((b) => b.textContent?.startsWith(t))!;
-    fireEvent.click(h('14:00'));
-    fireEvent.click(h('15:00'));
-    expect(screen.getByText(/14:00–16:00 · 2 h/)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Rezervovat' }));
     expect(useAppStore.getState().mobileSheets[0]).toEqual({
       kind: 'libraryBook',
-      featureId: ind1.featureId,
+      featureId: team1!.featureId,
       day: '2026-11-16',
       from: 14,
       to: 16,
     });
   });
-  it('does not jump to another day on its own: a full day says so and offers the next free hour', () => {
-    useLibraryStore.setState({
-      blocks: {
-        [ind1.featureId]: [{ status: 'free', start: '2026-11-18T09:00', end: '2026-11-18T10:00' }],
+
+  it('confirms on the iPad right under the room, not in a sheet', () => {
+    wide.value = true;
+    useLibraryStore.setState({ picked: [14] });
+    render(<LibraryCard view={{ featureId: team1!.featureId }} flush />);
+    expect(useAppStore.getState().mobileSheets).toEqual([]);
+    expect(screen.getByTestId('library-confirm')).toBeTruthy();
+  });
+
+  it('marks the student’s class on an hour, which can still be booked', () => {
+    useAppStore.setState({
+      schedule: {
+        data: [{ date: '20261116', startTime: '15:00', endTime: '16:50' }],
+        status: 'success',
       },
-    });
-    render(<LibraryCard view={{ featureId: ind1.featureId }} />);
-    expect(screen.getByRole('button', { name: 'Dnes' }).getAttribute('aria-pressed')).toBe('true');
-    expect(screen.getByText('Tento den plno.')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: /Nejbližší volno/ }));
+    } as never);
+    render(<LibraryCard view={{ featureId: null }} />);
+    expect(hour('15:00').textContent).toContain('výuka');
+    expect((hour('15:00') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('says a public holiday is why the library is closed', () => {
+    render(<LibraryCard view={{ featureId: null }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Út 17' }));
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Den boje za svobodu a demokracii: knihovna má zavřeno.'
+    );
+  });
+
+  it('after the last bookable hour opens on the next open day, skipping the holiday', () => {
+    vi.setSystemTime(new Date(2026, 10, 16, 19, 30));
+    render(<LibraryCard view={{ featureId: null }} />);
     expect(screen.getByRole('button', { name: 'St 18' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('says it is loading, and calls nothing free, before the library answers', () => {
+    useLibraryStore.setState({ blocks: {}, status: 'loading', fetchedAt: null });
+    render(<LibraryCard view={{ featureId: null }} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Načítám volné hodiny…');
+  });
+
+  it('says so when the library cannot be reached', () => {
+    useLibraryStore.setState({ status: 'offline', blocks: {} });
+    render(<LibraryCard view={{ featureId: null }} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Zkontroluj připojení');
   });
 });

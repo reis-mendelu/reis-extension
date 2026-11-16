@@ -2,21 +2,21 @@ import { useTranslation } from '../../../../../hooks/useTranslation';
 import { isoDay } from '../../../../../mobile/library/libraryDay';
 
 /**
- * Five weekdays, all on screen at 320 px (no hidden scrolling row), labelled
- * the way the calendar's own day chips are ("Út 17"), with a dot under a day
- * that still has an hour free.
+ * Five weekdays, all on screen at 320 px, labelled the way the calendar's own
+ * day chips are ("Út 17"). A public holiday stays in the row, quieter, and
+ * picking it says the library is closed and why.
  */
 export function DayChips({
   days,
   day,
   now,
-  hasFree,
+  closed,
   onPick,
 }: {
   days: string[];
   day: string;
   now: Date;
-  hasFree: (day: string) => boolean;
+  closed: (day: string) => boolean;
   onPick: (day: string) => void;
 }) {
   const { t, language } = useTranslation();
@@ -35,19 +35,15 @@ export function DayChips({
           type="button"
           aria-pressed={d === day}
           onClick={() => onPick(d)}
-          className={`relative min-h-10 rounded-full text-[13px] font-semibold ${
+          className={`min-h-10 rounded-full text-[13px] font-semibold ${
             d === day
               ? 'bg-primary text-primary-content'
-              : 'bg-base-100 ring-1 ring-base-content/10'
+              : closed(d)
+                ? 'bg-base-100 text-base-content/50 ring-1 ring-base-content/10'
+                : 'bg-base-100 ring-1 ring-base-content/10'
           }`}
         >
           {label(d)}
-          {hasFree(d) && (
-            <span
-              aria-hidden="true"
-              className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${d === day ? 'bg-primary-content' : 'bg-success'}`}
-            />
-          )}
         </button>
       ))}
     </div>

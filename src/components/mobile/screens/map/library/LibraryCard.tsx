@@ -1,69 +1,111 @@
 import { useEffect, useRef } from 'react';
+import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
-import { RoomDirections } from '../../../../CampusMap/RoomDirections';
-import { LIBRARY_ROOMS } from '../../../../../data/map/libraryRooms';
 import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
-import { shownDay } from '../../../../../mobile/library/libraryDay';
-import { RoomList } from './RoomList';
-import { RoomHours } from './RoomHours';
+import { DAILY_CAP } from '../../../../../mobile/library/slots';
+import { bookedOn } from '../../../../../mobile/library/bookingService';
+import {
+  holidayOf,
+  isoDay,
+  lessonHours,
+  shownDay,
+  weekdaysFrom,
+} from '../../../../../mobile/library/libraryDay';
+import {
+  hourCells,
+  rangeOf,
+  roomsFreeFor,
+  toggleHour,
+} from '../../../../../mobile/library/libraryHours';
+import { DayChips } from './DayChips';
+import { HourGrid } from './HourGrid';
+import { FreeRooms } from './FreeRooms';
 import type { LibraryView } from './libraryOf';
 
 /**
- * The library as one place in the map's panel (phone sheet and iPad rail): its
- * six rooms in one list by size, or one room with its hours. Where it is comes
- * first, because "Studovny knihovny" alone never told a student where to walk.
- * The day it is about is today while today can still be booked, otherwise the
- * next weekday, and the card says so instead of calling every room full.
+ * The library as one place in the map's panel (phone sheet and iPad rail).
+ * Time first: a day, then the hours, then the rooms free for all of them, then
+ * book (Dominik, 2026-11-16: "what I care about is which study room is open at
+ * that time"). As little text as the screen can carry: where it is, and the
+ * answer; no legends.
  */
 export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolean }) {
   const { t, language } = useTranslation();
-  const offline = useLibraryStore((s) => s.status === 'offline');
-  const room = LIBRARY_ROOMS.find((r) => r.featureId === view.featureId) ?? null;
-  // A room opened from far down the list kept the list's scroll, so its day
-  // chips started off-screen: each view starts at its top.
+  const blocks = useLibraryStore((s) => s.blocks);
+  const status = useLibraryStore((s) => s.status);
+  const storeDay = useLibraryStore((s) => s.day);
+  const picked = useLibraryStore((s) => s.picked);
+  const lessons = useAppStore((s) => s.schedule.data);
+  const mine = useAppStore((s) => s.customEvents);
+  const now = new Date();
+  const day = storeDay ?? shownDay(now);
+  const first = isoDay(now);
+  const days = weekdaysFrom(first <= day ? first : day);
+  const holiday = holidayOf(day, language);
+  const known = anyAnswer(blocks);
+  const cells = known ? hourCells(blocks, day, now, lessonHours(lessons, day)) : [];
+  const left = Math.max(0, DAILY_CAP - bookedOn(mine, day));
+  const fits = (hours: number[]) => roomsFreeFor(blocks, day, now, hours).length > 0;
+  // A pick that lost its last free room (booked meanwhile) starts over.
+  const sel = picked.length && fits(picked) ? picked : [];
+  const span = rangeOf(sel);
+
+  // Each day and each pick starts at the top of the panel, not where the
+  // previous scroll left it.
   const top = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const scroller = top.current?.closest<HTMLElement>('.overflow-y-auto');
     if (scroller) scroller.scrollTop = 0;
-  }, [view.featureId]);
-  const now = new Date();
-  const shown = shownDay(now);
-  const shownLabel = new Date(`${shown.day}T12:00:00`).toLocaleDateString(
-    language === 'cz' ? 'cs' : 'en',
-    {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'numeric',
-    }
-  );
+  }, [day]);
+
   return (
     <div ref={top} data-testid="library-card" className={`space-y-3 ${flush ? 'px-5' : 'px-4'}`}>
-      <p className="text-sm text-base-content/70">
-        {room
-          ? `${room.seats === 1 ? t('mobile.library.seatsOne') : t('mobile.library.seats', { n: room.seats })} · ${t('mobile.library.place')}`
-          : t('mobile.library.place')}
-      </p>
-      {!room && !shown.today && (
-        <p role="status" className="rounded-xl bg-warning/15 px-3 py-2 text-sm text-base-content">
-          {t('mobile.library.movedOn', { day: shownLabel })}
+      <p className="text-sm text-base-content/70">{t('mobile.library.place')}</p>
+      <DayChips
+        days={days}
+        day={day}
+        now={now}
+        closed={(d) => holidayOf(d, language) !== null}
+        onPick={(d) => useLibraryStore.getState().setDay(d)}
+      />
+      {holiday ? (
+        <p role="status" className="text-sm text-base-content/70">
+          {t('mobile.library.holiday', { name: holiday })}
         </p>
-      )}
-      {!room && offline && (
+      ) : status === 'offline' ? (
         <p role="status" className="text-sm text-base-content/70">
           {t('mobile.library.offline')}
         </p>
-      )}
-      {room ? (
-        <>
-          <RoomHours key={room.featureId} room={room} firstDay={shown.day} now={now} />
-          <RoomDirections />
-        </>
+      ) : !known ? (
+        <p role="status" className="text-sm text-base-content/70">
+          {t('mobile.library.loading')}
+        </p>
       ) : (
         <>
-          <p className="text-xs text-base-content/70">{t('mobile.library.pickRoom')}</p>
-          <RoomList day={shown.day} now={now} />
+          <HourGrid
+            cells={cells}
+            picked={sel}
+            onTap={(h) => useLibraryStore.getState().setPicked(toggleHour(sel, h, fits, left))}
+          />
+          {left === 0 && (
+            <p className="text-xs text-base-content/70">
+              {t('mobile.library.capReached', { cap: DAILY_CAP })}
+            </p>
+          )}
+          {span && (
+            <FreeRooms
+              rooms={roomsFreeFor(blocks, day, now, sel)}
+              day={day}
+              span={span}
+              chosen={view.featureId}
+            />
+          )}
         </>
       )}
     </div>
   );
 }
+
+/** Whether the library has answered for at least one room. */
+const anyAnswer = (blocks: Record<number, unknown>) =>
+  Object.values(blocks).some((b) => Array.isArray(b));

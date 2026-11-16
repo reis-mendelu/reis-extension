@@ -18,6 +18,13 @@ export function LibraryCancelSheet({ eventId, onClose }: { eventId: string; onCl
   const block = useAppStore((s) => s.customEvents.find((e) => e.id === eventId));
   const [sending, setSending] = useState(false);
   if (!block) return null;
+  // Booked while the library did not answer: reIS has no key to cancel it with,
+  // so the only honest offer is taking it out of the calendar.
+  const unconfirmed = !!block.libraryBooking?.unconfirmed;
+  const forget = async () => {
+    await useAppStore.getState().removeCalendarCustomEvent(eventId);
+    onClose();
+  };
 
   const cancel = async () => {
     if (sending) return;
@@ -47,7 +54,9 @@ export function LibraryCancelSheet({ eventId, onClose }: { eventId: string; onCl
             {block.startTime}–{block.endTime}
           </span>
         </div>
-        <p className="text-sm text-base-content/70">{t('mobile.library.cancelBody')}</p>
+        <p className="text-sm text-base-content/70">
+          {unconfirmed ? t('mobile.library.cancelUnconfirmed') : t('mobile.library.cancelBody')}
+        </p>
         <div className="flex gap-2">
           <button
             type="button"
@@ -59,11 +68,15 @@ export function LibraryCancelSheet({ eventId, onClose }: { eventId: string; onCl
           </button>
           <button
             type="button"
-            onClick={() => void cancel()}
+            onClick={() => void (unconfirmed ? forget() : cancel())}
             disabled={sending}
             className="btn btn-error min-h-11 flex-1 rounded-xl text-base"
           >
-            {sending ? t('mobile.library.cancelling') : t('mobile.library.cancelAction')}
+            {unconfirmed
+              ? t('mobile.library.removeFromCalendar')
+              : sending
+                ? t('mobile.library.cancelling')
+                : t('mobile.library.cancelAction')}
           </button>
         </div>
       </div>

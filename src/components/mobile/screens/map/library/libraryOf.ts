@@ -21,9 +21,3 @@ export function libraryOf(selection: MapSelection | null): LibraryView | null {
     return { featureId: selection.entry.placeId };
   return null;
 }
-
-/** The panel's title: "Knihovna" on the list, the room's one name on a room. */
-export function libraryTitle(view: LibraryView, lang: 'cz' | 'en', library: string): string {
-  const room = LIBRARY_ROOMS.find((r) => r.featureId === view.featureId);
-  return room ? (lang === 'cz' ? room.nameCs : room.nameEn) : library;
-}

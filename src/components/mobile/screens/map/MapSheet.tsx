@@ -14,7 +14,7 @@ import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
 import { MapSheetHeader } from './MapSheetHeader';
 import { useMapCardDetent } from './useMapCardDetent';
-import { libraryOf, libraryTitle } from './library/libraryOf';
+import { libraryOf } from './library/libraryOf';
 import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
 import { floorText } from '../../../CampusMap/floorText';
 import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
@@ -51,7 +51,7 @@ export function MapSheet() {
   const setSheetState = useAppStore((s) => s.setMapSheetState);
   const selection = useAppStore((s) => s.mapSelection);
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const directions = useRoomDirections();
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
   // A bubble in the botanical garden, tapped. Treated exactly as a tapped event
@@ -307,7 +307,7 @@ export function MapSheet() {
             showingCard={!!selectedCard}
             heading={
               selectedLibrary
-                ? libraryTitle(selectedLibrary, language, t('mobile.library.title'))
+                ? t('mobile.library.title')
                 : venueMenuOpen
                   ? selectedSocietyPin!.title
                   : directions

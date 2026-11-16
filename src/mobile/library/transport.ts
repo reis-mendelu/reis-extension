@@ -22,6 +22,11 @@ export const canBookLibrary = (): boolean => getPlatform().kind === 'capacitor' 
 // The service answered in 8 to 14 s on 2026-10-30, from a laptop and a phone alike, so a
 // 10 s limit made every request "unknown". A slower answer than this is still "unknown".
 const READ_TIMEOUT_MS = 45_000;
+// A booking or a cancel waits longer: on 2026-11-16 the first real booking was
+// made at the library, e-mailed to the student, and never reached reIS, most
+// likely because the create call outlived 45 s. Giving up early on a write is
+// the worse failure, so the app waits as long as the booking page would.
+const WRITE_TIMEOUT_MS = 120_000;
 
 /**
  * CapacitorHttp runs outside the WebView, where CORS does not apply, so the
@@ -46,7 +51,7 @@ export const nativeBookingsHttp: BookingsHttp = async (req) => {
     headers: req.headers,
     data: req.data,
     connectTimeout: 10_000,
-    readTimeout: READ_TIMEOUT_MS,
+    readTimeout: req.url.endsWith('/GetStaffAvailability') ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS,
   });
   return { status: res.status, data: res.data };
 };

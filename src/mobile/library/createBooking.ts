@@ -80,6 +80,14 @@ export function buildEnvelope(room: LibraryRoom, when: BookingWhen, who: Booking
   };
 }
 
+const parsed = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
+
 /** "Staff not available" is how Bookings says the hour was taken meanwhile. */
 const isTaken = (data: unknown): boolean =>
   JSON.stringify(data ?? '').includes('Staff not available');
@@ -101,9 +109,12 @@ export async function createBooking(
       data: buildEnvelope(room, when, who),
     });
     if (res.status === 400 && isTaken(res.data)) return { kind: 'taken' };
-    if (res.status !== 200) return { kind: 'failed', status: res.status };
-    const a = (res.data as { appointment?: { id?: string; selfServiceAppointmentId?: string } })
-      .appointment;
+    if (res.status < 200 || res.status > 299) return { kind: 'failed', status: res.status };
+    // CapacitorHttp hands back a string when the content type is not one it
+    // parses; the booking exists either way, so read it both ways.
+    const body = typeof res.data === 'string' ? parsed(res.data) : res.data;
+    const a = (body as { appointment?: { id?: string; selfServiceAppointmentId?: string } } | null)
+      ?.appointment;
     // A booking we cannot cancel is one we must not claim: say unknown.
     if (!a?.id || !a.selfServiceAppointmentId) return { kind: 'unknown' };
     return { kind: 'ok', appointmentId: a.id, selfServiceId: a.selfServiceAppointmentId };
