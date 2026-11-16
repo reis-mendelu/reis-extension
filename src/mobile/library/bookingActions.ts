@@ -61,17 +61,22 @@ async function bookUnlocked(a: BookAction): Promise<BookResult> {
     now: a.now ?? new Date(),
   });
   if (r.kind === 'ok' || r.kind === 'partial' || r.kind === 'unconfirmed') {
+    let unsaved = 0;
     for (const e of r.events) {
       // One failed calendar write (storage quota) must not drop the hours
       // after it: each was booked and its cancel key belongs in the calendar.
+      // A failure is counted and returned: the block is in memory but will not
+      // survive a restart, so the student has to be told.
       try {
         await app.addCalendarCustomEvent(e);
       } catch (err) {
+        unsaved++;
         logError('Library.record', err);
       }
       for (let h = Number(e.startTime.slice(0, 2)); h < Number(e.endTime.slice(0, 2)); h++)
         useLibraryStore.getState().markTaken(a.room.featureId, a.day, h);
     }
+    if (unsaved > 0) return { ...r, unsaved };
   }
   return r;
 }

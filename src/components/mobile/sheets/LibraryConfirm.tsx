@@ -53,6 +53,11 @@ export function LibraryConfirm({
   );
 
   const say = (r: BookResult) => {
+    // Booked, but the phone could not keep it: it lasts only until a restart.
+    if ('unsaved' in r && r.unsaved) {
+      toast.error(t('mobile.library.unsaved'));
+      return;
+    }
     if (r.kind === 'ok') toast.success(t('mobile.library.booked', { room: name, time: when }));
     else if (r.kind === 'unconfirmed') toast.warning(t('mobile.library.unconfirmed'));
     else if (r.kind === 'partial')

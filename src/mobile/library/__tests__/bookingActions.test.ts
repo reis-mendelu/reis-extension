@@ -85,6 +85,30 @@ describe('bookAndRecord', () => {
   });
 });
 
+describe('bookAndRecord, a failed save', () => {
+  it('says which booked blocks the phone could not save, and still records the rest', async () => {
+    const h: BookingsHttp = vi.fn(async (req) =>
+      req.url.endsWith('GetStaffAvailability')
+        ? { status: 200, data: free }
+        : { status: 200, data: { appointment: { id: 'A1', selfServiceAppointmentId: 'S1' } } }
+    );
+    const add = vi
+      .spyOn(useAppStore.getState(), 'addCalendarCustomEvent')
+      .mockRejectedValueOnce(new Error('quota'));
+    const r = await bookAndRecord({
+      http: h,
+      room,
+      day: '2026-11-10',
+      from: 15,
+      to: 16,
+      lang: 'cz',
+      now,
+    });
+    expect(r).toMatchObject({ kind: 'ok', unsaved: 1 });
+    add.mockRestore();
+  });
+});
+
 describe('cancelAndRemove', () => {
   const block = {
     id: 'library:A1',

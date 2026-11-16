@@ -21,16 +21,16 @@ type Stop = 'taken' | 'unknown' | 'failed';
 
 export type BookResult =
   /** Every hour booked, with its cancel key. */
-  | { kind: 'ok'; events: CalendarCustomEvent[] }
+  | { kind: 'ok'; events: CalendarCustomEvent[]; unsaved?: number }
   /** Some hours booked, the rest not: `events` holds what was. */
-  | { kind: 'partial'; events: CalendarCustomEvent[]; stopped: Stop }
+  | { kind: 'partial'; events: CalendarCustomEvent[]; stopped: Stop; unsaved?: number }
   /**
    * The library never answered for some hours, and a fresh read shows them
    * taken: almost certainly ours. They go in the calendar without a cancel key
    * rather than vanish, which is what happened on the first real booking
    * (2026-11-16): a booking in the library, an e-mail, nothing in reIS.
    */
-  | { kind: 'unconfirmed'; events: CalendarCustomEvent[] }
+  | { kind: 'unconfirmed'; events: CalendarCustomEvent[]; unsaved?: number }
   | { kind: 'cap'; cap: number; left: number }
   /** Another booking or cancel is still running on this device: nothing was sent. */
   | { kind: 'busy' }

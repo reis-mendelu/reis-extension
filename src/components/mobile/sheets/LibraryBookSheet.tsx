@@ -7,8 +7,10 @@ import { LibraryConfirm, type LibraryPick } from './LibraryConfirm';
 
 /**
  * The phone's confirm: the same summary the iPad shows in its side panel, in a
- * sheet. It cannot be dismissed while the library is answering: closing it then
- * would leave the booking running behind a sheet that is gone.
+ * sheet. A drag, the backdrop and its close button are inert while the library
+ * is answering. Escape (a hardware keyboard) can still close it: the booking
+ * then finishes behind it, its toast still shows, the store's write lock keeps
+ * a second booking from starting, and the late close pops only this sheet.
  */
 export function LibraryBookSheet({ sheet, onClose }: { sheet: LibraryPick; onClose: () => void }) {
   const { t } = useTranslation();
