@@ -136,6 +136,17 @@ const DB_VERSION = 23;
  */
 export const INSTALL_ID_KEY = 'install_id';
 
+/**
+ * The `meta` key holding the phone's store-rating history (days used, files
+ * read, the day reIS last asked; see `mobile/storeReview.ts`). Per install like
+ * the install id, and with nothing about the student in it, so `clearAll`
+ * spares it: wiping it on sign-out restarted the 120-day break between asks.
+ */
+export const STORE_REVIEW_KEY = 'store_review';
+
+/** The `meta` keys that outlive a sign-out. */
+const PER_INSTALL_META_KEYS = [INSTALL_ID_KEY, STORE_REVIEW_KEY];
+
 // True for the "database connection is closing" / InvalidStateError family that
 // a stale handle throws after the underlying connection was closed.
 function isConnectionClosing(e: unknown): boolean {
@@ -348,12 +359,15 @@ class IndexedDBServiceImpl {
       const tx = db.transaction(stores, 'readwrite');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const meta = stores.includes('meta') ? tx.objectStore('meta' as any) : null;
-      const installId = meta ? await meta.get(INSTALL_ID_KEY) : undefined;
+      const kept = meta
+        ? await Promise.all(PER_INSTALL_META_KEYS.map(async (k) => [k, await meta.get(k)] as const))
+        : [];
       for (const store of stores) {
         tx.objectStore(store).clear();
       }
-      if (meta && typeof installId === 'string' && installId.length > 0) {
-        meta.put(installId, INSTALL_ID_KEY);
+      for (const [key, value] of kept) {
+        if (key === INSTALL_ID_KEY && !(typeof value === 'string' && value.length > 0)) continue;
+        if (value !== undefined) meta?.put(value, key);
       }
       await tx.done;
     });

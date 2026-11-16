@@ -50,6 +50,24 @@ describe('checkDisclosures', () => {
     expect(checkDisclosures(clean(), model)).toEqual([]);
   });
 
+  it('holds a direct flow (device → third party) to its stores and policy, not the Supabase checks', () => {
+    const direct = {
+      ...model.flows[0]!,
+      id: 'library_booking',
+      transport: 'direct' as const,
+      files: ['src/mobile/library/createBooking.ts'],
+      calls: ['bookings.cloud.microsoft/appointments'],
+      policyRows: [['Booking', 'you book', 'your name'] as [string, string, string]],
+      stores: { apple: [], play: ['PSL_USER_ACCOUNT'], firefox: [], cws: [] },
+    };
+    const m = { ...model, flows: [...model.flows, direct] };
+    const s = clean();
+    s.policyMd = `# Policy\n\n${BEGIN}\n${renderPolicyTable(m.flows)}\n${END}\n`;
+    expect(checkDisclosures(s, m)).toEqual([]);
+    // Its policy row still has to be in the published table.
+    expect(checkDisclosures(clean(), m).join('\n')).toMatch(/stale/);
+  });
+
   it('1. flags a Supabase call no flow or exemption describes', () => {
     const s = clean();
     s.srcFiles['src/api/new.ts'] = "supabase.rpc('zz_probe')";

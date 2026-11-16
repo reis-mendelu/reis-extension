@@ -46,6 +46,7 @@
   "settings": {
     "title": "Nastavení",
     "reportBug": "Nahlásit chybu / Nápad",
+    "rateReis": "Ohodnotit reIS",
     "darkMode": "Tmavý režim",
     "language": "Jazyk",
     "czech": "Čeština",
@@ -109,6 +110,8 @@
     "today": "Dnes",
     "back": "Zpět",
     "close": "Zavřít",
+    "enlargePhoto": "Zvětšit fotku",
+    "photo": "Fotka",
     "cancel": "Zrušit",
     "confirm": "Potvrdit",
     "save": "Uložit",
@@ -1620,7 +1623,59 @@
       "deleteTape": "Smazat pásku",
       "tapeHint": "Přelep odpověď a zkus si ji vybavit. Klepnutím pásku odkryješ, podržením ji smažeš nebo přesuneš."
     },
-    "openingLink": "Otevírám…"
+    "openingLink": "Otevírám…",
+    "library": {
+      "pinLabel": "Studovny",
+      "title": "Knihovna",
+      "place": "Budova A, −1. patro",
+      "today": "Dnes",
+      "seats": "{n} míst",
+      "seatsOne": "1 místo",
+      "offline": "Rezervace se teď nepodařilo načíst. Zkontroluj připojení.",
+      "loading": "Načítám volné hodiny z knihovny…",
+      "pickHour": "Vyber hodiny",
+      "lessonTag": "výuka",
+      "capReached": "Na tento den už máš {cap} h, víc knihovna nedovolí.",
+      "confirmTitle": "Rezervovat studovnu?",
+      "confirmBody": "Knihovna dostane tvé jméno, e-mail, osobní číslo a fakultu. Potvrzení ti přijde e-mailem.",
+      "confirm": "Rezervovat",
+      "sending": "Rezervuji…",
+      "slow": "Knihovna odpovídá pomalu, může to trvat i minutu.",
+      "booked": "Rezervováno: {room}, {time}",
+      "partial": "Rezervováno jen {time}. Zbytek se nepovedl.",
+      "taken": "Některou z hodin mezitím někdo vzal. Nic se nerezervovalo.",
+      "cap": "Nejvýše {cap} h denně.",
+      "checkFailed": "Volný termín se nepodařilo ověřit. Zkus to znovu.",
+      "unknown": "Knihovna neodpověděla. Rezervace mohla vzniknout: zkontroluj e-mail, než to zkusíš znovu.",
+      "failed": "Rezervace se nepovedla.",
+      "blockTitle": "Studovna v knihovně",
+      "mine": "Máš rezervováno",
+      "cancelTitle": "Zrušit rezervaci v knihovně?",
+      "cancelBody": "Zrušíš skutečnou rezervaci a studovna se uvolní. Knihovna ti pošle e-mail o zrušení.",
+      "cancelAction": "Zrušit rezervaci v knihovně",
+      "cancelling": "Ruším…",
+      "keep": "Ponechat",
+      "cancelled": "Rezervace zrušena.",
+      "cancelUnknown": "Knihovna neodpověděla. Zkontroluj e-mail, jestli rezervace zmizela.",
+      "cancelFailed": "Rezervaci se nepodařilo zrušit.",
+      "searchRow": "Knihovna – studovny k rezervaci",
+      "freeAt": "Volné {time}",
+      "holiday": "{name}: knihovna má zavřeno.",
+      "unconfirmed": "Knihovna neodpověděla včas, rezervace ale nejspíš vznikla. Je v kalendáři, potvrzení přijde e-mailem.",
+      "cancelUnconfirmed": "Tuhle rezervaci reIS zrušit neumí, nemá k ní klíč od knihovny. Zrušit ji jde přes knihovnu; z kalendáře ji tady odebereš.",
+      "removeFromCalendar": "Odebrat z kalendáře",
+      "onMap": "Na mapě",
+      "kindTeam": "týmová studovna",
+      "kindIndividual": "individuální studovna",
+      "confirmed": "Potvrzeno",
+      "noKey": "reIS ji zrušit neumí",
+      "extend": "Prodloužit do {time}",
+      "extended": "Prodlouženo do {time}",
+      "otherTime": "Jiný čas nebo studovna",
+      "busy": "Počkej, předchozí rezervace se ještě vyřizuje.",
+      "someUnknown": "Některé studovny se nepodařilo načíst, jejich hodiny tu chybí.",
+      "unsaved": "Rezervace vznikla, ale telefon si ji nepodařilo uložit. Po restartu aplikace zmizí z kalendáře a zrušit ji půjde jen přes knihovnu (potvrzení máš v e-mailu)."
+    }
   },
   "session": {
     "expired": "Přihlášení do IS vypršelo.",
@@ -1710,5 +1765,8 @@
   "newBox": {
     "kind": "Nová odevzdávárna",
     "badge": "Nová"
+  },
+  "guides": {
+    "help": "Nápověda"
   }
 }

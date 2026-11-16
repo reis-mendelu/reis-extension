@@ -71,3 +71,13 @@ describe('ProfilePopup — view as a student', () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+describe('ProfilePopup — rate reIS', () => {
+  it('is a quiet link to the store listing, opened in a new tab', () => {
+    render(<ProfilePopup isOpen />);
+    const link = screen.getByRole('link', { name: /Rate reIS/ });
+    expect(link.getAttribute('href')).toContain('chromewebstore.google.com');
+    expect(link.getAttribute('target')).toBe('_blank');
+    expect(link.getAttribute('rel')).toContain('noopener');
+  });
+});

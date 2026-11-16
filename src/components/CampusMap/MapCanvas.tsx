@@ -21,15 +21,25 @@ import { initLeafletMap, flyAndReveal, drawLandmarks } from './mapLayers';
 import { drawRemotePlaces, REMOTE, REMOTE_IDS } from './remoteLayers';
 import { drawCampusPaths } from './pathLayers';
 import { roomLabelsHidden } from './roomLabels';
+import {
+  applyRoomTints,
+  declutterTintLabels,
+  roomTapIntent,
+  selectedRoomId,
+  tintedBoundsOf,
+  type RoomPoly,
+} from './roomTints';
+import { dimsOtherRooms } from './dimsOtherRooms';
+import { useTintedRooms } from './useTintedRooms';
 import { drawRoomRouteChip, chipShown, clampRoomChip } from './roomRouteChip';
 import { translate } from '../../i18n/translate';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../utils/routing/navigationEnabled';
 import { setMapInstance } from './mapInstance';
 import { LABELS_PANE } from './mapPanes';
-import { roomFocusView } from './focusBounds';
+import { roomFocusView, groupFocusView } from './focusBounds';
 import { roomPlanLabels, venueRoomKey } from './roomPlanLabel';
 import { venueRoomTitles } from './venueSearch';
-import { panPinClearOfSheet } from './sheetClearance';
+import { fitAboveSheet, panPinClearOfSheet } from './sheetClearance';
 import { TiltToggle } from '../Building3D/tilt/TiltToggle';
 import { drawPoiHighlight, outlineForSelection } from './poiOutline';
 import type { BuildingsMeta, RoomFeature, RoomProperties } from '../../types/campusMap';
@@ -86,7 +96,7 @@ export function MapCanvas() {
   const keepViewRef = useRef(false);
   // Live room polygons keyed by placeId, with their unselected base style — lets
   // a plain map click re-highlight in place without a full redraw or camera move.
-  const roomPolysRef = useRef<Map<number, { poly: L.Polygon; base: L.PathOptions }>>(new Map());
+  const roomPolysRef = useRef<Map<number, RoomPoly>>(new Map());
   /** The open floor's named rooms, so venue names that arrive after the plan
    *  was drawn retitle it in place (a redraw moves the camera). */
   const labelledRoomsRef = useRef<{ poly: L.Polygon; p: RoomProperties; big: boolean }[]>([]);
@@ -167,6 +177,8 @@ export function MapCanvas() {
       map
         .getContainer()
         .classList.toggle('reis-hide-room-labels', roomLabelsHidden(map, planBoundsRef.current));
+      const st = useAppStore.getState();
+      declutterTintLabels(roomPolysRef.current, st.mapRoomTints, selectedRoomId(st.mapSelection));
       // The pill is anchored to the room and the rail overlays the right of
       // the canvas, so a room near that edge puts its offer on top of the
       // panel. Re-asked on every settle, because the student can pan the room
@@ -248,6 +260,8 @@ export function MapCanvas() {
         const sel = state.mapSelection;
         // Exiting a drilled-in remote site collapses it again (redraw) via
         // focusCampus; a plain selection just clears.
+        // The library's card is left by its own Back, never by a stray tap.
+        if (sel?.kind === 'library') return;
         if (sel?.kind === 'poi' && REMOTE_IDS.has(sel.poi.id)) select.focusCampus();
         else if (sel) select.clearMapSelection();
       };
@@ -391,6 +405,8 @@ export function MapCanvas() {
       if ((e.originalEvent.target as HTMLElement | null)?.closest('.leaflet-reisEvents-pane'))
         return;
       if (b && ringContains(b.outline.coordinates[0], e.latlng.lng, e.latlng.lat)) return;
+      // A screen that owns the floor (the library's card) is left by its own Back.
+      if (useAppStore.getState().mapSelection?.kind === 'library') return;
       keepViewRef.current = true;
       select.exitToCampus();
     };
@@ -399,8 +415,7 @@ export function MapCanvas() {
     // The selected room (from search/deep-link or a canvas click) gets a bold
     // highlight and the camera flies straight to it — that's the "focus".
     const sel = select.mapSelection;
-    const selectedId =
-      sel?.kind === 'roomRef' ? sel.entry.placeId : sel?.kind === 'room' ? sel.room.id : null;
+    const selectedId = selectedRoomId(sel);
     const feats = fc.features
       .filter((f) => f.properties.floorId === activeFloorId)
       .sort((a) => (a.properties.category === 'structure' ? -1 : 1));
@@ -429,8 +444,13 @@ export function MapCanvas() {
         isSel ? SELECTED_STYLE : effectiveBase
       );
       if (!struct) {
-        poly.on('click', () => select.selectMapRoom(p));
-        roomPolysRef.current.set(p.id, { poly, base: effectiveBase });
+        poly.on('click', () => {
+          const s = useAppStore.getState();
+          const tap = roomTapIntent(p.id, s.mapRoomTints, s.mapSelection?.kind === 'library');
+          if (tap === 'claim') s.selectMapLibrary(p.id);
+          else if (tap === 'select') select.selectMapRoom(p);
+        });
+        roomPolysRef.current.set(p.id, { poly, base: effectiveBase, plain: effectiveBase });
         if (p.name) {
           // Label sizable rooms permanently (MyMENDELU-style); tiny rooms only on
           // hover, to avoid a wall of overlapping numbers.
@@ -464,20 +484,50 @@ export function MapCanvas() {
         targetBounds = poly.getBounds();
       }
     }
+    applyRoomTints(
+      roomPolysRef.current,
+      select.mapRoomTints,
+      selectedId,
+      SELECTED_STYLE,
+      dimsOtherRooms(sel, select.mapRoomTints)
+    );
+    // The library's card frames the room picked from it, or all six, not the building.
+    const tinted =
+      sel?.kind === 'library'
+        ? // A room chosen from the card (the floor opens at that moment) is the
+          // frame; otherwise all six.
+          (targetBounds ?? tintedBoundsOf(roomPolysRef.current, select.mapRoomTints))
+        : null;
+    const rail = railPaddingPx(
+      map.getSize().x,
+      isPhone,
+      railRef.current.width,
+      railRef.current.open
+    );
     // Which box to frame is a decision, so it lives in a tested pure module:
     // a selected room frames its BUILDING, not its own few metres of floor.
     // See focusBounds.roomFocusView.
-    const view = roomFocusView<L.LatLngBoundsExpression>(
-      targetBounds ?? null,
-      (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null,
-      railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open)
-    );
+    const view = tinted
+      ? groupFocusView<L.LatLngBoundsExpression>(tinted, rail)
+      : roomFocusView<L.LatLngBoundsExpression>(
+          targetBounds ?? null,
+          (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null,
+          rail
+        );
     if (view) {
       const { bounds, maxZoom, paddingTopLeft, paddingBottomRight } = view;
       flyAndReveal(map, () =>
         map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false })
       );
     }
+    // The card hugs the lower part of a phone's screen: the rooms go above it.
+    if (isPhone && tinted)
+      fitAboveSheet(
+        map,
+        tinted,
+        view?.maxZoom ?? 21,
+        () => useAppStore.getState().mapSelection === sel
+      );
     // isPhone joins the deps because the rail offset reads it. It is stable
     // for the life of a device, but it flips on a browser resize, and this
     // effect is idempotent by design (see the 'draft' branch's note), so
@@ -487,6 +537,8 @@ export function MapCanvas() {
     // `railRef` at the moment of focus. As dependencies they made a resize drag
     // re-run this whole effect sixty times a second, and it resets the camera.
   }, [activeBuildingId, activeFloorId, roomsByBuilding, focusReq, focusTarget, isPhone]);
+
+  useTintedRooms({ polys: roomPolysRef, mapRef, railRef, isPhone, mapSelection });
 
   // A building with no outline of its own (D05 → building D) still has to
   // show which one it is; the camera move alone left the map looking unchanged.
@@ -509,12 +561,7 @@ export function MapCanvas() {
   // polygons without a full redraw or camera move (the heavy effect above only
   // re-runs / flies on navigation + search focus, not on selection alone).
   useEffect(() => {
-    const selId =
-      mapSelection?.kind === 'room'
-        ? mapSelection.room.id
-        : mapSelection?.kind === 'roomRef'
-          ? mapSelection.entry.placeId
-          : null;
+    const selId = selectedRoomId(mapSelection);
     let selected: L.Polygon | null = null;
     for (const [id, { poly, base }] of roomPolysRef.current) {
       if (id === selId) {

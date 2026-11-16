@@ -46,6 +46,7 @@
   "settings": {
     "title": "Settings",
     "reportBug": "Report Bug / Idea",
+    "rateReis": "Rate reIS",
     "darkMode": "Dark Mode",
     "language": "Language",
     "czech": "Čeština",
@@ -255,6 +256,8 @@
     "today": "Today",
     "back": "Back",
     "close": "Close",
+    "enlargePhoto": "Enlarge photo",
+    "photo": "Photo",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
@@ -1620,7 +1623,59 @@
       "deleteTape": "Delete tape",
       "tapeHint": "Tape over an answer and try to recall it. Tap the tape to peek; hold it to delete or move it."
     },
-    "openingLink": "Opening…"
+    "openingLink": "Opening…",
+    "library": {
+      "pinLabel": "Study rooms",
+      "title": "Library",
+      "place": "Building A, floor −1",
+      "today": "Today",
+      "seats": "{n} seats",
+      "seatsOne": "1 seat",
+      "offline": "Could not load the bookings. Check your connection.",
+      "loading": "Loading free hours from the library…",
+      "pickHour": "Pick hours",
+      "lessonTag": "class",
+      "capReached": "You already have {cap} h that day, the library allows no more.",
+      "confirmTitle": "Book this study room?",
+      "confirmBody": "The library receives your name, e-mail, student number and faculty. You will get a confirmation by e-mail.",
+      "confirm": "Book",
+      "sending": "Booking…",
+      "slow": "The library answers slowly; this can take a minute.",
+      "booked": "Booked: {room}, {time}",
+      "partial": "Only {time} was booked. The rest did not go through.",
+      "taken": "One of the hours was taken meanwhile. Nothing was booked.",
+      "cap": "At most {cap} h a day.",
+      "checkFailed": "Could not check the slot. Try again.",
+      "unknown": "The library did not answer. The booking may exist: check your e-mail before trying again.",
+      "failed": "The booking failed.",
+      "blockTitle": "Library study room",
+      "mine": "Your bookings",
+      "cancelTitle": "Cancel the library booking?",
+      "cancelBody": "This cancels the real booking and frees the room. The library will e-mail you about it.",
+      "cancelAction": "Cancel the library booking",
+      "cancelling": "Cancelling…",
+      "keep": "Keep",
+      "cancelled": "Booking cancelled.",
+      "cancelUnknown": "The library did not answer. Check your e-mail to see whether the booking is gone.",
+      "cancelFailed": "Could not cancel the booking.",
+      "searchRow": "Library – study rooms to book",
+      "freeAt": "Free {time}",
+      "holiday": "{name}: the library is closed.",
+      "unconfirmed": "The library did not answer in time, but the booking most likely exists. It is in your calendar; the confirmation comes by e-mail.",
+      "cancelUnconfirmed": "reIS cannot cancel this booking: it has no key for it from the library. Cancel it through the library; here you can remove it from your calendar.",
+      "removeFromCalendar": "Remove from calendar",
+      "onMap": "On the map",
+      "kindTeam": "team study room",
+      "kindIndividual": "individual study room",
+      "confirmed": "Confirmed",
+      "noKey": "reIS cannot cancel it",
+      "extend": "Extend until {time}",
+      "extended": "Extended until {time}",
+      "otherTime": "Another time or room",
+      "busy": "Wait, the previous booking is still being processed.",
+      "someUnknown": "Some rooms could not be loaded; their hours are missing here.",
+      "unsaved": "The booking was made, but the phone could not save it. After the app restarts it will be gone from your calendar and can only be cancelled through the library (the confirmation is in your e-mail)."
+    }
   },
   "session": {
     "expired": "Your IS session has expired.",
@@ -1710,5 +1765,8 @@
   "newBox": {
     "kind": "New submission box",
     "badge": "New"
+  },
+  "guides": {
+    "help": "Help"
   }
 }

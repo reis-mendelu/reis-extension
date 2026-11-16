@@ -9,6 +9,7 @@ import { SubjectsDataSchema } from '../schemas/subjectSchema';
 import { logError } from '../utils/reportError';
 import { parseAttendance } from './attendance';
 import { subjectsPageShape, type SubjectsPageShape } from './subjectsPageShape';
+import { classifyIsPage, notUnderstood } from './isPage';
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
 
@@ -181,6 +182,15 @@ export async function fetchDualLanguageSubjects(
       }
     }
 
+    // `{ data: {} }` is truthy, so a page this parser could not read used to be
+    // stored as "no subjects" over the real list (reports 30, 41, 42). Such a
+    // page is a failed read: null keeps the cache, as a failed fetch does.
+    const shape = subjectsPageShape(czHtml);
+    if (classifyIsPage(merged, Object.keys(merged).length, shape).kind === 'unrecognised') {
+      logError('Api.fetchDualLanguageSubjects', notUnderstood('subjects', shape));
+      return null;
+    }
+
     const subjectsData: SubjectsData = {
       version: 1,
       lastUpdated: new Date().toISOString(),
@@ -193,7 +203,7 @@ export async function fetchDualLanguageSubjects(
       subjects: result.success ? result.data : subjectsData,
       attendance,
       availablePeriods,
-      shape: subjectsPageShape(czHtml),
+      shape,
     };
   } catch (e) {
     logError('Api.fetchDualLanguageSubjects', e);

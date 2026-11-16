@@ -12,8 +12,8 @@
 import { config as loadDotenv } from 'dotenv';
 import { appendFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { resolveAscCredentials, signAscToken } from '../lib/ascApi';
-import { submitIosVersion, submittedVersionState, type AscHttp } from '../lib/iosSubmit';
+import { ascHttp, resolveAscCredentials } from '../lib/ascApi';
+import { submitIosVersion, submittedVersionState } from '../lib/iosSubmit';
 import { loadReleaseNotes } from '../lib/releaseNotes';
 
 // Same as release-ios.ts: ASC_ISSUER_ID lives in the gitignored root .env locally.
@@ -33,23 +33,7 @@ async function main(): Promise<void> {
   const dryRun = process.argv.includes('--dry-run');
   const creds = resolveAscCredentials();
 
-  const asc: AscHttp = async (method, path, body) => {
-    const res = await fetch(`https://api.appstoreconnect.apple.com${path}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${signAscToken(creds)}`,
-        'Content-Type': 'application/json',
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      throw new Error(
-        `ASC ${method} ${path.split('?')[0]} -> ${res.status}: ${text.slice(0, 400)}`
-      );
-    }
-    return { status: res.status, data: text ? JSON.parse(text) : null };
-  };
+  const asc = ascHttp(creds);
 
   if (process.argv.includes('--check')) {
     const state = await submittedVersionState(asc, APP_ID, version);

@@ -57,3 +57,42 @@ export function panPinClearOfSheet(
   if (afterMs > 0) setTimeout(run, afterMs);
   else requestAnimationFrame(() => requestAnimationFrame(run));
 }
+
+/**
+ * Fits `box` into the strip of map a phone actually shows: below the search
+ * bar, above the sheet. Measured once the sheet has settled (its height
+ * animates for 300 ms), because a card that hugs its content — the library's
+ * six rooms — can take most of the screen, and a fit that ignored it put the
+ * rooms under the search bar at a zoom too far out to read.
+ */
+export function fitAboveSheet(
+  map: L.Map,
+  box: L.LatLngBounds,
+  maxZoom: number,
+  /** Asked when the fit runs: false (the student went elsewhere meanwhile) skips it. */
+  stillWanted: () => boolean = () => true
+): void {
+  let removed = false;
+  const onUnload = () => {
+    removed = true;
+  };
+  map.once('unload', onUnload);
+  setTimeout(() => {
+    map.off('unload', onUnload);
+    if (removed || !stillWanted()) return;
+    const sheet = document.querySelector('[data-testid="map-sheet"]');
+    const container = map.getContainer();
+    const origin = container.getBoundingClientRect().top;
+    const search = container.parentElement?.querySelector('label');
+    const top = search ? search.getBoundingClientRect().bottom - origin + 12 : 72;
+    const bottom = sheet
+      ? container.clientHeight - (sheet.getBoundingClientRect().top - origin) + 12
+      : 32;
+    map.fitBounds(box, {
+      maxZoom,
+      paddingTopLeft: [24, top],
+      paddingBottomRight: [24, Math.max(bottom, 32)],
+      animate: false,
+    });
+  }, 350);
+}

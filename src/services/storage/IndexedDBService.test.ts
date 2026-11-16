@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { IndexedDBService, INSTALL_ID_KEY } from './IndexedDBService';
+import { IndexedDBService, INSTALL_ID_KEY, STORE_REVIEW_KEY } from './IndexedDBService';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const internal = IndexedDBService as any;
@@ -84,5 +84,24 @@ describe('IndexedDBService.clearAll', () => {
     await IndexedDBService.clearAll();
 
     expect(await IndexedDBService.get('meta', INSTALL_ID_KEY)).toBeUndefined();
+  });
+
+  // The store-rating history is per install too (days used, files read, the
+  // last ask; no student data). Wiping it on sign-out restarted the 120-day
+  // break, so signing out and back in could bring the dialog back early.
+  it('keeps the store-rating history so a sign-out does not reset the 120-day break', async () => {
+    const history = {
+      firstDay: '2026-11-01',
+      lastDay: '2026-11-15',
+      daysUsed: 6,
+      lastAskedDay: '2026-11-15',
+    };
+    await IndexedDBService.set('meta', STORE_REVIEW_KEY, history);
+    await IndexedDBService.set('meta', 'reis_user_params', { name: 'student' });
+
+    await IndexedDBService.clearAll();
+
+    expect(await IndexedDBService.get('meta', STORE_REVIEW_KEY)).toEqual(history);
+    expect(await IndexedDBService.get('meta', 'reis_user_params')).toBeUndefined();
   });
 });

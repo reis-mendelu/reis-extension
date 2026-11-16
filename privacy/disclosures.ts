@@ -23,9 +23,16 @@ export interface Flow {
   what: string;
   when: 'background' | 'student-action';
   identifier: 'install_id' | 'none' | 'contact';
-  /** Files under src/ that make this flow's Supabase calls. */
+  /**
+   * `direct`: the device sends it straight to a third party (the library's
+   * Microsoft Bookings), never through reIS's Supabase. Its `files` and `calls`
+   * then name that code and endpoint, and are not held to the Supabase checks;
+   * its store declarations and policy rows are.
+   */
+  transport?: 'supabase' | 'direct';
+  /** Files under src/ that make this flow's Supabase calls (or, `direct`, its requests). */
   files: string[];
-  /** RPC or table names this flow uses. */
+  /** RPC or table names this flow uses (or, `direct`, the endpoints). */
   calls: string[];
   /** Rows of the "What we do send" table in docs/privacy-policy-app.md: [what, when, carries]. */
   policyRows: Array<[string, string, string]>;
@@ -208,6 +215,32 @@ export const FLOWS: Flow[] = [
       play: ['PSL_USER_ACCOUNT', 'PSL_USER_INTERACTION'],
       firefox: ['technicalAndInteraction'],
       cws: ['User activity'],
+    },
+  },
+  {
+    id: 'library_booking',
+    what: "A library study-room booking (phone and iPad only): the student's name, MENDELU e-mail, student number and faculty code, and a \"reIS\" note, sent from the device straight to the library's Microsoft Bookings (MENDELU's tenant) when the student books or cancels. Looking at free hours sends only rooms and dates.",
+    when: 'student-action',
+    identifier: 'contact',
+    transport: 'direct',
+    files: ['src/mobile/library/createBooking.ts', 'src/mobile/library/cancelBooking.ts'],
+    calls: ['bookings.cloud.microsoft/appointments'],
+    policyRows: [
+      [
+        'Library study-room booking (mobile app only)',
+        'you book or cancel a study room',
+        "your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS",
+      ],
+    ],
+    stores: {
+      apple: [
+        { type: 'Name', purpose: 'App Functionality', linked: true, tracking: false },
+        { type: 'Email Address', purpose: 'App Functionality', linked: true, tracking: false },
+        { type: 'User ID', purpose: 'App Functionality', linked: true, tracking: false },
+      ],
+      play: ['PSL_NAME', 'PSL_EMAIL', 'PSL_USER_ACCOUNT'],
+      firefox: [],
+      cws: [],
     },
   },
 ];

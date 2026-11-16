@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 export interface NavRowProps {
@@ -8,6 +8,8 @@ export interface NavRowProps {
   /** Optional second line. Truncated: these are one-liners, not descriptions. */
   sublabel?: string;
   onClick: () => void;
+  /** The row leaves the app (a website in the in-app browser): the trailing mark is ExternalLink, not the chevron. */
+  external?: boolean;
 }
 
 /**
@@ -21,7 +23,8 @@ export interface NavRowProps {
  * prumer but rather that being a dropdown, it just opens a new page (same as on
  * desktop)".
  */
-export function NavRow({ icon: Icon, label, sublabel, onClick }: NavRowProps) {
+export function NavRow({ icon: Icon, label, sublabel, onClick, external }: NavRowProps) {
+  const Trail = external ? ExternalLink : ChevronRight;
   return (
     <button
       type="button"
@@ -35,7 +38,7 @@ export function NavRow({ icon: Icon, label, sublabel, onClick }: NavRowProps) {
         <span className="text-md font-medium">{label}</span>
         {sublabel && <span className="truncate text-xs text-base-content/60">{sublabel}</span>}
       </div>
-      <ChevronRight size={16} className="flex-shrink-0 text-base-content/40" />
+      <Trail size={16} className="flex-shrink-0 text-base-content/40" />
     </button>
   );
 }

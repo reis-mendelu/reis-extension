@@ -219,6 +219,10 @@ const ALLOWED_HOSTS = [
   'webiskam.mendelu.cz', // phone/iPad only: the ISIC Hlavní konto balance and the GoPay
   // top-up start, signed in as the student via alibaba.mendelu.cz (also mendelu.cz).
   // Already covered by the mendelu.cz suffix; listed so the disclosure is explicit.
+  'bookings.cloud.microsoft', // phone/iPad only: the library's study-room booking sends the
+  // student's name, MENDELU e-mail, student number and faculty code to the library's own
+  // Microsoft Bookings (MENDELU's tenant), straight from the device, only when they book.
+  // Removed with the first booking feature (#275), back with this one. src/mobile/library/ only.
 
   // --- deep links the STUDENT opens; no background request is made ---
   'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
@@ -231,6 +235,9 @@ const ALLOWED_HOSTS = [
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
   'checkout.gopay.com', // the same page, at the host WebISKAM has sent since Nov 2026
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
+  'addons.mozilla.org', // the Firefox extension's "Ohodnotit reIS" link (utils/extensionReviewUrl.ts)
+  'reisapp.cz', // reIS's own how-to guides (utils/guideUrl.ts), opened from Nápověda.
+  // Only `z=app` rides along, nothing about the student.
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport

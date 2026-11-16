@@ -175,6 +175,7 @@ Add a fixture by dropping a JSON file in `dev/fixtures/` — no plumbing needed.
 | `--route "<url substring>=<file>"` | Answer matching requests from a local file — an asset still in review (a reis-data model not yet on jsDelivr). The run prints how often each route was hit; `never requested` means the flag did nothing. Repeatable. |
 | `--wait-for '<selector>'` | Fail unless the selector appears — the presence proof a clean run never gives. A miss saves `<label>-<w>-wait-for-miss.png` and prints the console. |
 | `--hover TEXT` | Rest the pointer on the LAST exact-text match (a drawer mounts after the calendar it covers), for hover cards. |
+| `--init-script FILE` | Run a JS file in the page before the app, for what the dev webapp has nobody to answer: the content script's proxy replies, e.g. a synthetic photo for `/lide/foto.pl` so the photo enlarge is reachable. The dev origin is not a trusted proxy origin, so hand the reply to the app's own `message` listener rather than `postMessage` it. Repeatable. |
 | `--no-webgl` | Launch without WebGL, to photograph a 3D surface's fallback. Runs otherwise get SwiftShader, because headless Chromium has no GPU. |
 
 zsh does not word-split an unquoted variable: `R="--route a=b"; … $R` passes ONE argument

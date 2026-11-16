@@ -3,6 +3,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { installNodeRuntime } from './lib/nodeRuntime';
+import { firstPages, laterPages, type Page } from './lib/isHtmlPages';
 
 const LOGIN_URL = 'https://is.mendelu.cz/system/login.pl';
 const OUT = resolve(process.cwd(), 'public/dev-real-data.json');
@@ -63,21 +64,24 @@ async function dumpRawHtml() {
     return;
   }
   mkdirSync(HTML_OUT, { recursive: true });
-  const pages: Array<[string, string]> = [
-    [
-      'study-plan',
-      `${BASE_URL}/auth/studijni/studijni_povinnosti.pl?studium=${studium};razeni=obdobi`,
-    ],
-    ['exam-terms', `${BASE_URL}/auth/student/terminy_seznam.pl?studium=${studium}`],
-  ];
-  for (const [name, base] of pages) {
-    for (const lang of ['cz', 'en']) {
-      const res = await fetchWithAuth(`${base};lang=${lang}`);
-      const html = await res.text();
-      const file = resolve(HTML_OUT, `${name}.${lang}.html`);
-      writeFileSync(file, html);
-      process.stderr.write(`[dump] ${file} (${html.length} bytes)\n`);
+  const ids = { studium, obdobi: params.obdobi ?? '', studentId: params.studentId ?? '' };
+  const dumped = new Map<string, string>();
+  const save = async (pages: Page[]) => {
+    for (const [name, base] of pages) {
+      for (const lang of ['cz', 'en']) {
+        const res = await fetchWithAuth(`${base}${base.includes('?') ? ';' : '?'}lang=${lang}`);
+        const html = await res.text();
+        if (lang === 'cz') dumped.set(name, html);
+        const file = resolve(HTML_OUT, `${name}.${lang}.html`);
+        writeFileSync(file, html);
+        process.stderr.write(`[dump] ${file} (${html.length} bytes)\n`);
+      }
     }
+  };
+  await save(firstPages(BASE_URL, ids));
+  for (let next = laterPages(BASE_URL, ids, dumped); next.length;) {
+    await save(next);
+    next = laterPages(BASE_URL, ids, dumped);
   }
 }
 

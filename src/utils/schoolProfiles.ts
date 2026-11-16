@@ -18,7 +18,10 @@
  * - novinky, reports, partners, adminConsole, impersonation: Supabase rows,
  *   which a non-MENDELU build is cut off from;
  * - eduroam (MENDELU's RADIUS server), welcome (its eduroam set-up),
- *   studyDocuments, practiceTests: MENDELU only.
+ *   studyDocuments, practiceTests: MENDELU only;
+ * - storeRating ("Ohodnotit reIS"): the store listings are MENDELU's reIS;
+ * - guides (Nápověda): reisapp.cz's guides describe MENDELU's IS, eduroam
+ *   and ISIC.
  */
 export const ALL_FEATURES = [
   'campusMap',
@@ -39,6 +42,8 @@ export const ALL_FEATURES = [
   'welcome',
   'studyDocuments',
   'practiceTests',
+  'storeRating',
+  'guides',
 ] as const;
 
 export type Feature = (typeof ALL_FEATURES)[number];

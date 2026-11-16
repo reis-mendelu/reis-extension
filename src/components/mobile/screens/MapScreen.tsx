@@ -6,6 +6,12 @@ import { OsmTileAccessBanner } from '../../CampusMap/OsmTileAccessBanner';
 import { EventLayer } from '../../CampusMap/EventLayer';
 import { SocietyPinLayer } from '../../CampusMap/SocietyPinLayer';
 import { SportPlaceLayer } from '../../CampusMap/SportPlaceLayer';
+import { LibraryPinLayer } from './map/library/LibraryPinLayer';
+import { LibraryTints } from './map/library/LibraryTints';
+import { isLibraryQuery, libraryRoomName, libraryRoomOf } from './map/library/librarySearch';
+import { openLibrary } from './map/library/openLibrary';
+import { canBookLibrary } from '../../../mobile/library/transport';
+import { isDemoMode } from '../../../errors/demoMode';
 import { roomLabel } from '../../CampusMap/mapHelpers';
 import type { MapSelection } from '../../../types/campusMap';
 import { FloorSwitcher } from './map/FloorSwitcher';
@@ -50,7 +56,7 @@ export function MapScreen() {
   // it: they are independent components over the same MapCanvas, so counting
   // in one place would have made the number silently desktop-only.
   useMapDwell();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const query = useAppStore((s) => s.mapSearchQuery);
   const results = useAppStore((s) => s.mapSearchResults);
   const setQuery = useAppStore((s) => s.setMapSearchQuery);
@@ -59,8 +65,14 @@ export function MapScreen() {
   const focusLandmarkById = useAppStore((s) => s.focusLandmarkById);
   const focusSocietyPin = useAppStore((s) => s.focusSocietyPin);
 
+  // The library's six rooms are booked from its own card, so a search for the
+  // library (or for one of its rooms) opens that card, not a bare room.
+  const bookable = canBookLibrary() && !isDemoMode();
+  const showLibrary = bookable && isLibraryQuery(query);
   const selectResult = (m: MapSelection) => {
-    if (m.kind === 'poi') focusPoiById(m.poi.id);
+    const libraryRoom = bookable ? libraryRoomOf(m) : null;
+    if (libraryRoom !== null) openLibrary(libraryRoom);
+    else if (m.kind === 'poi') focusPoiById(m.poi.id);
     else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
     else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id);
     else if (m.kind === 'placedRoom') focusRoomByCode(m.label);
@@ -85,6 +97,8 @@ export function MapScreen() {
       <EventLayer />
       <SocietyPinLayer />
       <SportPlaceLayer />
+      <LibraryPinLayer />
+      <LibraryTints />
       <FloorSwitcher />
       {/* marginTop carries --safe-top because this floating bar is the topmost
           element on the map screen and targetSdk 36 forces edge-to-edge: without
@@ -118,11 +132,27 @@ export function MapScreen() {
             style={{ color: '#f3f4f6' }}
           />
         </label>
-        {results.length > 0 && (
+        {(results.length > 0 || showLibrary) && (
           <ul
             className="absolute mt-1.5 max-h-64 w-full overflow-auto rounded-2xl backdrop-blur-md"
             style={{ background: 'rgba(31,41,55,.96)', border: '1px solid rgba(243,244,246,.1)' }}
           >
+            {showLibrary && (
+              <li>
+                <button
+                  type="button"
+                  data-testid="library-search-row"
+                  onClick={() => {
+                    openLibrary();
+                    setQuery('');
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-[13.5px] font-semibold"
+                  style={{ color: '#f3f4f6' }}
+                >
+                  {t('mobile.library.searchRow')}
+                </button>
+              </li>
+            )}
             {results.map((m, i) => (
               <li key={i}>
                 <button
@@ -131,7 +161,7 @@ export function MapScreen() {
                   className="w-full px-4 py-2.5 text-left text-[13.5px]"
                   style={{ color: '#f3f4f6' }}
                 >
-                  {resultLabel(m)}
+                  {libraryRoomName(bookable ? libraryRoomOf(m) : null, language) ?? resultLabel(m)}
                 </button>
               </li>
             ))}

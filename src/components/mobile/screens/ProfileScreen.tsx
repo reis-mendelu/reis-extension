@@ -15,6 +15,7 @@ import { AboutSection } from './profile/AboutSection';
 import { StudySwitcher } from '../../StudySwitcher/StudySwitcher';
 import { ProfileIdentity } from './profile/ProfileIdentity';
 import { IskamProfileRow } from './profile/IskamProfileRow';
+import { HelpRow } from './profile/HelpRow';
 import { NavRow } from '../primitives/NavRow';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
@@ -120,6 +121,7 @@ export function ProfileScreen() {
 
           <div className="mx-4 my-2 h-px bg-base-content/10" />
 
+          <HelpRow />
           <NavRow
             icon={MessageSquarePlus}
             label={t('settings.reportBug')}

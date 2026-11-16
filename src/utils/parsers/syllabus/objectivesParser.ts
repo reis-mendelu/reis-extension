@@ -5,6 +5,8 @@ const OBJECTIVES_LABELS = [
   'Aims of the course and learning outcomes',
   'Course objectives and learning outcomes',
   'Aims of the course',
+  // What is.mendelu.cz's English page actually prints (singular), read 2026-11-16.
+  'Aim of the course and learning outcomes',
 ];
 
 /**
