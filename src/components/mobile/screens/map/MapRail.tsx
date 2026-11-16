@@ -87,11 +87,14 @@ export function MapRail() {
   // corner was what they saw instead (Dominik, 11 November 2026). The open
   // button stays, one tap away.
   const showsRoom = selection?.kind === 'room' || selection?.kind === 'roomRef';
+  // A boolean, not the card: the library's view is a new object on every
+  // render, and as a dependency it reopened a rail the student had just closed.
+  const hasCard = !!selectedCard;
   useEffect(() => {
-    if (selectedCard || showsRoomNote) setOpen(true);
+    if (hasCard || showsRoomNote) setOpen(true);
     else if (showsRoom) setOpen(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
-  }, [selectedCard, selection, setOpen]);
+  }, [hasCard, selection, setOpen]);
 
   if (!open) return <MapRailOpenButton onOpen={() => setOpen(true)} />;
 

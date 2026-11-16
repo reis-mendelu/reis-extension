@@ -65,7 +65,13 @@ export function panPinClearOfSheet(
  * six rooms — can take most of the screen, and a fit that ignored it put the
  * rooms under the search bar at a zoom too far out to read.
  */
-export function fitAboveSheet(map: L.Map, box: L.LatLngBounds, maxZoom: number): void {
+export function fitAboveSheet(
+  map: L.Map,
+  box: L.LatLngBounds,
+  maxZoom: number,
+  /** Asked when the fit runs: false (the student went elsewhere meanwhile) skips it. */
+  stillWanted: () => boolean = () => true
+): void {
   let removed = false;
   const onUnload = () => {
     removed = true;
@@ -73,7 +79,7 @@ export function fitAboveSheet(map: L.Map, box: L.LatLngBounds, maxZoom: number):
   map.once('unload', onUnload);
   setTimeout(() => {
     map.off('unload', onUnload);
-    if (removed) return;
+    if (removed || !stillWanted()) return;
     const sheet = document.querySelector('[data-testid="map-sheet"]');
     const container = map.getContainer();
     const origin = container.getBoundingClientRect().top;

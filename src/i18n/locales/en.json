@@ -1672,7 +1672,8 @@
       "extend": "Extend until {time}",
       "extended": "Extended until {time}",
       "otherTime": "Another time or room",
-      "busy": "Wait, the previous booking is still being processed."
+      "busy": "Wait, the previous booking is still being processed.",
+      "someUnknown": "Some rooms could not be loaded; their hours are missing here."
     }
   },
   "session": {

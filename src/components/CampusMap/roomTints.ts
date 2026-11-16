@@ -36,7 +36,9 @@ export function applyRoomTints(
         entry.base = { ...entry.plain, ...DIMMED };
         entry.poly.closeTooltip();
       } else {
-        entry.base = entry.plain;
+        // Leaflet's setStyle changes only the keys it is given: name the
+        // opacity the dimming lowered, or the stroke stays faint.
+        entry.base = { ...entry.plain, opacity: 1 };
         if (tip?.options.permanent) entry.poly.openTooltip();
       }
       entry.poly.setStyle(id === selectedId ? selectedStyle : entry.base);

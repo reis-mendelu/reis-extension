@@ -62,7 +62,10 @@ export function LibraryCancelSheet({ eventId, onClose }: { eventId: string; onCl
 
   return (
     <Sheet size="content" onClose={sending ? () => undefined : onClose} elevated>
-      <SheetHeader title={t('mobile.library.cancelTitle')} onClose={onClose} />
+      <SheetHeader
+        title={t('mobile.library.cancelTitle')}
+        onClose={sending ? () => undefined : onClose}
+      />
       <div className="flex flex-col gap-3 px-4 pb-5">
         <div className="rounded-xl bg-base-200 p-3">
           <span className="text-md font-semibold text-base-content">{block.title}</span>

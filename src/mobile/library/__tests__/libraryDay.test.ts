@@ -200,3 +200,12 @@ describe('libraryRoomOf', () => {
     ).toBeNull();
   });
 });
+
+describe('hourCells with a partial answer', () => {
+  it('calls an hour unknown, not taken, while some room could not be read', () => {
+    const blocks = { [ind1!.featureId]: [], [ind2!.featureId]: null };
+    expect(hourCells(blocks, WED, at(9), new Set()).find((c) => c.hour === 10)?.state).toBe(
+      'unknown'
+    );
+  });
+});

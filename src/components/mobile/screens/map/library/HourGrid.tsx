@@ -27,7 +27,7 @@ export function HourGrid({
       {cells.map(({ hour, state, lesson }) => {
         const on = picked.includes(hour);
         const look =
-          state === 'past'
+          state === 'past' || state === 'unknown'
             ? 'text-base-content/40'
             : state === 'taken'
               ? 'bg-base-content/5 text-base-content/50 line-through'

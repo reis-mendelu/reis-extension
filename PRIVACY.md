@@ -16,7 +16,7 @@ We fetch and store the following information directly from MENDELU services to y
 
 This data is stored **locally on your device** using highly efficient storage (IndexedDB) and is **never** transmitted to our servers — with one exception: the daily usage count (section 3) carries two group labels taken from your study details, your faculty and your study programme's base code.
 
-Nothing else of it is ever sent: no name, email, student ID, grade or timetable. Library study-room booking — the one feature that ever relayed your name, university email and student ID onwards — was removed in September 2026, together with the server route that carried it.
+Nothing else of it is ever sent to us: no name, email, student ID, grade or timetable. The first library study-room booking, which relayed your name, university email and student ID through a reIS server route, was removed in September 2026 together with that route. Booking came back in the mobile app without any reIS server: when you book or cancel a study room, your device sends your name, MENDELU e-mail, student number and faculty code straight to the library's own Microsoft Bookings (see "Services we contact" below).
 
 ### 2. Anonymous Usage Analytics
 We collect anonymous usage data to improve the extension:

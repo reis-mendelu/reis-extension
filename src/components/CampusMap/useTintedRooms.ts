@@ -71,6 +71,14 @@ export function useTintedRooms({
       paddingBottomRight: view.paddingBottomRight,
       animate: false,
     });
-    if (isPhone) fitAboveSheet(lens, box, view.maxZoom);
+    // Only while this is still the selection: another building picked within
+    // the 350 ms must not be pulled back to the library.
+    if (isPhone)
+      fitAboveSheet(
+        lens,
+        box,
+        view.maxZoom,
+        () => useAppStore.getState().mapSelection === mapSelection
+      );
   }, [mapSelection, isPhone, mapRef, railRef, polys]);
 }

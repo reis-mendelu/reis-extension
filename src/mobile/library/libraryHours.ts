@@ -8,7 +8,8 @@ import { bookedOn } from './bookingService';
 /** Per map room id; `undefined` = not read yet, `null` = could not ask. */
 export type RoomBlocks = Record<number, Block[] | null | undefined>;
 
-export type HourState = 'past' | 'taken' | 'free';
+/** `unknown`: no room is known free, but some room's hours could not be read. */
+export type HourState = 'past' | 'taken' | 'free' | 'unknown';
 export interface HourCell {
   hour: number;
   state: HourState;
@@ -40,9 +41,12 @@ export function hourCells(
   lessons: ReadonlySet<number>
 ): HourCell[] {
   const byRoom = freeByRoom(blocks, day, now);
+  // A room the library did not answer for is "could not ask", never "full".
+  const unanswered = LIBRARY_ROOMS.some((r) => blocks[r.featureId] === null);
   return HOURS.map((hour) => {
     const free = [...byRoom.values()].filter((hs) => hs.includes(hour)).length;
-    const state: HourState = free > 0 ? 'free' : hourGone(day, hour, now) ? 'past' : 'taken';
+    const state: HourState =
+      free > 0 ? 'free' : hourGone(day, hour, now) ? 'past' : unanswered ? 'unknown' : 'taken';
     return { hour, state, free, lesson: lessons.has(hour) };
   });
 }

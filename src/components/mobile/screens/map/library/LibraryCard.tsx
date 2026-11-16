@@ -53,8 +53,9 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   const cells = known ? hourCells(blocks, day, now, lessonHours(lessons, day)) : [];
   const left = Math.max(0, DAILY_CAP - bookedOn(mine, day));
   const fits = (hours: number[]) => roomsFreeFor(blocks, day, now, hours).length > 0;
-  // A pick that lost its last free room (booked meanwhile) starts over.
-  const sel = picked.length && fits(picked) ? picked : [];
+  // A pick that lost its last free room (booked meanwhile), or no longer fits
+  // what is left of the daily cap (an extension used it), starts over.
+  const sel = picked.length && picked.length <= left && fits(picked) ? picked : [];
   const span = rangeOf(sel);
 
   // Each day and each pick starts at the top of the panel, not where the
@@ -108,6 +109,11 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
               useLibraryStore.setState({ day, picked: toggleHour(sel, h, fits, left) })
             }
           />
+          {cells.some((c) => c.state === 'unknown') && (
+            <p role="status" className="text-xs text-base-content/70">
+              {t('mobile.library.someUnknown')}
+            </p>
+          )}
           {left === 0 && (
             <p className="text-xs text-base-content/70">
               {t('mobile.library.capReached', { cap: DAILY_CAP })}

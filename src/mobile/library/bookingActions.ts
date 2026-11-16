@@ -6,6 +6,7 @@ import { useLibraryStore } from './libraryStore';
 import { nativeBookingsHttp } from './transport';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS, type LibraryRoom } from '../../data/map/libraryRooms';
+import { logError } from '../../utils/reportError';
 
 export interface BookAction {
   room: LibraryRoom;
@@ -61,7 +62,13 @@ async function bookUnlocked(a: BookAction): Promise<BookResult> {
   });
   if (r.kind === 'ok' || r.kind === 'partial' || r.kind === 'unconfirmed') {
     for (const e of r.events) {
-      await app.addCalendarCustomEvent(e);
+      // One failed calendar write (storage quota) must not drop the hours
+      // after it: each was booked and its cancel key belongs in the calendar.
+      try {
+        await app.addCalendarCustomEvent(e);
+      } catch (err) {
+        logError('Library.record', err);
+      }
       for (let h = Number(e.startTime.slice(0, 2)); h < Number(e.endTime.slice(0, 2)); h++)
         useLibraryStore.getState().markTaken(a.room.featureId, a.day, h);
     }

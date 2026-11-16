@@ -521,7 +521,13 @@ export function MapCanvas() {
       );
     }
     // The card hugs the lower part of a phone's screen: the rooms go above it.
-    if (isPhone && tinted) fitAboveSheet(map, tinted, view?.maxZoom ?? 21);
+    if (isPhone && tinted)
+      fitAboveSheet(
+        map,
+        tinted,
+        view?.maxZoom ?? 21,
+        () => useAppStore.getState().mapSelection === sel
+      );
     // isPhone joins the deps because the rail offset reads it. It is stable
     // for the life of a device, but it flips on a browser resize, and this
     // effect is idempotent by design (see the 'draft' branch's note), so
