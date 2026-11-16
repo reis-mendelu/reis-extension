@@ -7,6 +7,7 @@ import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
 import { TermBuiltinActions, TermDetailLink } from './ExamPanel/TermBuiltinActions';
 import { TermExtras } from './ExamPanel/TermExtras';
 import { AttemptPill } from './ExamPanel/AttemptPill';
+import { GuideLink } from './Guides/GuideLink';
 
 const attemptAccentClass: Record<string, string> = {
   regular: 'bg-success/50',
@@ -181,6 +182,9 @@ export function TermTile({
                     {blockedLabel}
                   </span>
                   <TermBuiltinActions term={term} />
+                  {/* Beside IS's own reason, when it gives one: that says what is
+                      missing, the guide what to do about it. */}
+                  <GuideLink guide="exams" section="troubleshoot" className="text-[10px]" />
                 </div>
               ) : term.capacity ? (
                 <>
@@ -350,6 +354,7 @@ export function TermTile({
                       {blockedLabel}
                     </span>
                     <TermBuiltinActions term={term} />
+                    <GuideLink guide="exams" section="troubleshoot" className="text-[10px]" />
                   </div>
                 ) : term.capacity ? (
                   <div className="flex items-center gap-2">

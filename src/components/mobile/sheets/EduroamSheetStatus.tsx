@@ -3,6 +3,7 @@ import type { EduroamStatus, EduroamTarget } from '../../../hooks/data/useEduroa
 import { useTranslation } from '../../../hooks/useTranslation';
 import { isEduroamConfigured, type EduroamConfigOutcome } from '../../../mobile/configureEduroam';
 import type { NetworkFailure } from '../../../services/eduroam/networkFailure';
+import { GuideLink } from '../../Guides/GuideLink';
 
 export interface EduroamSheetStatusProps {
   status: EduroamStatus;
@@ -56,7 +57,8 @@ export function EduroamSheetStatus({
                     : outcome === 'failed'
                       ? t('eduroam.native.failed')
                       : `${t('eduroam.native.error')}${error ? `: ${error}` : ''}`
-                : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}
+                : `${t('eduroam.error')}${error ? `: ${error}` : ''}`}{' '}
+            <GuideLink guide="eduroam" section="troubleshoot" />
           </span>
         </div>
       )}

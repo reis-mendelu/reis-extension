@@ -1713,5 +1713,10 @@
   "newBox": {
     "kind": "New submission box",
     "badge": "New"
+  },
+  "guides": {
+    "help": "Help",
+    "troubleshoot": "Why isn't it working?",
+    "official": "Another way"
   }
 }

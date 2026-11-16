@@ -44,7 +44,12 @@ describe('school profiles in the build', () => {
       'partners',
       'reports',
       'storeRating',
+      'guides',
     ],
+    // One gate for every contextual "Proč to nejde?" / "Jiný postup" link,
+    // and the phone's Nápověda row.
+    'components/Guides/GuideLink.tsx': ['guides'],
+    'components/mobile/screens/profile/HelpRow.tsx': ['guides'],
     'components/SubjectFileDrawer/Header/CourseMeta.tsx': ['campusMap'],
     'components/SubjectFileDrawer/Header/HeaderTabs.tsx': ['successRates'],
     'components/Feedback/ReportMissingLink.tsx': ['reports'],

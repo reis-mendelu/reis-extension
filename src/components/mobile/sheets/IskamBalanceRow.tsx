@@ -5,6 +5,7 @@ import { useIskamStore } from '../../../mobile/iskam/iskamStore';
 import { formatKc } from './formatKc';
 import { IskamClaims } from './IskamClaims';
 import { IskamTopUpForm } from './IskamTopUpForm';
+import { GuideLink } from '../../Guides/GuideLink';
 
 /**
  * The ISIC Hlavní konto balance, at the top of the jídelníček sheet.
@@ -90,6 +91,12 @@ export function IskamBalanceRow() {
           {t('iskam.topUp')}
         </button>
       </div>
+      {/* reIS cannot reach WebISKAM right now; the guide's official way can. */}
+      {status === 'unavailable' && (
+        <p className="mt-1.5 text-2sm">
+          <GuideLink guide="isic" section="official" />
+        </p>
+      )}
       {canTopUp && lastTopUp?.kind === 'added' && (
         <p role="status" className="mt-2 text-2sm font-bold text-[var(--tone-success)]">
           {t('iskam.added', { amount: formatKc(lastTopUp.amount, language) })}

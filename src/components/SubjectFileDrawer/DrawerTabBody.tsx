@@ -12,6 +12,7 @@ import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { LoadFailed } from '../LoadFailed';
+import { GuideLink } from '../Guides/GuideLink';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 import type { Classmate } from '../../types/classmates';
@@ -103,6 +104,8 @@ export function DrawerTabBody({
     // sync's "loading" bar, which would otherwise hide it (Návrhy #26).
     const showFailed = filesFailed && isEmpty && !isFilesLoading;
     const showProgress = showSkeleton || (isSyncing && isEmpty && !showFailed);
+    // Both trees, so not behind showIsBacklink (off on the phone).
+    const officialWay = <GuideLink guide="subjects" section="official" className="mt-2 text-sm" />;
 
     return (
       <>
@@ -118,7 +121,9 @@ export function DrawerTabBody({
         {showSkeleton ? (
           <FileListSkeleton />
         ) : showFailed ? (
-          <LoadFailed testId="files-error" onRetry={() => refreshFilesForSubject(courseCode)} />
+          <LoadFailed testId="files-error" onRetry={() => refreshFilesForSubject(courseCode)}>
+            {officialWay}
+          </LoadFailed>
         ) : isEmpty && !showProgress ? (
           <div className="flex flex-1 flex-col items-center justify-center h-full p-6 text-center">
             <FileText className="w-12 h-12 text-base-content/20 mb-3" />
@@ -127,6 +132,7 @@ export function DrawerTabBody({
                 schedule, which is simply not true — a searched subject can have
                 files, and saying otherwise sent students to IS for nothing. */}
             <p className="text-sm text-base-content/60">{t('course.footer.noFilesAvailable')}</p>
+            {officialWay}
             {folderUrl && showIsBacklink && (
               <ISBacklink
                 href={

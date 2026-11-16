@@ -232,6 +232,8 @@ const ALLOWED_HOSTS = [
   'checkout.gopay.com', // the same page, at the host WebISKAM has sent since Nov 2026
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
   'addons.mozilla.org', // the Firefox extension's "Ohodnotit reIS" link (utils/extensionReviewUrl.ts)
+  'reisapp.cz', // reIS's own how-to guides (utils/guideUrl.ts): Nápověda and the "Proč to
+  // nejde?" links. Only `z=app` and `utm_source=reis-app` ride along, nothing about the student.
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
