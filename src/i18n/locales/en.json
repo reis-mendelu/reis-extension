@@ -1626,7 +1626,6 @@
     "openingLink": "Opening…",
     "library": {
       "pinLabel": "Study rooms",
-      "pinAria": "Library study rooms, free: {count}",
       "title": "Library",
       "place": "Building A, floor −1",
       "today": "Today",
@@ -1663,7 +1662,7 @@
       "freeAt": "Free {time}",
       "holiday": "{name}: the library is closed.",
       "unconfirmed": "The library did not answer in time, but the booking most likely exists. It is in your calendar; the confirmation comes by e-mail.",
-      "cancelUnconfirmed": "reIS cannot cancel this one: the library did not answer in time. Cancel it through the library.",
+      "cancelUnconfirmed": "reIS cannot cancel this booking: it has no key for it from the library. Cancel it through the library; here you can remove it from your calendar.",
       "removeFromCalendar": "Remove from calendar"
     }
   },

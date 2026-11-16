@@ -1626,7 +1626,6 @@
     "openingLink": "Otevírám…",
     "library": {
       "pinLabel": "Studovny",
-      "pinAria": "Studovny, volné: {count}",
       "title": "Knihovna",
       "place": "Budova A, −1. patro",
       "today": "Dnes",
@@ -1663,7 +1662,7 @@
       "freeAt": "Volné {time}",
       "holiday": "{name}: knihovna má zavřeno.",
       "unconfirmed": "Knihovna neodpověděla včas, rezervace ale nejspíš vznikla. Je v kalendáři, potvrzení přijde e-mailem.",
-      "cancelUnconfirmed": "Tuhle rezervaci reIS zrušit neumí: knihovna tehdy neodpověděla včas. Zrušit ji jde přes knihovnu.",
+      "cancelUnconfirmed": "Tuhle rezervaci reIS zrušit neumí, nemá k ní klíč od knihovny. Zrušit ji jde přes knihovnu; z kalendáře ji tady odebereš.",
       "removeFromCalendar": "Odebrat z kalendáře"
     }
   },

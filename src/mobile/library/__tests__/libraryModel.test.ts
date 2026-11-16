@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { libraryTints, roomsOpenCount, TINT_FREE, TINT_FULL, TINT_PENDING } from '../libraryModel';
+import { libraryTints, TINT_FREE, TINT_FULL, TINT_PENDING } from '../libraryModel';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 import type { Block } from '../availability';
 
@@ -29,12 +29,5 @@ describe('libraryTints', () => {
       pending: true,
     });
     expect(t[ind2!.featureId]!.pending).toBe(true);
-  });
-});
-
-describe('roomsOpenCount', () => {
-  it('counts rooms with at least one bookable hour', () => {
-    const blocks = { [ind1!.featureId]: open, [ind2!.featureId]: [] as Block[] };
-    expect(roomsOpenCount(blocks, DAY, now)).toBe(1);
   });
 });

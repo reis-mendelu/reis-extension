@@ -104,4 +104,24 @@ describe('LibraryCancelSheet', () => {
       expect(toast.error).toHaveBeenCalledWith(expect.stringContaining('Zkontroluj e-mail'))
     );
   });
+
+  it('offers to remove a block that has no cancel key, and only from the calendar', async () => {
+    // Saved before storage kept libraryBooking (2026-11-16): a library id, nothing else.
+    const legacy = {
+      id: 'library:OLD',
+      title: 'Studovna – Týmová 2',
+      date: '20261120',
+      startTime: '09:00',
+      endTime: '11:00',
+      room: 'Týmová 2',
+    };
+    useAppStore.setState({ customEvents: [legacy] } as never);
+    const onClose = vi.fn();
+    render(<LibraryCancelSheet eventId="library:OLD" onClose={onClose} />);
+    expect(screen.getByText(/nemá k ní klíč/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Odebrat z kalendáře' }));
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(cancelAndRemove).not.toHaveBeenCalled();
+    expect(useAppStore.getState().customEvents).toEqual([]);
+  });
 });

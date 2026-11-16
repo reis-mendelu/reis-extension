@@ -42,7 +42,6 @@ const MOBILE_ONLY = [
   'src/components/mobile/screens/map/library/MyBookings.tsx',
   'src/components/mobile/screens/map/library/DayChips.tsx',
   'src/components/mobile/screens/map/library/HourGrid.tsx',
-  'src/components/mobile/screens/map/library/chipPlacement.ts',
   'src/components/mobile/screens/map/library/librarySearch.ts',
   'src/components/mobile/sheets/LibraryConfirm.tsx',
   'src/components/mobile/sheets/LibraryBookSheet.tsx',

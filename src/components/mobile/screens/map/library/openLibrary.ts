@@ -7,8 +7,12 @@ import { withOwnBookings } from '../../../../../mobile/library/libraryHours';
 import { getMapInstance } from '../../../../CampusMap/mapInstance';
 import { panPinClearOfSheet } from '../../../../CampusMap/sheetClearance';
 
-/** The library, where building A stands on the campus overview. */
-export const LIBRARY_COORD: [number, number] = [16.6152, 49.20996];
+/**
+ * The study rooms themselves: the middle of Týmová 1/2 and Individuální 1/2 on
+ * the left of building A, from their floor-plan polygons (2026-11-16). The pin
+ * sits there, like every other place pin sits on its place.
+ */
+export const LIBRARY_COORD: [number, number] = [16.615184, 49.209955];
 
 /**
  * Opens the library card. Without a room the map stays on the campus with the

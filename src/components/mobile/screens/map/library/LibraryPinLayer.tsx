@@ -4,26 +4,21 @@ import { Library } from 'lucide-react';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { useEventPinPlacement } from '../../../../CampusMap/useEventPinPlacement';
+import { PIN_FACE, PIN_FACE_CHOSEN, PIN_TAP_PAD } from '../../../../CampusMap/pinGeometry';
 import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
-import { roomsOpenCount } from '../../../../../mobile/library/libraryModel';
-import { shownDay } from '../../../../../mobile/library/libraryDay';
 import { canBookLibrary } from '../../../../../mobile/library/transport';
 import { isDemoMode } from '../../../../../errors/demoMode';
 import { LIBRARY_COORD, openLibrary } from './openLibrary';
-import { withOwnBookings } from '../../../../../mobile/library/libraryHours';
-import { chipOffset } from './chipPlacement';
 
-/** The chip's hit box: 44 px tall for a finger, wide enough for its name and count. */
-const CHIP_W = 124;
-const CHIP_H = 44;
+/** Fixed ink on the light basemap, like every place pin; not a society's colour or the buildings' blue. */
+const PIN_INK = '#6D28D9';
 
 /**
- * The library on the campus overview: a white chip that says "Studovny" and,
- * once the library has answered, how many rooms still have an hour on the shown
- * day. It replaced a 30 px dot that sat under the same fingertip as Vazbič's
- * pin; the chip steps aside from any society pin or venue (chipPlacement.ts),
- * on the ground, so it does not jump while the map moves.
- * Not drawn once a building is open: there the rooms themselves are the way in.
+ * The library on the campus overview: the standard place pin (pinGeometry.ts,
+ * the Sportera and venue pins' size), on the study rooms at the left of
+ * building A, named only once chosen (Dominik, 2026-11-16: "everything on the
+ * map is just a pin, and the study rooms should be exactly that"). Not drawn
+ * once a building is open: there the rooms themselves are the way in.
  *
  * Reading the free hours is a store action; this only asks for it when the map
  * is shown. Nothing about the student is sent to read them.
@@ -31,12 +26,7 @@ const CHIP_H = 44;
 export function LibraryPinLayer() {
   const { t } = useTranslation();
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
-  const societyPins = useAppStore((s) => s.societyPins);
-  const venuePins = useAppStore((s) => s.venuePins);
-  const raw = useLibraryStore((s) => s.blocks);
-  const mine = useAppStore((s) => s.customEvents);
-  const blocks = useMemo(() => withOwnBookings(raw, mine), [raw, mine]);
-  const status = useLibraryStore((s) => s.status);
+  const chosen = useAppStore((s) => s.mapSelection?.kind === 'library');
   const load = useLibraryStore((s) => s.load);
   const bookable = canBookLibrary() && !isDemoMode();
   useEffect(() => {
@@ -47,53 +37,44 @@ export function LibraryPinLayer() {
     () => (bookable && activeBuildingId === null ? [{ key: 'library', coord: LIBRARY_COORD }] : []),
     [bookable, activeBuildingId]
   );
-  // Which side the chip takes depends only on where the other pins stand, so it
-  // is worked out once per set of pins, never per frame.
-  const off = useMemo(
-    () =>
-      chipOffset(
-        LIBRARY_COORD,
-        [...venuePins, ...societyPins].map((p) => p.coord),
-        CHIP_W,
-        CHIP_H
-      ),
-    [venuePins, societyPins]
-  );
   const { placed, pane } = useEventPinPlacement(items, null);
   const at = placed.find((p) => p.key === 'library');
   if (!pane || !at || items.length === 0) return null;
 
-  const now = new Date();
-  const count = roomsOpenCount(blocks, shownDay(now), now);
-  const ready = status === 'ready';
+  const face = chosen ? PIN_FACE_CHOSEN : PIN_FACE;
   return createPortal(
     <button
       type="button"
       data-testid="library-pin"
-      className="pointer-events-auto absolute left-0 top-0 flex items-center justify-center leaflet-zoom-animated"
+      className="group pointer-events-auto absolute left-0 top-0 leaflet-zoom-animated"
       style={{
-        width: CHIP_W,
-        height: CHIP_H,
-        transform: `translate(${at.x + off.x}px, ${at.y + off.y}px) translate(-50%, -50%)`,
+        transform: `translate(${at.x}px, ${at.y}px) translate(-50%, -50%)`,
+        padding: PIN_TAP_PAD,
+        zIndex: chosen ? 1 : 0,
       }}
-      aria-label={ready ? t('mobile.library.pinAria', { count }) : t('mobile.library.pinLabel')}
+      aria-label={t('mobile.library.pinLabel')}
+      aria-pressed={chosen}
       onClick={() => openLibrary()}
     >
       <span
-        className="flex h-8 items-center gap-1.5 rounded-full bg-white pl-2 pr-2.5 text-[13px] font-semibold text-neutral"
-        style={{ border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 1px 4px rgba(0,0,0,.28)' }}
+        className="flex items-center justify-center rounded-full bg-white transition-transform group-hover:scale-110"
+        style={{
+          width: face,
+          height: face,
+          color: PIN_INK,
+          boxShadow: `0 0 0 ${chosen ? 3 : 2}px ${PIN_INK}, 0 1px ${chosen ? 7 : 4}px rgba(0,0,0,${chosen ? 0.4 : 0.28})`,
+        }}
       >
-        <Library size={15} aria-hidden="true" />
-        {t('mobile.library.pinLabel')}
-        {ready && count > 0 && (
-          <span
-            aria-hidden="true"
-            className="flex h-4 min-w-4 items-center justify-center rounded-full bg-success px-1 text-[10px] font-bold leading-none text-success-content"
-          >
-            {count}
-          </span>
-        )}
+        <Library size={chosen ? 18 : 15} aria-hidden="true" />
       </span>
+      {chosen && (
+        <span
+          className="pointer-events-none absolute left-1/2 top-full -mt-1 -translate-x-1/2 whitespace-nowrap rounded-full bg-white px-1.5 py-px text-[11px] font-bold shadow"
+          style={{ color: '#111827' }}
+        >
+          {t('mobile.library.pinLabel')}
+        </span>
+      )}
     </button>,
     pane
   );

@@ -40,11 +40,3 @@ export function libraryTints(
   }
   return out;
 }
-
-/** The count on the campus pin: rooms with at least one bookable hour on the shown day. */
-export function roomsOpenCount(blocks: Blocks, day: string, now: Date): number {
-  return LIBRARY_ROOMS.filter((r) => {
-    const b = blocks[r.featureId];
-    return b != null && freeHours(b, day, now).length > 0;
-  }).length;
-}

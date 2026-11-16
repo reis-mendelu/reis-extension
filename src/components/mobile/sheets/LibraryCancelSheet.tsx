@@ -20,7 +20,9 @@ export function LibraryCancelSheet({ eventId, onClose }: { eventId: string; onCl
   if (!block) return null;
   // Booked while the library did not answer: reIS has no key to cancel it with,
   // so the only honest offer is taking it out of the calendar.
-  const unconfirmed = !!block.libraryBooking?.unconfirmed;
+  // Also a block that lost its keys (saved before storage kept them).
+  const unconfirmed =
+    !!block.libraryBooking?.unconfirmed || !block.libraryBooking?.selfServiceIds.length;
   const forget = async () => {
     await useAppStore.getState().removeCalendarCustomEvent(eventId);
     onClose();
