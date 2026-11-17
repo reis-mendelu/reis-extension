@@ -266,6 +266,18 @@ export function useAppLogic() {
             }
           }
         }
+        // "No exams" arrives as an arrival without a list (the sync keeps the
+        // cached one rather than let an empty read wipe it). It still starts
+        // the known record, or a student with no dates yet would have their
+        // first published one taken as the baseline. Adding nothing to a
+        // record that exists changes nothing.
+        if (!r.exams && r.loaded?.includes('exams')) {
+          try {
+            await persistExamTerms([]);
+          } catch (err) {
+            logError('useAppLogic.persistExamTerms', err);
+          }
+        }
         if (r.exams) {
           useAppStore.getState().setExams(r.exams);
           // New terms since this device last saw a list become Novinky rows

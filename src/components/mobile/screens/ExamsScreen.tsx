@@ -60,7 +60,8 @@ export function ExamsScreen() {
   const now = useAppStore((s) => s.now);
   const userSemester = useAppStore((s) => s.userSemester);
   // Novinky's "Nový termín" rows go once the tab is in front.
-  const examsInFront = useAppStore((s) => s.mobileTab === 'exams');
+  // In front = its tab, with no sheet (a subject, settings) covering it.
+  const examsInFront = useAppStore((s) => s.mobileTab === 'exams' && s.mobileSheets.length === 0);
   useMarkExamTermsSeen(examsInFront);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);

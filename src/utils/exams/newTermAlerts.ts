@@ -2,6 +2,7 @@ import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import type { ExamSection, ExamSubject, ExamTerm } from '../../types/exams';
 import { parseDate } from '../date';
 import { examTermKey } from '../newExamTerms';
+import { isGroupSignupSection } from './isGroupSignup';
 
 function at(date: string, time = '00:00'): Date | null {
   try {
@@ -54,16 +55,16 @@ export function newTermAlerts(
   const wanted = new Set(unseen);
   return subjects.flatMap((subject) =>
     subject.sections
-      .filter((section) => section.status !== 'registered')
+      .filter((section) => section.status !== 'registered' && !isGroupSignupSection(section))
       .flatMap((section): DeadlineAlert[] => {
         const fresh = section.terms
-          .filter((t) => wanted.has(examTermKey(subject.code, section.id, t.id)))
+          .filter((t) => wanted.has(examTermKey(subject.code, t.id)))
           .filter((t) => stillUseful(t, now))
           .sort(
             (a, b) => (at(a.date, a.time)?.getTime() ?? 0) - (at(b.date, b.time)?.getTime() ?? 0)
           );
         if (fresh.length === 0) return [];
-        const keys = fresh.map((t) => examTermKey(subject.code, section.id, t.id));
+        const keys = fresh.map((t) => examTermKey(subject.code, t.id));
         return [
           {
             id: `exam-new-${keys.join('|')}`,

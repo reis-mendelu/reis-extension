@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 
 vi.mock('../../services/sync/examTermsUnseen', () => ({
   clearUnseenTerms: vi.fn(async () => undefined),
@@ -41,7 +41,7 @@ describe('a new exam term in Novinky', () => {
       zaznamnikNewPoints: {},
       odevzdavarnyNew: [],
       exams: { data: [vwa], status: 'success', error: null },
-      examTermsNew: [examTermKey('EBC-VWA', 'zk', '1')],
+      examTermsNew: [examTermKey('EBC-VWA', '1')],
     } as never);
   });
 
@@ -62,5 +62,17 @@ describe('a new exam term in Novinky', () => {
   it('stays while Zkoušky is not the screen in front', () => {
     renderHook(() => useMarkExamTermsSeen(false));
     expect(useAppStore.getState().examTermsNew).toHaveLength(1);
+  });
+
+  it('stays while the tab is hidden, and goes once it is shown', () => {
+    const vis = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    renderHook(() => useMarkExamTermsSeen(true));
+    expect(useAppStore.getState().examTermsNew).toHaveLength(1);
+    vis.mockReturnValue('visible');
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(useAppStore.getState().examTermsNew).toEqual([]);
+    vis.mockRestore();
   });
 });

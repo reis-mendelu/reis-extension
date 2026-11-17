@@ -20,7 +20,7 @@ const vwa = (section: Partial<ExamSection>): ExamSubject => ({
   sections: [{ id: 'zk', name: 'zkouška', type: 'exam', status: 'open', terms: [], ...section }],
 });
 
-const key = (termId: string) => examTermKey('EBC-VWA', 'zk', termId);
+const key = (termId: string) => examTermKey('EBC-VWA', termId);
 const names = { subject: (s: ExamSubject) => s.name, section: (s: ExamSection) => s.name };
 
 describe('newTermAlerts', () => {
@@ -63,5 +63,12 @@ describe('newTermAlerts', () => {
   it('keeps a full term: a place can free up, and the date is still news', () => {
     const subjects = [vwa({ terms: [term('1', '14.12.2026', { full: true })] })];
     expect(newTermAlerts(subjects, [key('1')], NOW, names)).toHaveLength(1);
+  });
+
+  // Seminar-group signups share the exam list but are not exams: no row, like
+  // the other exam alerts (isGroupSignupSection).
+  it('says nothing about a new seminar-group signup', () => {
+    const subjects = [vwa({ name: 'Zápis na cvičení', terms: [term('1', '14.12.2026')] })];
+    expect(newTermAlerts(subjects, [key('1')], NOW, names)).toEqual([]);
   });
 });
