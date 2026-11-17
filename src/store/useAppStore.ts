@@ -3,6 +3,7 @@ import type { AppState } from './types';
 import { watchSignedInStudent } from '../services/identity/watchSignedInStudent';
 import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
+import { createNewExamTermsSlice } from './slices/createNewExamTermsSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
 import { createZaznamnikSlice } from './slices/createZaznamnikSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
@@ -68,6 +69,7 @@ export const useAppStore = create<AppState>()(
   overlayGuard((...a) => ({
     ...createScheduleSlice(...a),
     ...createExamSlice(...a),
+    ...createNewExamTermsSlice(...a),
     ...createSyllabusSlice(...a),
     ...createZaznamnikSlice(...a),
     ...createFilesSlice(...a),
@@ -211,6 +213,7 @@ export const initializeStore = async () => {
     s2.loadGradeHistory();
     s2.fetchCvicneTests();
     s2.fetchOdevzdavarny();
+    void s2.loadExamTermsNew();
     s2.fetchAllFiles();
     s2.fetchAllClassmates();
     await s2.hydrateLastFilesFetchedAt();

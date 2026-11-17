@@ -5,6 +5,7 @@ import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
 import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
+import { recordExamTerms } from '../services/sync/recordExamTerms';
 import { notifyNewPoints } from '../services/newPointsNotifier';
 import { pastSubjectCodesOf, withoutPastSubjects } from '../utils/pastSubjects';
 
@@ -265,6 +266,9 @@ export function useAppLogic() {
           }
         }
         if (r.exams) useAppStore.getState().setExams(r.exams);
+        // Novinky's "Nový termín" rows: see services/sync/recordExamTerms.
+        const unseenTerms = await recordExamTerms(r);
+        if (unseenTerms) useAppStore.getState().setExamTermsNew(unseenTerms);
 
         if (r.subjects?.data) {
           const existing = (await IndexedDBService.get('subjects', 'current')) as {
