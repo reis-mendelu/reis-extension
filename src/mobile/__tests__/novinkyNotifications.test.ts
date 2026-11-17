@@ -29,10 +29,10 @@ import { useAppStore } from '../../store/useAppStore';
 import {
   installNovinkyNotifications,
   clearNovinkyNotifications,
-  openNovinkyFromNotification,
   NOVINKY_KIND,
   NOVINKY_NOTIFIED_KEY,
 } from '../novinkyNotifications';
+import { openNovinkyFromNotification } from '../novinkyTaps';
 import { examTermKey } from '../../utils/newExamTerms';
 import type { ExamSubject } from '../../types/exams';
 
@@ -67,6 +67,16 @@ const event = {
   priority: 'normal' as const,
 };
 
+const notice = (key: string, from: string | null) => ({
+  key,
+  title: 'Výpadek Microsoft 365',
+  text: 'Outlook, Teams',
+  link: null,
+  severity: 'info' as const,
+  from,
+  until: null,
+});
+
 /** Runs the settle timer, then lets the run's awaits finish. */
 async function settle() {
   await vi.advanceTimersByTimeAsync(2000);
@@ -95,6 +105,8 @@ describe('Novinky rows as phone notifications', () => {
       zaznamnikNewPoints: {},
       societies: { supef: { name: 'SU PEF' } },
       notifySocieties: true,
+      isNoticeMutes: [],
+      mobileSheets: [],
       isNotices: { cz: [], en: [] },
       notifications: {
         ...useAppStore.getState().notifications,
@@ -177,6 +189,44 @@ describe('Novinky rows as phone notifications', () => {
     } as never);
     await settle();
     expect(posted()).toHaveLength(1);
+  });
+
+  // IS notices load on their own: a failed society feed must not hold them back.
+  it('posts an IS notice when the society feed failed to load', async () => {
+    useAppStore.setState({
+      notifications: { ...useAppStore.getState().notifications, status: 'error' },
+      isNoticesTriedAt: NOW.getTime(),
+      isNoticesLoading: false,
+    } as never);
+    await settle();
+    useAppStore.setState({ isNotices: { cz: [notice('k1', null)], en: [] } } as never);
+    await settle();
+    expect(posted()).toEqual([expect.objectContaining({ title: 'Výpadek Microsoft 365' })]);
+  });
+
+  // IS's own display window is to the minute: the notice is news when it opens,
+  // which no store field but the clock says.
+  it('posts an IS notice once its display minute arrives', async () => {
+    useAppStore.setState({ isNoticesTriedAt: NOW.getTime(), isNoticesLoading: false } as never);
+    await settle();
+    useAppStore.setState({
+      isNotices: { cz: [notice('k2', '2026-12-01T12:05')], en: [] },
+    } as never);
+    await settle();
+    expect(posted()).toEqual([]);
+    useAppStore.setState({ now: new Date(2026, 11, 1, 12, 6) });
+    await settle();
+    expect(posted()).toEqual([expect.objectContaining({ title: 'Výpadek Microsoft 365' })]);
+  });
+
+  // 5.7.x's "Nové body" may still be in the tray after the update.
+  it('a tap on a 5.7.x points notification still opens the subject', () => {
+    openNovinkyFromNotification({ kind: 'zaznamnik-new-points', courseCode: 'EBC-VWA' });
+    expect(useAppStore.getState().mobileSheets.at(-1)).toMatchObject({
+      kind: 'subjectDrawer',
+      courseCode: 'EBC-VWA',
+      initialTab: 'zaznamnik',
+    });
   });
 
   it('a tap on a new-term notification opens Zkoušky', () => {

@@ -10,8 +10,9 @@ import {
   deadlineAlertInputsOf,
   isAlertSeen,
 } from '../utils/novinky/buildDeadlineAlerts';
-import { buildFeed, feedInputsOf } from '../utils/novinky/buildFeed';
-import { planPushes, type PushGroup, type PushKind } from '../utils/novinky/pushPlan';
+import { buildFeed, feedInputsOf, viewerOf } from '../utils/novinky/buildFeed';
+import { pragueMinuteIso } from '../utils/isNoticeRows';
+import { planPushes, type PushGroup, type PushKind, type PushRow } from '../utils/novinky/pushPlan';
 import { pushRowsOf, pushText } from '../utils/novinky/pushText';
 
 /** Tags ours, so a tap handler or a cleanup never touches another feature's. */
@@ -23,6 +24,7 @@ export const NOVINKY_NOTIFIED_KEY = 'novinky_notified';
 interface Notified {
   alerts?: string[];
   feed?: string[];
+  notices?: string[];
 }
 
 /**
@@ -52,42 +54,57 @@ let queue: Promise<void> = Promise.resolve();
 const societyName = (s: AppState) => (n: { associationId?: string }) =>
   s.societies[n.associationId || 'admin']?.name ?? translate(s.language, 'notifications.fromReis');
 
+/** Each source's rows are recorded from the moment it is ready (see run). */
+function sources(s: AppState) {
+  const feed = buildFeed(feedInputsOf(s));
+  return {
+    // Alert rows: once the first sync has settled.
+    alerts: s.firstSyncSettled,
+    // Society events: once their feed has loaded.
+    feed: s.notifications.status === 'success',
+    // IS notices load on their own, and a failed society feed must not hold them back.
+    notices: s.isNoticesTriedAt !== null && !s.isNoticesLoading,
+    events: feed.filter((n) => n.source !== 'is'),
+    isNotices: feed.filter((n) => n.source === 'is'),
+  };
+}
+
 /**
- * Posts what Novinky gained since the last run. Two sources, each recorded
- * from the moment it is ready, so neither arrives later as a backlog: the
- * alert rows once the first sync has settled, the society rows once their feed
- * has loaded. Rows are recorded even while notifications are off, or allowing
- * them later would post everything at once.
+ * Posts what Novinky gained since the last run. Three sources, each recorded
+ * from the moment it is ready, so none arrives later as a backlog. Rows are
+ * recorded even while notifications are off, or allowing them later would
+ * post everything at once.
  */
 async function run(gen: number): Promise<void> {
   const s = useAppStore.getState();
   if (!s.firstSyncSettled) return;
   const alerts = buildDeadlineAlerts(deadlineAlertInputsOf(s));
-  const feedReady = s.notifications.status === 'success';
-  const rows = pushRowsOf(alerts, feedReady ? buildFeed(feedInputsOf(s)) : [], societyName(s));
+  const src = sources(s);
+  const nameOf = societyName(s);
   const seen = new Set<string>([
     ...alerts.filter((a) => isAlertSeen(a, s.notifications.seenDeadlineAlertIds)).map((a) => a.id),
     ...s.notifications.readIds,
   ]);
   const before = ((await IndexedDBService.get('meta', NOVINKY_NOTIFIED_KEY)) ?? {}) as Notified;
   if (gen !== generation) return;
-  const news = planPushes(
-    rows.filter((r) => r.kind !== 'societies'),
-    before.alerts,
-    seen
-  );
-  const events = feedReady
-    ? planPushes(
-        rows.filter((r) => r.kind === 'societies'),
-        before.feed,
-        seen
-      )
-    : { post: [], notified: before.feed };
+  const plan = (ready: boolean, rows: PushRow[], known: string[] | undefined) =>
+    ready ? planPushes(rows, known, seen) : { post: [], notified: known };
+  const news = plan(src.alerts, pushRowsOf(alerts, [], nameOf), before.alerts);
+  const events = plan(src.feed, pushRowsOf([], src.events, nameOf), before.feed);
+  const notices = plan(src.notices, pushRowsOf([], src.isNotices, nameOf), before.notices);
   await IndexedDBService.set('meta', NOVINKY_NOTIFIED_KEY, {
     alerts: news.notified,
     feed: events.notified,
+    notices: notices.notified,
   } satisfies Notified);
-  const post = [...news.post, ...(s.notifySocieties ? events.post : [])];
+  // Society events and IS notices are one kind, so one notification.
+  const school = [...events.post, ...notices.post].flatMap((g) => g.rows);
+  const post: PushGroup[] = [
+    ...news.post,
+    ...(s.notifySocieties && school.length > 0
+      ? [{ kind: 'societies' as const, rows: school }]
+      : []),
+  ];
   if (post.length === 0 || gen !== generation) return;
   if ((await LocalNotifications.checkPermissions()).display !== 'granted') return;
   await show(post, s.language, gen);
@@ -147,6 +164,12 @@ const watchedOf = (s: AppState): unknown[] => [
   s.societies,
   s.notifySocieties,
   s.language,
+  s.isNoticesTriedAt,
+  s.isNoticesLoading,
+  // The feed's own clock and audience, never the one-second tick: an IS notice
+  // opens at its minute, a restricted event once the faculty is known.
+  pragueMinuteIso(s.now),
+  ...Object.values(viewerOf(s)),
 ];
 
 function schedule(): void {
@@ -200,33 +223,4 @@ export async function clearNovinkyNotifications(): Promise<void> {
     await LocalNotifications.removeDeliveredNotifications({ notifications: delivered });
   }
   await IndexedDBService.delete('meta', NOVINKY_NOTIFIED_KEY);
-}
-
-/**
- * A tap opens what tapping the row in Novinky opens: Zkoušky for new terms, the
- * subject's Záznamník for points or a box in one subject, Novinky otherwise.
- * Other features' taps are ignored.
- */
-export function openNovinkyFromNotification(extra: unknown): void {
-  const e = extra as { kind?: unknown; group?: unknown; courseCode?: unknown } | null | undefined;
-  if (e?.kind !== NOVINKY_KIND) return;
-  const store = useAppStore.getState();
-  if (e.group === 'terms') {
-    store.setMobileTab('exams');
-    return;
-  }
-  if ((e.group === 'points' || e.group === 'boxes') && typeof e.courseCode === 'string') {
-    const s = store.subjects?.data?.[e.courseCode];
-    store.setMobileTab('subjects');
-    store.pushSheet({
-      kind: 'subjectDrawer',
-      courseCode: e.courseCode,
-      courseName:
-        (store.language === 'en' ? s?.nameEn : s?.nameCs) || s?.displayName || e.courseCode,
-      courseId: s?.subjectId,
-      initialTab: 'zaznamnik',
-    });
-    return;
-  }
-  store.pushSheet({ kind: 'notifications' });
 }
