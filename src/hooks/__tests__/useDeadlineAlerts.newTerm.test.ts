@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 
 vi.mock('../../services/sync/examTermsUnseen', () => ({
-  clearUnseenTerms: vi.fn(async () => undefined),
+  clearUnseenTerms: vi.fn(async () => []),
   readUnseenTerms: vi.fn(async () => []),
 }));
 
@@ -56,7 +56,7 @@ describe('a new exam term in Novinky', () => {
   it('goes once Zkoušky has been on screen', () => {
     renderHook(() => useMarkExamTermsSeen(true));
     expect(useAppStore.getState().examTermsNew).toEqual([]);
-    expect(clearUnseenTerms).toHaveBeenCalled();
+    expect(clearUnseenTerms).toHaveBeenCalledWith([examTermKey('EBC-VWA', '1')]);
   });
 
   it('stays while Zkoušky is not the screen in front', () => {

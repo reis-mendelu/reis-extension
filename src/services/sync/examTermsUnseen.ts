@@ -38,9 +38,20 @@ export function readUnseenTerms(): Promise<string[]> {
   return enqueue(read);
 }
 
-/** The student opened Zkoušky: every new term has been on screen. */
-export function clearUnseenTerms(): Promise<void> {
-  return enqueue(() => IndexedDBService.set('meta', NEW_TERMS_META_KEY, []));
+/**
+ * The student opened Zkoušky: these terms have been on screen. Only these:
+ * another extension tab shares this record but not its store, and may have
+ * added a term this one never showed. Answers what is still unseen.
+ */
+export function clearUnseenTerms(shown: string[]): Promise<string[]> {
+  return enqueue(async () => {
+    const drop = new Set(shown);
+    const stored = await read();
+    if (!stored.some((k) => drop.has(k))) return stored;
+    const rest = stored.filter((k) => !drop.has(k));
+    await IndexedDBService.set('meta', NEW_TERMS_META_KEY, rest);
+    return rest;
+  });
 }
 
 /** Another study: its terms are not this one's news. */
