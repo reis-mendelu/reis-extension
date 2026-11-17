@@ -126,7 +126,7 @@ export async function getUserParams(): Promise<UserParams | null> {
         Partial<UserParams> | undefined;
       // Already confirmed against the live session in this context.
       if (complete(stored) && _identityChecked) {
-        _cached = stored as UserParams;
+        _cached = withSchoolEmail(stored!) as UserParams;
         return _cached;
       }
 
@@ -177,7 +177,7 @@ export async function getUserParams(): Promise<UserParams | null> {
       } else if (complete(stored) && !needsStudyResolution(stored!, studies, preferred)) {
         // Same student. Serve the record as it stands rather than rebuilding
         // it — the rebuild below is two more IS pages, on every boot.
-        _cached = stored as UserParams;
+        _cached = withSchoolEmail(stored!) as UserParams;
         return _cached;
       }
 
@@ -259,8 +259,20 @@ export async function getUserParams(): Promise<UserParams | null> {
  * on the next boot.
  */
 function serveStored(stored?: Partial<UserParams>): UserParams | null {
-  if (complete(stored)) _cached = stored as UserParams;
-  return (stored as UserParams | undefined) ?? null;
+  const served = stored && withSchoolEmail(stored);
+  if (complete(served)) _cached = served as UserParams;
+  return (served as UserParams | undefined) ?? null;
+}
+
+/**
+ * The address is derived from the username, never trusted from storage: a
+ * record written by an older build of another school's extension still carries
+ * `@mendelu.cz`. For MENDELU this is the same address it always stored.
+ */
+function withSchoolEmail(p: Partial<UserParams>): Partial<UserParams> {
+  if (!p.username) return p;
+  const email = currentSchool.emailFor(p.username);
+  return p.email === email ? p : { ...p, email };
 }
 
 /**

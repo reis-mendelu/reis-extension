@@ -12,7 +12,8 @@ release PR merged into main
        ├─ Google Play   signed AAB → production, full rollout
        ├─ App Store     archive → upload → attach to version → submit for review
        ├─ Extension     Chrome Web Store + Firefox Add-ons (publish.yml)
-       ├─ VŠE           reIS pro VŠE → its own Chrome Web Store item (off until set up)
+       ├─ VŠE           reIS pro VŠE → its own Chrome Web Store item (publish-vse.yml;
+       │                off until set up)
        └─ Summary       one table; red if any store failed
 ```
 
@@ -106,16 +107,18 @@ see, so the closed track needs no upload of its own.
 ## reIS pro VŠE (Chrome only)
 
 The same release, built for VŠE (`REIS_SCHOOL=vse`, `src/utils/schoolProfiles.ts`),
-goes to its **own** Chrome Web Store item: job `extension-vse` in `ship.yml`. Same
-version, same tag, same publisher and service account, so **no new secret**. No
-Firefox add-on, and no release notes (CWS has no field for them).
+goes to its **own** Chrome Web Store item. Job `extension-vse` in `ship.yml` calls
+the reusable `publish-vse.yml`, the way `extension` calls `publish.yml`, with the
+item id as an input and the secrets inherited. Same version, same tag, same
+publisher and service account, so **no new secret**. No Firefox add-on, and no
+release notes (CWS has no field for them).
 
 - **Off until the repo variable `CWS_VSE_ITEM_ID` is set** (Settings → Secrets
   and variables → Actions → *Variables*, not *Secrets*: a job's `if:` cannot read
   secrets, and the id is public in the store URL anyway). Until then the job is
   skipped, the summary row says so, and the dry run stays green.
-- **Before uploading it checks the built zip's manifest**, inline in the
-  workflow: name `reIS pro VŠE`, host permissions `https://insis.vse.cz/*` only,
+- **Before uploading it checks the built zip's manifest**, inline in
+  `publish-vse.yml`: name `reIS pro VŠE`, host permissions `https://insis.vse.cz/*` only,
   no `mendelu` anywhere. A tag older than the VŠE listing ignores `REIS_SCHOOL`
   and builds MENDELU's extension; the check stops that before it reaches the
   VŠE item.
