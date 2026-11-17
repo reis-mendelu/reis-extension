@@ -86,6 +86,14 @@ describe('announceNovinky (Android background check)', () => {
     expect(db.get(`meta/${NOVINKY_NOTIFIED_KEY}`)).toMatchObject({ alerts: [expect.any(String)] });
   });
 
+  // An empty read may be a half-failed one: the first record waits for exams,
+  // or the terms it left out would arrive later as a backlog.
+  it('does not take its first record from a run that read no exams', async () => {
+    db.delete(`meta/${NOVINKY_NOTIFIED_KEY}`);
+    await announceNovinky({ ...fresh, exams: [] }, 'cz', vi.fn(), NOW);
+    expect(db.get(`meta/${NOVINKY_NOTIFIED_KEY}`)).toBeUndefined();
+  });
+
   it('skips a row the student has already seen in Novinky', async () => {
     db.set(`meta/${NEW_TERMS_META_KEY}`, [examTermKey('EBC-VWA', '1')]);
     db.set('meta/seen_deadline_alerts', [`exam-new-${examTermKey('EBC-VWA', '1')}`]);

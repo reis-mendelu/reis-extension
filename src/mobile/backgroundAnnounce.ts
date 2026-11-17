@@ -74,6 +74,10 @@ export async function announceNovinky(
 
   await withKnownStateLock(async () => {
     const before = await readRecord();
+    // The first record is a silent baseline, so it waits for a run that read
+    // exams: an empty read may be a half-failed one, and the terms it left out
+    // would come later as a backlog. With a record, an empty read still counts.
+    if (before.alerts === undefined && fresh.exams.length === 0) return;
     const { toPost, full } = planRun({
       news: pushRowsOf(alerts, [], () => ''),
       events: [],

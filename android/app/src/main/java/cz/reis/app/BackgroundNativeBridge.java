@@ -41,8 +41,12 @@ class BackgroundNativeBridge {
     private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
     private final ExecutorService pool = Executors.newFixedThreadPool(6);
 
+    /** Set once the run is over: a request still finishing then answers no one. */
+    private volatile boolean closed;
+
     /** Ends the worker threads; the run that owns this bridge is over. */
     void close() {
+        closed = true;
         pool.shutdownNow();
     }
 
@@ -195,7 +199,9 @@ class BackgroundNativeBridge {
     }
 
     private void reply(String callbackId, String plugin, String method, boolean ok, Object data) {
-        if ("-1".equals(callbackId)) return;
+        // A request that outlived a stopped run (blocking IO ignores the
+        // interrupt) must not hand its data to the page, which would write it on.
+        if ("-1".equals(callbackId) || closed) return;
         try {
             JSONObject r = new JSONObject();
             r.put("callbackId", callbackId);
@@ -205,7 +211,9 @@ class BackgroundNativeBridge {
             r.put(ok ? "data" : "error", data);
             String js = "window.Capacitor.fromNative(" + r + ")";
             // Not web.post(): a WebView never attached to a window queues those forever.
-            main.post(() -> web.evaluateJavascript(js, null));
+            main.post(() -> {
+                if (!closed) web.evaluateJavascript(js, null);
+            });
         } catch (Exception e) {
             BgLog.line(ctx, "reply failed " + e.getClass().getSimpleName());
         }

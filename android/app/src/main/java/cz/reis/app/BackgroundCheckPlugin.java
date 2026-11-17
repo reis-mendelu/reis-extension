@@ -52,7 +52,9 @@ public class BackgroundCheckPlugin extends Plugin {
             launch.removeExtra(BackgroundNotifier.EXTRA_KIND);
             launch.removeExtra(BackgroundNotifier.EXTRA_COURSE);
         }
-        call.resolve();
+        // Resolved on the main thread, after the WebView teardown the stop
+        // posted there: sign-out wipes the data only once the page is gone.
+        new android.os.Handler(android.os.Looper.getMainLooper()).post(call::resolve);
     }
 
     /** The tap that launched the app, once: the intent outlives the page, so it is consumed here. */
