@@ -544,6 +544,14 @@
     "societiesSwitch": "Od spolků a MENDELU",
     "societiesSwitchHint": "Akce spolků a oznámení školy"
   },
+  "deadlineReminders": {
+    "channel": "Termíny a odevzdání",
+    "examTitle": "Zítra: {subject}",
+    "closingTitle": "{subject}: přihlašování končí",
+    "closingBody": "{section} · poslední možnost zítra do {time}",
+    "boxTitle": "{subject}: odevzdání do zítra",
+    "boxBody": "{box} · do {time}"
+  },
   "deadlines": {
     "title": "Blížící se termíny",
     "examNewTerm": "Nový termín",
