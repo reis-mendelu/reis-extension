@@ -43,6 +43,18 @@ public class BackgroundCheckPlugin extends Plugin {
         call.resolve();
     }
 
+    /** Sign-out: the run in progress stops, and a tap not yet consumed is dropped. */
+    @PluginMethod
+    public void stopRun(PluginCall call) {
+        BackgroundCheckService.stopActive();
+        Intent launch = getActivity() != null ? getActivity().getIntent() : null;
+        if (launch != null) {
+            launch.removeExtra(BackgroundNotifier.EXTRA_KIND);
+            launch.removeExtra(BackgroundNotifier.EXTRA_COURSE);
+        }
+        call.resolve();
+    }
+
     /** The tap that launched the app, once: the intent outlives the page, so it is consumed here. */
     @PluginMethod
     public void getLaunchTap(PluginCall call) {

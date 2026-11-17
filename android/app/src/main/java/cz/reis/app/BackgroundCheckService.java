@@ -33,6 +33,8 @@ public class BackgroundCheckService extends JobService {
     static volatile boolean appInForeground;
 
     private BackgroundWebRun run;
+    /** The run in progress, if any: what the app's return or a sign-out stops. */
+    private static volatile BackgroundWebRun active;
     private long startedAt;
 
     static boolean isEnabled(Context c) {
@@ -73,6 +75,17 @@ public class BackgroundCheckService extends JobService {
         }
     }
 
+    /**
+     * Stops the run in progress: the app came to the front (it syncs and
+     * notifies itself) or the student is signing out (the run must not write
+     * their data back after the wipe, or post it for the next student).
+     */
+    static void stopActive() {
+        BackgroundWebRun r = active;
+        active = null;
+        if (r != null) r.cancel();
+    }
+
     /** Whether a student is signed in: the token the app keeps in its secure store. */
     static boolean signedIn(Context c) {
         return c.getSharedPreferences("reis_secure_store", Context.MODE_PRIVATE).contains(TOKEN_KEY);
@@ -85,12 +98,17 @@ public class BackgroundCheckService extends JobService {
         BgLog.line(this, "job start fg=" + appInForeground + " restricted="
             + (Build.VERSION.SDK_INT >= 28 && am.isBackgroundRestricted()));
         // The app is open and runs its own sync; a signed-out phone has nothing to check.
-        if (!isEnabled(this) || appInForeground || !signedIn(this)) return false;
-        run = new BackgroundWebRun(this, status -> {
+        // Notifications off for reIS stops it too: the policy says so, and a
+        // run that may not post has no reason to ask IS anything.
+        if (!isEnabled(this) || appInForeground || !signedIn(this)
+            || !androidx.core.app.NotificationManagerCompat.from(this).areNotificationsEnabled()) return false;
+        BackgroundWebRun started = new BackgroundWebRun(this, status -> {
             BgLog.line(this, "job done in " + (SystemClock.elapsedRealtime() - startedAt) + "ms " + status);
             jobFinished(params, false);
         });
-        run.start();
+        run = started;
+        active = started;
+        started.start();
         return true;
     }
 

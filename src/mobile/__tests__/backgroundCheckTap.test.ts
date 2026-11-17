@@ -6,6 +6,7 @@ const plugin = vi.hoisted(() => ({
   start: vi.fn(),
   setEnabled: vi.fn(),
   clearNotifications: vi.fn(),
+  stopRun: vi.fn().mockResolvedValue(undefined),
   getLaunchTap: vi.fn(),
   addListener: vi.fn(),
   setChannelNames: vi.fn().mockResolvedValue(undefined),
@@ -16,7 +17,11 @@ vi.mock('@capacitor/core', async (orig) => ({
   Capacitor: { getPlatform: () => 'android' },
 }));
 
-import { openFromBackgroundTap, startBackgroundCheck } from '../backgroundCheckNative';
+import {
+  clearBackgroundNotifications,
+  openFromBackgroundTap,
+  startBackgroundCheck,
+} from '../backgroundCheckNative';
 
 /** A tap on a notification the phone posted while reIS was closed. */
 describe('openFromBackgroundTap', () => {
@@ -109,5 +114,36 @@ describe('startBackgroundCheck taps', () => {
     expect(plugin.setChannelNames).toHaveBeenCalledWith({
       channelNames: expect.objectContaining({ boxes: 'New submission boxes' }),
     });
+  });
+});
+
+describe('sign-out and the background run', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // A run in flight must not write this student's data back after the wipe,
+  // nor post it for the next student: it is stopped before the tray is cleared.
+  it('stops the run in progress before clearing its notifications', async () => {
+    const order: string[] = [];
+    plugin.stopRun.mockImplementation(async () => void order.push('stop'));
+    plugin.clearNotifications.mockImplementation(async () => void order.push('clear'));
+    await clearBackgroundNotifications();
+    expect(order).toEqual(['stop', 'clear']);
+  });
+});
+
+describe('the channel names follow the language', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    plugin.start.mockResolvedValue({ enabled: true });
+    plugin.getLaunchTap.mockResolvedValue({});
+    useAppStore.setState({ language: 'cz' } as never);
+  });
+
+  it('renames them once per change, however often the check was started', async () => {
+    await startBackgroundCheck();
+    await startBackgroundCheck();
+    plugin.setChannelNames.mockClear();
+    useAppStore.setState({ language: 'en' } as never);
+    expect(plugin.setChannelNames).toHaveBeenCalledTimes(1);
   });
 });

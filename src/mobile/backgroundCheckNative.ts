@@ -10,6 +10,8 @@ interface BackgroundCheckPlugin {
   start(o: { channelNames: Record<string, string> }): Promise<{ enabled: boolean }>;
   setEnabled(o: { enabled: boolean }): Promise<void>;
   clearNotifications(): Promise<void>;
+  /** Stops the run in progress and drops a launch tap not yet consumed (sign-out). */
+  stopRun(): Promise<void>;
   /** The tap that launched the app, once; `{}` when it was not launched by one. */
   getLaunchTap(): Promise<Partial<BackgroundTap>>;
   /** Renames the channels, e.g. after a language switch; never touches the job. */
@@ -47,17 +49,19 @@ export function openFromBackgroundTap(tap: Partial<BackgroundTap> | null | undef
   });
 }
 
+// The one language subscription: a second start must not add another.
+let unsubscribeLanguage: (() => void) | null = null;
+
 /**
  * Once per launch after sign-in: names the notification channels in the
- * student's language, re-arms the job if it is on, and reads the switch into
- * the store. A failure leaves the switch hidden rather than claiming a state.
+ * student's language and arms the job.
  */
 export async function startBackgroundCheck(): Promise<void> {
   if (!onAndroid()) return;
   try {
-    // The stored language lands asynchronously at boot; reading the store
-    // before it would name an English student's channels in Czech.
-    await useAppStore.getState().loadLanguage();
+    // Named with the language the store has now. The stored one can land later
+    // at boot; the subscription below renames them then. Not a second
+    // loadLanguage(): it could overwrite a language chosen meanwhile.
     const { enabled } = await BackgroundCheck.start({
       channelNames: channelNames(useAppStore.getState().language),
     });
@@ -73,7 +77,8 @@ export async function startBackgroundCheck(): Promise<void> {
     // A language switch while the app is open renames the channels too, so the
     // phone's own notification settings do not keep the old words until relaunch.
     let named = useAppStore.getState().language;
-    useAppStore.subscribe((state) => {
+    unsubscribeLanguage?.();
+    unsubscribeLanguage = useAppStore.subscribe((state) => {
       if (state.language === named) return;
       named = state.language;
       BackgroundCheck.setChannelNames({ channelNames: channelNames(named) }).catch((err) =>
@@ -89,6 +94,9 @@ export async function startBackgroundCheck(): Promise<void> {
 export async function clearBackgroundNotifications(): Promise<void> {
   if (!onAndroid()) return;
   try {
+    // First the run in progress: it must not write this student's data back
+    // after the wipe, or post it for the next one.
+    await BackgroundCheck.stopRun();
     await BackgroundCheck.clearNotifications();
   } catch (err) {
     logError('Mobile.clearBackgroundNotifications', err);

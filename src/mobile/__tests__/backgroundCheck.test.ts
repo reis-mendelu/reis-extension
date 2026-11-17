@@ -106,4 +106,12 @@ describe('runBackgroundCheck', () => {
     await runBackgroundCheck(d);
     expect(d.announce).toHaveBeenCalledWith(expect.anything(), 'cz');
   });
+
+  // A half-failed fetch reads as no exams: recorded, it would make the next
+  // full read announce every term.
+  it('does not record an empty exam read as the baseline', async () => {
+    const d = deps({ fetchExams: async () => [] });
+    await runBackgroundCheck(d);
+    expect(d.recordTerms).not.toHaveBeenCalled();
+  });
 });

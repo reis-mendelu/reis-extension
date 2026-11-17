@@ -62,7 +62,10 @@ export async function runBackgroundCheck(d: BackgroundDeps): Promise<BackgroundS
     }
     try {
       exams = await d.fetchExams();
-      await d.recordTerms(exams);
+      // An empty read is no baseline here: a half-failed fetch looks the same,
+      // and the next full one would announce every term. The app's own sync
+      // records a genuinely empty list (services/sync/recordExamTerms).
+      if (exams.length > 0) await d.recordTerms(exams);
     } catch (err) {
       d.logError('Background.exams', err);
     }

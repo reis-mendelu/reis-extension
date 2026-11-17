@@ -13,6 +13,8 @@ public class MainActivity extends BridgeActivity {
     public void onStart() {
         super.onStart();
         BackgroundCheckService.appInForeground = true;
+        // A background run still going would post loudly over the open app.
+        BackgroundCheckService.stopActive();
     }
 
     @Override

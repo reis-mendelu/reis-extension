@@ -157,7 +157,9 @@ class BackgroundWebRun {
         public void notify(String json) {
             // A run that was stopped, or whose student has signed out since it
             // began, must not post: the tray is already cleared for the next one.
-            if (finished || !BackgroundCheckService.signedIn(ctx)) return;
+            // Nor while the app is in front: it lists the rows itself, quietly.
+            if (finished || BackgroundCheckService.appInForeground
+                || !BackgroundCheckService.signedIn(ctx)) return;
             BackgroundNotifier.post(ctx, json);
         }
 
