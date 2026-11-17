@@ -4,9 +4,11 @@ import { parseDate } from '../date';
 import { examTermKey } from '../newExamTerms';
 import { isGroupSignupSection } from './isGroupSignup';
 
+/** null for what IS left blank or malformed: parseDate answers Invalid Date, not a throw. */
 function at(date: string, time = '00:00'): Date | null {
   try {
-    return parseDate(date, time);
+    const d = parseDate(date, time);
+    return Number.isNaN(d.getTime()) ? null : d;
   } catch {
     return null;
   }

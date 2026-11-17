@@ -71,4 +71,16 @@ describe('newTermAlerts', () => {
     const subjects = [vwa({ name: 'Zápis na cvičení', terms: [term('1', '14.12.2026')] })];
     expect(newTermAlerts(subjects, [key('1')], NOW, names)).toEqual([]);
   });
+
+  // A placeholder end ("-") is no end; a malformed date is no date.
+  it('keeps a term whose end IS left as a placeholder, and drops one with no real date', () => {
+    const subjects = [
+      vwa({
+        terms: [term('1', '14.12.2026', { registrationEnd: '-' }), term('2', 'n/a')],
+      }),
+    ];
+    expect(newTermAlerts(subjects, [key('1'), key('2')], NOW, names).map((r) => r.body)).toEqual([
+      'zkouška · 14. 12.',
+    ]);
+  });
 });
