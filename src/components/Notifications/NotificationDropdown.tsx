@@ -85,7 +85,7 @@ export function NotificationDropdown({
       ) : (
         <div className="flex flex-col gap-2">
           {/* Labelled only when there is something above it to tell it apart from. */}
-          {deadlineAlerts.length > 0 && (
+          {deadlineAlerts.length > 0 && notifications.length > 0 && (
             <SectionLabel>{t('notifications.sectionSocieties')}</SectionLabel>
           )}
           {notifications.map((n) => (

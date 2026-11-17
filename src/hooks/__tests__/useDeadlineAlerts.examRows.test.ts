@@ -88,6 +88,17 @@ describe('useDeadlineAlerts – exam rows', () => {
     expect(examRows().map((a) => a.type)).toEqual(['exam-reg']);
   });
 
+  // IS can leave a term's end blank: it still takes registrations, so nothing is closing.
+  it('says nothing is closing while a term with no known end still takes registrations', () => {
+    const open = { registrationStart: '20.11.2026 00:00' };
+    setExams(
+      subject({
+        terms: [term('a', { ...open, registrationEnd: '02.12.2026 08:00' }), term('b', open)],
+      })
+    );
+    expect(examRows()).toEqual([]);
+  });
+
   it('says nothing about registration in a section the student is registered in', () => {
     setExams(
       subject({

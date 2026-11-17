@@ -50,4 +50,19 @@ describe('extension bell: sections', () => {
     expect(screen.getByText(/Obhajoba práce · Q05 \(ČP\)/)).toBeInTheDocument();
     expect(screen.getByText('Zítra 11:00')).toBeInTheDocument();
   });
+
+  it('shows no empty "Od spolků" heading when there are no society rows', () => {
+    render(
+      <NotificationDropdown
+        dropdownRef={createRef()}
+        notifications={[]}
+        loading={false}
+        onClose={vi.fn()}
+        onVisible={vi.fn()}
+        onShowMap={vi.fn()}
+        deadlineAlerts={[MY_EXAM]}
+      />
+    );
+    expect(screen.queryByText('Od spolků')).not.toBeInTheDocument();
+  });
 });
