@@ -72,9 +72,18 @@ class BackgroundWebRun {
         main.postDelayed(() -> finish("timeout"), TIMEOUT_MS);
     }
 
+    /**
+     * Held across a post's check-and-post and across marking a run over, so a
+     * stop that returns has waited for a post in flight: sign-out clears the
+     * tray only after it, and a later post sees the run over.
+     */
+    static final Object POSTING = new Object();
+
     private void finish(String status) {
-        if (finished) return;
-        finished = true;
+        synchronized (POSTING) {
+            if (finished) return;
+            finished = true;
+        }
         main.removeCallbacksAndMessages(null);
         destroy();
         done.finished(status);
@@ -91,7 +100,9 @@ class BackgroundWebRun {
 
     /** The system stopped the job: nothing this run says from now on counts. */
     void cancel() {
-        finished = true;
+        synchronized (POSTING) {
+            finished = true;
+        }
         main.removeCallbacksAndMessages(null);
         destroy();
     }
@@ -167,9 +178,11 @@ class BackgroundWebRun {
             // A run that was stopped, or whose student has signed out since it
             // began, must not post: the tray is already cleared for the next one.
             // Nor while the app is in front: it lists the rows itself, quietly.
-            if (finished || BackgroundCheckService.appInForeground
-                || !BackgroundCheckService.signedIn(ctx)) return;
-            BackgroundNotifier.post(ctx, json);
+            synchronized (POSTING) {
+                if (finished || BackgroundCheckService.appInForeground
+                    || !BackgroundCheckService.signedIn(ctx)) return;
+                BackgroundNotifier.post(ctx, json);
+            }
         }
 
         @JavascriptInterface
