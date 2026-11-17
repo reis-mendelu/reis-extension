@@ -214,6 +214,7 @@ export const initializeStore = async () => {
     s2.fetchCvicneTests();
     s2.fetchOdevzdavarny();
     void s2.loadExamTermsNew();
+    void s2.loadNotifySocieties();
     s2.fetchAllFiles();
     s2.fetchAllClassmates();
     await s2.hydrateLastFilesFetchedAt();

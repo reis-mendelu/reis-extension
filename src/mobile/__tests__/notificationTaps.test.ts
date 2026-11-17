@@ -7,7 +7,7 @@ const { ln, openExams, openPoints } = vi.hoisted(() => ({
 }));
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: ln }));
 vi.mock('../examReminders', () => ({ openExamsFromNotification: openExams }));
-vi.mock('../zaznamnikNotifications', () => ({ openFromNotification: openPoints }));
+vi.mock('../novinkyNotifications', () => ({ openNovinkyFromNotification: openPoints }));
 
 import { installNotificationTaps } from '../notificationTaps';
 

@@ -141,3 +141,12 @@ export function buildDeadlineAlerts({
   );
   return [...points, ...freshBoxes, ...terms, ...result];
 }
+
+/**
+ * Has the student seen this row in Novinky? One rule for the bell's count and
+ * the phone's system notifications, which skip what was already seen.
+ */
+export function isAlertSeen(a: DeadlineAlert, seenIds: ReadonlySet<string>): boolean {
+  if (a.parts) return a.parts.every((p) => seenIds.has(p));
+  return seenIds.has(a.id) || (!!a.seenWith && seenIds.has(a.seenWith));
+}

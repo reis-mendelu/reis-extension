@@ -27,15 +27,22 @@ const grep = (pattern: string, paths: string) => {
 };
 
 describe('záznamník new points: system notification on the phone only', () => {
-  it('src/mobile/zaznamnikNotifications.ts is reached from the Capacitor entry only', () => {
+  // The phone posts Novinky's rows, new points among them, from one module.
+  it('src/mobile/novinkyNotifications.ts is reached from the Capacitor entry only', () => {
+    // Imports only, static or dynamic: comments name the module too.
     const importers = grep(
-      'mobile/zaznamnikNotifications',
+      "(from |import\\()'[^']*novinkyNotifications'",
       'src capacitor ":!*__tests__*" ":!src/test/guards"'
     )
       .split('\n')
       .filter(Boolean);
     // startApp installs it; main.capacitor registers its sign-out cleanup.
-    expect(importers.sort()).toEqual(['capacitor/main.capacitor.tsx', 'capacitor/startApp.ts']);
+    // notificationTaps routes its taps; it is itself phone-only (installed from startApp).
+    expect(importers.sort()).toEqual([
+      'capacitor/main.capacitor.tsx',
+      'capacitor/startApp.ts',
+      'src/mobile/notificationTaps.ts',
+    ]);
   });
 
   it('the extension asks for no notification permission', () => {

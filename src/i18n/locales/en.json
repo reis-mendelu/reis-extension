@@ -529,6 +529,21 @@
     "body": "{subject} – {section} · registration opens at {time}",
     "channel": "Exam openings"
   },
+  "novinkyPush": {
+    "channelTerms": "New exam dates",
+    "channelPoints": "New points",
+    "channelBoxes": "New submission boxes",
+    "channelSocieties": "From societies and MENDELU",
+    "termsOne": "New exam date: {subject}",
+    "termsMany": "New exam dates",
+    "pointsOne": "New points: {subject}",
+    "pointsMany": "New points",
+    "boxesOne": "New submission box: {subject}",
+    "boxesMany": "New submission boxes",
+    "societiesMany": "News from societies",
+    "societiesSwitch": "From societies and MENDELU",
+    "societiesSwitchHint": "Society events and school notices"
+  },
   "deadlines": {
     "title": "Upcoming deadlines",
     "examNewTerm": "New date",

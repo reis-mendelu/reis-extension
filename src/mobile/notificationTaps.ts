@@ -1,6 +1,6 @@
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { openExamsFromNotification } from './examReminders';
-import { openFromNotification } from './zaznamnikNotifications';
+import { openNovinkyFromNotification } from './novinkyNotifications';
 
 /**
  * The ONE listener for taps on reIS's local notifications, on iOS and Android.
@@ -16,6 +16,6 @@ import { openFromNotification } from './zaznamnikNotifications';
 export function installNotificationTaps(): void {
   void LocalNotifications.addListener('localNotificationActionPerformed', ({ notification }) => {
     openExamsFromNotification(notification.extra);
-    openFromNotification(notification.extra);
+    openNovinkyFromNotification(notification.extra);
   });
 }

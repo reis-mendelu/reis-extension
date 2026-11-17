@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
-import { buildDeadlineAlerts } from '../utils/novinky/buildDeadlineAlerts';
+import { buildDeadlineAlerts, isAlertSeen } from '../utils/novinky/buildDeadlineAlerts';
 
 export interface DeadlineAlert {
   id: string;
@@ -83,12 +83,7 @@ export function useDeadlineAlerts() {
   );
 
   const unseenCount = useMemo(
-    () =>
-      alerts.filter((a) =>
-        a.parts
-          ? !a.parts.every((p) => seenIds.has(p))
-          : !seenIds.has(a.id) && !(a.seenWith && seenIds.has(a.seenWith))
-      ).length,
+    () => alerts.filter((a) => !isAlertSeen(a, seenIds)).length,
     [alerts, seenIds]
   );
 

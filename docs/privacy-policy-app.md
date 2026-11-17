@@ -113,16 +113,21 @@ else.
 
 ## Permissions
 
-**Android:** internet; notifications (so a download can say it finished);
-running at startup and keeping the device awake briefly, which come with the
-same notifications library — reIS no longer schedules event reminders, and these
-two leave with the library in a later release; Wi-Fi state, only for optional
-one-tap eduroam, where Android's own dialog saves the network.
+**Android:** internet; notifications (what is new in Novinky — a new exam
+date, new points, a new submission box, society events and school notices,
+which you can switch off in Nastavení — a reminder before exam registration
+opens, and a finished download); running at startup and keeping the device
+awake briefly, which come with the same notifications library; Wi-Fi state,
+only for optional one-tap eduroam, where Android's own dialog saves the network.
 
 **iOS:** the camera, only if you choose to take a photo — to attach to a problem
 report, where the photo goes into the report form like any other picture, or, on
 an iPad, to put on a page of your notes, where it stays on the device with your
-ink. iOS asks you first. reIS no longer asks for notifications on iOS.
+ink. iOS asks you first. Notifications, for the same Novinky news and exam
+reminders as on Android, asked once you are registered for an exam.
+
+Notifications are made on the phone from what reIS already has there; nothing
+is sent anywhere to show them.
 
 **Neither app requests location** — the campus map shows the campus, not you.
 

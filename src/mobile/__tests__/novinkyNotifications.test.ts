@@ -1,0 +1,189 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+const { ln, db } = vi.hoisted(() => ({
+  ln: {
+    checkPermissions: vi.fn(),
+    createChannel: vi.fn(),
+    deleteChannel: vi.fn(async () => undefined),
+    schedule: vi.fn(),
+    getDeliveredNotifications: vi.fn(),
+    removeDeliveredNotifications: vi.fn(),
+  },
+  db: new Map<string, unknown>(),
+}));
+vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: ln }));
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { getPlatform: () => 'ios', isNativePlatform: () => false },
+  registerPlugin: vi.fn(() => ({})),
+}));
+vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
+vi.mock('../../services/storage/IndexedDBService', () => ({
+  IndexedDBService: {
+    get: vi.fn(async (store: string, key: string) => db.get(`${store}/${key}`)),
+    set: vi.fn(async (store: string, key: string, v: unknown) => db.set(`${store}/${key}`, v)),
+    delete: vi.fn(async (store: string, key: string) => db.delete(`${store}/${key}`)),
+  },
+}));
+
+import { useAppStore } from '../../store/useAppStore';
+import {
+  installNovinkyNotifications,
+  clearNovinkyNotifications,
+  openNovinkyFromNotification,
+  NOVINKY_KIND,
+  NOVINKY_NOTIFIED_KEY,
+} from '../novinkyNotifications';
+import { examTermKey } from '../../utils/newExamTerms';
+import type { ExamSubject } from '../../types/exams';
+
+const NOW = new Date(2026, 11, 1, 12, 0);
+
+const vwa: ExamSubject = {
+  version: 1,
+  id: 'EBC-VWA',
+  name: 'Vývoj webových aplikací',
+  code: 'EBC-VWA',
+  sections: [
+    {
+      id: 'zk',
+      name: 'zkouška',
+      type: 'exam',
+      status: 'open',
+      terms: [
+        { id: '1', date: '14.12.2026', time: '11:00' },
+        { id: '2', date: '17.12.2026', time: '11:00' },
+      ],
+    },
+  ],
+};
+
+const event = {
+  id: 'ev1',
+  title: 'Deskovky',
+  body: '',
+  associationId: 'supef',
+  createdAt: '',
+  expiresAt: '2026-12-02T18:00:00Z',
+  priority: 'normal' as const,
+};
+
+/** Runs the settle timer, then lets the run's awaits finish. */
+async function settle() {
+  await vi.advanceTimersByTimeAsync(2000);
+  for (let i = 0; i < 10; i++) await Promise.resolve();
+}
+
+const posted = () =>
+  ln.schedule.mock.calls.flatMap((c) => c[0].notifications as { title: string; body: string }[]);
+
+describe('Novinky rows as phone notifications', () => {
+  let stop: () => void;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.clearAllMocks();
+    db.clear();
+    ln.checkPermissions.mockResolvedValue({ display: 'granted' });
+    useAppStore.setState({
+      now: NOW,
+      language: 'cz',
+      firstSyncSettled: true,
+      exams: { data: [vwa], status: 'success', error: null },
+      examTermsNew: [],
+      odevzdavarny: [],
+      odevzdavarnyNew: [],
+      zaznamnikNewPoints: {},
+      societies: { supef: { name: 'SU PEF' } },
+      notifySocieties: true,
+      isNotices: { cz: [], en: [] },
+      notifications: {
+        ...useAppStore.getState().notifications,
+        data: [],
+        status: 'success',
+        readIds: new Set(),
+        seenDeadlineAlertIds: new Set(),
+      },
+    } as never);
+    stop = installNovinkyNotifications();
+  });
+
+  afterEach(() => {
+    stop();
+    vi.useRealTimers();
+  });
+
+  it('records what is on screen at the first run and posts nothing', async () => {
+    useAppStore.setState({ examTermsNew: [examTermKey('EBC-VWA', '1')] });
+    await settle();
+    expect(ln.schedule).not.toHaveBeenCalled();
+    expect(db.get(`meta/${NOVINKY_NOTIFIED_KEY}`)).toMatchObject({ alerts: [expect.any(String)] });
+  });
+
+  it('posts a new row once, with the row’s own words', async () => {
+    await settle();
+    useAppStore.setState({ examTermsNew: [examTermKey('EBC-VWA', '1')] });
+    await settle();
+    expect(posted()).toEqual([
+      expect.objectContaining({
+        title: 'Nový termín: Vývoj webových aplikací',
+        body: 'zkouška · 14. 12.',
+        extra: { kind: NOVINKY_KIND, group: 'terms', courseCode: 'EBC-VWA' },
+      }),
+    ]);
+    useAppStore.setState({ now: new Date(NOW.getTime() + 60_000) });
+    await settle();
+    expect(posted()).toHaveLength(1);
+  });
+
+  it('records but posts nothing while notifications are not allowed', async () => {
+    await settle();
+    ln.checkPermissions.mockResolvedValue({ display: 'denied' });
+    useAppStore.setState({ examTermsNew: [examTermKey('EBC-VWA', '1')] });
+    await settle();
+    expect(ln.schedule).not.toHaveBeenCalled();
+    // Allowed later: what was recorded meanwhile does not arrive as a backlog.
+    ln.checkPermissions.mockResolvedValue({ display: 'granted' });
+    useAppStore.setState({ now: new Date(NOW.getTime() + 60_000) });
+    await settle();
+    expect(ln.schedule).not.toHaveBeenCalled();
+  });
+
+  it('posts a society event, and none while that switch is off', async () => {
+    await settle();
+    useAppStore.setState({
+      notifications: { ...useAppStore.getState().notifications, data: [event] },
+    } as never);
+    await settle();
+    expect(posted()).toEqual([expect.objectContaining({ title: 'Deskovky', body: 'SU PEF' })]);
+
+    useAppStore.setState({
+      notifySocieties: false,
+      notifications: {
+        ...useAppStore.getState().notifications,
+        data: [event, { ...event, id: 'ev2', title: 'Pivní běh' }],
+      },
+    } as never);
+    await settle();
+    expect(posted()).toHaveLength(1);
+  });
+
+  it('a tap on a new-term notification opens Zkoušky', () => {
+    openNovinkyFromNotification({ kind: NOVINKY_KIND, group: 'terms', courseCode: 'EBC-VWA' });
+    expect(useAppStore.getState().mobileTab).toBe('exams');
+  });
+
+  it('sign-out clears what it posted and the record', async () => {
+    await settle();
+    ln.getDeliveredNotifications.mockResolvedValue({
+      notifications: [
+        { id: 1, extra: { kind: NOVINKY_KIND } },
+        { id: 2, extra: { kind: 'other' } },
+      ],
+    });
+    await clearNovinkyNotifications();
+    expect(ln.removeDeliveredNotifications).toHaveBeenCalledWith({
+      notifications: [{ id: 1, extra: { kind: NOVINKY_KIND } }],
+    });
+    expect(db.has(`meta/${NOVINKY_NOTIFIED_KEY}`)).toBe(false);
+  });
+});

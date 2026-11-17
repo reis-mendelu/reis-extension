@@ -37,12 +37,10 @@ vi.mock('../../services/storage', () => ({
     setMany: vi.fn(async () => undefined),
   },
 }));
-const { persistZaznamnikBatch, notifyNewPoints } = vi.hoisted(() => ({
+const { persistZaznamnikBatch } = vi.hoisted(() => ({
   persistZaznamnikBatch: vi.fn(),
-  notifyNewPoints: vi.fn(),
 }));
 vi.mock('../../services/sync/zaznamnikNewPoints', () => ({ persistZaznamnikBatch }));
-vi.mock('../../services/newPointsNotifier', () => ({ notifyNewPoints }));
 vi.mock('../../services/sync', () => ({
   syncService: { triggerRefresh: vi.fn() },
   syncGradeHistory: vi.fn(async () => undefined),
@@ -102,67 +100,10 @@ describe('a sync push carrying the záznamník', () => {
       'EBC-PS': [POINT],
       'EBC-VWA': [{ label: '2', value: '1' }],
     });
-    expect(notifyNewPoints).toHaveBeenCalledWith({ 'EBC-PS': [POINT] });
-  });
-
-  // Task List, 2026-11-07: never a notification about last semester's subject.
-  // The highlight still gets it; Novinky filters on read (useDeadlineAlerts).
-  const failedBefore = {
-    id: '1',
-    code: 'XX-OLD',
-    name: 'Stará',
-    credits: 5,
-    type: 'zk',
-    isEnrolled: false,
-    isFulfilled: false,
-    enrollmentCount: 1,
-    rawStatusText: 'NESPLNĚNO',
-  };
-  const plan = {
-    title: 'p',
-    isFulfilled: false,
-    creditsAcquired: 0,
-    creditsRequired: 180,
-    blocks: [
-      {
-        title: '2. semestr',
-        groups: [{ name: 'g', statusDescription: '', subjects: [failedBefore] }],
-      },
-    ],
-  };
-  const found = { 'XX-OLD': [POINT], 'EBC-PS': [POINT] };
-  const batch = { 'XX-OLD': { ph: { sections: [] }, vt: { tests: [] } } };
-  const notifiedOnlyCurrent = () => {
-    expect(notifyNewPoints).toHaveBeenCalledTimes(1);
-    expect(notifyNewPoints).toHaveBeenCalledWith({ 'EBC-PS': [POINT] });
-  };
-
-  it('notifies nothing about a subject the plan places in an earlier semester', async () => {
-    store.studyPlanDual = { cz: plan, en: plan };
-    persistZaznamnikBatch.mockResolvedValue({ found, unseen: found });
-    await push({ zaznamnik: batch });
-
-    expect(store.setZaznamnikNewPoints).toHaveBeenCalledWith(found);
-    notifiedOnlyCurrent();
-  });
-
-  // The store reloads the plan only once the sync ends: this run's plan decides.
-  it('decides by the plan in the same push, over the store’s', async () => {
-    persistZaznamnikBatch.mockResolvedValue({ found, unseen: found });
-    await push({ zaznamnik: batch, studyPlan: { cz: plan, en: plan } });
-    notifiedOnlyCurrent();
-  });
-
-  it('decides by the plan an earlier push of the run stored', async () => {
-    idb.studyPlan = { cz: plan, en: plan };
-    persistZaznamnikBatch.mockResolvedValue({ found, unseen: found });
-    await push({ zaznamnik: batch });
-    notifiedOnlyCurrent();
   });
 
   it('a push without the key compares nothing', async () => {
     await push({ exams: [] });
     expect(persistZaznamnikBatch).not.toHaveBeenCalled();
-    expect(notifyNewPoints).not.toHaveBeenCalled();
   });
 });

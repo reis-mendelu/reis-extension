@@ -529,6 +529,21 @@
     "body": "{subject} – {section} · přihlašování v {time}",
     "channel": "Otevírání zkoušek"
   },
+  "novinkyPush": {
+    "channelTerms": "Nové termíny zkoušek",
+    "channelPoints": "Nové body",
+    "channelBoxes": "Nové odevzdávárny",
+    "channelSocieties": "Od spolků a MENDELU",
+    "termsOne": "Nový termín: {subject}",
+    "termsMany": "Nové termíny zkoušek",
+    "pointsOne": "Nové body: {subject}",
+    "pointsMany": "Nové body",
+    "boxesOne": "Nová odevzdávárna: {subject}",
+    "boxesMany": "Nové odevzdávárny",
+    "societiesMany": "Novinky od spolků",
+    "societiesSwitch": "Od spolků a MENDELU",
+    "societiesSwitchHint": "Akce spolků a oznámení školy"
+  },
   "deadlines": {
     "title": "Blížící se termíny",
     "examNewTerm": "Nový termín",
