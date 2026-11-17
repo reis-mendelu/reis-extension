@@ -30,7 +30,8 @@ vi.mock('../../services/storage/IndexedDBService', () => ({
 }));
 
 import { useAppStore } from '../../store/useAppStore';
-import { installNovinkyNotifications, NOVINKY_NOTIFIED_KEY } from '../novinkyNotifications';
+import { installNovinkyNotifications } from '../novinkyNotifications';
+import { NOVINKY_NOTIFIED_KEY } from '../novinkyRecord';
 import { pragueMinuteIso } from '../../utils/isNoticeRows';
 import { NOW, baseState, notice, settle } from './novinkyFixtures';
 

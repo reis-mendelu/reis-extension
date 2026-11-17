@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import type { AppState } from '../store/types';
 import { translate } from '../i18n/translate';
 import { logError } from '../utils/reportError';
-import { IndexedDBService } from '../services/storage/IndexedDBService';
+import { deleteRecord, readRecord, saveRecord } from './novinkyRecord';
 import {
   buildDeadlineAlerts,
   deadlineAlertInputsOf,
@@ -16,15 +16,6 @@ import { planPushes, type PushGroup, type PushRow } from '../utils/novinky/pushP
 import { pushRowsOf } from '../utils/novinky/pushText';
 
 import { NOVINKY_KIND, postGroups } from './novinkyPost';
-
-/** The 'meta' key holding the row ids already notified, per source (see run). */
-export const NOVINKY_NOTIFIED_KEY = 'novinky_notified';
-
-interface Notified {
-  alerts?: string[];
-  feed?: string[];
-  notices?: string[];
-}
 
 /** Waits for a sync's pushes to settle, so one sync is one notification per kind. */
 const SETTLE_MS = 1500;
@@ -73,32 +64,51 @@ async function run(gen: number): Promise<void> {
     ...alerts.filter((a) => isAlertSeen(a, s.notifications.seenDeadlineAlertIds)).map((a) => a.id),
     ...s.notifications.readIds,
   ]);
-  const before = ((await IndexedDBService.get('meta', NOVINKY_NOTIFIED_KEY)) ?? {}) as Notified;
+  const before = await readRecord();
   if (gen !== generation) return;
   const plan = (ready: boolean, rows: PushRow[], known: string[] | undefined) =>
     ready ? planPushes(rows, known, seen) : { post: [], notified: known };
   const news = plan(src.alerts, pushRowsOf(alerts, [], nameOf), before.alerts);
   const events = plan(src.feed, pushRowsOf([], src.events, nameOf), before.feed);
   const notices = plan(src.notices, pushRowsOf([], src.isNotices, nameOf), before.notices);
-  // Only the sources that have a record: IndexedDB's meta schema drops a whole
-  // value holding an undefined, and a dropped record would make every later
-  // run the silent first run.
-  const record: Notified = {};
-  if (news.notified) record.alerts = news.notified;
-  if (events.notified) record.feed = events.notified;
-  if (notices.notified) record.notices = notices.notified;
-  await IndexedDBService.set('meta', NOVINKY_NOTIFIED_KEY, record);
   // Society events and IS notices are one kind, so one notification.
   const school = [...events.post, ...notices.post].flatMap((g) => g.rows);
-  const post: PushGroup[] = [
+  const candidates: PushGroup[] = [
     ...news.post,
-    ...(s.notifySocieties && school.length > 0
-      ? [{ kind: 'societies' as const, rows: school }]
-      : []),
+    ...(school.length > 0 ? [{ kind: 'societies' as const, rows: school }] : []),
   ];
-  if (post.length === 0 || gen !== generation) return;
-  if ((await LocalNotifications.checkPermissions()).display !== 'granted') return;
-  await postGroups(post, s.language, () => gen === generation);
+  const full = { alerts: news.notified, feed: events.notified, notices: notices.notified };
+  const toPost = candidates.filter((g) => g.kind !== 'societies' || s.notifySocieties);
+  const granted =
+    toPost.length > 0 && (await LocalNotifications.checkPermissions()).display === 'granted';
+  if (!granted || gen !== generation) {
+    // Recorded all the same: allowing notifications later posts no backlog.
+    await saveRecord(full);
+    return;
+  }
+  // What is about to be posted stays out of the record until it has been, so
+  // a post the system refuses is tried again on the next run.
+  const held = new Set(toPost.flatMap((g) => g.rows.flatMap((r) => [r.id, ...(r.parts ?? [])])));
+  const without = (ids?: string[]) => ids?.filter((id) => !held.has(id));
+  await saveRecord({
+    alerts: without(full.alerts),
+    feed: without(full.feed),
+    notices: without(full.notices),
+  });
+  // Right before posting: the switch or a read may have changed meanwhile.
+  const now = useAppStore.getState();
+  const seenNow = new Set<string>([
+    ...alerts
+      .filter((a) => isAlertSeen(a, now.notifications.seenDeadlineAlertIds))
+      .map((a) => a.id),
+    ...now.notifications.readIds,
+  ]);
+  const final = toPost
+    .filter((g) => g.kind !== 'societies' || now.notifySocieties)
+    .map((g) => ({ ...g, rows: g.rows.filter((r) => !seenNow.has(r.id)) }))
+    .filter((g) => g.rows.length > 0);
+  if (final.length > 0) await postGroups(final, s.language, () => gen === generation);
+  if (gen === generation) await saveRecord(full);
 }
 
 /** The inputs of Novinky's news rows and of the decision to post them. */
@@ -177,5 +187,5 @@ export async function clearNovinkyNotifications(): Promise<void> {
   if (delivered.length > 0) {
     await LocalNotifications.removeDeliveredNotifications({ notifications: delivered });
   }
-  await IndexedDBService.delete('meta', NOVINKY_NOTIFIED_KEY);
+  await deleteRecord();
 }

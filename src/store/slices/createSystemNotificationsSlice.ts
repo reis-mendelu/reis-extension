@@ -29,7 +29,7 @@ export interface SystemNotificationsSlice {
   loadNotifySocieties: () => Promise<void>;
 }
 
-export const createSystemNotificationsSlice: AppSlice<SystemNotificationsSlice> = (set) => ({
+export const createSystemNotificationsSlice: AppSlice<SystemNotificationsSlice> = (set, get) => ({
   systemNotifications: 'unknown',
   setSystemNotifications: (next) => set({ systemNotifications: next }),
   notifySocieties: true,
@@ -41,7 +41,10 @@ export const createSystemNotificationsSlice: AppSlice<SystemNotificationsSlice> 
   },
   loadNotifySocieties: async () => {
     try {
+      const before = get().notifySocieties;
       const stored = await IndexedDBService.get('meta', NOTIFY_SOCIETIES_KEY);
+      // The student flipped it while this was loading: their choice wins.
+      if (get().notifySocieties !== before) return;
       if (typeof stored === 'boolean') set({ notifySocieties: stored });
     } catch (err) {
       logError('SystemNotificationsSlice.loadNotifySocieties', err);

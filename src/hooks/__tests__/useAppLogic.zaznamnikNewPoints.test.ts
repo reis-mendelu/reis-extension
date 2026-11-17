@@ -106,4 +106,28 @@ describe('a sync push carrying the záznamník', () => {
     await push({ exams: [] });
     expect(persistZaznamnikBatch).not.toHaveBeenCalled();
   });
+
+  // The phone's notifier filters earlier-semester subjects with the store's
+  // plan: a plan arriving in this push must reach the store before the points.
+  it('loads a plan from the same push into the store before publishing the points', async () => {
+    const order: string[] = [];
+    store.fetchStudyPlan = vi.fn(async () => {
+      order.push('plan');
+    });
+    (store.setZaznamnikNewPoints as ReturnType<typeof vi.fn>).mockImplementation(() =>
+      order.push('points')
+    );
+    const plan = {
+      title: 'p',
+      isFulfilled: false,
+      creditsAcquired: 0,
+      creditsRequired: 180,
+      blocks: [],
+    };
+    await push({
+      studyPlan: { cz: plan, en: plan },
+      zaznamnik: { 'EBC-PS': { ph: { sections: [] }, vt: { tests: [] } } },
+    });
+    expect(order).toEqual(['plan', 'points']);
+  });
 });

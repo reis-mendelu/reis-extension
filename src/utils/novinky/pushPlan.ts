@@ -45,8 +45,11 @@ export function planPushes(
   const isNews = (r: PushRow) =>
     !known.has(r.id) && (!r.parts || r.parts.some((p) => !known.has(p)));
   const fresh = rows.filter(isNews);
-  const added = rows.flatMap((r) => [r.id, ...(r.parts ?? [])]).filter((id) => !known.has(id));
-  const notified = [...known, ...new Set(added)].slice(-NOTIFIED_CAP);
+  // The rows on screen go last, so the cap only ever drops ids that left Novinky:
+  // a dropped id of a row still shown would make it news again.
+  const current = [...new Set(rows.flatMap((r) => [r.id, ...(r.parts ?? [])]))];
+  const shown = new Set(current);
+  const notified = [...[...known].filter((id) => !shown.has(id)), ...current].slice(-NOTIFIED_CAP);
   if (!notifiedBefore) return { post: [], notified };
   const toPost = fresh.filter((r) => !seenInApp.has(r.id));
   const post = KIND_ORDER.map((kind) => ({

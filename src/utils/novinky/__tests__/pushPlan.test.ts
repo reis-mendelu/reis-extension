@@ -66,4 +66,13 @@ describe('planPushes: Novinky rows → system notifications, 1:1', () => {
     const bc = { ...row('bc', 'terms', 'VWA'), parts: ['B', 'C'] };
     expect(planPushes([bc], first.notified, none).post).toHaveLength(1);
   });
+
+  // A row still in Novinky keeps its id however old it is, or the cap would
+  // make it look new and post it again.
+  it('never drops the id of a row that is still shown when it caps the record', () => {
+    const old = ['still-here', ...Array.from({ length: 600 }, (_, i) => `old-${i}`)];
+    const plan = planPushes([row('still-here', 'terms', 'VWA')], old, none);
+    expect(plan.post).toEqual([]);
+    expect(plan.notified).toContain('still-here');
+  });
 });

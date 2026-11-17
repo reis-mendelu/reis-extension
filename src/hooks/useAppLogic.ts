@@ -223,8 +223,13 @@ export function useAppLogic() {
           await IndexedDBService.set('schedule', 'current', r.schedule);
         }
 
-        if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan))
+        if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan)) {
           await IndexedDBService.set('study_plan', 'current', r.studyPlan);
+          // Into the store now, not at the sync's end: Novinky and the phone's
+          // notifier leave out earlier-semester subjects by this plan, and
+          // the záznamník points of this same push come after.
+          await useAppStore.getState().fetchStudyPlan();
+        }
         if (r.studyStats) {
           useAppStore.getState().setStudyStats(r.studyStats as StudyStats);
           await IndexedDBService.set('meta', 'study_stats', r.studyStats);

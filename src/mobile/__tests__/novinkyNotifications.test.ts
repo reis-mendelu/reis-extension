@@ -30,11 +30,8 @@ vi.mock('../../services/storage/IndexedDBService', () => ({
 }));
 
 import { useAppStore } from '../../store/useAppStore';
-import {
-  installNovinkyNotifications,
-  clearNovinkyNotifications,
-  NOVINKY_NOTIFIED_KEY,
-} from '../novinkyNotifications';
+import { installNovinkyNotifications, clearNovinkyNotifications } from '../novinkyNotifications';
+import { NOVINKY_NOTIFIED_KEY } from '../novinkyRecord';
 import { NOVINKY_KIND } from '../novinkyPost';
 import { examTermKey } from '../../utils/newExamTerms';
 import { NOW, baseState, event, settle } from './novinkyFixtures';
@@ -125,6 +122,36 @@ describe('Novinky rows as phone notifications', () => {
     useAppStore.setState({ examTermsNew: [examTermKey('EBC-VWA', '1')] });
     await settle();
     expect(posted()).toHaveLength(1);
+  });
+
+  // A post the system refused is not delivered: it is tried again, once it
+  // works it is not posted twice.
+  it('retries a post that failed, and posts it once', async () => {
+    await settle();
+    ln.schedule.mockRejectedValueOnce(new Error('no channel'));
+    useAppStore.setState({ examTermsNew: [examTermKey('EBC-VWA', '1')] });
+    await settle();
+    expect(ln.schedule).toHaveBeenCalledTimes(1);
+    useAppStore.setState({ zaznamnikNewPoints: {} } as never);
+    await settle();
+    expect(ln.schedule).toHaveBeenCalledTimes(2);
+    useAppStore.setState({ zaznamnikNewPoints: { x: [] } } as never);
+    await settle();
+    expect(ln.schedule).toHaveBeenCalledTimes(2);
+  });
+
+  // Switched off while the run was reading its record: nothing from societies.
+  it('re-checks the societies switch right before posting', async () => {
+    await settle();
+    ln.checkPermissions.mockImplementationOnce(async () => {
+      useAppStore.setState({ notifySocieties: false } as never);
+      return { display: 'granted' };
+    });
+    useAppStore.setState({
+      notifications: { ...useAppStore.getState().notifications, data: [event] },
+    } as never);
+    await settle();
+    expect(posted()).toEqual([]);
   });
 
   it('records but posts nothing while notifications are not allowed', async () => {
