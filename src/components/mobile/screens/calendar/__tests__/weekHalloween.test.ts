@@ -69,7 +69,7 @@ describe('weekHalloweenSpots', () => {
     expect(spots.pumpkinDays).toEqual([]);
   });
 
-  // PR #618 review: the marks read what is DRAWN — an exam's 90-minute floor —
+  // PR #618 review: the marks read what is DRAWN — a short exam's floor —
   // and skip a lesson with no usable time instead of passing NaN on.
   it('reads drawn exam ends and skips unusable times', () => {
     const l = (date: string, startTime: string, endTime: string, isExam = false) =>
@@ -78,7 +78,7 @@ describe('weekHalloweenSpots', () => {
       ['2026-11-02'],
       [l('20261102', '15:00', '15:10', true), l('20261102', '', '')]
     );
-    expect(days).toEqual([{ iso: '2026-11-02', lessons: [{ start: h(15), end: h(16, 30) }] }]);
+    expect(days).toEqual([{ iso: '2026-11-02', lessons: [{ start: h(15), end: h(15, 45) }] }]);
   });
 
   // CodeRabbit, second round: minutes are not pixels. On a short grid the

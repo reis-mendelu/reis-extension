@@ -20,7 +20,7 @@ export interface WeekHalloweenSpots {
 
 /**
  * The shown days with each lesson as the grid DRAWS it: from its start to its
- * rendered end (an exam's 90-minute floor), skipping a lesson without usable
+ * rendered end (a short block's floor), skipping a lesson without usable
  * times, which `weekHourRange` and `placeDay` skip too.
  */
 export function halloweenDays(days: string[], lessons: BlockLesson[]): WeekHalloweenDay[] {
@@ -31,7 +31,7 @@ export function halloweenDays(days: string[], lessons: BlockLesson[]): WeekHallo
       .flatMap((l) => {
         const start = minutesOf(l.startTime);
         if (!Number.isFinite(start) || !Number.isFinite(minutesOf(l.endTime))) return [];
-        return [{ start, end: start + renderedBlockMinutes(l.startTime, l.endTime, l.isExam) }];
+        return [{ start, end: start + renderedBlockMinutes(l.startTime, l.endTime) }];
       }),
   }));
 }

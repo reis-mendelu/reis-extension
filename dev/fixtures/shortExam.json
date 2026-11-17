@@ -1,0 +1,92 @@
+{
+  "_comment": "Synthetic, NO real student data — fictional teacher, made-up rooms. The shape of \"zkouška vypadá, že trvá déle (i když jen 25 min)\" (2026-11-17): a registered 25-minute Průběžný test 1 at 11:00 beside an 11:00-12:50 lesson, on day offset 0. The test must be drawn for 45 minutes (the shared floor), not 90. Serve with a Monday clock, e.g. npm run dev:web:short-exam and ?now=2026-11-16 13:00.",
+  "schedule": [
+    {
+      "id": "fx-short-exam-eko",
+      "dayOffset": 0,
+      "startTime": "11:00",
+      "endTime": "12:50",
+      "courseCode": "EBC-EKO",
+      "courseName": "Ekonometrie 1",
+      "courseNameCs": "Ekonometrie 1",
+      "courseNameEn": "Ekonometrie 1",
+      "room": "Q01",
+      "roomCs": "Q01",
+      "roomEn": "Q01",
+      "roomStructured": {
+        "name": "Q01",
+        "id": "q01"
+      },
+      "teachers": [
+        {
+          "fullName": "Ing. Petr Svoboda, Ph.D.",
+          "shortName": "Svoboda",
+          "id": "11"
+        }
+      ],
+      "isExam": false,
+      "isConsultation": "false",
+      "isSeminar": "false",
+      "studyId": "",
+      "facultyCode": "PEF",
+      "isDefaultCampus": "true",
+      "courseId": "ebc-eko",
+      "campus": "Brno",
+      "periodId": ""
+    }
+  ],
+  "exams": [
+    {
+      "version": 1,
+      "id": "fx-sta",
+      "code": "EBC-STA",
+      "name": "Statistika",
+      "nameCs": "Statistika",
+      "nameEn": "Statistics",
+      "sections": [
+        {
+          "id": "fx-sta-pt1",
+          "name": "Průběžný test 1",
+          "nameCs": "Průběžný test 1",
+          "nameEn": "Progress test 1",
+          "type": "test",
+          "status": "registered",
+          "registeredTerm": {
+            "id": "fx-sta-pt1-t1",
+            "dayOffset": 0,
+            "time": "11:00",
+            "room": "Q16",
+            "roomCs": "Q16",
+            "roomEn": "Q16",
+            "teacher": "Ing. Petra Malá, Ph.D.",
+            "durationMinutes": 25,
+            "deregDayOffset": -1,
+            "deregTime": "23:59"
+          },
+          "terms": [
+            {
+              "id": "fx-sta-pt1-t1",
+              "dayOffset": 0,
+              "time": "11:00",
+              "room": "Q16",
+              "roomCs": "Q16",
+              "roomEn": "Q16",
+              "teacher": "Ing. Petra Malá, Ph.D.",
+              "durationMinutes": 25,
+              "deregDayOffset": -1,
+              "deregTime": "23:59",
+              "capacity": {
+                "occupied": 20,
+                "total": 40,
+                "raw": "20/40"
+              },
+              "full": false,
+              "attemptTypes": ["regular"],
+              "canRegisterNow": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
