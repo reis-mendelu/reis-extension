@@ -2,26 +2,21 @@ import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
-import { isGroupSignupSection } from '../utils/exams/isGroupSignup';
+import { examAlerts } from '../utils/exams/examAlerts';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
 import { boxKey } from '../utils/newBoxDetection';
 import { newBoxAlerts, urgentNewBoxId } from '../utils/newSubmissionBoxAlerts';
-import {
-  codeForCourseId,
-  isPastSubject,
-  pastSubjectCodesOf,
-  withoutPastSubjects,
-} from '../utils/pastSubjects';
+import { isPastSubject, pastSubjectCodesOf, withoutPastSubjects } from '../utils/pastSubjects';
 
 export interface DeadlineAlert {
   id: string;
   type:
+    | 'exam-registered'
     | 'exam-reg-opens'
     | 'exam-reg'
     | 'assignment'
     | 'assignment-new'
-    | 'cvicny-test'
     | 'zaznamnik-points';
   title: string;
   body: string;
@@ -52,7 +47,6 @@ const H = 3_600_000;
 export function useDeadlineAlerts() {
   const exams = useAppStore((s) => s.exams.data);
   const odevzdavarny = useAppStore((s) => s.odevzdavarny);
-  const cvicneTests = useAppStore((s) => s.cvicneTests);
   const subjects = useAppStore((s) => s.subjects?.data);
   const nicknames = useAppStore((s) => s.courseNicknames);
   const language = useAppStore((s) => s.language);
@@ -78,63 +72,20 @@ export function useDeadlineAlerts() {
     const past = pastSubjectCodesOf(studyPlan);
     const isPast = (code: string | null | undefined) => isPastSubject(past, code);
 
-    for (const subject of exams) {
-      if (isPast(subject.code)) continue;
-      const subjectName = courseDisplayName(
-        nicknames,
-        subject.code,
-        (isEn ? subject.nameEn : subject.nameCs) ?? subject.name
-      );
-
-      for (const section of subject.sections) {
-        // Shown in a collapsed group with no badge (report #37) — an alert
-        // would be the badge by another name.
-        if (isGroupSignupSection(section)) continue;
-        const sectionName = (isEn ? section.nameEn : section.nameCs) ?? section.name;
-
-        if (section.status === 'available') {
-          for (const term of section.terms) {
-            // "Kam se přihlásit nemohu?": IS's dates, but they never open for
-            // this student, so there is nothing to alert them to.
-            if (term.cannotRegister) continue;
-            if (term.registrationStart) {
-              const start = parseCzDateTime(term.registrationStart);
-              if (start) {
-                const h = (start.getTime() - now) / H;
-                if (h > 0 && h <= 24)
-                  result.push({
-                    id: `exam-opens-${term.id}`,
-                    type: 'exam-reg-opens',
-                    title: subjectName,
-                    body: sectionName,
-                    deadline: start,
-                    hoursUntil: h,
-                  });
-              }
-            }
-            if (term.registrationEnd) {
-              const end = parseCzDateTime(term.registrationEnd);
-              if (end) {
-                const h = (end.getTime() - now) / H;
-                const startTime = term.registrationStart
-                  ? parseCzDateTime(term.registrationStart)?.getTime()
-                  : undefined;
-                const isOpen = !startTime || startTime <= now;
-                if (h > 0 && h <= 48 && isOpen)
-                  result.push({
-                    id: `exam-reg-${term.id}`,
-                    type: 'exam-reg',
-                    title: subjectName,
-                    body: sectionName,
-                    deadline: end,
-                    hoursUntil: h,
-                  });
-              }
-            }
-          }
-        }
-      }
-    }
+    result.push(
+      ...examAlerts(
+        exams.filter((subject) => !isPast(subject.code)),
+        now,
+        (subject) =>
+          courseDisplayName(
+            nicknames,
+            subject.code,
+            (isEn ? subject.nameEn : subject.nameCs) ?? subject.name
+          ),
+        (section) => (isEn ? section.nameEn : section.nameCs) ?? section.name,
+        (term) => (isEn ? term.roomEn : term.roomCs) ?? term.room
+      )
+    );
 
     const boxes = odevzdavarny.filter((b) => !isPast(boxCourseCode(b, subjects)));
     const freshBoxes = newBoxAlerts(newBoxes, boxes, subjects, nicknames, language, now);
@@ -172,14 +123,6 @@ export function useDeadlineAlerts() {
       }
     }
 
-    for (const test of cvicneTests) {
-      if (test.status !== 'accessible' || isPast(codeForCourseId(test.courseId, subjects)))
-        continue;
-      const id = `cvicny-${test.courseId}-${test.name}`;
-      const courseName = isEn ? test.courseNameEn : test.courseNameCs;
-      result.push({ id, type: 'cvicny-test', title: courseName, body: test.name, link: test.url });
-    }
-
     result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
     // Points and new boxes first: they already happened, the deadlines are still ahead.
     const points = newPointsAlerts(withoutPastSubjects(newPoints, past), subjects, nicknames, isEn);
@@ -187,7 +130,6 @@ export function useDeadlineAlerts() {
   }, [
     exams,
     odevzdavarny,
-    cvicneTests,
     language,
     pulseNow,
     subjects,

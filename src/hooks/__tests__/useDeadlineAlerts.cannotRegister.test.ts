@@ -14,7 +14,7 @@ const subjectWith = (term: ExamTerm): ExamSubject => ({
   id: 'EBC',
   name: 'Ekonometrie',
   code: 'EBC',
-  sections: [{ id: 's1', name: 'zkouška', type: 'exam', status: 'available', terms: [term] }],
+  sections: [{ id: 's1', name: 'zkouška', type: 'exam', status: 'open', terms: [term] }],
 });
 
 /**
