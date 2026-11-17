@@ -81,3 +81,32 @@ export function traceExamsAnswer(
   if (count > 0) return;
   traceOnce('Sync.exams', `IS answered, 0 exams · ${askedWith(params)}`);
 }
+
+/** The parts of a study plan this file counts. Structural, so this file keeps
+ *  importing nothing but `diagnosticLog` (content-script graph). */
+export interface StudyPlanLike {
+  blocks?: { groups?: { subjects?: unknown[] }[] }[];
+}
+
+/**
+ * Study plan (KontrolaPlanu), which Předměty draws from: traced when it came
+ * back with at most one semester block or no subjects. A real plan has a block
+ * per semester, so one block is the signature of a heading the parser did not
+ * recognise — how 5.6.0 read the new IS markup from 15 Nov 2026 (suggestion
+ * 46) — and none is a student with no plan (exchange). Counts only.
+ */
+export function traceStudyPlanAnswer(
+  plan: StudyPlanLike | null | undefined,
+  params: { studium?: string; obdobi?: string } | null | undefined
+): void {
+  const blocks = plan?.blocks ?? [];
+  const subjects = blocks.reduce(
+    (n, b) => n + (b.groups ?? []).reduce((m, g) => m + (g.subjects?.length ?? 0), 0),
+    0
+  );
+  if (blocks.length > 1 && subjects > 0) return;
+  traceOnce(
+    'Sync.studyPlan',
+    `IS answered, ${blocks.length} semester blocks · ${subjects} subjects · ${askedWith(params)}`
+  );
+}

@@ -253,4 +253,17 @@ describe('SuggestionsInbox', () => {
       )
     ).toBeInTheDocument();
   });
+
+  /** Suggestion 46: Předměty draws from the study plan; the row said nothing about it. */
+  it('shows the study plan Předměty draws from', () => {
+    openWithSync({ studyPlan: 'success', planBlocks: 1, planSubjects: 7, planEnrolledNow: 0 });
+    expect(
+      screen.getByText(/plan success · 1 semester blocks · 7 subjects · 0 enrolled now/)
+    ).toBeInTheDocument();
+  });
+
+  it('shows no plan line for a build that did not send one', () => {
+    openWithSync({ subjects: 'success' });
+    expect(screen.queryByText(/semester blocks/)).toBeNull();
+  });
 });

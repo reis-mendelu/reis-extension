@@ -3,6 +3,7 @@ import { osOf, platformOf, type ReportPlatform } from '@/utils/reportEnvironment
 import { executeAction } from '@/api/proxyClient';
 import { useAppStore } from '@/store/useAppStore';
 import { getDiagnostics, DIAGNOSTIC_CAP, type DiagnosticEntry } from './diagnosticLog';
+import { studyPlanCounts, type StudyPlanCounts } from './studyPlanCounts';
 
 /**
  * What "Přiložit technické údaje" / "Odeslat s technickými údaji" attaches: the session's cleaned errors and
@@ -59,7 +60,7 @@ export interface DiagnosticsPayload {
     zaznamnikCount?: number;
     zaznamnikFailed?: number;
     zaznamnikEmpty?: number;
-  };
+  } & StudyPlanCounts; // optional too: builds up to 5.7.2 send none of them
 }
 
 const CONTENT_TIMEOUT_MS = 1500;
@@ -120,6 +121,7 @@ export async function collectDiagnostics(
         .map(([k]) => k),
       syncFailed: !!s.syncStatus?.error,
       ...heldCounts(s),
+      ...studyPlanCounts(s),
     },
   };
 }

@@ -98,7 +98,11 @@ function primeResponses() {
   });
   api.exams.mockResolvedValue([]);
   api.schedule.mockResolvedValue([{ id: 'l1' }]);
-  api.studyPlan.mockResolvedValue({ cz: { groups: [] }, en: { groups: [] } });
+  // Healthy: a block per semester, each with subjects.
+  const healthyPlan = {
+    blocks: [1, 2].map((n) => ({ groups: [{ subjects: [{ code: `XX${n}` }] }] })),
+  };
+  api.studyPlan.mockResolvedValue({ cz: healthyPlan, en: healthyPlan });
   api.pastSubjects.mockResolvedValue({ cz: {}, en: {} });
   api.studyStats.mockResolvedValue({ credits: 30 });
   api.studyComparison.mockResolvedValue({ rank: 1 });
@@ -268,5 +272,57 @@ describe('an empty answer leaves a trace in the diagnostic log', () => {
     const { syncAllData, log } = await loadSync();
     await syncAllData();
     expect(log.getDiagnostics()).toEqual([]);
+  });
+});
+
+/**
+ * Suggestion 46 (17 Nov 2026, Android, 5.6.0): "Předměty: prázdný seznam",
+ * with schedule and exams fine. Předměty draws from the study plan
+ * (KontrolaPlanu), and the attached log had no line about the plan at all.
+ * The new IS markup (15 Nov 2026) collapsed 5.6.0's plan to ONE semester
+ * block; a healthy plan has one per semester. So the log says how many blocks
+ * and subjects the plan came back with whenever it is that thin.
+ */
+describe('a study plan that came back thin leaves a trace', () => {
+  const block = (n: number) => ({
+    title: `b${n}`,
+    groups: [{ name: 'g', subjects: [{ code: `XX${n}`, name: 'Secret name' }] }],
+  });
+  const plan = (blocks: unknown[]) => ({ blocks, title: 'Plan title' });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    params.value = { studium: 'st1', obdobi: 'ob1' };
+    primeResponses();
+  });
+
+  it('records a plan collapsed to one semester block, as counts only', async () => {
+    api.studyPlan.mockResolvedValue({ cz: plan([block(1)]), en: plan([block(1)]) });
+    const { syncAllData, log } = await loadSync();
+    await syncAllData();
+    const line = log.getDiagnostics().find((e) => e.ctx === 'Sync.studyPlan');
+    expect(line?.level).toBe('warn');
+    expect(line?.msg).toContain('IS answered, 1 semester blocks · 1 subjects');
+    expect(line?.msg).toContain('study id present');
+    expect(line?.msg).not.toMatch(/XX1|Secret|Plan title|st1/);
+  });
+
+  it('records a plan with no subjects (no KontrolaPlanu, e.g. exchange)', async () => {
+    api.studyPlan.mockResolvedValue({ cz: plan([]), en: plan([]) });
+    const { syncAllData, log } = await loadSync();
+    await syncAllData();
+    expect(log.getDiagnostics().find((e) => e.ctx === 'Sync.studyPlan')?.msg).toContain(
+      'IS answered, 0 semester blocks · 0 subjects'
+    );
+  });
+
+  it('stays quiet on a healthy plan', async () => {
+    api.studyPlan.mockResolvedValue({
+      cz: plan([block(1), block(2), block(3)]),
+      en: plan([block(1), block(2), block(3)]),
+    });
+    const { syncAllData, log } = await loadSync();
+    await syncAllData();
+    expect(log.getDiagnostics().filter((e) => e.ctx === 'Sync.studyPlan')).toHaveLength(0);
   });
 });
