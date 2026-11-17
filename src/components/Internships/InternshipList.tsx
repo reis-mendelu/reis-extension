@@ -1,5 +1,6 @@
 import { ArrowUpRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { trackFeatureSignal } from '../../api/featureUsage';
 import { PartnerMark } from '../brand/PartnerMark';
 import type { ShownInternship } from '../../utils/partnerInternships';
 
@@ -7,7 +8,10 @@ import type { ShownInternship } from '../../utils/partnerInternships';
  * The Stáže list, shared by the phone's sheet and the extension's popover.
  * Each card is one plain `target="_blank"` link: `installExternalLinkHandler`
  * opens it in the in-app browser on the phone, a new tab in the extension.
- * Nothing about the student goes with it.
+ * Nothing about the student goes with the link. The click itself is counted on
+ * the install (`internship_click_ey` and its kin), because partners are told
+ * how many students followed their programme; middle-click counts too, as it
+ * opens the same page. `trackFeatureSignal` latches it once per app session.
  */
 export function InternshipList({ items }: { items: ShownInternship[] }) {
   const language = useAppStore((s) => s.language);
@@ -20,6 +24,8 @@ export function InternshipList({ items }: { items: ShownInternship[] }) {
             href={internship.url}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => void trackFeatureSignal(internship.clickSignal)}
+            onAuxClick={() => void trackFeatureSignal(internship.clickSignal)}
             className="group flex items-start gap-3 rounded-xl border border-base-300 bg-base-100 p-4 transition-colors hover:bg-base-200"
           >
             <div className="flex min-w-0 flex-1 flex-col gap-2">

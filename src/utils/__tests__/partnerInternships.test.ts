@@ -10,9 +10,16 @@ const list: PartnerInternship[] = [
     partnerId: 'kpmg',
     title: 'KPMG stáž',
     url: 'https://kpmg.example/',
+    clickSignal: 'internship_click_ey',
     body: { cz: 'a', en: 'a' },
   },
-  { partnerId: 'ey', title: 'EY program', url: 'https://ey.example/', body: { cz: 'b', en: 'b' } },
+  {
+    partnerId: 'ey',
+    title: 'EY program',
+    url: 'https://ey.example/',
+    clickSignal: 'internship_click_ey',
+    body: { cz: 'b', en: 'b' },
+  },
 ];
 
 describe('internshipsFor', () => {

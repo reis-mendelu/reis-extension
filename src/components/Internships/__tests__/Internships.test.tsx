@@ -1,15 +1,19 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { BUNDLED_SOCIETIES } from '../../../data/societies';
 import { HeaderActions } from '../../mobile/screens/HeaderActions';
 import { InternshipsSheet } from '../../mobile/sheets/InternshipsSheet';
 import { InternshipsMenu } from '../InternshipsMenu';
+import { trackFeatureSignal } from '../../../api/featureUsage';
+
+vi.mock('../../../api/featureUsage', () => ({ trackFeatureSignal: vi.fn() }));
 
 // Stáže, next to the vývěska on both trees. Shown only to a student whose
 // field has a partner (EY is PEF's), decided on the device like PartnersBlock.
 describe('Stáže', () => {
   beforeEach(() => {
+    vi.mocked(trackFeatureSignal).mockClear();
     useAppStore.setState({
       language: 'cz',
       theme: 'mendelu',
@@ -55,6 +59,42 @@ describe('Stáže', () => {
     expect(screen.getByRole('img', { name: 'EY' })).toBeInTheDocument();
     // The card says what it is; an intro line above it was redundant (Task List).
     expect(screen.queryByText(/se kterými spolupracujeme/)).toBeNull();
+  });
+
+  // The count EY is handed (2026-11-17): installs that opened Stáže and installs
+  // that clicked "Cesta s EY". One list serves both trees, so one test each way.
+  describe('counters', () => {
+    it('counts a click on the EY card, on the phone', () => {
+      render(<InternshipsSheet onClose={() => {}} />);
+      expect(trackFeatureSignal).not.toHaveBeenCalledWith('internship_click_ey');
+      fireEvent.click(screen.getByRole('link', { name: /Cesta s EY/ }));
+      expect(trackFeatureSignal).toHaveBeenCalledWith('internship_click_ey');
+    });
+
+    it('counts a click on the EY card, in the extension', () => {
+      render(<InternshipsMenu />);
+      fireEvent.click(screen.getByRole('button', { name: 'Stáže' }));
+      fireEvent.click(screen.getByRole('link', { name: /Cesta s EY/ }));
+      expect(trackFeatureSignal).toHaveBeenCalledWith('internship_click_ey');
+    });
+
+    it('counts the sheet as opened, not the pill as mounted', () => {
+      render(<InternshipsSheet onClose={() => {}} />);
+      expect(trackFeatureSignal).toHaveBeenCalledWith('screen_internships');
+    });
+
+    it('counts the extension panel when it opens, not while closed', () => {
+      render(<InternshipsMenu />);
+      expect(trackFeatureSignal).not.toHaveBeenCalledWith('screen_internships');
+      fireEvent.click(screen.getByRole('button', { name: 'Stáže' }));
+      expect(trackFeatureSignal).toHaveBeenCalledWith('screen_internships');
+    });
+
+    it('counts nothing for a student who is shown no programme', () => {
+      useAppStore.setState({ userFaculty: 'ZF', userProgramme: null } as never);
+      render(<InternshipsMenu />);
+      expect(trackFeatureSignal).not.toHaveBeenCalled();
+    });
   });
 
   describe('extension header', () => {
