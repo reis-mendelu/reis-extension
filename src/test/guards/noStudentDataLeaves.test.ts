@@ -255,6 +255,13 @@ const NOT_REQUESTED: Array<{ file: string; url: string }> = [
   // The contact URL INSIDE the OSM tile User-Agent. OSM's tile policy asks
   // apps to name themselves that way; nothing ever fetches it.
   { file: 'src/utils/osmTileIdentity.ts', url: 'https://github.com/reis-mendelu/reis-extension' },
+  // reIS pro VŠE's privacy policy, the URL its Chrome Web Store listing points
+  // to. Read only by the build's store-zip check (scripts/assertStoreReady.ts):
+  // never fetched, and never shown in the app, so it is no link a student opens.
+  {
+    file: 'src/utils/schoolProfiles.ts',
+    url: 'https://gist.github.com/ElijaahInverted/d9d8e5cc17b7ce3f724831d8189ffe15',
+  },
 ];
 
 describe('no student data leaves the device', () => {
