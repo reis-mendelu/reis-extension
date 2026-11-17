@@ -11,13 +11,16 @@ export const mojeStudiumItemsPart2: PageItem[] = [
     id: 'harmonogram-ak-roku',
     label: 'Harmonogram akademického roku',
     labelEn: 'Academic year schedule',
-    href: 'https://is.mendelu.cz/auth/student/harmonogram.pl?fakulta={{faculty}};zpet_student=moje_studium.pl?lang={{lang}},studium={{studium}},;lang={{lang}}',
+    // No `fakulta=`: reIS never knows the faculty id, and IS errors on an
+    // unfilled one. Logged in, IS opens the student's own faculty by itself.
+    href: 'https://is.mendelu.cz/auth/student/harmonogram.pl?lang={{lang}}',
   },
   {
     id: 'kontaktni-oddeleni',
     label: 'Kontaktní oddělení',
     labelEn: 'Contact departments',
-    href: 'https://is.mendelu.cz/auth/pracoviste/stud_odd.pl?fakulta={{faculty}};zpet_student=moje_studium.pl?lang={{lang}},studium={{studium}},lang={{lang}}',
+    // No `fakulta=` (see above): the public "Kam se obrátit" faculty picker.
+    href: 'https://is.mendelu.cz/pracoviste/stud_odd.pl?lang={{lang}}',
   },
   {
     id: 'statni-zkousky',

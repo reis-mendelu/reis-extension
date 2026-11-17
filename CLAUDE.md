@@ -169,7 +169,10 @@ your change.
 `scripts/__tests__/worktreeBootstrap.test.ts` pins each:
 
 - **The branch starts from `test`.** A session worktree is cut from `main`. A
-  branch with no commits of its own and a clean tree is moved to `origin/test`.
+  branch with no commits of its own, not pushed, with a clean tree is moved to
+  `origin/test`. The same check runs again at the first prompt
+  (`UserPromptSubmit`, `--first-prompt`: no fetch, once per branch), which
+  catches a branch the app checks out after SessionStart ran.
   To read released code, check out detached: `git checkout --detach origin/main`.
 - **`node_modules` matches the lockfile.** `scripts/ensure-install.mjs` leaves a
   matching install alone and otherwise copies a matching one from another
@@ -188,6 +191,14 @@ your change.
 
 The dev snapshot and `.env` are still symlinks, deliberately: they are read and
 never rewritten, so a fresh scrape in the main checkout reaches every worktree.
+
+**A project hook runs from the main checkout, not the session's worktree.**
+Claude desktop starts sessions with `--project-config-root <main checkout>`, so
+every hook in `.claude/settings.json` gets the main checkout as its cwd *and* as
+`$CLAUDE_PROJECT_DIR`. Only the `cwd` field of the hook's JSON input names the
+session's checkout. A hook that asks git or `pwd` instead inspects the main
+checkout and quietly does nothing: until November 2026 the bootstrap returned
+silently in every worktree session, which left branches on `main`.
 
 ### Secrets
 

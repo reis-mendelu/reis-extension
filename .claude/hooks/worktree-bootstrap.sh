@@ -20,22 +20,39 @@
 set -uo pipefail
 export GIT_TERMINAL_PROMPT=0
 
+# `--first-prompt` (UserPromptSubmit) repeats only the branch move, once per
+# branch, without a fetch: see the end of this file.
+mode=session-start
+[ "${1:-}" = "--first-prompt" ] && mode=first-prompt
+
+# WHICH CHECKOUT the session is in comes from the hook input, never from this
+# process. Claude desktop starts sessions with --project-config-root <main
+# checkout>, and project hooks then run with their cwd AND $CLAUDE_PROJECT_DIR
+# set to the main checkout, whatever worktree the session is in. Taking `pwd`
+# made this hook see the main checkout and return silently in every worktree
+# session (seen 2026-11-17; the app has passed the flag since at least
+# 2026-10-20). stdin is read only when it is not a terminal, so a run by hand
+# never waits; with no input (by hand, from a test) the cwd is the session.
+session_cwd=
+if [ ! -t 0 ] && command -v node >/dev/null 2>&1; then
+  session_cwd=$(node -e 'let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{try{const c=JSON.parse(s).cwd;if(typeof c==="string")process.stdout.write(c)}catch{}})' 2>/dev/null)
+fi
+{ [ -n "$session_cwd" ] && [ -d "$session_cwd" ]; } || session_cwd=$(pwd)
+
+# The WORKTREE ROOT, not the session cwd: a session with a persisted working
+# directory may be in a subdirectory, and installing there would create
+# src/api/node_modules while leaving the real worktree root empty.
+here=$(git -C "$session_cwd" rev-parse --show-toplevel 2>/dev/null) || exit 0
+[ -n "$here" ] || exit 0
+
 # The common git dir is the MAIN checkout's .git even from inside a worktree.
-common_dir=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 0
+common_dir=$(git -C "$here" rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 0
 main_root=$(dirname "$common_dir")
 [ -d "$main_root" ] || exit 0
 
 # The checkout this hook file lives in. Its scripts are the ones that match this
 # hook, whichever branch the session's own worktree happens to be on.
 hook_repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." 2>/dev/null && pwd)
-
-# The WORKTREE ROOT, not the cwd. A session with a persisted working directory
-# fires this hook from wherever it last was, and `pwd` would then create
-# src/api/node_modules while leaving the real worktree root empty. Derived from
-# git rather than $CLAUDE_PROJECT_DIR so the hook is also correct when run by
-# hand or from a test, where that variable is unset.
-here=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
-[ -n "$here" ] || exit 0
 
 lines=()
 
@@ -67,22 +84,10 @@ note_unparked_main() {
   lines+=("worktree bootstrap: the main checkout is on '$branch', $behind commits behind origin/test. Skills, slash commands and hooks are read from it. Park it: git -C $main_root checkout --detach origin/test")
 }
 
-# The fetch is a network call, so it never holds up the session: this run's
-# skills are already loaded, and the next session gets the result.
-if [ "${REIS_BOOTSTRAP_SYNC:-}" = "1" ]; then
-  advance_parked_main
-else
-  (advance_parked_main &) >/dev/null 2>&1
-fi
-note_unparked_main
-
 report() {
   for line in ${lines[@]+"${lines[@]}"}; do echo "$line"; done
   exit 0
 }
-
-# The main checkout itself: nothing to bootstrap.
-[ "$main_root" = "$here" ] && report
 
 # Work starts from test (CLAUDE.md > Branches), and a session worktree is cut
 # from main. Move the branch only when there is nothing a reset could lose:
@@ -118,6 +123,33 @@ link_if_missing() {
   [ -L "$dst" ] && rm -f "$dst"
   ln -s "$src" "$dst" 2>/dev/null && linked+=("$rel")
 }
+
+# The first prompt, once per branch: the move again, and nothing else. A
+# worktree the app reuses can get its session branch after SessionStart ran,
+# and by the first prompt the app's own fetch has usually refreshed origin/test.
+# No fetch, no install, no links: this runs before every prompt, and costs a
+# few local git calls the first time and one file read after that.
+if [ "$mode" = first-prompt ]; then
+  [ "$main_root" = "$here" ] && exit 0
+  branch=$(git -C "$here" symbolic-ref -q --short HEAD 2>/dev/null) || exit 0
+  marker="$(git -C "$here" rev-parse --absolute-git-dir 2>/dev/null)/reis-bootstrap-first-prompt"
+  [ "$(cat "$marker" 2>/dev/null)" = "$branch" ] && exit 0
+  move_fresh_branch_to_test
+  echo "$branch" >"$marker" 2>/dev/null
+  report
+fi
+
+# The fetch is a network call, so it never holds up the session: this run's
+# skills are already loaded, and the next session gets the result.
+if [ "${REIS_BOOTSTRAP_SYNC:-}" = "1" ]; then
+  advance_parked_main
+else
+  (advance_parked_main &) >/dev/null 2>&1
+fi
+note_unparked_main
+
+# The main checkout itself: nothing to bootstrap.
+[ "$main_root" = "$here" ] && report
 
 # Before the install: the lockfile on test is the one to install for.
 move_fresh_branch_to_test
