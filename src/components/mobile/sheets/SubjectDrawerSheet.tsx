@@ -82,6 +82,11 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
     setActiveTab(pendingTab.current);
     pendingTab.current = null;
   }, [enrolledNow]);
+  // The student's own tap or swipe: it wins over a tab still pending.
+  const chooseTab = (tab: DrawerTab) => {
+    pendingTab.current = null;
+    setActiveTab(tab);
+  };
   // A sheet on the stack is open; its Záznamník tab on screen means seen.
   useMarkZaznamnikSeen(courseCode, activeTab, true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -162,7 +167,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
         courseCode={courseCode}
         pullable={activeTab === 'files'}
         onSwipeStep={(steps) =>
-          setActiveTab(stepTab(SUBJECT_TAB_ORDER, activeTab, steps, disabledTabs))
+          chooseTab(stepTab(SUBJECT_TAB_ORDER, activeTab, steps, disabledTabs))
         }
         top={
           <>
@@ -181,7 +186,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
             <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
             <SubjectDrawerTabs
               activeTab={activeTab}
-              onTabChange={setActiveTab}
+              onTabChange={chooseTab}
               disabledTabs={disabledTabs}
               counts={counts}
             />

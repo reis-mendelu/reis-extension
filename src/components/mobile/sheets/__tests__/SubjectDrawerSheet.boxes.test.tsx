@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { SubjectDrawerSheet } from '../SubjectDrawerSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import { NOW, box } from '../../../SubmissionBoxes/__tests__/boxFixtures';
@@ -80,5 +80,27 @@ describe('SubjectDrawerSheet — submission boxes', () => {
       } as never);
     });
     expect(tab('Záznamník')).toHaveClass('border-primary');
+  });
+
+  it('keeps the tab the student chose while the subject was loading', () => {
+    useAppStore.setState({ subjects: null } as never);
+    render(
+      <SubjectDrawerSheet
+        sheet={{ kind: 'subjectDrawer', courseCode: 'EBC-PJ', initialTab: 'zaznamnik' }}
+        onClose={() => {}}
+      />
+    );
+    fireEvent.click(tab('Sylabus'));
+    act(() => {
+      useAppStore.setState({
+        subjects: {
+          version: 1,
+          lastUpdated: '',
+          data: { 'EBC-PJ': { subjectId: 'P1', subjectCode: 'EBC-PJ' } },
+        },
+      } as never);
+    });
+    expect(tab('Sylabus')).toHaveClass('border-primary');
+    expect(tab('Záznamník')).not.toHaveClass('border-primary');
   });
 });
