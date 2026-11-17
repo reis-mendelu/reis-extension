@@ -1,5 +1,5 @@
 {
-  "_comment": "Synthetic Týden fixture with clashing lessons. NO real student data — fictional teachers, made-up rooms. Day offsets 0–4 are Monday–Friday when served with a Monday clock, e.g. ?now=2026-11-02T07:30 (dayOffset is from 'now', see scripts/lib/fixtureRebase.ts). Wednesday holds three parallel seminar options of one subject (suggestion #43's case and the deepest clash), Thursday the two-lesson clash from Dominik's 2026-11-06 screenshot. Serve with: npm run dev:web:clash The NEXT week (offsets 7–11) is the realistic case: one two-lesson clash on Thursday and nothing else, the shape of the screenshot.",
+  "_comment": "Synthetic Týden fixture with clashing lessons. NO real student data — fictional teachers, made-up rooms. Day offsets 0–4 are Monday–Friday when served with a Monday clock, e.g. ?now=2026-11-02T07:30 (dayOffset is from 'now', see scripts/lib/fixtureRebase.ts). Wednesday holds three parallel seminar options of one subject (suggestion #43's case and the deepest clash), Thursday the two-lesson clash from Dominik's 2026-11-06 screenshot. Serve with: npm run dev:web:clash The NEXT week (offsets 7–11) is the realistic case: one two-lesson clash on Thursday and nothing else, the shape of the screenshot. Monday 11:00 also holds a registered 25-minute Průběžný test 1 beside the 11:00-12:50 lesson: the shape of \"zkouška vypadá, že trvá déle (i když jen 25 min)\" (2026-11-17), drawn for 45 minutes, not 90.",
   "schedule": [
     {
       "id": "fx-d0-eko",
@@ -561,6 +561,60 @@
       "courseId": "ebc-fap",
       "campus": "Brno",
       "periodId": ""
+    }
+  ],
+  "exams": [
+    {
+      "version": 1,
+      "id": "fx-sta",
+      "code": "EBC-STA",
+      "name": "Statistika",
+      "nameCs": "Statistika",
+      "nameEn": "Statistics",
+      "sections": [
+        {
+          "id": "fx-sta-pt1",
+          "name": "Průběžný test 1",
+          "nameCs": "Průběžný test 1",
+          "nameEn": "Progress test 1",
+          "type": "test",
+          "status": "registered",
+          "registeredTerm": {
+            "id": "fx-sta-pt1-t1",
+            "dayOffset": 0,
+            "time": "11:00",
+            "room": "Q16",
+            "roomCs": "Q16",
+            "roomEn": "Q16",
+            "teacher": "Ing. Petra Malá, Ph.D.",
+            "durationMinutes": 25,
+            "deregDayOffset": -1,
+            "deregTime": "23:59"
+          },
+          "terms": [
+            {
+              "id": "fx-sta-pt1-t1",
+              "dayOffset": 0,
+              "time": "11:00",
+              "room": "Q16",
+              "roomCs": "Q16",
+              "roomEn": "Q16",
+              "teacher": "Ing. Petra Malá, Ph.D.",
+              "durationMinutes": 25,
+              "deregDayOffset": -1,
+              "deregTime": "23:59",
+              "capacity": {
+                "occupied": 20,
+                "total": 40,
+                "raw": "20/40"
+              },
+              "full": false,
+              "attemptTypes": ["regular"],
+              "canRegisterNow": false
+            }
+          ]
+        }
+      ]
     }
   ]
 }

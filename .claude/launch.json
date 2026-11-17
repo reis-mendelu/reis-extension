@@ -56,6 +56,13 @@
       "runtimeArgs": ["run", "dev:web:reis-admin"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "reis-webapp-clash",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:web:clash"],
+      "port": 3000,
+      "autoPort": true
     }
   ]
 }
