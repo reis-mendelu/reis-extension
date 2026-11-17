@@ -31,58 +31,9 @@ import {
   clearNovinkyNotifications,
   NOVINKY_NOTIFIED_KEY,
 } from '../novinkyNotifications';
-import { openNovinkyFromNotification } from '../novinkyTaps';
 import { NOVINKY_KIND } from '../novinkyPost';
 import { examTermKey } from '../../utils/newExamTerms';
-import { pragueMinuteIso } from '../../utils/isNoticeRows';
-import type { ExamSubject } from '../../types/exams';
-
-const NOW = new Date(2026, 11, 1, 12, 0);
-
-const vwa: ExamSubject = {
-  version: 1,
-  id: 'EBC-VWA',
-  name: 'Vývoj webových aplikací',
-  code: 'EBC-VWA',
-  sections: [
-    {
-      id: 'zk',
-      name: 'zkouška',
-      type: 'exam',
-      status: 'open',
-      terms: [
-        { id: '1', date: '14.12.2026', time: '11:00' },
-        { id: '2', date: '17.12.2026', time: '11:00' },
-      ],
-    },
-  ],
-};
-
-const event = {
-  id: 'ev1',
-  title: 'Deskovky',
-  body: '',
-  associationId: 'supef',
-  createdAt: '',
-  expiresAt: '2026-12-02T18:00:00Z',
-  priority: 'normal' as const,
-};
-
-const notice = (key: string, from: string | null) => ({
-  key,
-  title: 'Výpadek Microsoft 365',
-  text: 'Outlook, Teams',
-  link: null,
-  severity: 'info' as const,
-  from,
-  until: null,
-});
-
-/** Runs the settle timer, then lets the run's awaits finish. */
-async function settle() {
-  await vi.advanceTimersByTimeAsync(2000);
-  for (let i = 0; i < 10; i++) await Promise.resolve();
-}
+import { NOW, baseState, event, settle } from './novinkyFixtures';
 
 const posted = () =>
   ln.schedule.mock.calls.flatMap((c) => c[0].notifications as { title: string; body: string }[]);
@@ -95,30 +46,7 @@ describe('Novinky rows as phone notifications', () => {
     vi.clearAllMocks();
     db.clear();
     ln.checkPermissions.mockResolvedValue({ display: 'granted' });
-    useAppStore.setState({
-      now: NOW,
-      language: 'cz',
-      firstSyncSettled: true,
-      exams: { data: [vwa], status: 'success', error: null },
-      examTermsNew: [],
-      odevzdavarny: [],
-      odevzdavarnyNew: [],
-      zaznamnikNewPoints: {},
-      societies: { supef: { name: 'SU PEF' } },
-      notifySocieties: true,
-      isNoticeMutes: [],
-      isNoticesFetchedAt: null,
-      isNoticesTriedAt: null,
-      mobileSheets: [],
-      isNotices: { cz: [], en: [] },
-      notifications: {
-        ...useAppStore.getState().notifications,
-        data: [],
-        status: 'success',
-        readIds: new Set(),
-        seenDeadlineAlertIds: new Set(),
-      },
-    } as never);
+    useAppStore.setState(baseState(useAppStore.getState().notifications) as never);
     stop = installNovinkyNotifications();
   });
 
@@ -162,6 +90,28 @@ describe('Novinky rows as phone notifications', () => {
     expect(posted()).toHaveLength(1);
   });
 
+  // A batch at second T used ids T..T+n; a second batch a moment later must not
+  // reuse one, or it replaces an unread notification.
+  it('never reuses a notification id between close batches', async () => {
+    await settle();
+    // Three kinds at once: ids T, T+1, T+2. The next batch comes 2 s later, at T+2.
+    useAppStore.setState({
+      examTermsNew: [examTermKey('EBC-VWA', '1')],
+      zaznamnikNewPoints: { 'EBC-VWA': [{ label: 'Test 1', value: '9' }] },
+      notifications: { ...useAppStore.getState().notifications, data: [event] },
+    } as never);
+    await settle();
+    useAppStore.setState({
+      examTermsNew: [examTermKey('EBC-VWA', '1'), examTermKey('EBC-VWA', '2')],
+    });
+    await settle();
+    const ids = ln.schedule.mock.calls.flatMap((c) =>
+      (c[0].notifications as { id: number }[]).map((n) => n.id)
+    );
+    expect(ids.length).toBe(4);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('records but posts nothing while notifications are not allowed', async () => {
     await settle();
     ln.checkPermissions.mockResolvedValue({ display: 'denied' });
@@ -192,58 +142,6 @@ describe('Novinky rows as phone notifications', () => {
     } as never);
     await settle();
     expect(posted()).toHaveLength(1);
-  });
-
-  // IS notices load on their own: a failed society feed must not hold them back.
-  it('posts an IS notice when the society feed failed to load', async () => {
-    useAppStore.setState({
-      notifications: { ...useAppStore.getState().notifications, status: 'error' },
-      isNoticesFetchedAt: NOW.getTime(),
-    } as never);
-    await settle();
-    useAppStore.setState({ isNotices: { cz: [notice('k1', null)], en: [] } } as never);
-    await settle();
-    expect(posted()).toEqual([expect.objectContaining({ title: 'Výpadek Microsoft 365' })]);
-  });
-
-  // A failed first load is no baseline: recording [] then would post every
-  // existing notice as new once a retry succeeds.
-  it('waits for a successful IS-notice load before recording notices', async () => {
-    useAppStore.setState({ isNoticesTriedAt: NOW.getTime(), isNoticesFetchedAt: null } as never);
-    await settle();
-    expect((db.get(`meta/${NOVINKY_NOTIFIED_KEY}`) as { notices?: string[] }).notices).toBe(
-      undefined
-    );
-  });
-
-  // IS's own display window is to the minute: the notice is news when it opens,
-  // which no store field but the clock says.
-  it('posts an IS notice once its display minute arrives', async () => {
-    useAppStore.setState({ isNoticesFetchedAt: NOW.getTime() } as never);
-    await settle();
-    // IS's window is Prague time, whatever zone this runs in (CI is UTC).
-    const opens = pragueMinuteIso(new Date(NOW.getTime() + 5 * 60_000));
-    useAppStore.setState({ isNotices: { cz: [notice('k2', opens)], en: [] } } as never);
-    await settle();
-    expect(posted()).toEqual([]);
-    useAppStore.setState({ now: new Date(NOW.getTime() + 6 * 60_000) });
-    await settle();
-    expect(posted()).toEqual([expect.objectContaining({ title: 'Výpadek Microsoft 365' })]);
-  });
-
-  // 5.7.x's "Nové body" may still be in the tray after the update.
-  it('a tap on a 5.7.x points notification still opens the subject', () => {
-    openNovinkyFromNotification({ kind: 'zaznamnik-new-points', courseCode: 'EBC-VWA' });
-    expect(useAppStore.getState().mobileSheets.at(-1)).toMatchObject({
-      kind: 'subjectDrawer',
-      courseCode: 'EBC-VWA',
-      initialTab: 'zaznamnik',
-    });
-  });
-
-  it('a tap on a new-term notification opens Zkoušky', () => {
-    openNovinkyFromNotification({ kind: NOVINKY_KIND, group: 'terms', courseCode: 'EBC-VWA' });
-    expect(useAppStore.getState().mobileTab).toBe('exams');
   });
 
   it('sign-out clears what it posted and the record', async () => {

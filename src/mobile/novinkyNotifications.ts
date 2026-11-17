@@ -48,9 +48,10 @@ function sources(s: AppState) {
     // Society events: once their feed has loaded.
     feed: s.notifications.status === 'success',
     // IS notices load on their own, and a failed society feed must not hold
-    // them back. Ready once a load has succeeded: a failed first try is no
-    // baseline, or every notice would post as new after the retry.
-    notices: s.isNoticesFetchedAt !== null,
+    // them back. Ready once a live load succeeded or a cached list is there:
+    // an empty failed first try is no baseline, or every notice would post as
+    // new after the retry.
+    notices: s.isNoticesFetchedAt !== null || s.isNotices.cz.length + s.isNotices.en.length > 0,
     events: feed.filter((n) => n.source !== 'is'),
     isNotices: feed.filter((n) => n.source === 'is'),
   };

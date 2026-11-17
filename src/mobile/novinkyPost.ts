@@ -21,6 +21,9 @@ const CHANNEL: Record<PushKind, { id: string; name: string }> = {
   societies: { id: 'reis-novinky-societies', name: 'novinkyPush.channelSocieties' },
 };
 
+/** The last notification id handed out (see postGroups). */
+let lastId = 0;
+
 /**
  * Posts one notification per kind, now (never scheduled for later). Stops when
  * `current` turns false: a sign-out between the awaits.
@@ -42,12 +45,15 @@ export async function postGroups(
     }
   }
   if (!current()) return;
-  const base = Math.floor(Date.now() / 1000);
+  // Seconds since the epoch fit the plugin's int32 id and grow across launches;
+  // never below the last id used, so a batch a second later cannot reuse one
+  // and replace a notification the student has not read.
+  const base = Math.max(Math.floor(Date.now() / 1000), lastId + 1);
+  lastId = base + groups.length - 1;
   await LocalNotifications.schedule({
     notifications: groups.map((g, i) => {
       const codes = [...new Set(g.rows.map((r) => r.courseCode).filter(Boolean))];
       return {
-        // Seconds since the epoch fit the plugin's int32 id and differ between runs.
         id: base + i,
         ...pushText(g, t),
         channelId: CHANNEL[g.kind].id,
