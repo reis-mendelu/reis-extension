@@ -18,6 +18,7 @@ on:
       - '.github/workflows/db-migrate.yml'
       - '.github/workflows/ship-dryrun.yml'
       - '.github/workflows/publish.yml'
+      - '.github/workflows/publish-vse.yml'
       - '.github/workflows/release-tag.yml'
       - 'scripts/release/**'
       - 'scripts/release-ios.ts'

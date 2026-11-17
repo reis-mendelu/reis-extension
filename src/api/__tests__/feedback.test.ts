@@ -57,7 +57,16 @@ vi.mock('../../utils/harnessEnabled', () => ({
   isHarnessEnabled: (...a: unknown[]) => isHarnessEnabled(...a),
 }));
 // The school this build is for. MENDELU unless a test says otherwise.
-const school = vi.hoisted(() => ({ currentSchool: { id: 'mendelu' as string } }));
+const school = vi.hoisted(() => {
+  const s = { id: 'mendelu' as string, counts: true };
+  const currentSchool = {
+    get id() {
+      return s.id;
+    },
+    has: (f: string) => (f === 'usageCounts' ? s.counts : true),
+  };
+  return { currentSchool, s };
+});
 vi.mock('../../utils/school', () => school);
 
 import { trackDailyUsage, __resetUsageTrackedForTests } from '../feedback';
@@ -67,13 +76,14 @@ describe('feedback', () => {
     __resetUsageTrackedForTests();
     isHarnessEnabled.mockReturnValue(false);
     hasDataConsent.mockResolvedValue(true);
-    school.currentSchool.id = 'mendelu';
+    school.s.id = 'mendelu';
+    school.s.counts = true;
   });
 
   // The school is one more GROUP label, the same on every install of a build;
   // the caller passes nothing, the module reads the build's school.
   it("sends the build's school", async () => {
-    school.currentSchool.id = 'vse';
+    school.s.id = 'vse';
 
     await trackDailyUsage();
 
@@ -86,6 +96,18 @@ describe('feedback', () => {
   afterEach(() => {
     vi.clearAllMocks();
     useAppStore.setState({ demoMode: false });
+  });
+
+  // VŠE at launch: the school sends reIS nothing, so the count is not even
+  // attempted against the build's cut-off Supabase host.
+  it('sends nothing for a school without usage counts', async () => {
+    school.s.id = 'vse';
+    school.s.counts = false;
+
+    await trackDailyUsage();
+
+    expect(rpc).not.toHaveBeenCalled();
+    expect(getUserParams).not.toHaveBeenCalled();
   });
 
   it('does not track usage in demo mode', async () => {

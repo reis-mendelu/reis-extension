@@ -1,5 +1,11 @@
 import type { Plugin } from 'vite';
-import { SCHOOL_PROFILES, isSchoolId, type SchoolProfile } from '../src/utils/schoolProfiles';
+import {
+  ALL_FEATURES,
+  SCHOOL_PROFILES,
+  isSchoolId,
+  type Feature,
+  type SchoolProfile,
+} from '../src/utils/schoolProfiles';
 
 // Builds for another school on the same UIS (IS4U) system:
 //
@@ -10,8 +16,13 @@ import { SCHOOL_PROFILES, isSchoolId, type SchoolProfile } from '../src/utils/sc
 // features. Every `is.mendelu.cz` in the bundle and the manifest becomes that
 // host, "IS MENDELU" becomes "IS", and Supabase is cut off, so such an install
 // never reaches the production database (its "PEF" would land in MENDELU's PEF
-// counts). Unset, the build is the normal MENDELU one. Not a release path yet:
-// no Novinky, no daily count, and MENDELU-only parsers where a school differs
+// counts). Unset, the build is the normal MENDELU one.
+//
+// A school with a `listing` in its profile (VŠE) is a store listing of its own:
+// the manifest takes the listing's name and description and keeps only the
+// hosts its features use. `npm run zip:vse` is its store zip, and ship.yml's
+// VŠE job builds one per release. A school without a listing (ČZU) is a
+// prototype and is named so. MENDELU-only parsers remain where a school differs
 // (see research/czu-dump/audit-2026-10-26.md).
 //
 //   REIS_SCHOOL=vse REIS_PROTOTYPE=1 npx wxt zip    → .output/is.mendelu.cz
@@ -71,14 +82,83 @@ export function isHostSwapPlugin(): Plugin {
   };
 }
 
+const REIS_DATA_CDN = 'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*';
+
 /**
- * Same swap on the generated manifest: content-script matches, host permissions.
- * The build also gets its own Firefox add-on id, so it installs next to reIS
- * instead of replacing it (Chrome gives an unpacked build its own id).
+ * The hosts a feature reaches beyond the school's own IS. A build for another
+ * school keeps only the hosts of the features it has, so a store reviewer sees
+ * no permission the build never uses. Supabase is never kept: such a build is
+ * cut off (swapHost). raw.githubusercontent.com and mendelu.cz have no user in
+ * src/, so no other school gets them.
+ */
+export const FEATURE_HOSTS: Partial<Record<Feature, readonly string[]>> = {
+  // Tiles (the host the OSM identity rule needs), place search, map data.
+  campusMap: ['https://tile.openstreetmap.org/*', 'https://photon.komoot.io/*', REIS_DATA_CDN],
+  successRates: [REIS_DATA_CDN],
+  similarSubjects: [REIS_DATA_CDN],
+  erasmus: [REIS_DATA_CDN, 'https://hei.api.uni-foundation.eu/*'],
+  canteenMenu: ['https://skm.mendelu.cz/*', 'https://sklubpixie.cz/*'],
+};
+
+const isUrl = (p: string) => p.includes('://');
+
+/**
+ * Same swap on the generated manifest (content-script matches, host
+ * permissions), then the school's own identity:
+ * - Only the IS host and the hosts of the school's features stay. Without the
+ *   map, its OSM tile rule and the permission for it go too.
+ * - A listing build takes the listing's name and description and drops
+ *   `browser_specific_settings`: it is a Chrome listing, and the Firefox data
+ *   categories there describe MENDELU's Supabase flows.
+ * - A prototype says so in its name and gets its own Firefox add-on id, so it
+ *   installs next to reIS instead of replacing it (Chrome gives an unpacked
+ *   build its own id).
  */
 export function swapManifest(manifest: Record<string, unknown>): void {
   const swapped = JSON.parse(swapHost(JSON.stringify(manifest))) as Record<string, unknown>;
-  const bss = swapped.browser_specific_settings as { gecko?: { id?: string } } | undefined;
-  if (bss?.gecko) bss.gecko.id = `reis-prototype@${IS_HOST}`;
-  Object.assign(manifest, swapped, { name: `reIS – ${IS_HOST} prototyp` });
+  const has = (f: Feature) => SCHOOL.features[f];
+  const hosts = new Set([
+    `https://${IS_HOST}/*`,
+    ...ALL_FEATURES.filter(has).flatMap((f) => FEATURE_HOSTS[f] ?? []),
+  ]);
+  const keep = (p: string) => !isUrl(p) || hosts.has(p);
+  if (Array.isArray(swapped.host_permissions))
+    swapped.host_permissions = (swapped.host_permissions as string[]).filter(keep);
+  // MV2 folds the hosts in here.
+  if (Array.isArray(swapped.permissions))
+    swapped.permissions = (swapped.permissions as string[])
+      .filter(keep)
+      .filter((p) => has('campusMap') || p !== 'declarativeNetRequestWithHostAccess');
+  if (!has('campusMap')) delete swapped.declarative_net_request;
+
+  const listing = process.env.REIS_PROTOTYPE === '1' ? null : SCHOOL.listing;
+  if (listing) {
+    delete swapped.browser_specific_settings;
+    Object.assign(swapped, { name: listing.name, description: listing.description });
+  } else {
+    const bss = swapped.browser_specific_settings as { gecko?: { id?: string } } | undefined;
+    if (bss?.gecko) bss.gecko.id = `reis-prototype@${IS_HOST}`;
+    swapped.name =
+      IS_HOST === SCHOOL.host
+        ? `reIS – ${IS_HOST} prototyp`
+        : `reIS – ${SCHOOL.name} prototyp na ${IS_HOST}`;
+  }
+  // In place, deletions included: WXT writes out the object it handed us.
+  for (const key of Object.keys(manifest)) if (!(key in swapped)) delete manifest[key];
+  Object.assign(manifest, swapped);
+}
+
+/**
+ * Why a school's store zip must not be made yet. Today that is one thing: a
+ * privacy policy URL that is still a placeholder, which the store's privacy
+ * form needs. Checked by `npm run zip:vse` (scripts/assertStoreReady.ts) and by
+ * ship.yml's VŠE job; a plain `REIS_SCHOOL=vse npx wxt zip` still builds.
+ */
+export function storeZipProblems(school: SchoolProfile): string[] {
+  if (!school.listing) return [`${school.name} has no listing in src/utils/schoolProfiles.ts.`];
+  const { privacyPolicyUrl, privacyPolicyDoc } = school.listing;
+  if (/^https:\/\/\S+$/.test(privacyPolicyUrl)) return [];
+  return [
+    `${school.name}'s privacy policy URL is "${privacyPolicyUrl}". Publish ${privacyPolicyDoc} and put its URL in src/utils/schoolProfiles.ts first.`,
+  ];
 }

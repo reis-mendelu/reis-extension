@@ -1,0 +1,100 @@
+name: Publish (VŠE)
+
+# reIS pro VŠE: the release built for VŠE (REIS_SCHOOL=vse) and submitted to its
+# own Chrome Web Store item. Called by ship.yml's `extension-vse` job, the way
+# `extension` calls publish.yml; a tag never triggers it by itself.
+#
+# Same publisher and service account as MENDELU's reIS, so no secret of its own.
+# Chrome only: VŠE has no Firefox add-on. Its own workflow and job, never a step
+# of MENDELU's: "Re-run failed jobs" on one must never resubmit the other.
+# Setup and the first, manual upload: docs/release-pipeline.md.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      dry_run:
+        required: false
+        default: false
+        type: boolean
+      item_id:
+        description: 'The VŠE Chrome Web Store item (the repo variable CWS_VSE_ITEM_ID)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # Before checkout, as in publish.yml: nothing from the repository runs
+      # with the store credentials in scope unless the ref is a release tag.
+      - name: Refuse a ref that is not a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$TAG' is not a release tag (vX.Y.Z). Refusing to build and submit from an arbitrary ref."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The plain build, not `npm run zip:vse`, on purpose: a tag older than the
+      # VŠE listing ignores REIS_SCHOOL and builds the MENDELU extension, and the
+      # next step has to catch exactly that.
+      - name: Build the VŠE zip
+        run: REIS_SCHOOL=vse npx wxt zip
+
+      # Inline, not a repo script: this file comes from the caller's ref but the
+      # code from the tag, and an old tag has no such script. Read from the zip
+      # itself, which is exactly what gets uploaded.
+      - name: Check it is the VŠE extension, before anything is uploaded
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          zips=(.output/insis.vse.cz/*-chrome.zip)
+          if [ "${#zips[@]}" -ne 1 ]; then
+            echo "::error::Expected one zip in .output/insis.vse.cz/, found ${#zips[@]}. Does $TAG predate the VŠE listing?"
+            exit 1
+          fi
+          manifest="$(unzip -p "${zips[0]}" manifest.json)"
+          name="$(jq -r .name <<<"$manifest")"
+          hosts="$(jq -c .host_permissions <<<"$manifest")"
+          bad=0
+          [ "$name" = 'reIS pro VŠE' ] || { echo "::error::The manifest name is '$name', not 'reIS pro VŠE'."; bad=1; }
+          [ "$hosts" = '["https://insis.vse.cz/*"]' ] || { echo "::error::host_permissions are $hosts, not insis.vse.cz alone."; bad=1; }
+          if grep -qi 'mendelu' <<<"$manifest"; then echo "::error::The manifest names MENDELU, so this is not the VŠE build."; bad=1; fi
+          [ "$bad" -eq 0 ] || exit 1
+          echo "VŠE manifest checked: $name, $hosts"
+
+      # The listing is complete: today that means its privacy policy URL is no
+      # longer a placeholder (scripts/isHostSwap.ts, storeZipProblems).
+      - name: Check the listing is ready for the store
+        run: npx tsx scripts/assertStoreReady.ts vse
+
+      - name: Submit to the Chrome Web Store
+        # `dry_run` authenticates and stops, as publish.yml does for MENDELU.
+        run: npx wxt submit ${{ inputs.dry_run && '--dry-run' || '' }}
+          --chrome-zip .output/insis.vse.cz/*-chrome.zip
+        env:
+          CHROME_API_VERSION: v2
+          CHROME_EXTENSION_ID: ${{ inputs.item_id }}
+          CHROME_PUBLISHER_ID: ${{ secrets.CHROME_PUBLISHER_ID }}
+          CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL: ${{ secrets.CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL }}
+          CHROME_SERVICE_ACCOUNT_PRIVATE_KEY: ${{ secrets.CHROME_SERVICE_ACCOUNT_PRIVATE_KEY }}

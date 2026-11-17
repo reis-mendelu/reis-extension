@@ -65,6 +65,9 @@ import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadc
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
 import { currentSchool } from '../utils/school';
 
+/** Society events, pins and venues are Supabase rows shown in Novinky and on the map. */
+const societyContent = () => currentSchool.has('novinky') || currentSchool.has('campusMap');
+
 export const useAppStore = create<AppState>()(
   overlayGuard((...a) => ({
     ...createScheduleSlice(...a),
@@ -233,8 +236,12 @@ export const initializeStore = async () => {
     // Novinky. The cache first, then IS; useNotificationFeed re-asks with the
     // feed's five-minute refresh, and the 30-minute TTL keeps that to one
     // request per language per half hour.
-    void s2.hydrateIsNotices().then(() => useAppStore.getState().loadIsNoticesIfStale());
-    s2.loadMapEvents();
+    // Novinky only, and their mute list is a Supabase row.
+    if (currentSchool.has('novinky'))
+      void s2.hydrateIsNotices().then(() => useAppStore.getState().loadIsNoticesIfStale());
+    // Society events, pins and venues: Supabase rows for Novinky and the map,
+    // so a school with neither asks nobody for them.
+    if (societyContent()) s2.loadMapEvents();
     // The jídelníček. It used to be fetched from a useEffect in each of the
     // three components that show it (the weekly header, its popover, the
     // phone's MenuCard) — three triggers for one request, and an Iron Rule
@@ -271,7 +278,9 @@ export const initializeStore = async () => {
       return;
     }
     if (type === 'LANGUAGE_UPDATE') {
-      st.loadLanguage().then(() => useAppStore.getState().loadMapEvents());
+      st.loadLanguage().then(() => {
+        if (societyContent()) void useAppStore.getState().loadMapEvents();
+      });
       st.fetchAllFiles();
       // Clear THEN ask: clearing is what reopens the store's request guard,
       // and the ask is what used to come from a component effect noticing the
@@ -317,7 +326,9 @@ export const initializeStore = async () => {
     // out of IDB — and a menu request fired before that resolves asks
     // skm.mendelu.cz for the page the student just left.
     const languageReady = useAppStore.getState().loadLanguage();
-    void languageReady.then(() => useAppStore.getState().loadMapEvents());
+    void languageReady.then(() => {
+      if (societyContent()) void useAppStore.getState().loadMapEvents();
+    });
     useAppStore.getState().fetchAllFiles();
     // Clear menu so it re-fetches with the new language
     useAppStore.setState({ menu: null });

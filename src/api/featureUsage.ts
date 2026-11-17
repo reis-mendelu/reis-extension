@@ -76,6 +76,8 @@ export type FeatureSignal = (typeof FEATURE_SIGNALS)[number];
  * than a student.
  */
 function writesAllowed(): boolean {
+  // A school without the counters (VŠE at launch) sends reIS nothing at all.
+  if (!currentSchool.has('usageCounts')) return false;
   return !isDemoMode() && !isHarnessEnabled(import.meta.env);
 }
 

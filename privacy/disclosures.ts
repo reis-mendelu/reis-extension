@@ -333,6 +333,19 @@ export const EXEMPT: Exempt[] = [
   },
 ];
 
+/**
+ * Schools with a store listing of their own (`listing` in
+ * src/utils/schoolProfiles.ts) and a policy of their own: which of the FLOWS
+ * above each one sends. An empty list is a promise that the build sends
+ * nothing anywhere but the school's IS, so the school may have no feature on
+ * (privacyDisclosures.test.ts). Turning one on means writing its flows here,
+ * rewriting its policy and redoing its store's privacy form, in the same PR.
+ */
+export const SCHOOL_LISTING_FLOWS: Record<string, string[]> = {
+  // docs/privacy-policy-vse.md: "neposílá nic nikam jinam než do InSIS".
+  vse: [],
+};
+
 export const PLATFORM_PERMISSIONS = {
   /** Info.plist NS*UsageDescription keys. */
   ios: ['NSCameraUsageDescription'],

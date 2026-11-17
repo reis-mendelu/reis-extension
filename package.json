@@ -12,6 +12,7 @@
     "build:watch": "npx nodemon --watch src -e ts,tsx,html,css --exec 'npm run build'",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip --browser firefox",
+    "zip:vse": "tsx scripts/assertStoreReady.ts vse && REIS_SCHOOL=vse wxt zip",
     "lint": "eslint .",
     "preview": "wxt preview",
     "test": "vitest",
