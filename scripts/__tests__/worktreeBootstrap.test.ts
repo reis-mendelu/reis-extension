@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -28,6 +28,16 @@ const git = (cwd: string, ...args: string[]) =>
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
 const hook = (cwd: string) => execFileSync('bash', [HOOK], { cwd, env, encoding: 'utf8' });
+// How Claude desktop really runs it: the app passes --project-config-root <main
+// checkout>, so the hook's process cwd (and $CLAUDE_PROJECT_DIR) is the MAIN
+// checkout. Only the hook input on stdin names the session's own worktree.
+const hookAsApp = (main: string, sessionCwd: string, event: string, ...args: string[]) =>
+  execFileSync('bash', [HOOK, ...args], {
+    cwd: main,
+    env,
+    encoding: 'utf8',
+    input: JSON.stringify({ session_id: 's1', cwd: sessionCwd, hook_event_name: event }),
+  });
 const commit = (cwd: string, file: string) => {
   writeFileSync(join(cwd, file), file);
   git(cwd, 'add', file);
@@ -105,6 +115,58 @@ describe('a session worktree cut from main', () => {
     const before = git(wt, 'rev-parse', 'HEAD');
     hook(wt);
     expect(git(wt, 'rev-parse', 'HEAD')).toBe(before);
+  });
+});
+
+// Since at least 2026-10-20 Claude desktop runs project hooks from the main
+// checkout. A hook that took the repository from its own cwd saw the main
+// checkout, returned silently, and left every session worktree on main.
+describe('run the way Claude desktop runs it (cwd = main checkout)', () => {
+  it('takes the session worktree from the hook input, not from its cwd', () => {
+    const out = hookAsApp(main, wt, 'SessionStart');
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(testTip);
+    expect(out).toContain('origin/test');
+  });
+
+  it('finds the worktree when the session cwd is a subdirectory of it', () => {
+    const sub = join(wt, 'sub');
+    mkdirSync(sub);
+    hookAsApp(main, sub, 'SessionStart');
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(testTip);
+  });
+
+  // A worktree the app reuses can still be detached when SessionStart runs and
+  // get its session branch a moment later; the first prompt catches it.
+  it('moves a branch checked out after SessionStart by the first prompt', () => {
+    git(wt, 'checkout', '-q', '--detach', 'origin/main');
+    hookAsApp(main, wt, 'SessionStart');
+    expect(git(wt, 'rev-parse', 'HEAD')).not.toBe(testTip);
+    git(wt, 'checkout', '-q', '-b', 'claude/next', 'origin/main');
+    const out = hookAsApp(main, wt, 'UserPromptSubmit', '--first-prompt');
+    expect(git(wt, 'symbolic-ref', '--short', 'HEAD')).toBe('claude/next');
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(testTip);
+    expect(out).toContain('origin/test');
+  });
+
+  it('acts on a prompt at most once per branch, silently, and never fetches', () => {
+    expect(hookAsApp(main, wt, 'UserPromptSubmit', '--first-prompt')).toContain('origin/test');
+    const remoteTip = mergeAnotherPr();
+    expect(hookAsApp(main, wt, 'UserPromptSubmit', '--first-prompt')).toBe('');
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(testTip);
+    expect(git(main, 'rev-parse', 'origin/test')).not.toBe(remoteTip);
+  });
+
+  it('keeps every safety condition on the prompt check', () => {
+    writeFileSync(join(wt, 'draft.txt'), 'draft');
+    const before = git(wt, 'rev-parse', 'HEAD');
+    expect(hookAsApp(main, wt, 'UserPromptSubmit', '--first-prompt')).toBe('');
+    expect(git(wt, 'rev-parse', 'HEAD')).toBe(before);
+  });
+
+  it('does nothing on a prompt in the main checkout itself', () => {
+    const before = git(main, 'rev-parse', 'HEAD');
+    expect(hookAsApp(main, main, 'UserPromptSubmit', '--first-prompt')).toBe('');
+    expect(git(main, 'rev-parse', 'HEAD')).toBe(before);
   });
 });
 
