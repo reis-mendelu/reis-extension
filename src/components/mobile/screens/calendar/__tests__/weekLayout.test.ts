@@ -239,10 +239,10 @@ describe('weekLayout — review findings', () => {
     });
   });
 
-  it('the range covers an exam drawn for its 90-minute floor (CodeRabbit)', () => {
-    // 10-minute oral exam at 17:30: drawn to 19:00, so the range must reach 19.
-    const range = weekHourRange([lesson('a', '09:00', '10:00'), exam('x', '17:30', '17:40')]);
-    expect(range.end).toBe(19);
+  it('the range covers an exam drawn for its floor (CodeRabbit)', () => {
+    // 10-minute oral exam at 18:20: drawn to 19:05, so the range must reach 20.
+    const range = weekHourRange([lesson('a', '09:00', '10:00'), exam('x', '18:20', '18:30')]);
+    expect(range.end).toBe(20);
   });
 
   // Release review (cubic): percentages are floats, so a lesson ending exactly

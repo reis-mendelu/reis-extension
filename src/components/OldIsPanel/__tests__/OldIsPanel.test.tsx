@@ -30,11 +30,15 @@ describe('OldIsPanel', () => {
     }
   });
 
-  it('fills the actual studium and faculty into the links that need them', () => {
+  it('fills the actual studium into the links that need it', () => {
     render(<OldIsPanel />);
     const hrefOf = (name: RegExp) => screen.getByRole('link', { name }).getAttribute('href');
     expect(hrefOf(/E-index/)).toContain('studium=4321');
-    expect(hrefOf(/Harmonogram akademického roku/)).toContain('fakulta=2');
+    // No faculty in the link: reIS never learns the faculty id in production
+    // (userParams/fetchers.ts), and logged in, IS opens the student's own one.
+    expect(hrefOf(/Harmonogram akademického roku/)).toBe(
+      'https://is.mendelu.cz/auth/student/harmonogram.pl?lang=cz'
+    );
   });
 
   it('filters accent-insensitively', () => {
