@@ -78,6 +78,15 @@ describe('Stáže', () => {
       expect(trackFeatureSignal).toHaveBeenCalledWith('internship_click_ey');
     });
 
+    it('counts a middle-click, but not a right-click that only opens the context menu', () => {
+      render(<InternshipsSheet onClose={() => {}} />);
+      const link = screen.getByRole('link', { name: /Cesta s EY/ });
+      fireEvent(link, new MouseEvent('auxclick', { bubbles: true, button: 2 }));
+      expect(trackFeatureSignal).not.toHaveBeenCalledWith('internship_click_ey');
+      fireEvent(link, new MouseEvent('auxclick', { bubbles: true, button: 1 }));
+      expect(trackFeatureSignal).toHaveBeenCalledWith('internship_click_ey');
+    });
+
     it('counts the sheet as opened, not the pill as mounted', () => {
       render(<InternshipsSheet onClose={() => {}} />);
       expect(trackFeatureSignal).toHaveBeenCalledWith('screen_internships');

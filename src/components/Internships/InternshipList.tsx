@@ -10,8 +10,8 @@ import type { ShownInternship } from '../../utils/partnerInternships';
  * opens it in the in-app browser on the phone, a new tab in the extension.
  * Nothing about the student goes with the link. The click itself is counted on
  * the install (`internship_click_ey` and its kin), because partners are told
- * how many students followed their programme; middle-click counts too, as it
- * opens the same page. `trackFeatureSignal` latches it once per app session.
+ * how many students followed their programme; a middle-click counts too, as it
+ * opens the same page, but a right-click does not. `trackFeatureSignal` latches it once per app session.
  */
 export function InternshipList({ items }: { items: ShownInternship[] }) {
   const language = useAppStore((s) => s.language);
@@ -25,7 +25,11 @@ export function InternshipList({ items }: { items: ShownInternship[] }) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => void trackFeatureSignal(internship.clickSignal)}
-            onAuxClick={() => void trackFeatureSignal(internship.clickSignal)}
+            // auxclick also fires for the right button, which only opens the
+            // context menu: only the middle button follows the link.
+            onAuxClick={(e) => {
+              if (e.button === 1) void trackFeatureSignal(internship.clickSignal);
+            }}
             className="group flex items-start gap-3 rounded-xl border border-base-300 bg-base-100 p-4 transition-colors hover:bg-base-200"
           >
             <div className="flex min-w-0 flex-1 flex-col gap-2">
