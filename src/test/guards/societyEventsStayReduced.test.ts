@@ -42,6 +42,8 @@ describe('society events stay reduced', () => {
       grep('LocalNotifications\\.schedule', [
         'src/mobile/examReminders.ts',
         'src/mobile/novinkyPost.ts',
+        // The scheduled reminders (2026-11-17): exams and boxes, never society events.
+        'src/mobile/deadlineReminders.ts',
       ])
     ).toBe('');
   });

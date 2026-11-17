@@ -55,6 +55,13 @@ registerSignOutCleanup(async () => {
   await clearNovinkyNotifications();
 });
 
+// Scheduled reminders name this student's exams and boxes; the next person on
+// the device must not get them.
+registerSignOutCleanup(async () => {
+  const { clearDeadlineReminders } = await import('@/mobile/deadlineReminders');
+  await clearDeadlineReminders();
+});
+
 // Android only: the status bar sits transparent over the app there (see
 // MainActivity), so its icons must follow the reIS theme, not the system one.
 // iOS is left on its current behaviour.

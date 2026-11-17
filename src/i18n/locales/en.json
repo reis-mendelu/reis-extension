@@ -544,6 +544,14 @@
     "societiesSwitch": "From societies and MENDELU",
     "societiesSwitchHint": "Society events and school notices"
   },
+  "deadlineReminders": {
+    "channel": "Exams and deadlines",
+    "examTitle": "Tomorrow: {subject}",
+    "closingTitle": "{subject}: registration closes",
+    "closingBody": "{section} · last chance tomorrow until {time}",
+    "boxTitle": "{subject}: due tomorrow",
+    "boxBody": "{box} · until {time}"
+  },
   "deadlines": {
     "title": "Upcoming deadlines",
     "examNewTerm": "New date",

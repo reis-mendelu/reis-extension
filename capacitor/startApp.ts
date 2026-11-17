@@ -21,6 +21,7 @@ import { installExamReminders } from '@/mobile/examReminders';
 import { noteAppUsedToday } from '@/mobile/storeReview';
 import { installNotificationTaps } from '@/mobile/notificationTaps';
 import { installNovinkyNotifications } from '@/mobile/novinkyNotifications';
+import { installDeadlineReminders } from '@/mobile/deadlineReminders';
 import {
   askAfterFirstRegistration,
   refreshNotificationStatus,
@@ -135,6 +136,9 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // system notifications, 1:1. After the demo return (the demo never syncs,
   // so it has nothing new) and before the sync starts.
   installNovinkyNotifications();
+  // "Zítra: zkouška", "přihlašování končí", "odevzdání do zítra": scheduled
+  // ahead, so they arrive with reIS closed. After the demo return, like the rest.
+  installDeadlineReminders();
 
   // Whether the phone lets reIS notify at all, in the store for Nastavení and
   // the bell's banner (a student once ran for weeks with it off and no sign of

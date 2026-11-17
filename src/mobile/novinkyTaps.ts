@@ -1,5 +1,6 @@
 import { useAppStore } from '../store/useAppStore';
 import { NOVINKY_KIND } from './novinkyPost';
+import { DEADLINE_REMINDER_KIND } from '../utils/deadlineReminders';
 
 /** 5.7.x posted "Nové body" under this kind; one may still be in the tray. */
 const LEGACY_POINTS_KIND = 'zaznamnik-new-points';
@@ -40,4 +41,18 @@ export function openNovinkyFromNotification(extra: unknown): void {
     return;
   }
   store.pushSheet({ kind: 'notifications' });
+}
+
+/**
+ * A tap on a scheduled reminder: Zkoušky for your exam or a closing
+ * registration, the subject's Záznamník for a box (where it is listed).
+ */
+export function openDeadlineFromNotification(extra: unknown): void {
+  const e = extra as { kind?: unknown; group?: unknown; courseCode?: unknown } | null | undefined;
+  if (e?.kind !== DEADLINE_REMINDER_KIND) return;
+  if (e.group === 'box' && typeof e.courseCode === 'string') {
+    openSubject(e.courseCode);
+    return;
+  }
+  useAppStore.getState().setMobileTab('exams');
 }

@@ -96,18 +96,7 @@ export function examSectionAlerts(
       });
   }
 
-  // Every chance still ahead, open now or later. A term with no end IS shows
-  // still takes registrations, so nothing is closing; nor while the latest
-  // chance has yet to open.
-  const chances = terms
-    .filter(registrable)
-    .map((t) => ({ t, start: stamp(t.registrationStart), end: stamp(t.registrationEnd) }))
-    .filter((x) => !x.end || x.end.getTime() > now);
-  const latest = chances.some((x) => !x.end)
-    ? undefined
-    : (chances as { t: ExamTerm; start: Date | null; end: Date }[]).sort(
-        (a, b) => b.end.getTime() - a.end.getTime()
-      )[0];
+  const latest = latestRegistrationChance(section, now);
   const last = latest && (!latest.start || latest.start.getTime() <= now) ? latest : undefined;
   if (last) {
     const h = (last.end.getTime() - now) / H;
@@ -121,6 +110,27 @@ export function examSectionAlerts(
       });
   }
   return out;
+}
+
+/**
+ * A section's last chance to register: the registrable term whose registration
+ * ends latest, among those still ahead (open now or later). None while a term
+ * with no end IS shows still takes registrations: nothing is closing then.
+ * Shared by the Novinky row and the phone's scheduled reminder.
+ */
+export function latestRegistrationChance(
+  section: ExamSection,
+  now: number
+): { t: ExamTerm; start: Date | null; end: Date } | undefined {
+  const chances = section.terms
+    .filter((t) => !t.cannotRegister)
+    .filter(registrable)
+    .map((t) => ({ t, start: stamp(t.registrationStart), end: stamp(t.registrationEnd) }))
+    .filter((x) => !x.end || x.end.getTime() > now);
+  if (chances.some((x) => !x.end)) return undefined;
+  return (chances as { t: ExamTerm; start: Date | null; end: Date }[]).sort(
+    (a, b) => b.end.getTime() - a.end.getTime()
+  )[0];
 }
 
 /** Every exam row for the subjects given (the caller drops past semesters). */
