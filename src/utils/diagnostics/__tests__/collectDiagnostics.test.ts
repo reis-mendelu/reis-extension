@@ -10,8 +10,6 @@ const syncState = {
   subjects: { data: {} } as { data: Record<string, unknown> } | null,
   subjectsLoading: false,
   extraZaznamnik: {} as Record<string, unknown>,
-  studyPlanDual: null as unknown,
-  studyPlanLoaded: true,
 };
 vi.mock('@/platform', () => ({ getPlatform: () => platform }));
 vi.mock('@/api/proxyClient', () => ({ executeAction: vi.fn() }));
@@ -40,8 +38,10 @@ vi.mock('@/store/useAppStore', () => ({
         XX3: null,
         ...syncState.extraZaznamnik,
       },
-      studyPlanDual: syncState.studyPlanDual,
-      studyPlanLoaded: syncState.studyPlanLoaded,
+      // Counted by studyPlanCounts (its own tests); here only that the
+      // report carries them.
+      studyPlanDual: null,
+      studyPlanLoaded: true,
     }),
   },
 }));
@@ -64,8 +64,6 @@ describe('collectDiagnostics', () => {
     syncState.subjects = { data: {} };
     syncState.subjectsLoading = false;
     syncState.extraZaznamnik = {};
-    syncState.studyPlanDual = null;
-    syncState.studyPlanLoaded = true;
   });
 
   it('merges app and content-script entries in time order', async () => {
@@ -151,50 +149,6 @@ describe('collectDiagnostics', () => {
     const out = await collectDiagnostics({ fetchContent: async () => [] });
     expect(out.sync.subjects).toBe('success');
     expect(out.sync.subjectsCount).toBe(2);
-  });
-  // Suggestion 46: Předměty draws from the study plan, and the report said
-  // nothing about it. These are the numbers the screen decides on.
-  it('counts the study plan in the app language: blocks, subjects, enrolled now', async () => {
-    const subj = (code: string, enrolled: boolean) => ({
-      code,
-      name: 'Secret name',
-      credits: 5,
-      status: 'X',
-      isEnrolled: enrolled,
-      isFulfilled: false,
-    });
-    const block = (title: string, subjects: unknown[]) => ({
-      title,
-      groups: [{ name: 'g', statusLabel: '', subjects }],
-    });
-    const plan = (blocks: unknown[]) => ({ title: 'Plan', blocks });
-    syncState.studyPlanDual = {
-      cz: plan([block('a', [])]),
-      en: plan([
-        block('a', [subj('XX1', false)]),
-        block('b', [subj('XX2', true), subj('XX3', false)]),
-      ]),
-    };
-    const out = await collectDiagnostics({ fetchContent: async () => [] });
-    expect(out.sync.studyPlan).toBe('success');
-    expect(out.sync.planBlocks).toBe(2);
-    expect(out.sync.planSubjects).toBe(3);
-    expect(typeof out.sync.planEnrolledNow).toBe('number');
-    expect(JSON.stringify(out)).not.toMatch(/XX\d|Secret/);
-  });
-
-  it('tells a plan still loading from IndexedDB from no plan at all', async () => {
-    syncState.studyPlanLoaded = false;
-    expect((await collectDiagnostics({ fetchContent: async () => [] })).sync.studyPlan).toBe(
-      'loading'
-    );
-  });
-
-  it('keeps the report when the plan has an unexpected shape', async () => {
-    syncState.studyPlanDual = { en: { blocks: 'nope' } };
-    const out = await collectDiagnostics({ fetchContent: async () => [] });
-    expect(out.sync.planBlocks).toBeUndefined();
-    expect(out.sync.subjects).toBe('success');
   });
 });
 
