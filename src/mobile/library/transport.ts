@@ -45,13 +45,18 @@ export const nativeBookingsHttp: BookingsHttp = async (req) => {
     return { status: res.status, data: await res.json() };
   }
   const { CapacitorHttp } = await import('@capacitor/core');
+  // Both timeouts get the same limit on purpose. Capacitor's iOS handler sets ONE
+  // timeout for the whole request, `connectTimeout ?? readTimeout`, so a short
+  // connectTimeout cut every iPhone/iPad request off at 10 s (cabled iPad,
+  // 2026-11-17) while Android, which keeps the two apart, worked.
+  const limit = req.url.endsWith('/GetStaffAvailability') ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS;
   const res = await CapacitorHttp.request({
     url: req.url,
     method: req.method,
     headers: req.headers,
     data: req.data,
-    connectTimeout: 10_000,
-    readTimeout: req.url.endsWith('/GetStaffAvailability') ? READ_TIMEOUT_MS : WRITE_TIMEOUT_MS,
+    connectTimeout: limit,
+    readTimeout: limit,
   });
   return { status: res.status, data: res.data };
 };
