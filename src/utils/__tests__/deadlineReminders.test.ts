@@ -140,4 +140,36 @@ describe('deadlineReminders: what the phone schedules ahead', () => {
     expect(deadlineReminders(i, NOW)).toEqual([]);
     expect(deadlineReminders(i, NOW, { includeDue: true })).toHaveLength(1);
   });
+
+  // "A day before" is a Prague calendar day, whatever clock changes the phone's
+  // own zone has: 29 March 2026 is when Prague moves to summer time.
+  it('reminds at the same Prague time the day before, across a clock change', () => {
+    const springs = pragueToInstant(new Date(2026, 2, 27, 12, 0));
+    const [r] = deadlineReminders(
+      inputs({ odevzdavarny: [box({ deadline: '29.03.2026 12:00' })] }),
+      springs
+    );
+    expect(r!.fireAt).toEqual(prague(2026, 3, 28, 12));
+  });
+
+  // Registration closing at 13:00 Prague is still ahead at 12:00 Prague, on a
+  // phone in any zone.
+  it('keeps a closing registration that is still ahead in Prague time', () => {
+    const exams = [
+      subject({
+        terms: [
+          {
+            id: 'a',
+            date: '14.12.2026',
+            time: '11:00',
+            registrationStart: '20.11.2026 00:00',
+            registrationEnd: '01.12.2026 13:00',
+          },
+        ],
+      }),
+    ];
+    expect(
+      deadlineReminders(inputs({ exams }), NOW, { includeDue: true }).map((r) => r.group)
+    ).toEqual(['closing']);
+  });
 });

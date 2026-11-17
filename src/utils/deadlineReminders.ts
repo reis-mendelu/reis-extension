@@ -12,7 +12,6 @@ import { boxCourseCode, boxState } from './submissionBoxes';
 /** Tags these notifications, so nothing else cancels or reschedules them. */
 export const DEADLINE_REMINDER_KIND = 'deadline-reminder';
 
-const DAY = 86_400_000;
 /** The evening before an exam, Prague time. */
 const EVENING_HOUR = 18;
 
@@ -59,6 +58,32 @@ function idOf(key: string): number {
     h = Math.imul(h, 0x01000193);
   }
   return (h >>> 0) % 1_000_000_000;
+}
+
+/** The same wall clock a calendar day earlier: Prague's day, not the phone's 24 hours. */
+const dayBefore = (d: Date) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1, d.getHours(), d.getMinutes());
+
+/**
+ * "Now" as Prague's wall clock, in the same shape as an IS time read by
+ * `wall()`: comparing IS times with it is right on a phone in any zone.
+ */
+function pragueWallNow(now: Date): Date {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Europe/Prague',
+      hourCycle: 'h23',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+    }).formatToParts(now);
+    const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+    return new Date(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
+  } catch {
+    return now;
+  }
 }
 
 const clock = (d: Date) => `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -120,13 +145,13 @@ export function deadlineReminders(
         continue;
       }
       if (section.status === 'registered') continue;
-      const last = latestRegistrationChance(section, now.getTime());
+      const last = latestRegistrationChance(section, pragueWallNow(now).getTime());
       const end = last && stamp(last.t.registrationEnd);
       if (!last || !end) continue;
       add({
         key: `closing|${subject.code}|${last.t.id}|${last.t.registrationEnd}`,
         group: 'closing',
-        fireAt: pragueToInstant(new Date(end.getTime() - DAY)),
+        fireAt: pragueToInstant(dayBefore(end)),
         eventAt: pragueToInstant(end),
         title: t('deadlineReminders.closingTitle', { subject: name }),
         body: t('deadlineReminders.closingBody', { section: sectionName, time: clock(end) }),
@@ -144,7 +169,7 @@ export function deadlineReminders(
     add({
       key: `box|${b.odevzdavarnaId || b.name}|${b.deadline}`,
       group: 'box',
-      fireAt: pragueToInstant(new Date(end.getTime() - DAY)),
+      fireAt: pragueToInstant(dayBefore(end)),
       eventAt: pragueToInstant(end),
       title: t('deadlineReminders.boxTitle', {
         subject: courseDisplayName(

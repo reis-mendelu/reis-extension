@@ -69,6 +69,7 @@ describe('scheduled deadline reminders on the phone', () => {
       studyPlanDual: null,
       courseNicknames: {},
       mobileSheets: [],
+      odevzdavarnyStatus: 'success',
     } as never);
     stop = installDeadlineReminders();
   });
@@ -98,7 +99,12 @@ describe('scheduled deadline reminders on the phone', () => {
     ln.checkPermissions.mockResolvedValue({ display: 'granted' });
     ln.getPending.mockResolvedValue({
       notifications: [
-        { id: held!.id, extra: { kind: DEADLINE_REMINDER_KIND } },
+        {
+          id: held!.id,
+          title: held!.title,
+          body: (held as { body?: string }).body,
+          extra: { kind: DEADLINE_REMINDER_KIND },
+        },
         { id: 42, extra: { kind: DEADLINE_REMINDER_KIND } },
         { id: 43, extra: { kind: 'exam-opening' } },
       ],
@@ -146,5 +152,42 @@ describe('scheduled deadline reminders on the phone', () => {
     expect(ln.removeDeliveredNotifications).toHaveBeenCalledWith({
       notifications: [{ id: 3, extra: { kind: DEADLINE_REMINDER_KIND } }],
     });
+  });
+
+  // The boxes load on their own: until they have, a pending box reminder is
+  // not "no longer applies".
+  it('cancels nothing while the box list has not loaded', async () => {
+    await flush();
+    vi.clearAllMocks();
+    ln.checkPermissions.mockResolvedValue({ display: 'granted' });
+    useAppStore.setState({ odevzdavarnyStatus: 'loading' } as never);
+    ln.getPending.mockResolvedValue({
+      notifications: [{ id: 42, extra: { kind: DEADLINE_REMINDER_KIND, group: 'box' } }],
+    });
+    await reconcileDeadlineReminders();
+    expect(ln.cancel).not.toHaveBeenCalled();
+  });
+
+  // Same reminder, new words (a room changed, a nickname): replaced, not kept.
+  it('replaces a pending reminder whose text changed', async () => {
+    await flush();
+    const [held] = scheduled();
+    vi.clearAllMocks();
+    ln.checkPermissions.mockResolvedValue({ display: 'granted' });
+    ln.getPending.mockResolvedValue({
+      notifications: [
+        {
+          id: held!.id,
+          title: 'Zítra: VWA',
+          body: 'stará místnost',
+          extra: { kind: DEADLINE_REMINDER_KIND },
+        },
+      ],
+    });
+    await reconcileDeadlineReminders();
+    expect(ln.cancel).toHaveBeenCalledWith({ notifications: [{ id: held!.id }] });
+    expect(scheduled()).toEqual([
+      expect.objectContaining({ id: held!.id, title: 'Zítra: Vývoj webových aplikací' }),
+    ]);
   });
 });

@@ -36,6 +36,10 @@ async function reconcile(): Promise<void> {
   // At boot the exams are still coming from IndexedDB: an empty list then is
   // not "no exams" (the same guard as the opening reminders).
   if (s.exams.data.length === 0 && s.exams.status !== 'success') return;
+  // Nor the boxes, which load on their own: until they have, a pending box
+  // reminder is unknown, not stale, and one cancelled after its time could not
+  // come back.
+  if (s.odevzdavarnyStatus !== 'success') return;
   const now = new Date();
   const wanted = deadlineReminders(inputsOf(s), now);
   // Past its time but before the event, a pending one may just be late (inexact delivery): kept.
@@ -43,11 +47,15 @@ async function reconcile(): Promise<void> {
   const ours = (await LocalNotifications.getPending()).notifications.filter(
     (n) => (n.extra as { kind?: unknown } | undefined)?.kind === DEADLINE_REMINDER_KIND
   );
-  const stale = ours.filter((n) => !keep.has(n.id));
+  // Same id, new words (a room changed, a nickname): replaced, not kept.
+  const text = new Map(wanted.map((r) => [r.id, `${r.title}\n${r.body}`]));
+  const changed = (n: { id: number; title?: string; body?: string }) =>
+    text.has(n.id) && text.get(n.id) !== `${n.title}\n${n.body}`;
+  const stale = ours.filter((n) => !keep.has(n.id) || changed(n));
   if (stale.length > 0) {
     await LocalNotifications.cancel({ notifications: stale.map((n) => ({ id: n.id })) });
   }
-  const held = new Set(ours.map((n) => n.id));
+  const held = new Set(ours.filter((n) => !changed(n)).map((n) => n.id));
   const missing = wanted.filter((r) => !held.has(r.id));
   if (missing.length === 0 || signedOut) return;
   if ((await LocalNotifications.checkPermissions()).display !== 'granted') return;
@@ -89,6 +97,7 @@ const watchedOf = (s: AppState): unknown[] => [
   s.exams.data,
   s.exams.status,
   s.odevzdavarny,
+  s.odevzdavarnyStatus,
   s.subjects,
   s.studyPlanDual,
   s.courseNicknames,
