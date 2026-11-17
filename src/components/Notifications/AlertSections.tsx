@@ -30,9 +30,12 @@ const isNews = (a: DeadlineAlert) => a.type === 'zaznamnik-points' || a.type ===
 export function AlertSections({
   alerts,
   onOpenNews,
+  onOpenExams,
 }: {
   alerts: DeadlineAlert[];
   onOpenNews?: (alert: DeadlineAlert) => void;
+  /** A "Nový termín" row opens Zkoušky, where the new date is. */
+  onOpenExams?: () => void;
 }) {
   const { t } = useTranslation();
   const news = alerts.filter(isNews);
@@ -54,7 +57,13 @@ export function AlertSections({
           <SectionLabel>{t('notifications.sectionDeadlines')}</SectionLabel>
           <div className="flex flex-col gap-2">
             {deadlines.map((alert) => (
-              <DeadlineAlertItem key={alert.id} alert={alert} />
+              <DeadlineAlertItem
+                key={alert.id}
+                alert={alert}
+                onOpenSubject={
+                  alert.type === 'exam-new-term' && onOpenExams ? () => onOpenExams() : undefined
+                }
+              />
             ))}
           </div>
         </div>

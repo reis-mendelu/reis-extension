@@ -531,6 +531,7 @@
   },
   "deadlines": {
     "title": "Upcoming deadlines",
+    "examNewTerm": "New date",
     "examRegistered": "Your exam",
     "examRegOpens": "Registration opens",
     "examReg": "Registration closes",

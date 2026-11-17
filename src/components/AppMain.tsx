@@ -54,6 +54,7 @@ export function AppMain({
         onOpenSubject={handleOpenSubjectFromSearch}
         searchPrefillRef={searchPrefillRef}
         onShowMap={() => setCurrentView?.('map')}
+        onShowExams={() => setCurrentView?.('exams')}
       />
       <div className="flex-1 pt-3 px-4 pb-1 overflow-hidden flex flex-col">
         <div className="flex-1 bg-base-100 rounded-lg shadow-sm border border-base-300 overflow-hidden">

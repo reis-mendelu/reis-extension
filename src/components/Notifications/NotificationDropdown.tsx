@@ -22,6 +22,8 @@ interface NotificationDropdownProps {
   deadlineAlerts: DeadlineAlert[];
   /** Opens a subject's drawer on Záznamník: the "Nové body" row. */
   onOpenSubject?: (alert: DeadlineAlert) => void;
+  /** Switches to Zkoušky: the "Nový termín" row. */
+  onShowExams?: () => void;
 }
 
 export function NotificationDropdown({
@@ -33,6 +35,7 @@ export function NotificationDropdown({
   dropdownRef,
   deadlineAlerts,
   onOpenSubject,
+  onShowExams,
 }: NotificationDropdownProps) {
   useScreenSignal('screen_notifications');
   const { t } = useTranslation();
@@ -57,6 +60,13 @@ export function NotificationDropdown({
       <QuestionList />
       <AlertSections
         alerts={deadlineAlerts}
+        onOpenExams={
+          onShowExams &&
+          (() => {
+            onClose();
+            onShowExams();
+          })
+        }
         onOpenNews={
           onOpenSubject &&
           ((a) => {

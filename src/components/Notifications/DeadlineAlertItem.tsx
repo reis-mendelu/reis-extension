@@ -1,4 +1,11 @@
-import { CalendarCheck, ClipboardList, Clock, ExternalLink, FilePlus } from 'lucide-react';
+import {
+  CalendarCheck,
+  CalendarPlus,
+  ClipboardList,
+  Clock,
+  ExternalLink,
+  FilePlus,
+} from 'lucide-react';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useTranslation } from '../../hooks/useTranslation';
 import { daysUntil, useBoxLabels } from '../SubmissionBoxes/useBoxLabels';
@@ -16,6 +23,7 @@ function examWhen(at: Date, now: number, language: string, t: (key: string) => s
 }
 
 const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
+  'exam-new-term': 'deadlines.examNewTerm',
   'exam-registered': 'deadlines.examRegistered',
   'exam-reg-opens': 'deadlines.examRegOpens',
   'exam-reg': 'deadlines.examReg',
@@ -27,6 +35,7 @@ const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
 /** The slot's tint IS the urgency — amber for a clock that is running out,
  *  blue for the student's own exam, green for news that already happened. */
 const TINT: Record<DeadlineAlert['type'], string> = {
+  'exam-new-term': 'bg-info/10 text-info',
   'exam-registered': 'bg-primary/10 text-primary',
   'exam-reg-opens': 'bg-warning/10 text-warning',
   'exam-reg': 'bg-warning/10 text-warning',
@@ -102,6 +111,8 @@ export function DeadlineAlertItem({
           <FilePlus size={16} />
         ) : isMine ? (
           <CalendarCheck size={16} />
+        ) : alert.type === 'exam-new-term' ? (
+          <CalendarPlus size={16} />
         ) : (
           <Clock size={16} />
         )}

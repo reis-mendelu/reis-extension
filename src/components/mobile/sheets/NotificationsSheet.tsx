@@ -88,6 +88,10 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
             open the subject's Záznamník. */}
         <AlertSections
           alerts={alerts}
+          onOpenExams={() => {
+            onClose();
+            setMobileTab('exams');
+          }}
           onOpenNews={(a) =>
             a.courseCode &&
             pushSheet({

@@ -1,8 +1,10 @@
 import { useCallback, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import type { ExamSection, ExamSubject } from '../types/exams';
 import { parseDate } from '../utils/date';
 import { courseDisplayName } from '../utils/courseDisplayName';
 import { examAlerts } from '../utils/exams/examAlerts';
+import { newTermAlerts } from '../utils/exams/newTermAlerts';
 import { boxCourseCode, boxState } from '../utils/submissionBoxes';
 import { newPointsAlerts } from '../utils/zaznamnik/newPointsAlerts';
 import { boxKey } from '../utils/newBoxDetection';
@@ -12,6 +14,7 @@ import { isPastSubject, pastSubjectCodesOf, withoutPastSubjects } from '../utils
 export interface DeadlineAlert {
   id: string;
   type:
+    | 'exam-new-term'
     | 'exam-registered'
     | 'exam-reg-opens'
     | 'exam-reg'
@@ -55,6 +58,7 @@ export function useDeadlineAlerts() {
   const pulseNow = useAppStore((s) => s.now);
   const newPoints = useAppStore((s) => s.zaznamnikNewPoints);
   const newBoxes = useAppStore((s) => s.odevzdavarnyNew);
+  const newTerms = useAppStore((s) => s.examTermsNew);
   const studyPlan = useAppStore((s) => s.studyPlanDual);
 
   const markAllSeen = useCallback(
@@ -72,17 +76,20 @@ export function useDeadlineAlerts() {
     const past = pastSubjectCodesOf(studyPlan);
     const isPast = (code: string | null | undefined) => isPastSubject(past, code);
 
+    const subjectName = (subject: ExamSubject) =>
+      courseDisplayName(
+        nicknames,
+        subject.code,
+        (isEn ? subject.nameEn : subject.nameCs) ?? subject.name
+      );
+    const sectionName = (section: ExamSection) =>
+      (isEn ? section.nameEn : section.nameCs) ?? section.name;
     result.push(
       ...examAlerts(
         exams.filter((subject) => !isPast(subject.code)),
         now,
-        (subject) =>
-          courseDisplayName(
-            nicknames,
-            subject.code,
-            (isEn ? subject.nameEn : subject.nameCs) ?? subject.name
-          ),
-        (section) => (isEn ? section.nameEn : section.nameCs) ?? section.name,
+        subjectName,
+        sectionName,
         (term) => (isEn ? term.roomEn : term.roomCs) ?? term.room
       )
     );
@@ -126,7 +133,14 @@ export function useDeadlineAlerts() {
     result.sort((a, b) => (a.hoursUntil ?? Infinity) - (b.hoursUntil ?? Infinity));
     // Points and new boxes first: they already happened, the deadlines are still ahead.
     const points = newPointsAlerts(withoutPastSubjects(newPoints, past), subjects, nicknames, isEn);
-    return [...points, ...freshBoxes, ...result];
+    // New terms lead the coming dates: they are news, and have no clock of their own.
+    const terms = newTermAlerts(
+      exams.filter((subject) => !isPast(subject.code)),
+      newTerms,
+      now,
+      { subject: subjectName, section: sectionName }
+    );
+    return [...points, ...freshBoxes, ...terms, ...result];
   }, [
     exams,
     odevzdavarny,
@@ -136,6 +150,7 @@ export function useDeadlineAlerts() {
     nicknames,
     newPoints,
     newBoxes,
+    newTerms,
     studyPlan,
   ]);
 

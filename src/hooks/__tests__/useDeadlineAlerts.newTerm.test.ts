@@ -1,0 +1,66 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook } from '@testing-library/react';
+
+vi.mock('../../services/sync/examTermsUnseen', () => ({
+  clearUnseenTerms: vi.fn(async () => undefined),
+  readUnseenTerms: vi.fn(async () => []),
+}));
+
+import { useDeadlineAlerts } from '../useDeadlineAlerts';
+import { useMarkExamTermsSeen } from '../ui/useMarkExamTermsSeen';
+import { useAppStore } from '../../store/useAppStore';
+import { examTermKey } from '../../utils/newExamTerms';
+import { clearUnseenTerms } from '../../services/sync/examTermsUnseen';
+import type { ExamSubject } from '../../types/exams';
+
+const NOW = new Date(2026, 11, 1, 12, 0);
+
+const vwa: ExamSubject = {
+  version: 1,
+  id: 'EBC-VWA',
+  name: 'Vývoj webových aplikací',
+  code: 'EBC-VWA',
+  sections: [
+    {
+      id: 'zk',
+      name: 'zkouška',
+      type: 'exam',
+      status: 'open',
+      terms: [{ id: '1', date: '14.12.2026', time: '11:00' }],
+    },
+  ],
+};
+
+describe('a new exam term in Novinky', () => {
+  beforeEach(() => {
+    useAppStore.setState({
+      now: NOW,
+      odevzdavarny: [],
+      cvicneTests: [],
+      language: 'cz',
+      zaznamnikNewPoints: {},
+      odevzdavarnyNew: [],
+      exams: { data: [vwa], status: 'success', error: null },
+      examTermsNew: [examTermKey('EBC-VWA', 'zk', '1')],
+    } as never);
+  });
+
+  it('is a row on both trees, counted by the bell', () => {
+    const { result } = renderHook(() => useDeadlineAlerts());
+    expect(result.current.alerts.map((a) => [a.type, a.body])).toEqual([
+      ['exam-new-term', 'zkouška · 14. 12.'],
+    ]);
+    expect(result.current.unseenCount).toBe(1);
+  });
+
+  it('goes once Zkoušky has been on screen', () => {
+    renderHook(() => useMarkExamTermsSeen(true));
+    expect(useAppStore.getState().examTermsNew).toEqual([]);
+    expect(clearUnseenTerms).toHaveBeenCalled();
+  });
+
+  it('stays while Zkoušky is not the screen in front', () => {
+    renderHook(() => useMarkExamTermsSeen(false));
+    expect(useAppStore.getState().examTermsNew).toHaveLength(1);
+  });
+});

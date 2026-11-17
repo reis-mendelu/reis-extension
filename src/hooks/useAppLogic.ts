@@ -5,6 +5,8 @@ import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
 import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
+import { persistExamTerms } from '../services/sync/newExamTerms';
+import { addUnseenTerms } from '../services/sync/examTermsUnseen';
 import { notifyNewPoints } from '../services/newPointsNotifier';
 import { pastSubjectCodesOf, withoutPastSubjects } from '../utils/pastSubjects';
 
@@ -264,7 +266,19 @@ export function useAppLogic() {
             }
           }
         }
-        if (r.exams) useAppStore.getState().setExams(r.exams);
+        if (r.exams) {
+          useAppStore.getState().setExams(r.exams);
+          // New terms since this device last saw a list become Novinky rows
+          // until Zkoušky is opened. Its own catch: a failed check must not
+          // cost the rest of the push.
+          try {
+            const found = await persistExamTerms(r.exams);
+            const unseen = await addUnseenTerms(found.map((t) => t.key));
+            useAppStore.getState().setExamTermsNew(unseen);
+          } catch (err) {
+            logError('useAppLogic.persistExamTerms', err);
+          }
+        }
 
         if (r.subjects?.data) {
           const existing = (await IndexedDBService.get('subjects', 'current')) as {
