@@ -1,5 +1,5 @@
 import { useAppStore } from '../store/useAppStore';
-import { NOVINKY_KIND } from './novinkyNotifications';
+import { NOVINKY_KIND } from './novinkyPost';
 
 /** 5.7.x posted "Nové body" under this kind; one may still be in the tray. */
 const LEGACY_POINTS_KIND = 'zaznamnik-new-points';

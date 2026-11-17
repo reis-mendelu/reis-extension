@@ -41,19 +41,16 @@ describe('society events stay reduced', () => {
     expect(
       grep('LocalNotifications\\.schedule', [
         'src/mobile/examReminders.ts',
-        'src/mobile/novinkyNotifications.ts',
+        'src/mobile/novinkyPost.ts',
       ])
     ).toBe('');
   });
 
   it('Novinky rows are posted now, never scheduled for later', () => {
     expect(
-      execSync(
-        'git grep -n -E "schedule: \\{|\\bat:" -- src/mobile/novinkyNotifications.ts || true',
-        {
-          encoding: 'utf8',
-        }
-      )
+      execSync('git grep -n -E "schedule: \\{|\\bat:" -- src/mobile/novinkyPost.ts || true', {
+        encoding: 'utf8',
+      })
     ).toBe('');
   });
 

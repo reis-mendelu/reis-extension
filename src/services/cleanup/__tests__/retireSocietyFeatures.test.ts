@@ -16,7 +16,7 @@ vi.mock('../../storage', () => ({
 }));
 
 import { retireSocietyFeatures, retiredNotifications } from '../retireSocietyFeatures';
-import { NOVINKY_KIND } from '../../../mobile/novinkyNotifications';
+import { NOVINKY_KIND } from '../../../mobile/novinkyPost';
 
 const RETIRED = [
   'event_rsvps_mine',

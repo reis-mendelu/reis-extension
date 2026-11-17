@@ -29,10 +29,10 @@ import { useAppStore } from '../../store/useAppStore';
 import {
   installNovinkyNotifications,
   clearNovinkyNotifications,
-  NOVINKY_KIND,
   NOVINKY_NOTIFIED_KEY,
 } from '../novinkyNotifications';
 import { openNovinkyFromNotification } from '../novinkyTaps';
+import { NOVINKY_KIND } from '../novinkyPost';
 import { examTermKey } from '../../utils/newExamTerms';
 import type { ExamSubject } from '../../types/exams';
 

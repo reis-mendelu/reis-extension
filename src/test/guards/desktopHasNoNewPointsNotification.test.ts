@@ -37,13 +37,8 @@ describe('záznamník new points: system notification on the phone only', () => 
       .split('\n')
       .filter(Boolean);
     // startApp installs it; main.capacitor registers its sign-out cleanup.
-    // novinkyTaps routes its taps; it is reached only through notificationTaps,
-    // itself installed from startApp.
-    expect(importers.sort()).toEqual([
-      'capacitor/main.capacitor.tsx',
-      'capacitor/startApp.ts',
-      'src/mobile/novinkyTaps.ts',
-    ]);
+    // startApp installs it; main.capacitor registers its sign-out cleanup.
+    expect(importers.sort()).toEqual(['capacitor/main.capacitor.tsx', 'capacitor/startApp.ts']);
   });
 
   it('the extension asks for no notification permission', () => {
