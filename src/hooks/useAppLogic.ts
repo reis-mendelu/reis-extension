@@ -5,8 +5,7 @@ import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
 import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
-import { persistExamTerms } from '../services/sync/newExamTerms';
-import { addUnseenTerms } from '../services/sync/examTermsUnseen';
+import { recordExamTerms } from '../services/sync/recordExamTerms';
 import { notifyNewPoints } from '../services/newPointsNotifier';
 import { pastSubjectCodesOf, withoutPastSubjects } from '../utils/pastSubjects';
 
@@ -266,31 +265,10 @@ export function useAppLogic() {
             }
           }
         }
-        // "No exams" arrives as an arrival without a list (the sync keeps the
-        // cached one rather than let an empty read wipe it). It still starts
-        // the known record, or a student with no dates yet would have their
-        // first published one taken as the baseline. Adding nothing to a
-        // record that exists changes nothing.
-        if (!r.exams && r.loaded?.includes('exams')) {
-          try {
-            await persistExamTerms([]);
-          } catch (err) {
-            logError('useAppLogic.persistExamTerms', err);
-          }
-        }
-        if (r.exams) {
-          useAppStore.getState().setExams(r.exams);
-          // New terms since this device last saw a list become Novinky rows
-          // until Zkoušky is opened. Its own catch: a failed check must not
-          // cost the rest of the push.
-          try {
-            const found = await persistExamTerms(r.exams);
-            const unseen = await addUnseenTerms(found.map((t) => t.key));
-            useAppStore.getState().setExamTermsNew(unseen);
-          } catch (err) {
-            logError('useAppLogic.persistExamTerms', err);
-          }
-        }
+        if (r.exams) useAppStore.getState().setExams(r.exams);
+        // Novinky's "Nový termín" rows: see services/sync/recordExamTerms.
+        const unseenTerms = await recordExamTerms(r);
+        if (unseenTerms) useAppStore.getState().setExamTermsNew(unseenTerms);
 
         if (r.subjects?.data) {
           const existing = (await IndexedDBService.get('subjects', 'current')) as {
