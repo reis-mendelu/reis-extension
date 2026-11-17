@@ -30,8 +30,16 @@ export const createNewExamTermsSlice: AppSlice<NewExamTermsSlice> = (set, get) =
     }
   },
   markExamTermsSeen: () => {
-    if (get().examTermsNew.length === 0) return;
+    const shown = get().examTermsNew;
+    if (shown.length === 0) return;
     set({ examTermsNew: [] });
-    clearUnseenTerms().catch((err) => logError('NewExamTermsSlice.markSeen', err));
+    // What is stored once the clear has its turn: another tab may have found
+    // a term in the meantime, and it stays news here too.
+    clearUnseenTerms(shown)
+      .then((rest) => {
+        if (rest.length > 0)
+          set((s) => ({ examTermsNew: [...new Set([...s.examTermsNew, ...rest])] }));
+      })
+      .catch((err) => logError('NewExamTermsSlice.markSeen', err));
   },
 });

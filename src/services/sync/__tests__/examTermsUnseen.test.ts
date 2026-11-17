@@ -25,8 +25,17 @@ describe('the unseen new exam terms', () => {
     expect(await addUnseenTerms(['a'])).toEqual(['a']);
     expect(await addUnseenTerms(['b', 'a'])).toEqual(['a', 'b']);
     expect(await readUnseenTerms()).toEqual(['a', 'b']);
-    await clearUnseenTerms();
+    expect(await clearUnseenTerms(['a', 'b'])).toEqual([]);
     expect(await readUnseenTerms()).toEqual([]);
+  });
+
+  // Two extension tabs share IndexedDB but not their store: a date another tab
+  // found, and this one never showed, must survive this tab's Zkoušky.
+  it('clears only the terms that were on screen', async () => {
+    await addUnseenTerms(['a']);
+    await addUnseenTerms(['b']); // found by another tab
+    expect(await clearUnseenTerms(['a'])).toEqual(['b']);
+    expect(await readUnseenTerms()).toEqual(['b']);
   });
 
   it('a sync that finds nothing new leaves the list as it was', async () => {
