@@ -20,7 +20,11 @@ vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
 vi.mock('../../services/storage/IndexedDBService', () => ({
   IndexedDBService: {
     get: vi.fn(async (store: string, key: string) => db.get(`${store}/${key}`)),
-    set: vi.fn(async (store: string, key: string, v: unknown) => db.set(`${store}/${key}`, v)),
+    // Validates like the real one: a meta value with an undefined in it is dropped.
+    set: vi.fn(async (store: string, key: string, v: unknown) => {
+      const { MetaSchema } = await import('../../types/schemas/meta.schema');
+      if (MetaSchema.safeParse(v).success) db.set(`${store}/${key}`, v);
+    }),
     delete: vi.fn(async (store: string, key: string) => db.delete(`${store}/${key}`)),
   },
 }));

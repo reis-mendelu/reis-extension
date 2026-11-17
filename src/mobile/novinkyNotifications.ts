@@ -80,11 +80,14 @@ async function run(gen: number): Promise<void> {
   const news = plan(src.alerts, pushRowsOf(alerts, [], nameOf), before.alerts);
   const events = plan(src.feed, pushRowsOf([], src.events, nameOf), before.feed);
   const notices = plan(src.notices, pushRowsOf([], src.isNotices, nameOf), before.notices);
-  await IndexedDBService.set('meta', NOVINKY_NOTIFIED_KEY, {
-    alerts: news.notified,
-    feed: events.notified,
-    notices: notices.notified,
-  } satisfies Notified);
+  // Only the sources that have a record: IndexedDB's meta schema drops a whole
+  // value holding an undefined, and a dropped record would make every later
+  // run the silent first run.
+  const record: Notified = {};
+  if (news.notified) record.alerts = news.notified;
+  if (events.notified) record.feed = events.notified;
+  if (notices.notified) record.notices = notices.notified;
+  await IndexedDBService.set('meta', NOVINKY_NOTIFIED_KEY, record);
   // Society events and IS notices are one kind, so one notification.
   const school = [...events.post, ...notices.post].flatMap((g) => g.rows);
   const post: PushGroup[] = [

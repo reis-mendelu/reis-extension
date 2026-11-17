@@ -20,7 +20,11 @@ vi.mock('../../utils/reportError', () => ({ logError: vi.fn() }));
 vi.mock('../../services/storage/IndexedDBService', () => ({
   IndexedDBService: {
     get: vi.fn(async (store: string, key: string) => db.get(`${store}/${key}`)),
-    set: vi.fn(async (store: string, key: string, v: unknown) => db.set(`${store}/${key}`, v)),
+    // Validates like the real one: a meta value with an undefined in it is dropped.
+    set: vi.fn(async (store: string, key: string, v: unknown) => {
+      const { MetaSchema } = await import('../../types/schemas/meta.schema');
+      if (MetaSchema.safeParse(v).success) db.set(`${store}/${key}`, v);
+    }),
     delete: vi.fn(async (store: string, key: string) => db.delete(`${store}/${key}`)),
   },
 }));
@@ -110,6 +114,17 @@ describe('Novinky rows as phone notifications', () => {
     );
     expect(ids.length).toBe(4);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  // IndexedDB drops a meta value holding an undefined. With a source not ready
+  // yet (no IS notices), the record must still be saved, or every run looks
+  // like the silent first run and nothing is ever posted.
+  it('posts once the alerts are recorded, while IS notices have not loaded', async () => {
+    await settle();
+    expect(db.get(`meta/${NOVINKY_NOTIFIED_KEY}`)).toBeDefined();
+    useAppStore.setState({ examTermsNew: [examTermKey('EBC-VWA', '1')] });
+    await settle();
+    expect(posted()).toHaveLength(1);
   });
 
   it('records but posts nothing while notifications are not allowed', async () => {
