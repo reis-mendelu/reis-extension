@@ -337,33 +337,12 @@ file in the same PR** (the `disclosure-drift` Stop hook asks if you forget), the
 
 **When you add something a student can open or click, ask whether anyone will
 later need to know how many did.** A number nobody counted at launch cannot be
-recovered, and "are we tracking this?" is a question found out too late (the
-Stáže card for EY shipped in #651 with no counter; the question came after).
-Ask it especially for anything a **partner** is shown or linked to: that count
-is what reIS hands the partner, so it is business-critical, not nice to have.
-
-The mechanism is the existing install-level feature counter, nothing new:
-
-1. A label in `FEATURE_SIGNALS` (`src/api/featureUsage.ts`): `screen_*` when a
-   surface is shown (`useScreenSignal`), a plain verb label for a click or use
-   (`trackFeatureSignal` in the handler). It counts **installs, not people**,
-   once per app session, one row per install per day.
-2. A migration widening the database whitelist (function **and** column check;
-   `featureSignalWhitelist.test.ts` fails if the two disagree with the client).
-3. Both trees: put the call in the shared component (as `InternshipList` does),
-   or pin both call sites in `screenSignalsHaveBothTrees.test.ts`.
-4. Declare it in `privacy/disclosures.ts` (`feature_counters`), then
-   `npm run privacy:generate`, and give it an admin label
-   (`featureSignalLabels.ts` + `admin.stats.*` in cs/en).
-
-**One label per partner programme**, never a shared one, because the count is
-given to that partner. Never record *which* student. A counter carries the random
-install id and nothing else: no event, partner-side or student identifier beyond it, so
-the only join is the one the policy already discloses (install id to the daily row's
-faculty, programme, platform and version labels). The partner is told a number, never
-a row. The admin panel shows "under 5" for a count
-below its floor, so a young counter looks empty; that is the floor, not a bug.
-If you decide a new feature needs no counter, say so in the PR in one line.
+recovered (the Stáže card for EY shipped in #651 with no counter). Ask it
+especially for anything a **partner** is shown or linked to: that count is what
+reIS hands the partner. The mechanism is the existing install-level feature
+counter, one label per partner programme; the steps, the migration and the
+disclosure are in `docs/feature-counters.md`. If a new feature needs no
+counter, say so in the PR in one line.
 
 ## Error Reporting & Privacy
 
