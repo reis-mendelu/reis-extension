@@ -532,7 +532,7 @@
   "novinkyPush": {
     "channelTerms": "Nové termíny zkoušek",
     "channelPoints": "Nové body",
-    "channelBoxes": "Nové odevzdávárny (na pozadí)",
+    "channelBoxes": "Nové odevzdávárny",
     "channelSocieties": "Od spolků a MENDELU",
     "termsOne": "Nový termín: {subject}",
     "termsMany": "Nové termíny zkoušek",
@@ -1795,7 +1795,7 @@
   },
   "backgroundCheck": {
     "channelExams": "Nové termíny zkoušek (na pozadí)",
-    "channelBoxes": "Nové odevzdávárny",
+    "channelBoxes": "Nové odevzdávárny (na pozadí)",
     "channelPoints": "Nové body v záznamníku (na pozadí)"
   },
   "guides": {

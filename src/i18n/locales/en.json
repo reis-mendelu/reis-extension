@@ -532,7 +532,7 @@
   "novinkyPush": {
     "channelTerms": "New exam dates",
     "channelPoints": "New points",
-    "channelBoxes": "New submission boxes (in the background)",
+    "channelBoxes": "New submission boxes",
     "channelSocieties": "From societies and MENDELU",
     "termsOne": "New exam date: {subject}",
     "termsMany": "New exam dates",
@@ -1795,7 +1795,7 @@
   },
   "backgroundCheck": {
     "channelExams": "New exam dates (in the background)",
-    "channelBoxes": "New submission boxes",
+    "channelBoxes": "New submission boxes (in the background)",
     "channelPoints": "New points in Záznamník (in the background)"
   },
   "guides": {

@@ -108,11 +108,11 @@ describe('startBackgroundCheck taps', () => {
     plugin.getLaunchTap.mockResolvedValue({});
     await startBackgroundCheck();
     expect(plugin.start).toHaveBeenCalledWith({
-      channelNames: expect.objectContaining({ boxes: 'Nové odevzdávárny' }),
+      channelNames: expect.objectContaining({ boxes: 'Nové odevzdávárny (na pozadí)' }),
     });
     useAppStore.setState({ language: 'en' } as never);
     expect(plugin.setChannelNames).toHaveBeenCalledWith({
-      channelNames: expect.objectContaining({ boxes: 'New submission boxes' }),
+      channelNames: expect.objectContaining({ boxes: 'New submission boxes (in the background)' }),
     });
   });
 });
@@ -161,10 +161,10 @@ describe('the channel names follow the language', () => {
     });
     await start();
     expect(plugin.start).toHaveBeenCalledWith({
-      channelNames: expect.objectContaining({ boxes: 'Nové odevzdávárny' }),
+      channelNames: expect.objectContaining({ boxes: 'Nové odevzdávárny (na pozadí)' }),
     });
     expect(plugin.setChannelNames).toHaveBeenCalledWith({
-      channelNames: expect.objectContaining({ boxes: 'New submission boxes' }),
+      channelNames: expect.objectContaining({ boxes: 'New submission boxes (in the background)' }),
     });
   });
 });
