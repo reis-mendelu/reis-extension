@@ -97,11 +97,13 @@ export function examSectionAlerts(
   const takingNow = terms.filter(registrable).filter((t) => {
     const start = stamp(t.registrationStart);
     const end = stamp(t.registrationEnd);
-    return (!start || start.getTime() <= now) && !!end && end.getTime() > now;
+    return (!start || start.getTime() <= now) && (!end || end.getTime() > now);
   });
-  const last = takingNow
-    .map((t) => ({ t, end: stamp(t.registrationEnd)! }))
-    .sort((a, b) => b.end.getTime() - a.end.getTime())[0];
+  // A term with no end IS shows still takes registrations: nothing is closing.
+  const ends = takingNow.map((t) => ({ t, end: stamp(t.registrationEnd) }));
+  const last = ends.some((x) => !x.end)
+    ? undefined
+    : (ends as { t: ExamTerm; end: Date }[]).sort((a, b) => b.end.getTime() - a.end.getTime())[0];
   if (last) {
     const h = (last.end.getTime() - now) / H;
     if (h <= CLOSES_WITHIN_H)
