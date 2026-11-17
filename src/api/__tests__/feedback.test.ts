@@ -56,6 +56,9 @@ vi.mock('../../utils/firefoxDataConsent', () => ({
 vi.mock('../../utils/harnessEnabled', () => ({
   isHarnessEnabled: (...a: unknown[]) => isHarnessEnabled(...a),
 }));
+// The school this build is for. MENDELU unless a test says otherwise.
+const school = vi.hoisted(() => ({ currentSchool: { id: 'mendelu' as string } }));
+vi.mock('../../utils/school', () => school);
 
 import { trackDailyUsage, __resetUsageTrackedForTests } from '../feedback';
 
@@ -64,6 +67,20 @@ describe('feedback', () => {
     __resetUsageTrackedForTests();
     isHarnessEnabled.mockReturnValue(false);
     hasDataConsent.mockResolvedValue(true);
+    school.currentSchool.id = 'mendelu';
+  });
+
+  // The school is one more GROUP label, the same on every install of a build;
+  // the caller passes nothing, the module reads the build's school.
+  it("sends the build's school", async () => {
+    school.currentSchool.id = 'vse';
+
+    await trackDailyUsage();
+
+    expect(rpc).toHaveBeenCalledWith(
+      'track_daily_usage_v2',
+      expect.objectContaining({ p_school: 'vse' })
+    );
   });
 
   afterEach(() => {
@@ -85,8 +102,9 @@ describe('feedback', () => {
   it('sends the install id with faculty and platform group labels', async () => {
     await trackDailyUsage();
 
-    expect(rpc).toHaveBeenCalledWith('track_daily_usage', {
+    expect(rpc).toHaveBeenCalledWith('track_daily_usage_v2', {
       p_student_id: 'install-1',
+      p_school: 'mendelu',
       p_faculty: 'PEF',
       p_platform: 'extension',
       p_programme: null,
@@ -106,8 +124,9 @@ describe('feedback', () => {
 
     await trackDailyUsage();
 
-    expect(rpc).toHaveBeenCalledWith('track_daily_usage', {
+    expect(rpc).toHaveBeenCalledWith('track_daily_usage_v2', {
       p_student_id: 'install-1',
+      p_school: 'mendelu',
       p_faculty: 'PEF',
       p_platform: 'extension',
       p_programme: 'B-OI',
@@ -124,7 +143,7 @@ describe('feedback', () => {
     await trackDailyUsage();
 
     expect(rpc).toHaveBeenCalledWith(
-      'track_daily_usage',
+      'track_daily_usage_v2',
       expect.objectContaining({ p_app_version: null })
     );
   });
@@ -137,8 +156,9 @@ describe('feedback', () => {
 
     await trackDailyUsage();
 
-    expect(rpc).toHaveBeenCalledWith('track_daily_usage', {
+    expect(rpc).toHaveBeenCalledWith('track_daily_usage_v2', {
       p_student_id: 'install-1',
+      p_school: 'mendelu',
       p_faculty: null,
       p_platform: 'extension',
       p_programme: null,

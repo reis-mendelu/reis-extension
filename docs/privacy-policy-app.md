@@ -12,8 +12,8 @@ application of Mendel University.
 Your name, personal number, study details, timetable, grades, assessment, exam
 dates, courses, materials and submission folders are fetched from MENDELU using
 your own session — the way your browser would — and kept on your device.
-**None of it reaches us, apart from two group labels on the daily count below — your faculty
-and your study programme's base code. We run no server that holds it.** It moves only between
+**None of it reaches us, apart from group labels on the daily count below — your school, your
+faculty and your study programme's base code. We run no server that holds it.** It moves only between
 your device and MENDELU, both ways, since signing up for an exam sends it back.
 Uninstalling removes the local copy.
 
@@ -31,18 +31,18 @@ yourself — see *Report attachments* below.
 <!-- BEGIN generated:flows (npm run privacy:generate) -->
 | what | when | what it carries |
 |---|---|---|
-| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not. |
-| Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model) |
+| Daily count | once a day | a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus school (e.g. MENDELU), faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not. |
+| Feedback | you press send | your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model), and the school whose IS you sent it from (e.g. MENDELU) |
 | Report attachments | only what you add to a report, when you press send | a **screenshot you pick** yourself, re-encoded on your device so photo metadata and location are removed; and, **only if you choose it** (tick the box, or press *Send with technical details* on a bug report), the recent reIS errors and warnings from this session, with link parameters, email addresses, long numbers and coordinates already blanked out, plus platform, OS version, language and sync status. **Not linked to the install identifier.** |
 | Society post view or click | you open one | a post id |
 | Map event opened | you open an event on the campus map | that event's id and nothing else — a counter on the event, with no identifier of yours attached |
 | Novinky question seen or answered | a question from reIS is on your screen in Novinky, or you tap one of its buttons | that question's id and which button you tapped — a counter on the question, with no identifier of yours attached. Your device remembers that it answered; we cannot tell who did |
-| Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier and the fixed `map_dwell_3s` label |
-| eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
-| eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
-| Week view used | when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day | the random install identifier and the fixed `calendar_week_view` label |
-| Screen opened | when the calendar, Předměty, Jídelníček, search, Vývěska, Novinky or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day | the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`) — nothing about what was on it, what you searched for or how long you stayed |
-| Partner programme opened | you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day | the random install identifier and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website |
+| Map used for 3 seconds | at most once a day, after three seconds on the map | the random install identifier, the school and the fixed `map_dwell_3s` label |
+| eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier, the school and the fixed `eduroam_wifi_configured` label |
+| eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier, the school and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
+| Week view used | when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day | the random install identifier, the school and the fixed `calendar_week_view` label |
+| Screen opened | when the calendar, Předměty, Jídelníček, search, Vývěska, Novinky or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day | the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`) — nothing about what was on it, what you searched for or how long you stayed |
+| Partner programme opened | you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day | the random install identifier, the school and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website |
 | Library study-room booking (mobile app only) | you book or cancel a study room | your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS |
 <!-- END generated:flows -->
 
