@@ -155,14 +155,15 @@ describe('disclosure-drift acts on the session worktree, not the main checkout',
     expect(r.stderr).toContain('supabase/migrations/20261117000000_x.sql');
   });
 
-  it('reads the disclosures source from the worktree, where it was updated', () => {
+  it("reads the disclosures source from the worktree, not the main checkout's copy", () => {
+    // Only the main checkout's copy drops the flow. A hook that read the source
+    // from the wrong checkout would see no flow file and exit 0. The worktree's
+    // source is left untouched, so `undeclared` cannot return early on it.
+    write(main, 'privacy/disclosures.ts', 'export const flows = [];\n');
     touchFlow();
-    write(
-      wt,
-      'privacy/disclosures.ts',
-      "export const flows = [{ files: ['src/api/suggestions.ts'] }]; // v2\n"
-    );
-    expect(run(DISCLOSURE_DRIFT, main, stopInput(wt)).status).toBe(0);
+    const r = run(DISCLOSURE_DRIFT, main, stopInput(wt));
+    expect(r.status).toBe(2);
+    expect(r.stderr).toContain('src/api/suggestions.ts');
   });
 
   it('keeps its ask-once marker in the worktree', () => {
