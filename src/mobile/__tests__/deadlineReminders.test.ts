@@ -155,17 +155,21 @@ describe('scheduled deadline reminders on the phone', () => {
   });
 
   // The boxes load on their own: until they have, a pending box reminder is
-  // not "no longer applies".
-  it('cancels nothing while the box list has not loaded', async () => {
+  // unknown and left alone, while the exam reminders carry on.
+  it('leaves box reminders alone while the boxes are unknown, and still schedules exams', async () => {
     await flush();
     vi.clearAllMocks();
     ln.checkPermissions.mockResolvedValue({ display: 'granted' });
-    useAppStore.setState({ odevzdavarnyStatus: 'loading' } as never);
+    useAppStore.setState({ odevzdavarnyStatus: 'error' } as never);
     ln.getPending.mockResolvedValue({
       notifications: [{ id: 42, extra: { kind: DEADLINE_REMINDER_KIND, group: 'box' } }],
     });
     await reconcileDeadlineReminders();
     expect(ln.cancel).not.toHaveBeenCalled();
+    // The state change wakes the module as well, and the mocked pending list
+    // never gains the exam reminder: each run schedules it. Only it, though.
+    expect(scheduled().length).toBeGreaterThan(0);
+    expect(scheduled().every((n) => n.title === 'Zítra: Vývoj webových aplikací')).toBe(true);
   });
 
   // Same reminder, new words (a room changed, a nickname): replaced, not kept.

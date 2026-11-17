@@ -36,22 +36,25 @@ async function reconcile(): Promise<void> {
   // At boot the exams are still coming from IndexedDB: an empty list then is
   // not "no exams" (the same guard as the opening reminders).
   if (s.exams.data.length === 0 && s.exams.status !== 'success') return;
-  // Nor the boxes, which load on their own: until they have, a pending box
-  // reminder is unknown, not stale, and one cancelled after its time could not
-  // come back.
-  if (s.odevzdavarnyStatus !== 'success') return;
+  // The boxes load on their own: until they have, box reminders are unknown,
+  // not stale (one cancelled after its time could not come back), and are left
+  // alone. The exam reminders carry on.
+  const boxesKnown = s.odevzdavarnyStatus === 'success';
+  const input = boxesKnown ? inputsOf(s) : { ...inputsOf(s), odevzdavarny: [] };
   const now = new Date();
-  const wanted = deadlineReminders(inputsOf(s), now);
+  const wanted = deadlineReminders(input, now);
   // Past its time but before the event, a pending one may just be late (inexact delivery): kept.
-  const keep = new Set(deadlineReminders(inputsOf(s), now, { includeDue: true }).map((r) => r.id));
+  const keep = new Set(deadlineReminders(input, now, { includeDue: true }).map((r) => r.id));
   const ours = (await LocalNotifications.getPending()).notifications.filter(
     (n) => (n.extra as { kind?: unknown } | undefined)?.kind === DEADLINE_REMINDER_KIND
   );
+  const isBox = (n: { extra?: unknown }) =>
+    (n.extra as { group?: unknown } | undefined)?.group === 'box';
   // Same id, new words (a room changed, a nickname): replaced, not kept.
   const text = new Map(wanted.map((r) => [r.id, `${r.title}\n${r.body}`]));
   const changed = (n: { id: number; title?: string; body?: string }) =>
     text.has(n.id) && text.get(n.id) !== `${n.title}\n${n.body}`;
-  const stale = ours.filter((n) => !keep.has(n.id) || changed(n));
+  const stale = ours.filter((n) => (boxesKnown || !isBox(n)) && (!keep.has(n.id) || changed(n)));
   if (stale.length > 0) {
     await LocalNotifications.cancel({ notifications: stale.map((n) => ({ id: n.id })) });
   }
