@@ -34,6 +34,7 @@ import {
 import { openNovinkyFromNotification } from '../novinkyTaps';
 import { NOVINKY_KIND } from '../novinkyPost';
 import { examTermKey } from '../../utils/newExamTerms';
+import { pragueMinuteIso } from '../../utils/isNoticeRows';
 import type { ExamSubject } from '../../types/exams';
 
 const NOW = new Date(2026, 11, 1, 12, 0);
@@ -106,6 +107,8 @@ describe('Novinky rows as phone notifications', () => {
       societies: { supef: { name: 'SU PEF' } },
       notifySocieties: true,
       isNoticeMutes: [],
+      isNoticesFetchedAt: null,
+      isNoticesTriedAt: null,
       mobileSheets: [],
       isNotices: { cz: [], en: [] },
       notifications: {
@@ -195,8 +198,7 @@ describe('Novinky rows as phone notifications', () => {
   it('posts an IS notice when the society feed failed to load', async () => {
     useAppStore.setState({
       notifications: { ...useAppStore.getState().notifications, status: 'error' },
-      isNoticesTriedAt: NOW.getTime(),
-      isNoticesLoading: false,
+      isNoticesFetchedAt: NOW.getTime(),
     } as never);
     await settle();
     useAppStore.setState({ isNotices: { cz: [notice('k1', null)], en: [] } } as never);
@@ -204,17 +206,27 @@ describe('Novinky rows as phone notifications', () => {
     expect(posted()).toEqual([expect.objectContaining({ title: 'Výpadek Microsoft 365' })]);
   });
 
+  // A failed first load is no baseline: recording [] then would post every
+  // existing notice as new once a retry succeeds.
+  it('waits for a successful IS-notice load before recording notices', async () => {
+    useAppStore.setState({ isNoticesTriedAt: NOW.getTime(), isNoticesFetchedAt: null } as never);
+    await settle();
+    expect((db.get(`meta/${NOVINKY_NOTIFIED_KEY}`) as { notices?: string[] }).notices).toBe(
+      undefined
+    );
+  });
+
   // IS's own display window is to the minute: the notice is news when it opens,
   // which no store field but the clock says.
   it('posts an IS notice once its display minute arrives', async () => {
-    useAppStore.setState({ isNoticesTriedAt: NOW.getTime(), isNoticesLoading: false } as never);
+    useAppStore.setState({ isNoticesFetchedAt: NOW.getTime() } as never);
     await settle();
-    useAppStore.setState({
-      isNotices: { cz: [notice('k2', '2026-12-01T12:05')], en: [] },
-    } as never);
+    // IS's window is Prague time, whatever zone this runs in (CI is UTC).
+    const opens = pragueMinuteIso(new Date(NOW.getTime() + 5 * 60_000));
+    useAppStore.setState({ isNotices: { cz: [notice('k2', opens)], en: [] } } as never);
     await settle();
     expect(posted()).toEqual([]);
-    useAppStore.setState({ now: new Date(2026, 11, 1, 12, 6) });
+    useAppStore.setState({ now: new Date(NOW.getTime() + 6 * 60_000) });
     await settle();
     expect(posted()).toEqual([expect.objectContaining({ title: 'Výpadek Microsoft 365' })]);
   });

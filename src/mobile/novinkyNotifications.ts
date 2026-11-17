@@ -47,8 +47,10 @@ function sources(s: AppState) {
     alerts: s.firstSyncSettled,
     // Society events: once their feed has loaded.
     feed: s.notifications.status === 'success',
-    // IS notices load on their own, and a failed society feed must not hold them back.
-    notices: s.isNoticesTriedAt !== null && !s.isNoticesLoading,
+    // IS notices load on their own, and a failed society feed must not hold
+    // them back. Ready once a load has succeeded: a failed first try is no
+    // baseline, or every notice would post as new after the retry.
+    notices: s.isNoticesFetchedAt !== null,
     events: feed.filter((n) => n.source !== 'is'),
     isNotices: feed.filter((n) => n.source === 'is'),
   };
@@ -114,8 +116,7 @@ const watchedOf = (s: AppState): unknown[] => [
   s.societies,
   s.notifySocieties,
   s.language,
-  s.isNoticesTriedAt,
-  s.isNoticesLoading,
+  s.isNoticesFetchedAt,
   // The feed's own clock and audience, never the one-second tick: an IS notice
   // opens at its minute, a restricted event once the faculty is known.
   pragueMinuteIso(s.now),
