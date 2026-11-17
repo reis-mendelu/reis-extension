@@ -42,6 +42,7 @@ describe('a new exam term in Novinky', () => {
       odevzdavarnyNew: [],
       exams: { data: [vwa], status: 'success', error: null },
       examTermsNew: [examTermKey('EBC-VWA', '1')],
+      examTermsAcknowledged: [],
       notifications: {
         ...useAppStore.getState().notifications,
         seenDeadlineAlertIds: new Set(),

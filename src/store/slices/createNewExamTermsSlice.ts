@@ -15,49 +15,57 @@ export interface NewExamTermsSlice {
   loadExamTermsNew: () => Promise<void>;
   /** Zkoušky was on screen: every new term has been seen. */
   markExamTermsSeen: () => void;
+  /**
+   * Terms acknowledged on Zkoušky in this session. A sync or a boot read that
+   * was already in flight answers from before the acknowledgement; filtering
+   * through this keeps such an answer from bringing a seen term back, and a
+   * stored copy of one (its clear failed, or lost a race) is cleared again.
+   * Session-only on purpose: after a restart the record itself is the truth,
+   * and a term whose clear never landed shows once more until Zkoušky is opened.
+   */
+  examTermsAcknowledged: string[];
 }
 
-/**
- * Terms acknowledged on Zkoušky in this session. A sync or a boot read that was
- * already in flight answers from before the acknowledgement; filtering through
- * this keeps such an answer from bringing a seen term back. A stored copy of
- * one (its clear failed, or lost a race) is cleared again: a bounded retry.
- */
-const acknowledged = new Set<string>();
-
-function withoutAcknowledged(keys: string[]): string[] {
-  const stale = keys.filter((k) => acknowledged.has(k));
-  if (stale.length > 0) {
-    clearUnseenTerms(stale).catch((err) => logError('NewExamTermsSlice.retryClear', err));
-  }
-  return keys.filter((k) => !acknowledged.has(k));
-}
-
-export const createNewExamTermsSlice: AppSlice<NewExamTermsSlice> = (set, get) => ({
-  examTermsNew: [],
-  setExamTermsNew: (keys) => set({ examTermsNew: withoutAcknowledged(keys) }),
-  loadExamTermsNew: async () => {
-    try {
-      const keys = withoutAcknowledged(await readUnseenTerms());
-      // A sync that landed first already holds the newer answer.
-      if (get().examTermsNew.length === 0) set({ examTermsNew: keys });
-    } catch (err) {
-      logError('NewExamTermsSlice.load', err);
+export const createNewExamTermsSlice: AppSlice<NewExamTermsSlice> = (set, get) => {
+  /** Drops acknowledged terms, and clears any stored copy of one again: a bounded retry. */
+  const withoutAcknowledged = (keys: string[]): string[] => {
+    const done = new Set(get().examTermsAcknowledged);
+    const stale = keys.filter((k) => done.has(k));
+    if (stale.length > 0) {
+      clearUnseenTerms(stale).catch((err) => logError('NewExamTermsSlice.retryClear', err));
     }
-  },
-  markExamTermsSeen: () => {
-    const shown = get().examTermsNew;
-    if (shown.length === 0) return;
-    shown.forEach((k) => acknowledged.add(k));
-    set({ examTermsNew: [] });
-    // What is stored once the clear has its turn: another tab may have found
-    // a term in the meantime, and it stays news here too.
-    clearUnseenTerms(shown)
-      .then((rest) => {
-        const fresh = withoutAcknowledged(rest);
-        if (fresh.length > 0)
-          set((s) => ({ examTermsNew: [...new Set([...s.examTermsNew, ...fresh])] }));
-      })
-      .catch((err) => logError('NewExamTermsSlice.markSeen', err));
-  },
-});
+    return keys.filter((k) => !done.has(k));
+  };
+
+  return {
+    examTermsNew: [],
+    examTermsAcknowledged: [],
+    setExamTermsNew: (keys) => set({ examTermsNew: withoutAcknowledged(keys) }),
+    loadExamTermsNew: async () => {
+      try {
+        const keys = withoutAcknowledged(await readUnseenTerms());
+        // A sync that landed first already holds the newer answer.
+        if (get().examTermsNew.length === 0) set({ examTermsNew: keys });
+      } catch (err) {
+        logError('NewExamTermsSlice.load', err);
+      }
+    },
+    markExamTermsSeen: () => {
+      const shown = get().examTermsNew;
+      if (shown.length === 0) return;
+      set((st) => ({
+        examTermsNew: [],
+        examTermsAcknowledged: [...new Set([...st.examTermsAcknowledged, ...shown])],
+      }));
+      // What is stored once the clear has its turn: another tab may have found
+      // a term in the meantime, and it stays news here too.
+      clearUnseenTerms(shown)
+        .then((rest) => {
+          const fresh = withoutAcknowledged(rest);
+          if (fresh.length > 0)
+            set((s) => ({ examTermsNew: [...new Set([...s.examTermsNew, ...fresh])] }));
+        })
+        .catch((err) => logError('NewExamTermsSlice.markSeen', err));
+    },
+  };
+};
