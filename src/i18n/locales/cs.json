@@ -507,6 +507,10 @@
     "winterSemester": "ZS",
     "summerSemester": "LS"
   },
+  "appUpdate": {
+    "title": "Nová verze reISu",
+    "body": "Klepni a aktualizuj"
+  },
   "notifications": {
     "title": "Novinky",
     "loading": "Načítá se...",
@@ -1294,6 +1298,7 @@
       "signalScreenNotifications": "Otevřené Novinky",
       "signalScreenInternships": "Otevřené Stáže",
       "signalInternshipClickEy": "Klik na Cestu s EY",
+      "signalAppUpdateOpened": "Klik na „Nová verze reISu“",
       "signalShare": "{pct} % denních instalací",
       "signalShareHint": "Průměrný den za 30 dní: kolik z instalací, které ten den reIS otevřely, otevřelo i tohle. Kalendář je na telefonu úvodní obrazovka, takže tam je skoro vždy.",
       "signalInstalls": "instalací",

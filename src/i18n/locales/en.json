@@ -507,6 +507,10 @@
     "winterSemester": "WS",
     "summerSemester": "SS"
   },
+  "appUpdate": {
+    "title": "New reIS version",
+    "body": "Tap to update"
+  },
   "notifications": {
     "title": "News",
     "loading": "Loading...",
@@ -1294,6 +1298,7 @@
       "signalScreenNotifications": "News (Novinky) opened",
       "signalScreenInternships": "Internships (Stáže) opened",
       "signalInternshipClickEy": "Click on “Cesta s EY”",
+      "signalAppUpdateOpened": "Click on “New reIS version”",
       "signalShare": "{pct}% of daily installs",
       "signalShareHint": "An average day over 30 days: of the installs that opened reIS that day, how many also opened this. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalInstalls": "installs",

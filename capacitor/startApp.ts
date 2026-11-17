@@ -23,6 +23,7 @@ import { installNotificationTaps } from '@/mobile/notificationTaps';
 import { startBackgroundCheck } from '@/mobile/backgroundCheckNative';
 import { installNovinkyNotifications } from '@/mobile/novinkyNotifications';
 import { installDeadlineReminders } from '@/mobile/deadlineReminders';
+import { checkAppUpdate } from '@/mobile/appUpdate';
 import {
   askAfterFirstRegistration,
   refreshNotificationStatus,
@@ -152,6 +153,10 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // closed, and names its channels. After the demo return, like the rest.
   void startBackgroundCheck();
 
+  // "Nová verze reISu" in Novinky when the store has a newer build; again on resume.
+  void useAppStore.getState().loadAppUpdateSeen();
+  void checkAppUpdate();
+
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe
   // loops the results back to this same window, where useAppLogic's existing
@@ -190,5 +195,6 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     // days, and only boots used to be counted. Writes at most once a day.
     void trackDailyUsage();
     void noteAppUsedToday();
+    void checkAppUpdate();
   });
 }

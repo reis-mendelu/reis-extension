@@ -15,4 +15,5 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   screen_notifications: 'signalScreenNotifications',
   screen_internships: 'signalScreenInternships',
   internship_click_ey: 'signalInternshipClickEy',
+  app_update_opened: 'signalAppUpdateOpened',
 };

@@ -172,7 +172,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Twelve feature counters on the random install id and the school label, one whitelisted label each: five feature uses (one of them a tap on a partner programme card in Stáže) and seven screens opened.',
+    what: 'Thirteen feature counters on the random install id and the school label, one whitelisted label each: six feature uses (one of them a tap on a partner programme card in Stáže, one a tap on the new-version row in Novinky) and seven screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -207,6 +207,11 @@ export const FLOWS: Flow[] = [
         'Partner programme opened',
         'you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day',
         'the random install identifier, the school and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website',
+      ],
+      [
+        'New version opened',
+        'you tap "Nová verze reISu" in Novinky (mobile app), once per app session; stored as one row per install per day',
+        'the random install identifier, the school and the fixed `app_update_opened` label. We cannot see whether you go on to update',
       ],
     ],
     stores: {
@@ -247,6 +252,23 @@ export const FLOWS: Flow[] = [
       firefox: [],
       cws: [],
     },
+  },
+  {
+    id: 'store_version_check',
+    what: "Whether a newer reIS is in the store (phone and iPad only), at start and on return to the app. iOS: a request to Apple's public App Store lookup with the app's bundle id and the Czech store. Android: asked of the Play Store app on the phone. Nothing about the student.",
+    when: 'background',
+    identifier: 'none',
+    transport: 'direct',
+    files: ['src/mobile/appUpdate.ts'],
+    calls: ['itunes.apple.com/lookup'],
+    policyRows: [
+      [
+        'Checking for a newer version (mobile app only)',
+        'the app starts or you return to it',
+        "iPhone and iPad: reIS's app id, to Apple's public App Store lookup. Android: the Play Store app on your phone is asked. Nothing about you; the store sees your device's IP address, as it does for any app",
+      ],
+    ],
+    stores: { apple: [], play: [], firefox: [], cws: [] },
   },
 ];
 

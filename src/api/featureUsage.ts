@@ -60,6 +60,8 @@ export const FEATURE_SIGNALS = [
    * widens the whitelist, so each is a deliberate step.
    */
   'internship_click_ey',
+  /** "Nová verze reISu" tapped in Novinky (phone/iPad): how many outdated installs went to update. */
+  'app_update_opened',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */

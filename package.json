@@ -84,6 +84,7 @@
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/share": "^8.0.3",
     "@capacitor/splash-screen": "^8.0.2",
+    "@capawesome/capacitor-app-update": "^8.1.1",
     "@capgo/capacitor-inappbrowser": "^8.27.7",
     "@fontsource/inter": "^5.3.0",
     "@reis/capacitor-eduroam": "file:native/capacitor-eduroam",
