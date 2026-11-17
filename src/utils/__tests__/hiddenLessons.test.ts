@@ -12,8 +12,8 @@ describe('isLessonHidden', () => {
     expect(isLessonHidden(lesson({}), hidden())).toBe(false);
   });
 
-  it('is hidden when the lesson id is in hiddenItems.events', () => {
-    const l = lesson({ id: 'l1' });
+  it('is hidden when the lesson id and date are in hiddenItems.events', () => {
+    const l = lesson({ id: 'l1', date: '20260420' });
     expect(
       isLessonHidden(
         l,
@@ -22,6 +22,15 @@ describe('isLessonHidden', () => {
         })
       )
     ).toBe(true);
+  });
+
+  // PR #638 review: IS reuses a lesson's id across the weeks it repeats, so a
+  // hide of "this lesson" matched on id alone hid every week of it.
+  it('a hidden occurrence leaves the same lesson on other dates', () => {
+    const events = [
+      { id: 'l1', courseCode: 'EBC-MAN', courseName: 'Management', date: '20260420' },
+    ];
+    expect(isLessonHidden(lesson({ id: 'l1', date: '20260427' }), hidden({ events }))).toBe(false);
   });
 
   it('is hidden when the course is hidden with a matching type (seminar)', () => {

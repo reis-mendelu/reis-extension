@@ -1,11 +1,14 @@
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DMY_RE = /^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})$/;
+// IS's English pages (lang=en) print MM/DD/YYYY.
+const MDY_RE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 
 export const RECENT_THRESHOLD_DAYS = 14;
 const DAY_MS = 86_400_000;
 
 /**
- * Parse an IS Mendelu file date string. Accepts "DD.MM.YYYY" (primary) and
+ * Parse an IS Mendelu file date string. Accepts "DD.MM.YYYY" (primary), the
+ * English pages' "MM/DD/YYYY", and
  * "YYYY-MM-DD" (ISO fallback). Returns null when unparseable, when the date
  * is invalid (e.g. 31.02.), or when the input is empty.
  */
@@ -26,7 +29,33 @@ export function parseIsDate(raw: string | undefined | null): Date | null {
     return isValid(d, Number(dmy[3]), Number(dmy[2]), Number(dmy[1])) ? d : null;
   }
 
+  const mdy = MDY_RE.exec(s);
+  if (mdy) {
+    const d = new Date(Number(mdy[3]), Number(mdy[1]) - 1, Number(mdy[2]));
+    return isValid(d, Number(mdy[3]), Number(mdy[1]), Number(mdy[2])) ? d : null;
+  }
+
   return null;
+}
+
+/** The later of a document's date and its Modifikace: when it last changed. */
+export function lastChanged(doc: { date: string; modified?: string }): Date | null {
+  const a = parseIsDate(doc.date);
+  const b = parseIsDate(doc.modified);
+  if (!a || !b) return a ?? b;
+  return b.getTime() > a.getTime() ? b : a;
+}
+
+/**
+ * When a document last changed, as IS printed it: Modifikace when it is
+ * later, else the document date. The iPad reader caches a PDF under this
+ * string, so an unchanged document keeps the key it always had and a replaced
+ * one gets a new key (a fresh download) instead of the old pages.
+ */
+export function changedOn(doc: { date: string; modified?: string }): string {
+  const d = parseIsDate(doc.date);
+  const m = parseIsDate(doc.modified);
+  return doc.modified && m && (!d || m.getTime() > d.getTime()) ? doc.modified : doc.date;
 }
 
 function isValid(d: Date, y: number, m: number, day: number): boolean {

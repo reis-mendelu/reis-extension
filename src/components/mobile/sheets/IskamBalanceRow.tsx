@@ -2,15 +2,9 @@ import { useState } from 'react';
 import { CreditCard } from 'lucide-react';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useIskamStore } from '../../../mobile/iskam/iskamStore';
+import { formatKc } from './formatKc';
+import { IskamClaims } from './IskamClaims';
 import { IskamTopUpForm } from './IskamTopUpForm';
-
-/** In the APP's language — WebISKAM's own text follows the phone's instead. */
-function formatKc(amount: number, language: string): string {
-  return new Intl.NumberFormat(language === 'cz' ? 'cs-CZ' : 'en-GB', {
-    style: 'currency',
-    currency: 'CZK',
-  }).format(amount);
-}
 
 /**
  * The ISIC Hlavní konto balance, at the top of the jídelníček sheet.
@@ -107,6 +101,7 @@ export function IskamBalanceRow() {
         </p>
       )}
       {formOpen && <IskamTopUpForm />}
+      {canTopUp && <IskamClaims />}
     </div>
   );
 }

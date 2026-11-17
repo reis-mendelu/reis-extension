@@ -33,7 +33,8 @@ export interface EduroamCertMaterial {
  */
 export function parseCertPage(html: string): { hasCert: boolean; password: string | null } {
   const hasCert = /certifikat\.pl\?get=user-p12/i.test(html);
-  const m = html.match(/(?:heslo|password)\s*<b>\s*([^<\s][^<]*?)\s*<\/b>/i);
+  // `<b\s*>`: the UIS redesign (November 2026) writes `<b >`, read off a real page.
+  const m = html.match(/(?:heslo|password)\s*<b\s*>\s*([^<\s][^<]*?)\s*<\/b>/i);
   return { hasCert, password: m ? m[1].trim() : null };
 }
 

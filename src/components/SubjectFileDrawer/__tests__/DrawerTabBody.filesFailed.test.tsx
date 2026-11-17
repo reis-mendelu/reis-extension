@@ -14,6 +14,9 @@ import cs from '../../../i18n/locales/cs.json';
 
 vi.mock('../FileList', () => ({
   FileList: () => <div data-testid="file-list" />,
+}));
+
+vi.mock('../FileListSkeleton', () => ({
   FileListSkeleton: () => <div data-testid="file-list-skeleton" />,
 }));
 

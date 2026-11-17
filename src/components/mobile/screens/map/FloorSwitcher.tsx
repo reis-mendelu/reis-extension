@@ -1,6 +1,5 @@
 import { useAppStore } from '../../../../store/useAppStore';
 import { FloorStack } from '../../../CampusMap/FloorStack';
-import { useViewportSize } from '../../../../hooks/ui/useViewportSize';
 import { floorColumnPlacement } from '../../../../utils/mapRail';
 
 /**
@@ -17,20 +16,19 @@ import { floorColumnPlacement } from '../../../../utils/mapRail';
  * at z-index 1000 internally, and MapCanvas doesn't isolate that away, so
  * anything meant to float above the map here has to clear the same bar.
  *
- * On a tablet it stands beside the open rail, not under it — see
- * `floorColumnRightPx`. On a Mac (no touch screen) it stands top-left under
- * the search bar, level with the rail's top — see `floorColumnPlacement`. It
- * comes before the search in the DOM, so the search results open over it.
+ * On every touch screen it stands at the right edge, 190px off the bottom —
+ * on an iPad too, where the open rail stops above it rather than the column
+ * stepping into the map (`railMaxHeight`). On a Mac (no touch screen) it
+ * stands top-left under the search bar, level with the rail's top — see
+ * `floorColumnPlacement`. It comes before the search in the DOM, so the
+ * search results open over it.
  */
 export function FloorSwitcher() {
   const activeBuildingId = useAppStore((s) => s.activeBuildingId);
-  const railOpen = useAppStore((s) => s.mapRailOpen);
-  const railWidth = useAppStore((s) => s.mapRailWidth);
   const isTouch = useAppStore((s) => s.isTouch);
-  const viewport = useViewportSize();
   if (activeBuildingId === null) return null;
 
-  const place = floorColumnPlacement(viewport.width, viewport.height, railOpen, railWidth, isTouch);
+  const place = floorColumnPlacement(isTouch);
   if (place.side === 'left') {
     return (
       <div

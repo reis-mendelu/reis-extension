@@ -7,9 +7,12 @@ import { StudyPlanPage } from './SubjectsPanel/StudyPlanPage';
 import { ErasmusPanel } from './ErasmusPanel';
 import { CampusMapView } from './CampusMap/CampusMapView';
 import { OldIsPanel } from './OldIsPanel';
+import { currentSchool } from '../utils/school';
 
 interface AppMainProps {
   currentView: AppView;
+  /** The saved view has been read; until then 'calendar' is a boot default. */
+  viewRestored?: boolean;
   currentDate: Date;
   handlePrevWeek: () => void;
   handleNextWeek: () => void;
@@ -29,6 +32,7 @@ interface AppMainProps {
 
 export function AppMain({
   currentView,
+  viewRestored = true,
   currentDate,
   handlePrevWeek,
   handleNextWeek,
@@ -50,6 +54,7 @@ export function AppMain({
         onOpenSubject={handleOpenSubjectFromSearch}
         searchPrefillRef={searchPrefillRef}
         onShowMap={() => setCurrentView?.('map')}
+        onShowExams={() => setCurrentView?.('exams')}
       />
       <div className="flex-1 pt-3 px-4 pb-1 overflow-hidden flex flex-col">
         <div className="flex-1 bg-base-100 rounded-lg shadow-sm border border-base-300 overflow-hidden">
@@ -57,6 +62,7 @@ export function AppMain({
             <WeeklyCalendar
               key={currentDate.toISOString()}
               initialDate={currentDate}
+              countVisit={viewRestored}
               onPrevWeek={handlePrevWeek}
               onNextWeek={handleNextWeek}
             />
@@ -75,13 +81,13 @@ export function AppMain({
               onOpenSubject={handleOpenSubjectFromSearch}
             />
           )}
-          {currentView === 'erasmus' && (
+          {currentView === 'erasmus' && currentSchool.has('erasmus') && (
             <ErasmusPanel
               onOpenSubject={handleOpenSubjectFromSearch}
               onSearchSubject={(name) => searchPrefillRef?.current?.(name)}
             />
           )}
-          {currentView === 'map' && <CampusMapView />}
+          {currentView === 'map' && currentSchool.has('campusMap') && <CampusMapView />}
           {currentView === 'oldIs' && <OldIsPanel />}
         </div>
       </div>

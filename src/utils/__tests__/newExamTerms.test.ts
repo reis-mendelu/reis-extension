@@ -32,7 +32,7 @@ describe('findNewTerms', () => {
     const fresh = [subject('EBC-A', [term('1'), term('2', { date: '20.01.2027', time: '10:00' })])];
     expect(findNewTerms(known, fresh)).toEqual([
       {
-        key: examTermKey('EBC-A', 's1', '2'),
+        key: examTermKey('EBC-A', '2'),
         courseCode: 'EBC-A',
         subjectCs: 'Název EBC-A',
         subjectEn: 'Name EBC-A',
@@ -54,10 +54,36 @@ describe('findNewTerms', () => {
       subject('EBC-A', [term('1')], 'registered'),
       subject('EBC-B', [term('2', { cannotRegister: true }), term('3')]),
     ];
-    expect(findNewTerms(known, fresh).map((t) => t.key)).toEqual([examTermKey('EBC-B', 's1', '3')]);
+    expect(findNewTerms(known, fresh).map((t) => t.key)).toEqual([examTermKey('EBC-B', '3')]);
   });
 
   it('a known empty record still announces the first term', () => {
     expect(findNewTerms(new Set(), [subject('EBC-A', [term('1')])])).toHaveLength(1);
   });
+
+  // The section id is built from the section's NAME, which differs between
+  // IS's Czech and English pages; the term id is IS's own and does not.
+  it('does not take a known term for new when its section comes back in English', () => {
+    const cz = [subjectWith('zkouška', '7')];
+    const en = [subjectWith('exam', '7')];
+    expect(findNewTerms(new Set(allTermKeys(cz)), en)).toEqual([]);
+  });
 });
+
+function subjectWith(sectionId: string, termId: string) {
+  return {
+    version: 1 as const,
+    id: 'EBC-A',
+    name: 'A',
+    code: 'EBC-A',
+    sections: [
+      {
+        id: sectionId,
+        name: sectionId,
+        type: 'exam',
+        status: 'open' as const,
+        terms: [{ id: termId, date: '12.01.2027', time: '08:00' }],
+      },
+    ],
+  };
+}

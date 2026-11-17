@@ -11,10 +11,12 @@ import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationE
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { useRailResize } from './useRailResize';
 import { RAIL_MIN_PX, RAIL_MAX_PX } from '../../../../utils/mapRail';
+import { useRailMaxHeight } from './useRailMaxHeight';
 import { MapPanelBody } from './MapPanelBody';
 import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
+import { libraryOf } from './library/libraryOf';
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -51,6 +53,7 @@ export function MapRail() {
   const clearMapSelection = useAppStore((s) => s.clearMapSelection);
   const setRailWidth = useAppStore((s) => s.setMapRailWidth);
   const { resizing, railHandlers } = useRailResize();
+  const maxHeight = useRailMaxHeight();
 
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
   // A tapped bubble in the botanical garden, handled exactly like a tapped
@@ -59,7 +62,16 @@ export function MapRail() {
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
-  const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
+  // A Sportera place likewise.
+  const selectedSportPlace = selection?.kind === 'sportPlace' ? selection.place : null;
+  // The library's room list, or one of its rooms (also when tapped on the plan).
+  const selectedLibrary = libraryOf(selection);
+  const selectedCard =
+    selectedEvent ||
+    selectedGardenPlace ||
+    selectedSocietyPin ||
+    selectedSportPlace ||
+    selectedLibrary;
   const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
@@ -70,10 +82,19 @@ export function MapRail() {
   // until the next selection — `forRoom` is rebuilt every render, and as a
   // dependency it reopened the rail the moment the student closed it.
   const showsRoomNote = !!forRoom;
+  // And a room with a floor plan closes it: the student was sent to look at
+  // that room (a lesson's pin, a teacher's office), and the events list in the
+  // corner was what they saw instead (Dominik, 11 November 2026). The open
+  // button stays, one tap away.
+  const showsRoom = selection?.kind === 'room' || selection?.kind === 'roomRef';
+  // A boolean, not the card: the library's view is a new object on every
+  // render, and as a dependency it reopened a rail the student had just closed.
+  const hasCard = !!selectedCard;
   useEffect(() => {
-    if (selectedCard || showsRoomNote) setOpen(true);
+    if (hasCard || showsRoomNote) setOpen(true);
+    else if (showsRoom) setOpen(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `selection` is the trigger; see above
-  }, [selectedCard, selection, setOpen]);
+  }, [hasCard, selection, setOpen]);
 
   if (!open) return <MapRailOpenButton onOpen={() => setOpen(true)} />;
 
@@ -81,7 +102,7 @@ export function MapRail() {
     <aside
       data-testid="map-rail"
       aria-label={t('mobile.map.tabEvents')}
-      style={{ width }}
+      style={{ width, maxHeight }}
       // Floating, inset, fully rounded — this screen's own idiom. The search
       // bar above is already a rounded pill over the canvas with a margin, and
       // a panel welded to the screen edge beside it reads as another app's
@@ -92,8 +113,9 @@ export function MapRail() {
       // of the map and the floating BottomNav with it, to hold a list whose
       // job is "what is on this week" — and anyone who wants the rest scrolls.
       // So it hugs its content and stops at 55vh, which is about the height it
-      // was, over 1.7. Below that cap the list scrolls inside the rail.
-      className={`absolute right-4 top-[calc(5rem_+_var(--safe-top,0px))] z-[1000] flex max-h-[55vh] flex-col overflow-hidden rounded-2xl border border-base-content/10 bg-base-100 shadow-drawer ${
+      // was, over 1.7. Below that cap the list scrolls inside the rail; with
+      // a building open on a tablet it stops above the floor column instead.
+      className={`absolute right-4 top-[calc(5rem_+_var(--safe-top,0px))] z-[1000] flex flex-col overflow-hidden rounded-2xl border border-base-content/10 bg-base-100 shadow-drawer ${
         resizing ? '' : 'transition-[width] duration-200 ease-out'
       }`}
     >
@@ -148,12 +170,16 @@ export function MapRail() {
         {selectedCard ? (
           <button
             type="button"
-            onClick={clearMapSelection}
+            onClick={
+              selectedLibrary?.featureId != null
+                ? () => useAppStore.getState().selectMapLibrary()
+                : clearMapSelection
+            }
             className="-ml-1.5 flex min-w-0 flex-1 items-center gap-1 rounded-lg px-1.5 py-1 text-left hover:bg-base-200"
           >
             <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />
             <span className="truncate font-display text-lg font-bold tracking-tight">
-              {t('mobile.map.tabEvents')}
+              {selectedLibrary ? t('mobile.library.title') : t('mobile.map.tabEvents')}
             </span>
           </button>
         ) : (
@@ -192,6 +218,8 @@ export function MapRail() {
           selectedEvent={selectedEvent}
           selectedGardenPlace={selectedGardenPlace}
           selectedSocietyPin={selectedSocietyPin}
+          selectedSportPlace={selectedSportPlace}
+          selectedLibrary={selectedLibrary}
           flush
         />
       </div>

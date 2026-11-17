@@ -8,6 +8,8 @@ import { SemesterSelector } from './SemesterSelector';
 import { TermBreakdown } from './TermBreakdown';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ISBacklink } from '../SubjectFileDrawer/ISBacklink';
+import { GarantNote } from './GarantNote';
+import { garantBoundaries } from './garantChange';
 
 const COLORS: Record<string, string> = {
   A: 'var(--color-grade-a)',
@@ -81,9 +83,15 @@ export function SuccessRateView({
           {isCredit ? ` (${t('successRate.credit')})` : ` (${t('successRate.exam')})`}
         </span>
       </div>
+      <GarantNote current={current} shown={stats} />
       <GradeBarChart grades={grades} order={order} colors={colors} max={max} />
       {individualTerms.length > 0 && <TermBreakdown terms={individualTerms} isCredit={isCredit} />}
-      <SemesterSelector stats={stats} activeIndex={sIdx} onSelect={setIdx} />
+      <SemesterSelector
+        stats={stats}
+        activeIndex={sIdx}
+        onSelect={setIdx}
+        boundaries={garantBoundaries(stats)}
+      />
       {current.sourceUrl && showIsBacklink && <ISBacklink href={current.sourceUrl} />}
     </div>
   );

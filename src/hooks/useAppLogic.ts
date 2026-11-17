@@ -5,8 +5,7 @@ import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
 import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
-import { persistExamTerms } from '../services/sync/newExamTerms';
-import { notifyNewPoints } from '../services/newPointsNotifier';
+import { recordExamTerms } from '../services/sync/recordExamTerms';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
@@ -31,6 +30,7 @@ import { PARENT_ORIGIN } from '../api/proxy/trustedOrigin';
 import { getPlatform } from '../platform';
 import { isHarnessEnabled } from '../utils/harnessEnabled';
 import type { SyncDomain } from '../types/messages/base';
+import { currentSchool } from '../utils/school';
 
 interface SyncedData {
   /** The study the per-study data belongs to; see the guard in the listener. */
@@ -75,6 +75,7 @@ export function useAppLogic() {
   // only on an actual bump of the counter — never on initial mount.
   useEffect(() => {
     return useAppStore.subscribe((state, prev) => {
+      if (!currentSchool.has('campusMap')) return;
       if (state.mapFocusRequest !== prev.mapFocusRequest) setCurrentView('map');
     });
   }, []);
@@ -103,19 +104,36 @@ export function useAppLogic() {
   }, []);
 
   const isInitialLoad = useRef(true);
+  // True once the saved view has been read (or the read failed). Until then the
+  // 'calendar' above is a boot default, not a choice — the calendar's screen
+  // counter waits for this (screenSignalsHaveBothTrees.test.ts).
+  const [viewRestored, setViewRestored] = useState(false);
   useEffect(() => {
     Promise.all([
       IndexedDBService.get('meta', 'reis_current_week'),
       IndexedDBService.get('meta', 'reis_current_view'),
-    ]).then(([w, v]) => {
-      if (w) setCurrentDate(new Date(w as string));
-      // Validated, not cast: a view removed since this value was written
-      // would otherwise boot the app onto a screen nothing renders.
-      if (isAppView(v)) setCurrentView(v);
-      setTimeout(() => {
-        isInitialLoad.current = false;
-      }, 50);
-    });
+    ])
+      .then(([w, v]) => {
+        if (w) setCurrentDate(new Date(w as string));
+        // Validated, not cast: a view removed since this value was written
+        // would otherwise boot the app onto a screen nothing renders.
+        // A school without the map or Erasmus has no such view to come back to.
+        if (
+          isAppView(v) &&
+          (v !== 'map' || currentSchool.has('campusMap')) &&
+          (v !== 'erasmus' || currentSchool.has('erasmus'))
+        )
+          setCurrentView(v);
+      })
+      .catch((e) => logError('useAppLogic.restoreView', e))
+      .finally(() => {
+        // On both paths: a failed read must not also stop every later view and
+        // week change from being saved.
+        setTimeout(() => {
+          isInitialLoad.current = false;
+        }, 50);
+        setViewRestored(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -205,8 +223,13 @@ export function useAppLogic() {
           await IndexedDBService.set('schedule', 'current', r.schedule);
         }
 
-        if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan))
+        if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan)) {
           await IndexedDBService.set('study_plan', 'current', r.studyPlan);
+          // Into the store now, not at the sync's end: Novinky and the phone's
+          // notifier leave out earlier-semester subjects by this plan, and
+          // the záznamník points of this same push come after.
+          await useAppStore.getState().fetchStudyPlan();
+        }
         if (r.studyStats) {
           useAppStore.getState().setStudyStats(r.studyStats as StudyStats);
           await IndexedDBService.set('meta', 'study_stats', r.studyStats);
@@ -245,16 +268,10 @@ export function useAppLogic() {
             }
           }
         }
-        if (r.exams) {
-          useAppStore.getState().setExams(r.exams);
-          // Marks these terms seen, so the phone's background check does not
-          // announce what the student has already had on screen.
-          try {
-            await persistExamTerms(r.exams);
-          } catch (err) {
-            logError('useAppLogic.persistExamTerms', err);
-          }
-        }
+        if (r.exams) useAppStore.getState().setExams(r.exams);
+        // Novinky's "Nový termín" rows: see services/sync/recordExamTerms.
+        const unseenTerms = await recordExamTerms(r);
+        if (unseenTerms) useAppStore.getState().setExamTermsNew(unseenTerms);
 
         if (r.subjects?.data) {
           const existing = (await IndexedDBService.get('subjects', 'current')) as {
@@ -343,9 +360,10 @@ export function useAppLogic() {
           useAppStore.getState().setZaznamnikBatch(r.zaznamnik);
           // Compared with the stored copy before replacing it: what the teacher
           // added since is highlighted, and on the phone also notified.
-          const { found, unseen } = await persistZaznamnikBatch(r.zaznamnik);
+          const { unseen } = await persistZaznamnikBatch(r.zaznamnik);
           useAppStore.getState().setZaznamnikNewPoints(unseen);
-          notifyNewPoints(found);
+          // The phone's notification follows the Novinky row (src/mobile/novinkyNotifications),
+          // which already leaves out an earlier semester's subject.
         }
 
         if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);
@@ -427,6 +445,7 @@ export function useAppLogic() {
     setCurrentDate,
     currentView,
     setCurrentView,
+    viewRestored,
     selectedSubject,
     setSelectedSubject,
     weekNavCount,

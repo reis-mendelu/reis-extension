@@ -55,6 +55,20 @@ describe('examOpeningReminders', () => {
     expect(r!.fireAt).toEqual(new Date(Date.UTC(2026, 11, 2, 11, 0)));
   });
 
+  // Report #37: signups are back in the store, but as a collapsed group with
+  // no badge — a push notification would undo that.
+  it('does not remind about a seminar-group signup', () => {
+    const exams = [
+      subject([
+        section('s1', [term('t1', '02.12.2026 13:00')], {
+          name: 'Zápis na cvičení',
+          nameCs: 'Zápis na cvičení',
+        }),
+      ]),
+    ];
+    expect(examOpeningReminders(exams, NOW, 'cz')).toEqual([]);
+  });
+
   it('gives terms opening together one reminder per section', () => {
     const exams = [
       subject([section('s1', [term('t1', '02.12.2026 13:00'), term('t2', '02.12.2026 13:00')])]),

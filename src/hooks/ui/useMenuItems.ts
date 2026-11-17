@@ -5,6 +5,7 @@ import { useTranslation } from '../useTranslation';
 import type { MenuItem } from '../../components/menuConfig';
 import type { ExamSubject, ExamSection, ExamTerm } from '../../types/exams';
 import { parseDate } from '../../utils/date';
+import { isGroupSignupSection } from '../../utils/exams/isGroupSignup';
 
 export function useMenuItems(): MenuItem[] {
   const { params } = useUserParams();
@@ -22,6 +23,9 @@ export function useMenuItems(): MenuItem[] {
   if (examsData) {
     examsData.forEach((sub: ExamSubject) => {
       sub.sections.forEach((sec: ExamSection) => {
+        // Seminar-group signup never badges (#344, report #37): it is shown
+        // in its own collapsed group, not as something the student owes.
+        if (isGroupSignupSection(sec)) return;
         // 1. Actionable registration window (Available NOW)
         if (
           sec.status !== 'registered' &&

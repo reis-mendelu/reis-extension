@@ -33,11 +33,17 @@ export function NotificationItem({
   onClick,
   onVisible,
   clickable,
+  expanded,
+  bare,
 }: {
   notification: SpolekNotification;
   onClick: () => void;
   onVisible?: () => void;
   clickable?: boolean;
+  /** Set when the row unfolds in place (IsNoticeItem): the chevron points down while open. */
+  expanded?: boolean;
+  /** No card of its own: the row sits inside one that also holds its text. */
+  bare?: boolean;
 }) {
   const { t } = useTranslation();
   const ref = useRef<HTMLButtonElement>(null);
@@ -98,7 +104,8 @@ export function NotificationItem({
       // then swallows its own activation — so the row is disabled outright, and
       // the cursor rule is what a pointer sees of the same decision.
       disabled={!isClickable}
-      className={`flex w-full items-center gap-2.5 rounded-2xl border border-base-300 bg-base-100 px-3.5 py-2.5 text-left transition-colors ${isClickable ? 'cursor-pointer hover:bg-base-200' : 'cursor-default'}`}
+      aria-expanded={expanded}
+      className={`flex w-full items-center gap-2.5 rounded-2xl px-3.5 py-2.5 text-left transition-colors ${bare ? '' : 'border border-base-300 bg-base-100'} ${isClickable ? 'cursor-pointer hover:bg-base-200' : 'cursor-default'}`}
     >
       {logo ? (
         <img
@@ -130,7 +137,11 @@ export function NotificationItem({
         {dateLabel}
       </span>
       {isClickable && (
-        <ChevronRight size={16} className="flex-shrink-0 text-base-content/40" aria-hidden />
+        <ChevronRight
+          size={16}
+          className={`flex-shrink-0 text-base-content/40 transition-transform ${expanded ? 'rotate-90' : ''}`}
+          aria-hidden
+        />
       )}
     </button>
   );

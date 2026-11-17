@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { BulletinBanner } from './Bulletin/BulletinBanner';
+import { InternshipsMenu } from './Internships/InternshipsMenu';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { MobileSearchOverlay } from './SearchBar/MobileSearchOverlay';
 import { useTranslation } from '../hooks/useTranslation';
@@ -7,6 +8,7 @@ import { NotificationFeed } from './NotificationFeed';
 import { useAppStore } from '../store/useAppStore';
 import { getWeekForDate } from '../api/teachingWeek';
 import { isTrustedHostOrigin } from '../utils/trustedOrigin';
+import { currentSchool } from '../utils/school';
 import { HalloweenHeaderBats } from './halloween/HalloweenHeaderBats';
 
 interface AppHeaderProps {
@@ -25,6 +27,8 @@ interface AppHeaderProps {
   ) => void;
   searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
   onShowMap: () => void;
+  /** A "Nový termín" row in the bell opens Zkoušky. */
+  onShowExams?: () => void;
 }
 
 export function AppHeader({
@@ -37,6 +41,7 @@ export function AppHeader({
   onOpenSubject,
   searchPrefillRef,
   onShowMap,
+  onShowExams,
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -128,7 +133,17 @@ export function AppHeader({
             </div>
           )}
 
-          {currentView === 'calendar' ? <BulletinBanner inline /> : <div className="flex-1" />}
+          {/* Vývěska, then Stáže beside it (only for a field with a partner
+              programme). The row stretches; the pills keep their width. */}
+          {currentView === 'calendar' ? (
+            <div className="flex min-w-0 flex-1 items-center">
+              {/* Vývěska and the bundled MENDELU partners: not for another school. */}
+              {currentSchool.has('bulletin') && <BulletinBanner inline />}
+              {currentSchool.has('internships') && <InternshipsMenu />}
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
           <HalloweenHeaderBats />
 
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 ml-auto z-10">
@@ -142,13 +157,17 @@ export function AppHeader({
             </button>
 
             <div className="flex items-center gap-1">
-              <NotificationFeed
-                onShowMap={onShowMap}
-                onOpenSubject={(a) =>
-                  a.courseCode &&
-                  onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')
-                }
-              />
+              {/* Novinky come from Supabase, which another school's prototype has none of. */}
+              {currentSchool.has('novinky') && (
+                <NotificationFeed
+                  onShowMap={onShowMap}
+                  onShowExams={onShowExams}
+                  onOpenSubject={(a) =>
+                    a.courseCode &&
+                    onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')
+                  }
+                />
+              )}
             </div>
           </div>
         </div>

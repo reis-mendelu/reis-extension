@@ -184,3 +184,10 @@ native/*/.swiftpm/
 # reIS for Claude bundle + .mcpb (npm run mcp:pack) and plugin folder (npm run mcp:plugin)
 dist-mcp/
 dist-plugin/
+
+# A node_modules copy in flight (scripts/ensure-install.mjs); renamed into place when whole.
+node_modules.incoming
+node_modules.lock
+node_modules.lock.dead-*
+node_modules.install.lock
+node_modules.install.lock.cand-*

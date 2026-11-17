@@ -18,11 +18,13 @@ import { useAppStore } from '@/store/useAppStore';
 import { RAIL_MIN_WIDTH } from '@/utils/mapRail';
 import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
+import { noteAppUsedToday } from '@/mobile/storeReview';
 import { installNotificationTaps } from '@/mobile/notificationTaps';
-import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
 import { startBackgroundCheck } from '@/mobile/backgroundCheckNative';
+import { installNovinkyNotifications } from '@/mobile/novinkyNotifications';
+import { installDeadlineReminders } from '@/mobile/deadlineReminders';
 import {
-  askNotificationsIfNeverAsked,
+  askAfterFirstRegistration,
   refreshNotificationStatus,
 } from '@/mobile/notificationPermission';
 
@@ -126,16 +128,25 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   installNotificationTaps();
   installExamReminders();
 
-  // "Nové body" from the záznamník as a system notification. After the demo
-  // return (the demo never syncs, so it has nothing new) and before the sync
-  // starts, so its first batch already has somewhere to go.
-  installZaznamnikNotifications();
+  // A day of use for the store-rating gates (utils/storeReviewDecision.ts).
+  // After the demo return, so App Review's demo build never becomes eligible;
+  // again on every resume below, for the same reason the daily count is.
+  void noteAppUsedToday();
+
+  // Novinky's news rows (new exam dates, points, boxes, society events) as
+  // system notifications, 1:1. After the demo return (the demo never syncs,
+  // so it has nothing new) and before the sync starts.
+  installNovinkyNotifications();
+  // "Zítra: zkouška", "přihlašování končí", "odevzdání do zítra": scheduled
+  // ahead, so they arrive with reIS closed. After the demo return, like the rest.
+  installDeadlineReminders();
 
   // Whether the phone lets reIS notify at all, in the store for Nastavení and
-  // the bell's banner. Asked here, once, while the system still treats it as a
-  // plain first request; after a refusal the banner takes over rather than a
-  // second dialog. A student once ran for weeks with it off and no sign of it.
-  void askNotificationsIfNeverAsked();
+  // the bell's banner (a student once ran for weeks with it off and no sign of
+  // it). The system dialog itself waits for the first exam registration, when
+  // a reminder means something; after a refusal the banner takes over.
+  void refreshNotificationStatus();
+  askAfterFirstRegistration();
 
   // Android only: arms the background check that notifies while the app is
   // closed, and names its channels. After the demo return, like the rest.
@@ -178,5 +189,6 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
     // Returning to the app is a day of use: this process can outlive many
     // days, and only boots used to be counted. Writes at most once a day.
     void trackDailyUsage();
+    void noteAppUsedToday();
   });
 }

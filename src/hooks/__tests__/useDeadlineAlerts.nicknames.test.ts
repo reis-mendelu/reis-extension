@@ -55,7 +55,7 @@ describe('useDeadlineAlerts — nicknames', () => {
           id: 's',
           name: 'zkouška',
           type: 'exam',
-          status: 'available',
+          status: 'open',
           terms: [
             {
               id: 't',

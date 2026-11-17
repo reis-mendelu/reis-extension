@@ -1,0 +1,52 @@
+{
+  "_comment": "Only handed-in submission boxes, none open: one graded with 1 point, one with 90, one awaiting grading. The Odevzdávárny card on Předměty shows just its Odevzdáno part. Names, ids and points invented; deadlines are deadlineDayOffset from now (scripts/lib/fixtureRebase.ts). Serve with: REIS_FIXTURE=submittedBoxesOnly npm run dev:web",
+  "odevzdavarny": [
+    {
+      "courseId": "164063",
+      "courseCode": "EBC-VWA",
+      "courseNameCs": "Vývoj webových aplikací",
+      "courseNameEn": "Web Application Development",
+      "type": "odevzdavarna-individualni",
+      "uploadUrl": "https://is.mendelu.cz/auth/student/odevzdavarny_odevzdani.pl?odevzdavarna=fx-s1",
+      "deadlineTime": "23:59",
+      "name": "Specifikace projektu",
+      "odevzdavarnaId": "fx-s1",
+      "deadlineDayOffset": -30,
+      "fileCount": 1,
+      "points": "1",
+      "section": "submitted",
+      "isOpen": false
+    },
+    {
+      "courseId": "164077",
+      "courseCode": "EBC-PJ",
+      "courseNameCs": "Programovací jazyk Java",
+      "courseNameEn": "Java Programming Language",
+      "type": "odevzdavarna-individualni",
+      "uploadUrl": "https://is.mendelu.cz/auth/student/odevzdavarny_odevzdani.pl?odevzdavarna=fx-s2",
+      "deadlineTime": "23:59",
+      "name": "Rozpracovaný projekt",
+      "odevzdavarnaId": "fx-s2",
+      "deadlineDayOffset": -5,
+      "fileCount": 1,
+      "section": "submitted",
+      "isOpen": false
+    },
+    {
+      "courseId": "164077",
+      "courseCode": "EBC-PJ",
+      "courseNameCs": "Programovací jazyk Java",
+      "courseNameEn": "Java Programming Language",
+      "type": "odevzdavarna-individualni",
+      "uploadUrl": "https://is.mendelu.cz/auth/student/odevzdavarny_odevzdani.pl?odevzdavarna=fx-s3",
+      "deadlineTime": "23:59",
+      "name": "1. projekt",
+      "odevzdavarnaId": "fx-s3",
+      "deadlineDayOffset": -12,
+      "fileCount": 2,
+      "points": "90",
+      "section": "submitted",
+      "isOpen": false
+    }
+  ]
+}

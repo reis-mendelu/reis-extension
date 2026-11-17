@@ -69,6 +69,7 @@ function App() {
 
       <AppMain
         currentView={s.currentView}
+        viewRestored={s.viewRestored}
         currentDate={s.currentDate}
         dateRangeLabel={getDateRangeLabel()}
         handlePrevWeek={handlePrevWeek}

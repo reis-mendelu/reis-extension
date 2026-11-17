@@ -33,9 +33,9 @@ function withData(data: ExamSubject[]) {
  * shows the header over an empty body — no rows and no empty state either.
  *
  * The screen chose its empty state on `exams.length === 0`, but a subject can
- * be present and still yield no row: `stripGroupSignupSections` keeps a subject
- * whose only section was "Zápis na cvičení", and `dropFinished` hides a
- * registered exam whose day is over. Either way the screen must say so.
+ * be present and still yield no row: a subject with no sections, or one whose
+ * only registered exam `dropFinished` hides because its day is over. Either
+ * way the screen must say so.
  */
 describe('exam subjects that leave nothing to show', () => {
   beforeEach(() => withData([]));

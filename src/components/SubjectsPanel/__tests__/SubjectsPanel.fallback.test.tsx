@@ -94,10 +94,12 @@ describe('SubjectsPanel Erasmus fallback', () => {
     expect(screen.getByTestId('enrolled-now').textContent).toBe('EBC-ST');
   });
 
-  it('shows the exchange caption and hides the Study Plan button in fallback mode', () => {
+  it('shows no caption about the study plan and hides the Study Plan button in fallback mode', () => {
+    // Dominik, 2026-11-07: students only care that they see their subjects.
     setStore({ plan: null, subjects });
     renderPanel();
-    expect(screen.getByText(/exchange studies/i)).toBeTruthy();
+    expect(screen.getByTestId('enrolled-now').textContent).toBe('EBC-ST');
+    expect(screen.queryByText(/study plan isn't available|exchange stud/i)).toBeNull();
     expect(screen.queryByText('Study Plan')).toBeNull();
   });
 

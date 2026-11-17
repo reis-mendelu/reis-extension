@@ -141,6 +141,11 @@ export function downloadName(
   if (named) return named;
   const title = row?.name.replace(/[\\/:*?"<>|]/g, '_').trim() || fallback;
   const ext = extensionFor(file.contentType, row?.type);
-  if (!ext || title.toLowerCase().endsWith(`.${ext}`)) return title;
-  return `${title}.${ext}`;
+  const hasExt = !!ext && title.toLowerCase().endsWith(`.${ext}`);
+  // Capped: a row's name can be a long IS title or file name, and filesystems
+  // stop at 255 bytes; Czech letters take two each in UTF-8.
+  const stem = (hasExt ? title.slice(0, -(ext.length + 1)) : title).slice(0, MAX_STEM).trim();
+  return ext ? `${stem}.${ext}` : stem;
 }
+
+const MAX_STEM = 150;

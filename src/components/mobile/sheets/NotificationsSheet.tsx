@@ -1,17 +1,18 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useNotificationFeed } from '../../../hooks/useNotificationFeed';
 import { useDeadlineAlerts } from '../../../hooks/useDeadlineAlerts';
 import { useOpenNotification } from '../../../hooks/useOpenNotification';
-import { NotificationItem } from '../../Notifications/NotificationItem';
-import { DeadlineAlertItem } from '../../Notifications/DeadlineAlertItem';
+import { NotificationRow } from '../../Notifications/NotificationRow';
+import { AlertSections, SectionLabel } from '../../Notifications/AlertSections';
 import { QuestionList } from '../../Questions/QuestionList';
 import { useQuestions } from '../../../hooks/useQuestions';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { NotificationsOffBanner } from './NotificationsOffBanner';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
 export interface NotificationsSheetProps {
   onClose: () => void;
@@ -24,21 +25,8 @@ export interface NotificationsSheetProps {
  * `NotificationDropdown` — this is the phone's whole "novinky" surface, not
  * a second implementation of it.
  */
-/**
- * The app's own section label — `ProfileScreen`, `ExamGroup` and the search
- * results all use exactly this. Deadlines and society news are two different
- * kinds of thing, and stacking them unlabelled in one list was half of why the
- * feed read as a jumble.
- */
-function SectionLabel({ children }: { children: ReactNode }) {
-  return (
-    <div className="pb-1.5 pt-3 text-xs font-bold uppercase tracking-wider text-base-content/60 first:pt-1">
-      {children}
-    </div>
-  );
-}
-
 export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
+  useScreenSignal('screen_notifications');
   const { t } = useTranslation();
   const { notifications, loading, markVisible, readIds } = useNotificationFeed();
   const { alerts, markAllSeen } = useDeadlineAlerts();
@@ -46,12 +34,6 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
   const hasContent = notifications.length > 0 || alerts.length > 0 || questions.visible.length > 0;
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const pushSheet = useAppStore((s) => s.pushSheet);
-  // New points and new boxes already happened; the deadlines are still ahead.
-  // Two sections, and both kinds of news open the subject's Záznamník.
-  const isNews = (a: { type: string }) =>
-    a.type === 'zaznamnik-points' || a.type === 'assignment-new';
-  const points = alerts.filter(isNews);
-  const deadlines = alerts.filter((a) => !isNews(a));
   const markNotificationsRead = useAppStore((s) => s.markNotificationsRead);
 
   /**
@@ -102,39 +84,25 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
         <div className="pb-1 pt-1 empty:hidden">
           <QuestionList />
         </div>
-        {points.length > 0 && (
-          <>
-            <SectionLabel>{t('course.tabs.zaznamnik')}</SectionLabel>
-            <div className="flex flex-col gap-2">
-              {points.map((alert) => (
-                <DeadlineAlertItem
-                  key={alert.id}
-                  alert={alert}
-                  onOpenSubject={(a) =>
-                    a.courseCode &&
-                    pushSheet({
-                      kind: 'subjectDrawer',
-                      courseCode: a.courseCode,
-                      courseName: a.title,
-                      courseId: a.courseId,
-                      initialTab: 'zaznamnik',
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </>
-        )}
-        {deadlines.length > 0 && (
-          <>
-            <SectionLabel>{t('notifications.sectionDeadlines')}</SectionLabel>
-            <div className="flex flex-col gap-2">
-              {deadlines.map((alert) => (
-                <DeadlineAlertItem key={alert.id} alert={alert} />
-              ))}
-            </div>
-          </>
-        )}
+        {/* The same two groups as the extension's bell: both kinds of news
+            open the subject's Záznamník. */}
+        <AlertSections
+          alerts={alerts}
+          onOpenExams={() => {
+            onClose();
+            setMobileTab('exams');
+          }}
+          onOpenNews={(a) =>
+            a.courseCode &&
+            pushSheet({
+              kind: 'subjectDrawer',
+              courseCode: a.courseCode,
+              courseName: a.title,
+              courseId: a.courseId,
+              initialTab: 'zaznamnik',
+            })
+          }
+        />
         {loading && !notifications.length ? (
           <div className="p-6 text-center text-base text-base-content/60">
             {t('notifications.loading')}
@@ -154,11 +122,11 @@ export function NotificationsSheet({ onClose }: NotificationsSheetProps) {
             )}
             <div className="flex flex-col gap-2">
               {notifications.map((n) => (
-                <NotificationItem
+                <NotificationRow
                   key={n.id}
                   notification={n}
                   onVisible={() => markVisible(n.id)}
-                  onClick={() => void openNotification(n)}
+                  onOpen={() => void openNotification(n)}
                   clickable={opensSomewhere(n)}
                 />
               ))}

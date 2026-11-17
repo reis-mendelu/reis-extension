@@ -11,8 +11,9 @@ import { useTranslation } from '../../../../hooks/useTranslation';
  * column is already a button and this sits inside it, while the registered
  * card wraps it in a button of its own.
  *
- * `wide` is the registered card's: its other terms have no chip, so this one
- * is the card's only way to the details and spans it like Odhlásit.
+ * `wide` is the card-level one (RegisteredCard, SectionMore): the term rows
+ * under it have no chip, so it is the card's only way to the details and spans
+ * the card.
  */
 export function MoreChip({ open, wide = false }: { open: boolean; wide?: boolean }) {
   const { t } = useTranslation();

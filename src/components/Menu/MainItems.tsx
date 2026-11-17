@@ -11,53 +11,73 @@ import {
   LayoutGrid,
 } from 'lucide-react';
 import type { MenuItem } from '../menuConfig';
+import type { Feature } from '../../utils/schoolProfiles';
+import { currentSchool } from '../../utils/school';
+
+/** Menu entries that open a feature not every school has. */
+const MENU_FEATURE: Partial<Record<string, Feature>> = {
+  map: 'campusMap',
+  testy: 'practiceTests',
+  dokumenty: 'studyDocuments',
+};
+
+const offered = (item: { id: string }) => {
+  const feature = MENU_FEATURE[item.id];
+  return !feature || currentSchool.has(feature);
+};
+
+const forThisSchool = (items: MenuItem[]): MenuItem[] =>
+  items
+    .filter(offered)
+    .map((i) => (i.children ? { ...i, children: i.children.filter(offered) } : i));
 
 export const mainItems = (
   sid: string,
   oid: string,
   t: (key: string) => string,
   lang: string = 'cz'
-): MenuItem[] => [
-  {
-    id: 'dashboard',
-    label: t('sidebar.dashboard'),
-    icon: <Home className="w-5 h-5" />,
-    href: `https://is.mendelu.cz/auth/?lang=${lang}`,
-  },
-  { id: 'exams', label: t('sidebar.exams'), icon: <CalendarCheck className="w-5 h-5" /> },
-  { id: 'subjects', label: t('sidebar.subjects'), icon: <Book className="w-5 h-5" /> },
-  { id: 'map', label: t('sidebar.map'), icon: <Map className="w-5 h-5" /> },
-  {
-    id: 'is',
-    label: t('sidebar.is'),
-    icon: <User className="w-5 h-5" />,
-    expandable: true,
-    children: [
-      {
-        id: 'dokumenty',
-        label: t('sidebar.documents'),
-        icon: <FileText className="w-4 h-4" />,
-        isFeature: true,
-      },
-      {
-        id: 'portal-studenta',
-        label: t('sidebar.portal'),
-        icon: <LayoutDashboard className="w-4 h-4" />,
-        href: `https://is.mendelu.cz/auth/student/moje_studium.pl?lang=${lang}`,
-      },
-      {
-        id: 'zaznamniky',
-        label: t('sidebar.notebooks'),
-        icon: <ClipboardList className="w-4 h-4" />,
-        href: `https://is.mendelu.cz/auth/student/list.pl?studium=${sid};obdobi=${oid};lang=${lang}`,
-      },
-      {
-        id: 'testy',
-        label: t('sidebar.tests'),
-        icon: <PenTool className="w-4 h-4" />,
-        href: `https://is.mendelu.cz/auth/elis/ot/psani_testu.pl?_m=205;lang=${lang}`,
-      },
-    ],
-  },
-  { id: 'oldIs', label: t('sidebar.isPages'), icon: <LayoutGrid className="w-5 h-5" /> },
-];
+): MenuItem[] =>
+  forThisSchool([
+    {
+      id: 'dashboard',
+      label: t('sidebar.dashboard'),
+      icon: <Home className="w-5 h-5" />,
+      href: `https://is.mendelu.cz/auth/?lang=${lang}`,
+    },
+    { id: 'exams', label: t('sidebar.exams'), icon: <CalendarCheck className="w-5 h-5" /> },
+    { id: 'subjects', label: t('sidebar.subjects'), icon: <Book className="w-5 h-5" /> },
+    { id: 'map', label: t('sidebar.map'), icon: <Map className="w-5 h-5" /> },
+    {
+      id: 'is',
+      label: t('sidebar.is'),
+      icon: <User className="w-5 h-5" />,
+      expandable: true,
+      children: [
+        {
+          id: 'dokumenty',
+          label: t('sidebar.documents'),
+          icon: <FileText className="w-4 h-4" />,
+          isFeature: true,
+        },
+        {
+          id: 'portal-studenta',
+          label: t('sidebar.portal'),
+          icon: <LayoutDashboard className="w-4 h-4" />,
+          href: `https://is.mendelu.cz/auth/student/moje_studium.pl?lang=${lang}`,
+        },
+        {
+          id: 'zaznamniky',
+          label: t('sidebar.notebooks'),
+          icon: <ClipboardList className="w-4 h-4" />,
+          href: `https://is.mendelu.cz/auth/student/list.pl?studium=${sid};obdobi=${oid};lang=${lang}`,
+        },
+        {
+          id: 'testy',
+          label: t('sidebar.tests'),
+          icon: <PenTool className="w-4 h-4" />,
+          href: `https://is.mendelu.cz/auth/elis/ot/psani_testu.pl?_m=205;lang=${lang}`,
+        },
+      ],
+    },
+    { id: 'oldIs', label: t('sidebar.isPages'), icon: <LayoutGrid className="w-5 h-5" /> },
+  ]);

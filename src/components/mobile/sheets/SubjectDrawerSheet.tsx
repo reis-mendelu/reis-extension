@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { Sheet } from '../primitives/Sheet';
 import { SubjectSheetHeader } from './SubjectSheetHeader';
@@ -28,6 +28,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
 import { useCourseName } from '../../../hooks/ui/useCourseName';
 import { useMarkZaznamnikSeen } from '../../../hooks/ui/useMarkZaznamnikSeen';
+import { useFileLastVisit } from '../../../hooks/ui/useFileLastVisit';
 import { syllabusUrl } from '../../../utils/syllabusUrl';
 
 type SubjectDrawerSheetData = Extract<MobileSheet, { kind: 'subjectDrawer' }>;
@@ -58,6 +59,8 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   const { courseCode, courseName, courseId } = sheet;
   const { t, language } = useTranslation();
   const { getSubject } = useSubjects();
+  // "NOVÉ" on documents changed since the last open, as in the extension.
+  const lastVisitedAt = useFileLastVisit(courseCode, true);
   // Mirrors desktop's useSubjectFileDrawerState: files/classmates/zaznamnik
   // need a subjectId (an enrolled subject) to fetch anything, so a subject
   // not yet resolved to one opens on Success rate instead of a dead tab.
@@ -67,6 +70,23 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
       return sheet.initialTab;
     return enrolled ? 'files' : 'stats';
   });
+  // The tab asked for but not yet usable (the subject has no id until the
+  // subjects load: a notification tap that cold-starts the app). It is taken
+  // once the subject resolves, and only then; later the student's own choice wins.
+  const pendingTab = useRef(
+    sheet.initialTab && sheet.initialTab !== activeTab ? sheet.initialTab : null
+  );
+  const enrolledNow = !!getSubject(courseCode)?.subjectId;
+  useEffect(() => {
+    if (!enrolledNow || !pendingTab.current) return;
+    setActiveTab(pendingTab.current);
+    pendingTab.current = null;
+  }, [enrolledNow]);
+  // The student's own tap or swipe: it wins over a tab still pending.
+  const chooseTab = (tab: DrawerTab) => {
+    pendingTab.current = null;
+    setActiveTab(tab);
+  };
   // A sheet on the stack is open; its Záznamník tab on screen means seen.
   useMarkZaznamnikSeen(courseCode, activeTab, true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -95,6 +115,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
     previewPosition,
     viewPdf,
     closePreview,
+    onPreviewLoaded,
     openFile,
     downloadSingle,
     openingLink,
@@ -146,7 +167,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
         courseCode={courseCode}
         pullable={activeTab === 'files'}
         onSwipeStep={(steps) =>
-          setActiveTab(stepTab(SUBJECT_TAB_ORDER, activeTab, steps, disabledTabs))
+          chooseTab(stepTab(SUBJECT_TAB_ORDER, activeTab, steps, disabledTabs))
         }
         top={
           <>
@@ -165,7 +186,7 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
             <TeacherList teachers={syllabusResult.syllabus?.courseInfo?.teachers} />
             <SubjectDrawerTabs
               activeTab={activeTab}
-              onTabChange={setActiveTab}
+              onTabChange={chooseTab}
               disabledTabs={disabledTabs}
               counts={counts}
             />
@@ -215,10 +236,16 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           }
           // The programme line only ever rendered clipped mid-word on a phone.
           showStudyInfo={false}
+          lastVisitedAt={lastVisitedAt}
         />
       </SubjectDrawerScroller>
       {previewUrl && (
-        <SubjectPdfOverlay url={previewUrl} position={previewPosition} onClose={closePreview} />
+        <SubjectPdfOverlay
+          url={previewUrl}
+          position={previewPosition}
+          onClose={closePreview}
+          onLoaded={onPreviewLoaded}
+        />
       )}
     </Sheet>
   );

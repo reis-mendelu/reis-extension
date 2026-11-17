@@ -1,7 +1,7 @@
 import { Bell, X } from 'lucide-react';
 import { createPortal } from 'react-dom';
-import { NotificationItem } from './NotificationItem';
-import { DeadlineAlertItem } from './DeadlineAlertItem';
+import { NotificationRow } from './NotificationRow';
+import { AlertSections, SectionLabel } from './AlertSections';
 import { QuestionList } from '../Questions/QuestionList';
 import { useQuestions } from '../../hooks/useQuestions';
 import { useOpenNotification } from '../../hooks/useOpenNotification';
@@ -9,6 +9,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolekNotification } from '../../services/spolky';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useIsMobile } from '../../hooks/ui/useIsMobile';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 interface NotificationDropdownProps {
   notifications: SpolekNotification[];
@@ -21,6 +22,8 @@ interface NotificationDropdownProps {
   deadlineAlerts: DeadlineAlert[];
   /** Opens a subject's drawer on Záznamník: the "Nové body" row. */
   onOpenSubject?: (alert: DeadlineAlert) => void;
+  /** Switches to Zkoušky: the "Nový termín" row. */
+  onShowExams?: () => void;
 }
 
 export function NotificationDropdown({
@@ -32,7 +35,9 @@ export function NotificationDropdown({
   dropdownRef,
   deadlineAlerts,
   onOpenSubject,
+  onShowExams,
 }: NotificationDropdownProps) {
+  useScreenSignal('screen_notifications');
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const questions = useQuestions();
@@ -53,23 +58,23 @@ export function NotificationDropdown({
       {/* First: the dropdown is 320px tall, and only the top fits unscrolled.
           The phone's Novinky sheet mounts it too (questionsOnBothTrees.test.ts). */}
       <QuestionList />
-      {deadlineAlerts.length > 0 && (
-        <div className="flex flex-col gap-2">
-          {deadlineAlerts.map((alert) => (
-            <DeadlineAlertItem
-              key={alert.id}
-              alert={alert}
-              onOpenSubject={
-                onOpenSubject &&
-                ((a) => {
-                  onClose();
-                  onOpenSubject(a);
-                })
-              }
-            />
-          ))}
-        </div>
-      )}
+      <AlertSections
+        alerts={deadlineAlerts}
+        onOpenExams={
+          onShowExams &&
+          (() => {
+            onClose();
+            onShowExams();
+          })
+        }
+        onOpenNews={
+          onOpenSubject &&
+          ((a) => {
+            onClose();
+            onOpenSubject(a);
+          })
+        }
+      />
       {loading && !notifications.length ? (
         <div className="p-4 text-center text-base-content/60">{t('notifications.loading')}</div>
       ) : !hasContent ? (
@@ -79,12 +84,16 @@ export function NotificationDropdown({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
+          {/* Labelled only when there is something above it to tell it apart from. */}
+          {deadlineAlerts.length > 0 && notifications.length > 0 && (
+            <SectionLabel>{t('notifications.sectionSocieties')}</SectionLabel>
+          )}
           {notifications.map((n) => (
-            <NotificationItem
+            <NotificationRow
               key={n.id}
               notification={n}
               onVisible={() => onVisible(n.id)}
-              onClick={() => void openNotification(n)}
+              onOpen={() => void openNotification(n)}
               clickable={opensSomewhere(n)}
             />
           ))}

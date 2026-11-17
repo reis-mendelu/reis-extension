@@ -1,0 +1,101 @@
+<!doctype html>
+<!--
+  The ENGLISH page (a phone set to English gets this): the same capture as
+  pohledavky.html, with every visible string as the live English page showed it
+  on 2026-11-15 (WebISKAM's own spelling, "Accomodation", kept). Note the date
+  "11/20/2026", month first, and the amount "4,815 Kč", comma thousands.
+
+  Real markup. Scrubbed: the claim's data-id GUID, the accommodation detail id,
+  inline styles/scripts and every attribute not listed here; the other panels
+  (Základní údaje, Kontaktní osoba) are left out because they carry personal data.
+  The amounts and dates are made up.
+
+  How it behaves, observed: the row's button (default type=submit, but not inside
+  a form) opens #ZaplatitZKonta, whose inline script copies the button's data-id
+  into the hidden IDPolozky. Submitting that form POSTs
+  /InformaceOKlientovi/ZaplatitZKonta and pays from Hlavní konto. There is no
+  __RequestVerificationToken on the page and no JS confirm().
+
+  NOT captured yet: the page with no claim (empty state), an overdue claim
+  ("po splatnosti"), several claims, the English page.
+-->
+<html lang="en">
+  <body>
+    <div class="panel panel-default maincontent">
+      <div class="panel-heading">Outstanding debts before maturity</div>
+      <fieldset class="content">
+        <table id="omezeniPohledavkyTable" class="table">
+          <thead>
+            <tr>
+              <th class="dateCol">Due date</th>
+              <th>Description</th>
+              <th class="tdRight moneyCol">Total amount</th>
+              <th class="tdRight moneyCol">Paid</th>
+              <th class="tdRight moneyCol">To be paid</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="dateCol">11/20/2026</td>
+              <td>
+                Accomodation 31.10.2026 - 30.11.2026
+                <a href="PrehledUbytovani/DetailUbytovani/ID" title="Accommodation detail"
+                  ><img
+                /></a>
+              </td>
+              <td class="tdRight moneyCol">4,815 Kč</td>
+              <td class="tdRight moneyCol">0 Kč</td>
+              <td class="tdRight bold moneyCol">4,815 Kč</td>
+              <td class="tdRight">
+                <button
+                  class="btn btn-sm btn-color payfrommainaccount"
+                  title="Pay claim from Main account"
+                  data-toggle="modal"
+                  data-target="#ZaplatitZKonta"
+                  data-id="00000000-0000-0000-0000-000000000001"
+                >
+                  <img />
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td class="bold" colspan="2">Total</td>
+              <td class="tdRight moneyCol bold">4,815 Kč</td>
+              <td class="tdRight moneyCol bold">0 Kč</td>
+              <td class="tdRight bold moneyCol">4,815 Kč</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </fieldset>
+    </div>
+
+    <div id="ZaplatitZKonta" class="modal fade" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">×</span>
+            </button>
+            <h4 class="modal-title">Pay</h4>
+          </div>
+          <div class="modal-body modal-body-custom">
+            <form action="/InformaceOKlientovi/ZaplatitZKonta" method="post">
+              <div class="form-horizontal">
+                <input type="hidden" id="IDPolozky" name="IDPolozky" value="" />
+                <div class="form-group modal-form-group-submit">
+                  <input
+                    type="submit"
+                    value="Pay claim from Main account"
+                    class="btn btn-default center-block"
+                  />
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

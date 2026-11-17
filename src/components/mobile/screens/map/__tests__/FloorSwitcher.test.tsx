@@ -11,9 +11,10 @@ function setViewport(width: number, height: number) {
   ).happyDOM?.setViewport({ width, height });
 }
 
-// The geometry itself is `floorColumnRightPx`'s test; this pins that the
-// column actually reads the rail it has to clear.
-describe('FloorSwitcher beside the tablet rail', () => {
+// Where the column stands on a touch screen: the right edge, 190px off the
+// bottom, on the phone and on the iPad alike. The open rail makes room for it
+// (MapRail's own test), not the other way round.
+describe('FloorSwitcher on a touch screen', () => {
   beforeEach(() => {
     useAppStore.setState({
       // Building Q — its id in buildings.json, which is numeric.
@@ -32,19 +33,32 @@ describe('FloorSwitcher beside the tablet rail', () => {
     expect(screen.getByRole('button', { name: '0' })).toHaveClass('btn-xs');
   });
 
-  it('stands left of the open rail on an iPad in landscape', () => {
-    setViewport(1194, 834);
-    render(<FloorSwitcher />);
-    // The real column, not an empty wrapper: Q has eight floors.
-    expect(screen.getByRole('button', { name: '5' })).toBeInTheDocument();
-    expect(screen.getByTestId('floor-switcher').style.right).toBe('368px');
+  // Reported from the iPad 8 (Task List, "map bug on ipad"): with the rail
+  // open, the column stood 368px off the right edge, in the middle of the map
+  // under the rail's bottom corner. It belongs where the phone has it.
+  it('stands at the right edge with the rail open on an iPad, as on the phone', () => {
+    const ipads: [number, number][] = [
+      [810, 1080],
+      [1080, 810],
+      [834, 1112],
+      [1194, 834],
+      [1024, 768],
+    ];
+    for (const [w, h] of ipads) {
+      setViewport(w, h);
+      const { unmount } = render(<FloorSwitcher />);
+      // The real column, not an empty wrapper: Q has eight floors.
+      expect(screen.getByRole('button', { name: '5' })).toBeInTheDocument();
+      expect(screen.getByTestId('floor-switcher').style.right).toBe('12px');
+      unmount();
+    }
   });
 
-  it('follows the rail when it is dragged wider', () => {
+  it('stays at the edge however wide the rail is dragged', () => {
     setViewport(1194, 834);
     useAppStore.setState({ mapRailWidth: 500 } as never);
     render(<FloorSwitcher />);
-    expect(screen.getByTestId('floor-switcher').style.right).toBe('528px');
+    expect(screen.getByTestId('floor-switcher').style.right).toBe('12px');
   });
 
   it('returns to the edge when the rail is closed', () => {

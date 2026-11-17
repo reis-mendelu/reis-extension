@@ -13,6 +13,7 @@ import { useListCursor } from './search/useListCursor';
 import type { PageItem } from '../../../data/pages/types';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { StudentSearch, type StudentMode } from '../screens/student/StudentSearch';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
 const RECENT_PEOPLE_LIMIT = 5;
 // useSearch's own floor (`query.trim().length < 2` bails before any fetch).
@@ -37,6 +38,7 @@ export interface SearchSheetProps {
  * so closing one returns to the results instead of to a cleared field.
  */
 export function SearchSheet({ sheet, onClose }: SearchSheetProps) {
+  useScreenSignal('screen_search');
   const { t } = useTranslation();
   // A prefilled sheet is one opened from a subject, so it starts in subject
   // mode; the bare header icon starts on people, which is what it always did.

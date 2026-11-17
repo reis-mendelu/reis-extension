@@ -5,6 +5,7 @@ import { useSearch } from './useSearch';
 import { useTranslation } from '../../hooks/useTranslation';
 import { injectUserParams } from '../../data/pagesData';
 import type { SearchResult } from './types';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 
 interface PeopleSearchPopoverProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ interface PeopleSearchPopoverProps {
 }
 
 export function PeopleSearchPopover({ isOpen, onClose }: PeopleSearchPopoverProps) {
+  useScreenSignal('screen_search', isOpen);
   const { t, language } = useTranslation();
   const [query, setQuery] = useState('');
   const { sections, isLoading, studiumId, saveToHistory } = useSearch(query);

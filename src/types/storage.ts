@@ -27,6 +27,16 @@ export const CalendarCustomEventSchema = z.object({
   startTime: z.string(),
   endTime: z.string(),
   room: z.string().optional(),
+  // A library study-room booking (phone and iPad): its room and the keys that
+  // cancel it. Missing here, zod dropped it on every save and load, and a
+  // booking came back as a plain own event nobody could cancel (2026-11-16).
+  libraryBooking: z
+    .object({
+      featureId: z.number(),
+      selfServiceIds: z.array(z.string()),
+      unconfirmed: z.boolean().optional(),
+    })
+    .optional(),
 });
 export type { CalendarCustomEvent };
 export const CalendarCustomEventsSchema = z.array(CalendarCustomEventSchema);

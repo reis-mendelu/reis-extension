@@ -1,9 +1,7 @@
 import { EyeOff, Calendar, CalendarRange } from 'lucide-react';
-import { toast } from 'sonner';
 import type { CardLesson } from '../types/calendarTypes';
-import { useAppStore } from '../store/useAppStore';
 import { useTranslation } from '../hooks/useTranslation';
-import { useHintStatus } from '../hooks/ui/useHintStatus';
+import { useHideLesson } from '../hooks/ui/useHideLesson';
 
 /**
  * The hover menu that takes a lesson off the calendar.
@@ -12,11 +10,12 @@ import { useHintStatus } from '../hooks/ui/useHintStatus';
  * a first-time hint — and because the card it hangs in the corner of had grown
  * past the 200-line convention carrying it. Raised in review.
  *
- * It is the ONLY route to `hideEvent` and `hideCourse`, which is why the card
- * renders it however little room the block has: a 50-minute lesson is drawn
- * in one line and can be hidden like any other — unless it overlaps another
- * lesson (`maxColumns > 1`): the card then has no room for the menu, so that
- * lesson cannot be hidden until it stops overlapping.
+ * It is the extension's only route to `hideEvent` and `hideCourse` (the phone
+ * has its hold menu, `HideLessonSheet`), which is why the card renders it
+ * however little room the block has: a 50-minute lesson is drawn in one line,
+ * and a lesson in a clash (`maxColumns > 1`) in half a column, and both can be
+ * hidden like any other. The clash case is suggestion #43: parallel seminar
+ * options are exactly what a student retaking only the exam wants gone.
  */
 export function CalendarEventCardHideMenu({
   lesson,
@@ -30,35 +29,21 @@ export function CalendarEventCardHideMenu({
   baseName: string;
 }) {
   const { t } = useTranslation();
-  const { isSeen, markSeen } = useHintStatus('calendar_hide_first_time');
-  const hideEvent = useAppStore((s) => s.hideEvent);
-  const hideCourse = useAppStore((s) => s.hideCourse);
-
-  // Shown once, ever: hiding is reversible and the student has no way to know
-  // where from, but a toast on every hide would be noise by the third one.
-  const showHint = () => {
-    if (!isSeen) {
-      toast.info(t('calendar.hide.hint'), { duration: 5000 });
-      markSeen();
-    }
-  };
+  const hide = useHideLesson();
 
   const hideOccurrence = (e: React.MouseEvent) => {
     e.stopPropagation();
-    hideEvent(lesson.id, lesson.courseCode, fullName, lesson.date);
-    showHint();
+    hide.hideOccurrence(lesson, fullName);
   };
 
   const hideType = (e: React.MouseEvent) => {
     e.stopPropagation();
-    hideCourse(lesson.courseCode, fullName, lesson.isSeminar === 'true' ? 'seminar' : 'lecture');
-    showHint();
+    hide.hideKind(lesson, fullName);
   };
 
   const hideAll = (e: React.MouseEvent) => {
     e.stopPropagation();
-    hideCourse(lesson.courseCode, fullName, 'all');
-    showHint();
+    hide.hideAll(lesson, fullName);
   };
 
   return (

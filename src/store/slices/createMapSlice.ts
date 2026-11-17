@@ -69,6 +69,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   activeBuildingId: null,
   activeFloorId: null,
   mapSelection: null,
+  mapRoomTints: {},
+  setMapRoomTints: (mapRoomTints) => set({ mapRoomTints }),
   roomsByBuilding: {},
   buildingModels: {},
   mapTilt: { phase: 'flat', view: null },
@@ -120,11 +122,19 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // routed to the lecture's building — an offer about one room, sitting on
   // another.
   selectMapRoom: (room) => set({ mapSelection: { kind: 'room', room }, routeSuggestion: null }),
+  selectMapLibrary: (featureId) =>
+    set({
+      mapSelection: featureId === undefined ? { kind: 'library' } : { kind: 'library', featureId },
+      routeSuggestion: null,
+    }),
   selectMapPoi: (poi, coord) => set({ mapSelection: { kind: 'poi', poi, coord } }),
   selectGardenPlace: (place) => set({ mapSelection: { kind: 'gardenPlace', place } }),
 
   setMapSearchQuery: (q) =>
-    set({ mapSearchQuery: q, mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS, PLACED) }),
+    set({
+      mapSearchQuery: q,
+      mapSearchResults: searchPlaces(q, INDEX, POIS, LANDMARKS, PLACED, get().venuePins),
+    }),
 
   focusRoomByCode: (code) => {
     const entry = lookupRoomEntry(code, INDEX);

@@ -5,6 +5,7 @@ import { openExternal } from '../mobile/openExternal';
 import { useAppStore } from '../store/useAppStore';
 import { eventDirectLink } from '../components/CampusMap/eventLinks';
 import { resolveSociety } from '../utils/societies/resolveSociety';
+import { isIsNoticeRow } from '../utils/isNoticeRows';
 
 /**
  * What tapping a notification does, for BOTH trees — the phone's Novinky sheet
@@ -55,7 +56,7 @@ export function useOpenNotification({
   // Accepted rather than selecting `kind` in fetchNotifications, which would
   // fail every Novinky read against a database without the column.
   const opensSomewhere = (n: SpolekNotification) =>
-    !!n.link || !mapEventsLoaded || mapEvents.some((e) => e.id === n.id);
+    !!n.link || isIsNoticeRow(n) || !mapEventsLoaded || mapEvents.some((e) => e.id === n.id);
 
   // One activation at a time. Awaiting the load opens a window the synchronous
   // version never had, and a second tap inside it ran a second handler: two
@@ -102,6 +103,18 @@ export function useOpenNotification({
       void openExternal(link);
       onClose();
     };
+    // A notice from the student's own IS: straight to its link, and never
+    // counted — its id is not a post's, and sending it would tell Supabase
+    // what the student's IS shows them.
+    if (isIsNoticeRow(n)) {
+      activationRef.current += 1;
+      openingRef.current = false;
+      openingIdRef.current = null;
+      if (!n.link) return;
+      void openExternal(n.link);
+      onClose();
+      return;
+    }
     // Academic rows are deadlines, not places: straight to the link.
     if (n.link && n.associationId?.startsWith('academic_')) {
       activationRef.current += 1;

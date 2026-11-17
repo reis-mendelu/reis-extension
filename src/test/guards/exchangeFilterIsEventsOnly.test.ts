@@ -16,7 +16,11 @@ import { describe, it, expect } from 'vitest';
  */
 const READERS: Record<string, string> = {
   'src/hooks/useVisibleMapEvents.ts': 'the map seam: filters through visibleToStudent',
-  'src/hooks/useNotificationFeed.ts': 'the Novinky seam: filters through canSee',
+  'src/hooks/useNotificationFeed.ts': 'hands the raw list to buildFeed, the Novinky seam',
+  'src/mobile/novinkyNotifications.ts':
+    'watches the raw list only to know when to rebuild; its rows come from buildFeed',
+  'src/utils/novinky/buildFeed.ts':
+    "the Novinky seam, both trees and the phone's system notifications: filters through canSee",
   'src/hooks/useOpenNotification.ts': 'looks up the event of a row the feed already filtered',
   'src/store/slices/createMapSlice.ts': 'owns mapEvents: loads and focuses, shows nothing',
   'src/store/slices/createNotificationSlice.ts':
@@ -66,7 +70,7 @@ describe('the exchange-student filter covers events only', () => {
     expect(readers.sort()).toEqual(Object.keys(READERS).sort());
   });
 
-  it.each(['src/hooks/useVisibleMapEvents.ts', 'src/hooks/useNotificationFeed.ts'])(
+  it.each(['src/hooks/useVisibleMapEvents.ts', 'src/utils/novinky/buildFeed.ts'])(
     '%s filters through the audience rule',
     (path) => {
       expect(code(path)).toMatch(/\b(canSee|visibleToStudent)\(/);

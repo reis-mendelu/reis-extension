@@ -1,0 +1,41 @@
+name: Privacy policy gist
+
+# Republishes the privacy-policy gist from docs/privacy-policy-app.md and reads
+# it back (scripts/privacy/gist-push.ts). Dispatched before a release PR merges,
+# by `npm run privacy:publish` or from a cloud session; never on its own. The
+# Release gate then compares the live gist with the repo.
+#
+# Credentials: GIST_TOKEN, a fine-grained personal access token of
+# ElijaahInverted (the gist's owner) with only the account permission
+# "Gists: Read and write". GITHUB_TOKEN is not accepted for gists.
+#
+# workflow_dispatch workflows can only be dispatched once the file is on the
+# default branch (main), so this becomes runnable after the release that adds it.
+# Dispatch it with --ref test: the policy is read from the ref it runs on.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: privacy-gist
+  cancel-in-progress: false
+
+jobs:
+  push:
+    name: Publish policy gist
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Publish docs/privacy-policy-app.md to the gist
+        run: npx --yes tsx@4 scripts/privacy/gist-push.ts
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}

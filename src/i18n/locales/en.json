@@ -20,7 +20,10 @@
     "unavailable": "Menu not available",
     "outletOne": "1 outlet",
     "outletFew": "{count} outlets",
-    "outletOther": "{count} outlets"
+    "outletOther": "{count} outlets",
+    "venueFullMenu": "Full menu and prices",
+    "venueFullMenuOnMap": "Full menu and prices on the map",
+    "venuePlaceOnMap": "Show on the map"
   },
   "iskam": {
     "show": "Show ISIC balance",
@@ -34,11 +37,16 @@
     "invalid": "Enter a whole amount from 1 to 15,000 CZK",
     "failed": "Could not start the payment",
     "added": "Topped up +{amount}",
-    "unseen": "The balance has not changed yet. If you paid, it will update shortly."
+    "unseen": "The balance has not changed yet. If you paid, it will update shortly.",
+    "claimDue": "due {date}",
+    "payClaim": "Pay",
+    "claimShort": "Your account is {amount} short. Top up first, then pay.",
+    "claimPaid": "Paid {amount}"
   },
   "settings": {
     "title": "Settings",
     "reportBug": "Report Bug / Idea",
+    "rateReis": "Rate reIS",
     "darkMode": "Dark Mode",
     "language": "Language",
     "czech": "Čeština",
@@ -131,6 +139,7 @@
     "emptyTitle": "No exams in sight",
     "emptySubtitle": "Enjoy the break!",
     "noOpenRegistrations": "No exams to sign up for right now.",
+    "signupGroup": "Practical sign-ups",
     "autoBooking": "Auto-booking active. Don't close this page!",
     "statusLabel": "Status:",
     "subjectLabel": "Subject:",
@@ -247,6 +256,8 @@
     "today": "Today",
     "back": "Back",
     "close": "Close",
+    "enlargePhoto": "Enlarge photo",
+    "photo": "Photo",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",
@@ -294,7 +305,7 @@
     "setNickname": "Set nickname",
     "nicknamePlaceholder": "e.g., Math",
     "removeNickname": "Remove nickname",
-    "garant": "Supervisor:",
+    "garant": "Guarantor:",
     "teachers": "Teachers:",
     "showMore": "Show more",
     "showLess": "Show less",
@@ -469,6 +480,8 @@
     "wasCredit": "was a credit, now an exam",
     "wasExam": "was an exam, now a credit",
     "lastTaught": "last taught {year}",
+    "garant": "Guarantor: {name}",
+    "garantChanged": "The guarantor changed in {semester} (previously {before}, now {now}) – older semesters may not reflect the subject today.",
     "previewOf": "Results of another subject",
     "back": "Back"
   },
@@ -507,15 +520,42 @@
     "systemOn": "On",
     "systemOff": "Off",
     "systemEnable": "Turn on",
-    "systemBanner": "Notifications are off, so you won't get new points, submission boxes, exam dates or exam reminders."
+    "systemBanner": "Notifications are off, so you won't get new points, submission boxes, exam dates or exam reminders.",
+    "openInIs": "Open in IS",
+    "openLink": "Open link"
   },
   "examReminders": {
     "title": "An exam opens soon",
     "body": "{subject} – {section} · registration opens at {time}",
     "channel": "Exam openings"
   },
+  "novinkyPush": {
+    "channelTerms": "New exam dates",
+    "channelPoints": "New points",
+    "channelBoxes": "New submission boxes",
+    "channelSocieties": "From societies and MENDELU",
+    "termsOne": "New exam date: {subject}",
+    "termsMany": "New exam dates",
+    "pointsOne": "New points: {subject}",
+    "pointsMany": "New points",
+    "boxesOne": "New submission box: {subject}",
+    "boxesMany": "New submission boxes",
+    "societiesMany": "News from societies",
+    "societiesSwitch": "From societies and MENDELU",
+    "societiesSwitchHint": "Society events and school notices"
+  },
+  "deadlineReminders": {
+    "channel": "Exams and deadlines",
+    "examTitle": "Tomorrow: {subject}",
+    "closingTitle": "{subject}: registration closes",
+    "closingBody": "{section} · last chance tomorrow until {time}",
+    "boxTitle": "{subject}: due tomorrow",
+    "boxBody": "{box} · until {time}"
+  },
   "deadlines": {
     "title": "Upcoming deadlines",
+    "examNewTerm": "New date",
+    "examRegistered": "Your exam",
     "examRegOpens": "Registration opens",
     "examReg": "Registration closes",
     "assignment": "Assignment due",
@@ -550,7 +590,6 @@
     "creditsShort": "cr.",
     "studyPlan": "Study Plan",
     "noData": "No study plan data",
-    "noPlanExchange": "Study plan isn't available for exchange studies — showing your enrolled subjects instead.",
     "loading": "Loading...",
     "fulfilled": "Fulfilled",
     "enrolled": "Enrolled",
@@ -945,6 +984,10 @@
     "loading": "Loading…",
     "error": "Failed to load"
   },
+  "internships": {
+    "title": "Internships",
+    "close": "Close internships"
+  },
   "customEvent": {
     "titlePlaceholder": "Add title",
     "locationPlaceholder": "Room or place",
@@ -983,6 +1026,39 @@
     "moreHere": "more here",
     "moreInfo": "More info",
     "moreOnInstagram": "More on Instagram",
+    "venueOpen": "Open",
+    "venueClosed": "Closed",
+    "venueUntilToday": "today until {time}",
+    "venueOpensToday": "opens at {time}",
+    "venueOpensTomorrow": "opens tomorrow at {time}",
+    "venueOpensOn": "opens {day} at {time}",
+    "venueOpensDate": "opens {date} at {time}",
+    "venueOnDay1": "on Monday",
+    "venueOnDay2": "on Tuesday",
+    "venueOnDay3": "on Wednesday",
+    "venueOnDay4": "on Thursday",
+    "venueOnDay5": "on Friday",
+    "venueOnDay6": "on Saturday",
+    "venueOnDay7": "on Sunday",
+    "venueDayShort1": "Mon",
+    "venueDayShort2": "Tue",
+    "venueDayShort3": "Wed",
+    "venueDayShort4": "Thu",
+    "venueDayShort5": "Fri",
+    "venueDayShort6": "Sat",
+    "venueDayShort7": "Sun",
+    "venueClosureNow": "Temporarily closed",
+    "venueClosureSoon": "Closed from {date}",
+    "venueClosureRange": "{from}–{until} · reopens {opens}",
+    "venueClosureRangeNoReopen": "{from}–{until}",
+    "venueRoute": "Directions",
+    "venueLunch": "For lunch",
+    "venueLunchToday": "Lunch today",
+    "venueSoup": "Soup",
+    "venueMenu": "Menu",
+    "venueMenuOf": "{venue} · menu",
+    "venueBackTo": "Back to {venue}",
+    "venueEvents": "Events",
     "hostedBy": "Hosted by",
     "myEvents": "My events",
     "prevMonth": "Previous month",
@@ -1092,6 +1168,28 @@
       "title": "The map needs one permission",
       "text": "OpenStreetMap blocks the map tiles when it can't tell who is asking. Allow reIS to introduce itself.",
       "allow": "Allow"
+    },
+    "sport": {
+      "open": "Open on Sportera",
+      "note": "Photos, ratings and people to play with are on sportera.cz.",
+      "near": "{metres} m from building {building}",
+      "nonstop": "Open 24/7",
+      "surface": {
+        "tartan": "Tartan",
+        "gravel": "Gravel"
+      },
+      "hoopsOne": "{count} hoop",
+      "hoopsFew": "{count} hoops",
+      "hoopsMany": "{count} hoops",
+      "tablesOne": "{count} table",
+      "tablesFew": "{count} tables",
+      "tablesMany": "{count} tables",
+      "kind": {
+        "basketball": "Basketball",
+        "football": "Football",
+        "workout": "Outdoor gym",
+        "pingpong": "Table tennis"
+      }
     }
   },
   "admin": {
@@ -1183,11 +1281,21 @@
       "unknown": "not set",
       "loadFailed": "Could not load statistics.",
       "signals": "Features (30 days)",
-      "signalsNote": "Installs, not people. The map counts after three seconds on screen; eduroam is split between “the app configured the network” and “we handed over a profile” — a handed-over profile still has to be installed by the student. Support: how many installs saw the question and how many answered “Yes” – nothing is paid.",
+      "signalsNote": "Installs, not people. The map counts after three seconds on screen; eduroam is split between “the app configured the network” and “we handed over a profile” — a handed-over profile still has to be installed by the student. Screens count when shown, once per install per day; the percentage is the share of the installs that opened reIS that day. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalMapDwell": "Map for 3+ seconds",
       "signalEduroamConfigured": "eduroam configured by the app",
       "signalEduroamDelivered": "eduroam profile handed over",
       "signalCalendarWeekView": "Calendar in week view",
+      "signalScreenCalendar": "Calendar opened",
+      "signalScreenSubjects": "Courses opened",
+      "signalScreenMenu": "Canteen menu opened",
+      "signalScreenSearch": "Search opened",
+      "signalScreenBulletin": "Bulletin Board (Vývěska) opened",
+      "signalScreenNotifications": "News (Novinky) opened",
+      "signalScreenInternships": "Internships (Stáže) opened",
+      "signalInternshipClickEy": "Click on “Cesta s EY”",
+      "signalShare": "{pct}% of daily installs",
+      "signalShareHint": "An average day over 30 days: of the installs that opened reIS that day, how many also opened this. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalInstalls": "installs",
       "reachTitle": "Events: News and map side by side",
       "reachNotice": "notice",
@@ -1309,6 +1417,16 @@
       "day": "Day",
       "devices": "Counts devices, not people. Students on 5.4.1 or older do not see questions.",
       "errNote": "A note can be at most 300 characters."
+    },
+    "isNotices": {
+      "title": "IS notices",
+      "note": "What your IS shows on its home page. Students see them in Novinky under MENDELU, each their own. A hidden one shows to nobody.",
+      "empty": "Your IS shows no notices right now.",
+      "hide": "Hide for everyone",
+      "show": "Show",
+      "hidden": "Hidden",
+      "notInYourIs": "No longer in your IS",
+      "error": "Could not save. Try again."
     }
   },
   "mobile": {
@@ -1360,6 +1478,9 @@
       "groupRegistered": "Your registered exams",
       "myTermDetailsAria": "Details of your term",
       "termDetailsAria": "Term details",
+      "sectionDetailsAria": "Exam details",
+      "noDetails": "IS gives no further details.",
+      "detailsFailed": "Some details could not be loaded.",
       "detailForm": "Form",
       "detailDuration": "Length",
       "detailRoom": "Room",
@@ -1378,6 +1499,7 @@
       "attemptRegularShort": "R",
       "groupOpen": "Open slots",
       "groupNotYetOpen": "Not open yet",
+      "groupSignup": "Practical sign-ups",
       "opensAtLabel": "opens",
       "refresh": "Refresh exams",
       "refreshing": "Updating…",
@@ -1489,7 +1611,9 @@
     "profile": {
       "settings": "Settings",
       "atSchool": "At school",
-      "settingsSub": "Notifications, language, appearance"
+      "settingsSub": "Notifications, language, appearance",
+      "isic": "ISIC",
+      "isicSub": "balance and top-up"
     },
     "loadFailed": {
       "title": "Couldn't load your data",
@@ -1526,7 +1650,59 @@
       "deleteTape": "Delete tape",
       "tapeHint": "Tape over an answer and try to recall it. Tap the tape to peek; hold it to delete or move it."
     },
-    "openingLink": "Opening…"
+    "openingLink": "Opening…",
+    "library": {
+      "pinLabel": "Study rooms",
+      "title": "Library",
+      "place": "Building A, floor −1",
+      "today": "Today",
+      "seats": "{n} seats",
+      "seatsOne": "1 seat",
+      "offline": "Could not load the bookings. Check your connection.",
+      "loading": "Loading free hours from the library…",
+      "pickHour": "Pick hours",
+      "lessonTag": "class",
+      "capReached": "You already have {cap} h that day, the library allows no more.",
+      "confirmTitle": "Book this study room?",
+      "confirmBody": "The library receives your name, e-mail, student number and faculty. You will get a confirmation by e-mail.",
+      "confirm": "Book",
+      "sending": "Booking…",
+      "slow": "The library answers slowly; this can take a minute.",
+      "booked": "Booked: {room}, {time}",
+      "partial": "Only {time} was booked. The rest did not go through.",
+      "taken": "One of the hours was taken meanwhile. Nothing was booked.",
+      "cap": "At most {cap} h a day.",
+      "checkFailed": "Could not check the slot. Try again.",
+      "unknown": "The library did not answer. The booking may exist: check your e-mail before trying again.",
+      "failed": "The booking failed.",
+      "blockTitle": "Library study room",
+      "mine": "Your bookings",
+      "cancelTitle": "Cancel the library booking?",
+      "cancelBody": "This cancels the real booking and frees the room. The library will e-mail you about it.",
+      "cancelAction": "Cancel the library booking",
+      "cancelling": "Cancelling…",
+      "keep": "Keep",
+      "cancelled": "Booking cancelled.",
+      "cancelUnknown": "The library did not answer. Check your e-mail to see whether the booking is gone.",
+      "cancelFailed": "Could not cancel the booking.",
+      "searchRow": "Library – study rooms to book",
+      "freeAt": "Free {time}",
+      "holiday": "{name}: the library is closed.",
+      "unconfirmed": "The library did not answer in time, but the booking most likely exists. It is in your calendar; the confirmation comes by e-mail.",
+      "cancelUnconfirmed": "reIS cannot cancel this booking: it has no key for it from the library. Cancel it through the library; here you can remove it from your calendar.",
+      "removeFromCalendar": "Remove from calendar",
+      "onMap": "On the map",
+      "kindTeam": "team study room",
+      "kindIndividual": "individual study room",
+      "confirmed": "Confirmed",
+      "noKey": "reIS cannot cancel it",
+      "extend": "Extend until {time}",
+      "extended": "Extended until {time}",
+      "otherTime": "Another time or room",
+      "busy": "Wait, the previous booking is still being processed.",
+      "someUnknown": "Some rooms could not be loaded; their hours are missing here.",
+      "unsaved": "The booking was made, but the phone could not save it. After the app restarts it will be gone from your calendar and can only be cancelled through the library (the confirmation is in your e-mail)."
+    }
   },
   "session": {
     "expired": "Your IS session has expired.",
@@ -1596,6 +1772,8 @@
     "openFew": "{n} open",
     "openOther": "{n} open",
     "nothingDueSoon": "Nothing due in the next 14 days",
+    "submittedCount": "Submitted ({n})",
+    "awaitingGrading": "awaiting grading",
     "instructions": "Instructions"
   },
   "questions": {
@@ -1626,5 +1804,8 @@
     "examTitleMany": "New exam dates",
     "boxTitleOne": "New submission box: {subject}",
     "boxTitleMany": "New submission boxes"
+  },
+  "guides": {
+    "help": "Help"
   }
 }

@@ -3,11 +3,11 @@ import {
   railPaddingPx,
   railOffsetPx,
   clampRailWidth,
-  floorColumnRightPx,
   floorColumnPlacement,
+  floorColumnHeightPx,
+  railMaxHeight,
   FLOOR_COLUMN_RIGHT_PX,
-  FLOOR_BESIDE_RAIL_MIN_HEIGHT,
-  RAIL_INSET_PX,
+  RAIL_YIELDS_MIN_HEIGHT,
   RAIL_PX,
   RAIL_MIN_PX,
   RAIL_MAX_PX,
@@ -118,86 +118,64 @@ describe('clampRailWidth', () => {
   });
 });
 
-describe('floorColumnRightPx', () => {
+describe('floorColumnHeightPx', () => {
+  // p-1 + one 24px btn-xs per row + gap-1 between: Q's eight floors measure
+  // 228px in the browser.
+  it('matches the column the browser lays out', () => {
+    expect(floorColumnHeightPx(8)).toBe(228);
+    expect(floorColumnHeightPx(4)).toBe(116);
+    expect(floorColumnHeightPx(0)).toBe(0);
+  });
+});
+
+describe('railMaxHeight', () => {
   // The rail stops at 55vh and the floor column stands 190px off the bottom,
-  // so on any iPad in landscape (1194x834, 1024x768) the two share a band of
-  // screen: Q's floors 5 to 2 sat under the rail and could not be tapped.
-  it('moves the column to the left of an open rail on a tablet', () => {
-    expect(floorColumnRightPx(1194, 834, true, RAIL_PX)).toBe(RAIL_PX + RAIL_INSET_PX + 12);
-    expect(floorColumnRightPx(1024, 768, true, RAIL_PX)).toBe(RAIL_PX + RAIL_INSET_PX + 12);
-    expect(floorColumnRightPx(834, 1112, true, RAIL_PX)).toBe(RAIL_PX + RAIL_INSET_PX + 12);
+  // so on an iPad in landscape the two share a band of the right edge. The
+  // rail stops 12px above the column: 190 + 228 + 12 = 430 for Q.
+  it('stops above the floor column on a tablet while a building is open', () => {
+    const expected =
+      'min(55vh, calc(100% - 5rem - var(--safe-top, 0px) - var(--safe-bottom, 0px) - 430px))';
+    expect(railMaxHeight(810, 8)).toBe(expected);
+    expect(railMaxHeight(1080, 8)).toBe(expected);
+    expect(railMaxHeight(RAIL_YIELDS_MIN_HEIGHT, 8)).toBe(expected);
   });
 
-  // The student can drag the rail wider; a column placed for 340 would be
-  // under a 500px rail.
-  it('follows the live rail width', () => {
-    expect(floorColumnRightPx(1194, 834, true, 500)).toBe(500 + RAIL_INSET_PX + 12);
+  // 1080x810, no safe areas: the rail ends at 80 + 300 = 380, the column
+  // starts at 810 - 190 - 228 = 392.
+  it('leaves the rail room for its list on the shortest iPad geometry', () => {
+    const viewport = 768;
+    const room = viewport - 80 - (190 + floorColumnHeightPx(8) + 12);
+    expect(room).toBeGreaterThanOrEqual(250);
   });
 
-  it('stays at the edge when the rail is closed', () => {
-    expect(floorColumnRightPx(1194, 834, false, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
-  });
-
-  // Below md there is no rail at all — the phone shows a sheet.
-  it('stays at the edge on a phone in portrait', () => {
-    expect(floorColumnRightPx(390, 844, true, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
-    expect(floorColumnRightPx(RAIL_MIN_WIDTH - 1, 1112, true, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
+  it('keeps the 55vh cap with no column at the edge', () => {
+    expect(railMaxHeight(810, null)).toBe('55vh');
+    expect(railMaxHeight(810, 0)).toBe('55vh');
   });
 
   // A phone turned sideways is wide enough for the rail but under 450px tall.
   // Its layout is deliberately left as it was.
-  it('stays at the edge on a phone in landscape', () => {
-    expect(floorColumnRightPx(844, 390, true, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
-    expect(floorColumnRightPx(956, 440, true, RAIL_PX)).toBe(FLOOR_COLUMN_RIGHT_PX);
-    expect(floorColumnRightPx(1194, FLOOR_BESIDE_RAIL_MIN_HEIGHT - 1, true, RAIL_PX)).toBe(
-      FLOOR_COLUMN_RIGHT_PX
-    );
-    expect(floorColumnRightPx(1194, FLOOR_BESIDE_RAIL_MIN_HEIGHT, true, RAIL_PX)).toBe(
-      RAIL_PX + RAIL_INSET_PX + 12
-    );
+  it('keeps the 55vh cap on a phone in landscape', () => {
+    expect(railMaxHeight(390, 8)).toBe('55vh');
+    expect(railMaxHeight(RAIL_YIELDS_MIN_HEIGHT - 1, 8)).toBe('55vh');
   });
 });
 
 describe('floorColumnPlacement', () => {
   // The iPad app on a Mac runs the phone tree with a mouse, in a window of
-  // 1782x919 or so. The rail rule above put the column 368px off the right
-  // edge there: in the middle of the map, beside whatever building was open.
-  // Under the search bar on the left is where the extension's map already
-  // keeps it, and nothing else on this screen lives there.
+  // 1782x919 or so. Under the search bar on the left is where the extension's
+  // map already keeps the column, and nothing else on this screen lives there.
   it('stands top-left under the search, at a mouse size, without a touch screen', () => {
-    const windows: [number, number][] = [
-      [1782, 919],
-      [1280, 800],
-      [700, 700],
-    ];
-    for (const [w, h] of windows) {
-      expect(floorColumnPlacement(w, h, true, RAIL_PX, false)).toEqual({
-        side: 'left',
-        size: 'sm',
-      });
-      expect(floorColumnPlacement(w, h, false, RAIL_PX, false)).toEqual({
-        side: 'left',
-        size: 'sm',
-      });
-    }
+    expect(floorColumnPlacement(false)).toEqual({ side: 'left', size: 'sm' });
   });
 
-  it('leaves every touch screen exactly where floorColumnRightPx puts it', () => {
-    const screens: [number, number, boolean][] = [
-      [390, 844, true],
-      [320, 568, true],
-      [810, 1080, true],
-      [1080, 810, true],
-      [1194, 834, true],
-      [1194, 834, false],
-      [1366, 1024, true],
-    ];
-    for (const [w, h, open] of screens) {
-      expect(floorColumnPlacement(w, h, open, RAIL_PX, true)).toEqual({
-        side: 'right',
-        rightPx: floorColumnRightPx(w, h, open, RAIL_PX),
-        size: 'xs',
-      });
-    }
+  // Phone and iPad alike, rail open or not. It used to step to the open rail's
+  // left edge on a tablet, which on an iPad 8 stood it in the middle of the map.
+  it('keeps every touch screen at the right edge, where the phone has it', () => {
+    expect(floorColumnPlacement(true)).toEqual({
+      side: 'right',
+      rightPx: FLOOR_COLUMN_RIGHT_PX,
+      size: 'xs',
+    });
   });
 });

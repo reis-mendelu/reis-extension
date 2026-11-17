@@ -45,6 +45,23 @@ describe('bundled map data', () => {
   });
 
   /**
+   * SKM closed the Výdejna jídel at Tauferovy koleje on 1 March 2024 (SKM's own
+   * page for it says so; the 2026 international handbook still lists it by
+   * mistake). A pin there sends a hungry student across Brno to a locked door,
+   * so the map — shared by the phone MapScreen and the extension — must not
+   * offer it. If SKM reopens it, re-add it with a source.
+   */
+  it('does not offer the closed Výdejna jídel at Tauferovy koleje', () => {
+    const closed = pois.features.filter(
+      (f) =>
+        f.properties.id === 1615 ||
+        /vydejna-jidel-tk/.test(f.properties.url ?? '') ||
+        (f.properties.type === 'cafeteria' && /taufer/i.test(f.properties.name))
+    );
+    expect(closed.map((f) => f.properties.name)).toEqual([]);
+  });
+
+  /**
    * Panská lícha is the one entry that is not MENDELU property — a private
    * equestrian centre where combined-study practicals are held, added because
    * the map serves students who have to get there, not a property register

@@ -4,6 +4,7 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { BulletinList } from '../../Bulletin/BulletinList';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
 const VYVESKA_URL = 'https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl?zalozka=2';
 
@@ -26,6 +27,7 @@ const VYVESKA_URL = 'https://is.mendelu.cz/auth/vyveska/nove_prispevky.pl?zalozk
  * stack; it does not any more.
  */
 export function BulletinSheet({ onClose }: { onClose: () => void }) {
+  useScreenSignal('screen_bulletin');
   const { t } = useTranslation();
   const posts = useAppStore((s) => s.bulletinPosts);
   const loading = useAppStore((s) => s.bulletinLoading);

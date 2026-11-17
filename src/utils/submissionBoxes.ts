@@ -73,3 +73,36 @@ export function boxCourseCode(
   const match = Object.entries(subjects ?? {}).find(([, s]) => s.subjectId === box.courseId);
   return match?.[0] ?? null;
 }
+
+/**
+ * Whether the subject's Záznamník tab will list this box. It finds boxes by
+ * the subject store's predmet id, and the sync also reads the previous period:
+ * a box of a subject the store does not hold — or holds under this period's
+ * id — would open an empty tab on the extension and Success rate on the phone.
+ */
+export function listedInZaznamnik(
+  code: string | null | undefined,
+  box: Odevzdavarna,
+  subjects: Record<string, { subjectId?: string }> | undefined
+): boolean {
+  return !!code && subjects?.[code]?.subjectId === box.courseId;
+}
+
+/**
+ * Boxes the student handed in this period, open or closed, latest deadline
+ * first. The sync also reads the previous period (its exam boxes stay open
+ * across the turn), so a box of another period counts only while it is still
+ * open. A row with no period (cached by an older build), or no known current
+ * period, cannot be told apart and counts.
+ */
+export function submittedBoxes(boxes: Odevzdavarna[], now: number, obdobi: string | null) {
+  return boxes
+    .filter((b) => boxState(b) === 'confirmed')
+    .filter((b) => !obdobi || !b.obdobi || b.obdobi === obdobi || isBoxOpen(b, now))
+    .sort((a, b) => (boxDeadline(b)?.getTime() ?? 0) - (boxDeadline(a)?.getTime() ?? 0));
+}
+
+/** Whether the Subjects-screen card has anything to show: an open or a handed-in box. */
+export function boxesSummaryShows(boxes: Odevzdavarna[], now: number, obdobi: string | null) {
+  return splitBoxes(boxes, now).open.length > 0 || submittedBoxes(boxes, now, obdobi).length > 0;
+}

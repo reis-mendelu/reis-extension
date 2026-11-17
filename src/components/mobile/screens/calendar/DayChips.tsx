@@ -5,6 +5,7 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { toIso, toCompact, stepWeek, weekDays } from '../../../../utils/mobile/weekDays';
 import { useSwipeSteps } from '../../primitives/useSwipeSteps';
 import { DayChip } from './DayChip';
+import { WEEK_ROW_VARS } from './weekLayout';
 
 export interface DayChipsProps {
   selectedIso: string;
@@ -23,6 +24,11 @@ export interface DayChipsProps {
    * day is the choice to look at it (spec 2026-10-30, decision 4).
    */
   onOpenDay?: (iso: string) => void;
+  /**
+   * Týden only: each chip's `min-width`, the same as its column's below, so a
+   * day widened for a clash keeps its chip over it (weekLayout's weekColumnMinWidths).
+   */
+  columnMinWidths?: Record<string, string>;
 }
 
 /**
@@ -54,6 +60,7 @@ export function DayChips({
   lessonDates,
   view = 'day',
   onOpenDay,
+  columnMinWidths,
 }: DayChipsProps) {
   const { t, language } = useTranslation();
   const locale = language === 'en' ? 'en-US' : 'cs-CZ';
@@ -130,7 +137,7 @@ export function DayChips({
         ref={elementRef}
         data-testid="day-strip"
         {...handlers}
-        className="flex flex-1 touch-none gap-1.5 transition-transform duration-200 ease-out max-[359px]:gap-0.5"
+        className={`flex flex-1 touch-none gap-[var(--wk-gap)] transition-transform duration-200 ease-out ${WEEK_ROW_VARS}`}
       >
         {days.map((date) => {
           const iso = toIso(date);
@@ -152,6 +159,7 @@ export function DayChips({
               showDot={view === 'day'}
               holidayWord={view === 'week' ? t('mobile.calendar.holidayShort') : undefined}
               onClick={view === 'day' ? () => onSelect(iso) : onOpenDay && (() => onOpenDay(iso))}
+              minWidth={columnMinWidths?.[iso]}
             />
           );
         })}

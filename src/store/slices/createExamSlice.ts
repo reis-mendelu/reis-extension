@@ -9,7 +9,6 @@ import {
   EXAM_CLASSMATES_LAST_FETCHED_KEY,
   type FetchExamClassmatesResult,
 } from './exams/fetchExamClassmatesForTermin';
-import { stripGroupSignupSections } from '../../utils/exams/isGroupSignup';
 import { fetchTermDetail } from '../../api/termDetail';
 
 const NOTE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours on success
@@ -248,12 +247,9 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
         IndexedDBService.get('exams', 'current'),
         IndexedDBService.get('meta', 'exams_modified'),
       ]);
-      // Strip here as well as in setExams: a cache written by a build from
-      // before this filter existed still holds the signup sections.
-      const resolved = stripGroupSignupSections(data || []);
       set({
         exams: {
-          data: resolved,
+          data: Array.isArray(data) ? data : [],
           status: 'success',
           error: null,
         },
@@ -294,9 +290,8 @@ export const createExamSlice: AppSlice<ExamSlice> = (set, get) => ({
     // sync push would otherwise wipe the currently-displayed exams. Keep old
     // data on screen until real new data is available to replace it.
     if (data.length === 0 && get().exams.data.length > 0) return;
-    // "Zápis na cvičení" arrives through IS's exam-terms table but is not an
-    // exam — drop it before anything in the app can treat it as one.
-    data = stripGroupSignupSections(data);
+    // "Zápis na cvičení" sections are kept: they have a group of their own on
+    // Zkoušky and stay out of the badge — see utils/exams/isGroupSignup.
     set((state) => ({
       exams: { ...state.exams, data },
       lastExamsFetchedAt: Date.now(),

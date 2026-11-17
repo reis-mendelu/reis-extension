@@ -75,7 +75,12 @@ export function checkDisclosures(s: RepoSnapshot, m: Model): string[] {
       found.set(name, [...(found.get(name) ?? []), path]);
     }
   }
-  const described = new Set([...m.flows.flatMap((f) => f.calls), ...m.exempt.map((e) => e.call)]);
+  // A `direct` flow does not go through Supabase: its calls and files are not Supabase calls.
+  const viaSupabase = m.flows.filter((f) => (f.transport ?? 'supabase') === 'supabase');
+  const described = new Set([
+    ...viaSupabase.flatMap((f) => f.calls),
+    ...m.exempt.map((e) => e.call),
+  ]);
   for (const [name, files] of found) {
     if (!described.has(name)) {
       out.push(
@@ -89,7 +94,7 @@ export function checkDisclosures(s: RepoSnapshot, m: Model): string[] {
   }
 
   // 2. The privacy guard's allowlist and the flows agree.
-  const flowFiles = new Set(m.flows.flatMap((f) => f.files));
+  const flowFiles = new Set(viaSupabase.flatMap((f) => f.files));
   const owned = new Set([...flowFiles, ...m.exempt.flatMap((e) => e.files)]);
   for (const f of s.supabaseCallers) {
     if (!owned.has(f))

@@ -57,11 +57,8 @@ describe('calendar', () => {
       height: 20,
       lane: 0,
       lanes: 1,
-      visible: 20,
-      order: 0,
-      onTop: false,
     };
-    render(<WeekBlock block={block} cascade={false} gridPx={600} onOpen={vi.fn()} />);
+    render(<WeekBlock block={block} wide gridPx={600} onOpen={vi.fn()} />);
     expect(screen.getByText('Mňam')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Mňam,/ })).toBeInTheDocument();
   });
@@ -74,11 +71,8 @@ describe('calendar', () => {
       height: 20,
       lane: 0,
       lanes: 1,
-      visible: 20,
-      order: 0,
-      onTop: false,
     };
-    render(<WeekBlock block={block} cascade={false} gridPx={600} onOpen={vi.fn()} />);
+    render(<WeekBlock block={block} wide gridPx={600} onOpen={vi.fn()} />);
     expect(screen.getByText('Mňam - Zkouška')).toBeInTheDocument();
   });
 

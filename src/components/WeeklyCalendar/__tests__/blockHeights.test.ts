@@ -5,7 +5,6 @@ import {
   renderedBlockMinutes,
   timeToPercent,
   MIN_BLOCK_MINUTES,
-  EXAM_BLOCK_MINUTES,
   TWO_LINE_BLOCK_MINUTES,
 } from '../utils';
 import type { BlockLesson } from '../../../types/calendarTypes';
@@ -50,9 +49,9 @@ describe('a lesson is as tall as it is long', () => {
  * What is still floored, and why it never reaches a lesson.
  *
  * MIN_BLOCK_MINUTES sits under the shortest IS lesson (one 50-minute hour), so
- * it only ever raises something shorter — a custom event, which can be 15.
- * An exam is a slot, not a lesson: its block keeps the 90 it always had, the
- * room the card needs for the section, the subject and the room.
+ * it only ever raises something shorter — a custom event, which can be 15, or
+ * a short exam slot. An exam had a 90-minute floor of its own until a 25-minute
+ * test was drawn as an hour and a half; see the describe below.
  */
 describe('the floors', () => {
   it('never touch a 50-minute lesson', () => {
@@ -67,16 +66,15 @@ describe('the floors', () => {
     expect(MIN_BLOCK_MINUTES).toBe(45);
   });
 
-  it('give a 10-minute exam slot its full two-line block', () => {
-    expect(renderedBlockMinutes('10:00', '10:10', true)).toBe(90);
-    // The card's two-line layout starts at the same number, by construction —
-    // pinned to 90 on both, so moving the pair together still fails here.
-    expect(EXAM_BLOCK_MINUTES).toBe(90);
+  it('raise a 10-minute exam slot to one line, like any short block', () => {
+    expect(drawn('10:00', '10:10', true).bottom).toBeCloseTo(timeToPercent('10:45'), 5);
+    // The card's two-line layout still starts at 90, so a short exam gets the
+    // one-line card, which prints its real start and end.
     expect(TWO_LINE_BLOCK_MINUTES).toBe(90);
   });
 
   it('leave an exam longer than the floor at its real length', () => {
-    expect(renderedBlockMinutes('08:00', '11:00', true)).toBe(180);
+    expect(drawn('08:00', '11:00', true).bottom).toBeCloseTo(timeToPercent('11:00'), 5);
   });
 
   it('keep endTime truthful — the floor is layout only', () => {
@@ -104,12 +102,34 @@ describe('the floors', () => {
   // at 20:40 drops to one clipped line. Running off the grid would hide it
   // entirely, and moving its top would put it at the wrong time.
   it('shorten rather than overflow 21:00', () => {
-    expect(renderedBlockMinutes('20:40', '20:50', true)).toBe(20);
+    expect(renderedBlockMinutes('20:40', '20:50')).toBe(20);
     expect(drawn('20:40', '20:50', true).bottom).toBeCloseTo(100, 5);
   });
 
   it('never shorten a block below its real length', () => {
     expect(renderedBlockMinutes('20:00', '22:00')).toBe(120);
+  });
+});
+
+/**
+ * "zkouška vypadá, že trvá déle (i když jen 25 min)" — a 25-minute "Průběžný
+ * test 1" at 11:00, beside an 11:00-12:50 lesson, was drawn down to 12:30.
+ * IS published the length and reIS read it; the block was raised to a
+ * 90-minute floor kept for exams only. An exam now floors like everything else.
+ */
+describe('a short exam is as tall as it is long', () => {
+  it('draws a 25-minute test for 45 minutes, not 90', () => {
+    const { lessons } = organizeLessons([
+      block('test', '11:00', '11:25', true),
+      block('lesson', '11:00', '12:50'),
+    ]);
+    const test = lessons.find((l) => l.id === 'test')!;
+    expect(test.renderedMinutes).toBe(MIN_BLOCK_MINUTES);
+    expect(test.endTime).toBe('11:25');
+  });
+
+  it('ends a 50-minute zápočet on its end time', () => {
+    expect(drawn('15:00', '15:50', true).bottom).toBeCloseTo(timeToPercent('15:50'), 5);
   });
 });
 

@@ -10,6 +10,7 @@ export function RoomSearch() {
   const focusRoomByCode = useAppStore((s) => s.focusRoomByCode);
   const focusPoiById = useAppStore((s) => s.focusPoiById);
   const focusLandmarkById = useAppStore((s) => s.focusLandmarkById);
+  const focusSocietyPin = useAppStore((s) => s.focusSocietyPin);
 
   return (
     <div className="relative w-64">
@@ -31,7 +32,9 @@ export function RoomSearch() {
                     ? m.landmark.name
                     : m.kind === 'placedRoom'
                       ? m.display
-                      : '';
+                      : m.kind === 'societyPin'
+                        ? m.pin.title
+                        : '';
             return (
               <li key={i}>
                 <button
@@ -41,6 +44,7 @@ export function RoomSearch() {
                     else if (m.kind === 'roomRef') focusRoomByCode(m.entry.code);
                     else if (m.kind === 'landmark') focusLandmarkById(m.landmark.id);
                     else if (m.kind === 'placedRoom') focusRoomByCode(m.label);
+                    else if (m.kind === 'societyPin') focusSocietyPin(m.pin);
                     setQuery('');
                   }}
                 >

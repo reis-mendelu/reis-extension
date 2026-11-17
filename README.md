@@ -2,7 +2,7 @@
 
 Browser extension and mobile app that make MENDELU's student information system fast and usable. Used by ~2,600 students.
 
-[Chrome](https://chromewebstore.google.com/detail/feildjaginpppijbpplcghalabdeibdb) · [iOS](https://apps.apple.com/app/id6804832714) · [Android](https://play.google.com/store/apps/details?id=cz.reis.app) · [Privacy](PRIVACY.md)
+[reisapp.cz](https://reisapp.cz) · [Chrome](https://chromewebstore.google.com/detail/feildjaginpppijbpplcghalabdeibdb) · [Firefox](https://addons.mozilla.org/cs/firefox/addon/reis/) · [iOS](https://apps.apple.com/app/id6804832714) · [Android](https://play.google.com/store/apps/details?id=cz.reis.app) · [eduroam guide](https://reisapp.cz/navody/eduroam) · [Privacy](PRIVACY.md)
 
 ## Development
 

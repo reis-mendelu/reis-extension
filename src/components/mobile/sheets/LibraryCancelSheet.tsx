@@ -1,0 +1,104 @@
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { Sheet } from '../primitives/Sheet';
+import { SheetHeader } from '../primitives/SheetHeader';
+import { useAppStore } from '../../../store/useAppStore';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { cancelAndRemove } from '../../../mobile/library/bookingActions';
+import { logError } from '../../../utils/reportError';
+
+/**
+ * What a library booking's calendar block offers when tapped: cancelling the
+ * real booking, and nothing else. Removing only the block would leave a
+ * reservation nobody can see, so there is no such button. The block goes only
+ * when the library has confirmed; an unanswered cancel keeps it.
+ */
+export function LibraryCancelSheet({ eventId, onClose }: { eventId: string; onClose: () => void }) {
+  const { t } = useTranslation();
+  const block = useAppStore((s) => s.customEvents.find((e) => e.id === eventId));
+  const [sending, setSending] = useState(false);
+  if (!block) return null;
+  // Booked while the library did not answer: reIS has no key to cancel it with,
+  // so the only honest offer is taking it out of the calendar.
+  // Also a block that lost its keys (saved before storage kept them).
+  const unconfirmed =
+    !!block.libraryBooking?.unconfirmed || !block.libraryBooking?.selfServiceIds.length;
+  // Opened from the booking's drawer: once the booking is gone, the drawer
+  // has nothing left to show, so both close together, never by stack position.
+  const closeAll = () => useAppStore.getState().closeAllSheets();
+  // A late answer closes this sheet only if it is still the one on top: Android
+  // Back may have closed it meanwhile, and another sheet is not ours to close.
+  const closeIfTop = () => {
+    const st = useAppStore.getState();
+    const top = st.mobileSheets.at(-1);
+    if (top?.kind === 'libraryCancel' && top.eventId === eventId) st.popSheet();
+  };
+  const forget = async () => {
+    await useAppStore.getState().removeCalendarCustomEvent(eventId);
+    closeAll();
+  };
+
+  const cancel = async () => {
+    if (sending) return;
+    setSending(true);
+    let gone = false;
+    try {
+      const r = await cancelAndRemove(eventId);
+      gone = r.kind === 'ok';
+      if (r.kind === 'ok') toast.success(t('mobile.library.cancelled'));
+      else if (r.kind === 'busy') toast.error(t('mobile.library.busy'));
+      else if (r.kind === 'unknown') toast.error(t('mobile.library.cancelUnknown'));
+      else {
+        logError('Library.cancel', new Error(`status ${r.status}`));
+        toast.error(t('mobile.library.cancelFailed'));
+      }
+    } catch (err) {
+      logError('Library.cancel', err);
+      toast.error(t('mobile.library.cancelFailed'));
+    }
+    if (gone) closeAll();
+    else closeIfTop();
+  };
+
+  return (
+    <Sheet size="content" onClose={sending ? () => undefined : onClose} elevated>
+      <SheetHeader
+        title={t('mobile.library.cancelTitle')}
+        onClose={sending ? () => undefined : onClose}
+      />
+      <div className="flex flex-col gap-3 px-4 pb-5">
+        <div className="rounded-xl bg-base-200 p-3">
+          <span className="text-md font-semibold text-base-content">{block.title}</span>
+          <span className="block text-sm text-base-content/70">
+            {block.startTime}–{block.endTime}
+          </span>
+        </div>
+        <p className="text-sm text-base-content/70">
+          {unconfirmed ? t('mobile.library.cancelUnconfirmed') : t('mobile.library.cancelBody')}
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={sending}
+            className="min-h-11 flex-1 rounded-xl border border-base-300 text-base font-semibold text-base-content/70"
+          >
+            {t('mobile.library.keep')}
+          </button>
+          <button
+            type="button"
+            onClick={() => void (unconfirmed ? forget() : cancel())}
+            disabled={sending}
+            className="btn btn-error min-h-11 flex-1 rounded-xl text-base"
+          >
+            {unconfirmed
+              ? t('mobile.library.removeFromCalendar')
+              : sending
+                ? t('mobile.library.cancelling')
+                : t('mobile.library.cancelAction')}
+          </button>
+        </div>
+      </div>
+    </Sheet>
+  );
+}

@@ -14,6 +14,9 @@ vi.mock('../FileList', () => ({
       data-groups={props.groups.length}
     />
   ),
+}));
+
+vi.mock('../FileListSkeleton', () => ({
   FileListSkeleton: () => <div data-testid="file-list-skeleton" />,
 }));
 

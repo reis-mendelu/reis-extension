@@ -1,17 +1,25 @@
 import type { SemesterStats } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
+import { Fragment } from 'react';
 import { HorizontalScroller } from '../ui/HorizontalScroller';
+import { semesterLabel } from './semesterLabel';
 
 interface SemesterSelectorProps {
   stats: SemesterStats[];
   activeIndex: number;
   onSelect: (index: number) => void;
+  /** Chips that start a different garant than the one before them get a
+   * divider in front (garantBoundaries). */
+  boundaries?: Set<number>;
 }
 
-export function SemesterSelector({ stats, activeIndex, onSelect }: SemesterSelectorProps) {
+export function SemesterSelector({
+  stats,
+  activeIndex,
+  onSelect,
+  boundaries,
+}: SemesterSelectorProps) {
   const { t } = useTranslation();
-  const format = (y: number, s: string) =>
-    `${s.startsWith('ZS') ? t('days.winterSemester') : t('days.summerSemester')} ${y % 100}/${(y % 100) + 1}`;
   // Below `sm` the chips share the row equally (`flex-1`) instead of sitting
   // at their natural width: five of them used to huddle at the left with a
   // third of the row empty, and shrinking them to avoid the overflow they
@@ -35,39 +43,48 @@ export function SemesterSelector({ stats, activeIndex, onSelect }: SemesterSelec
           rate = Math.round((s.totalPass / total) * 100) || 0,
           active = i === activeIndex;
         return (
-          <button
-            key={`${s.year}-${s.semesterName}`}
-            onClick={() => onSelect(i)}
-            className={`flex-1 min-w-[52px] max-w-20 sm:flex-none sm:max-w-none snap-start flex flex-col items-center gap-1.5 sm:gap-2 px-1 sm:px-3 py-2 rounded-xl transition-all ${active ? 'bg-primary/10 ring-1 ring-inset ring-primary/30' : 'text-base-content/40 hover:bg-base-200'}`}
-          >
-            <div className="relative w-12 h-12 flex items-center justify-center">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
-                <circle
-                  cx="16"
-                  cy="16"
-                  r="13"
-                  className="fill-none stroke-base-content/10"
-                  strokeWidth="3"
-                />
-                <circle
-                  cx="16"
-                  cy="16"
-                  r="13"
-                  className={`fill-none transition-base ${active ? 'stroke-success' : 'stroke-success/40'}`}
-                  strokeWidth="3"
-                  strokeDasharray={2 * Math.PI * 13}
-                  strokeDashoffset={2 * Math.PI * 13 * (1 - rate / 100)}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span className="absolute text-2xs font-black">{rate}%</span>
-            </div>
-            <span
-              className={`text-2xs font-black whitespace-nowrap ${active ? 'text-primary' : ''}`}
+          <Fragment key={`${s.year}-${s.semesterName}`}>
+            {boundaries?.has(i) && (
+              <span
+                data-testid="garant-divider"
+                aria-hidden
+                className="my-2 w-px shrink-0 self-stretch bg-base-content/20"
+              />
+            )}
+            <button
+              onClick={() => onSelect(i)}
+              title={s.garant}
+              className={`flex-1 min-w-[52px] max-w-20 sm:flex-none sm:max-w-none snap-start flex flex-col items-center gap-1.5 sm:gap-2 px-1 sm:px-3 py-2 rounded-xl transition-all ${active ? 'bg-primary/10 ring-1 ring-inset ring-primary/30' : 'text-base-content/40 hover:bg-base-200'}`}
             >
-              {format(s.year, s.semesterName)}
-            </span>
-          </button>
+              <div className="relative w-12 h-12 flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 32 32">
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="13"
+                    className="fill-none stroke-base-content/10"
+                    strokeWidth="3"
+                  />
+                  <circle
+                    cx="16"
+                    cy="16"
+                    r="13"
+                    className={`fill-none transition-base ${active ? 'stroke-success' : 'stroke-success/40'}`}
+                    strokeWidth="3"
+                    strokeDasharray={2 * Math.PI * 13}
+                    strokeDashoffset={2 * Math.PI * 13 * (1 - rate / 100)}
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span className="absolute text-2xs font-black">{rate}%</span>
+              </div>
+              <span
+                className={`text-2xs font-black whitespace-nowrap ${active ? 'text-primary' : ''}`}
+              >
+                {semesterLabel(t, s.year, s.semesterName)}
+              </span>
+            </button>
+          </Fragment>
         );
       })}
     </HorizontalScroller>

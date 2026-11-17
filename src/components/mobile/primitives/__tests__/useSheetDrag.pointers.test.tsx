@@ -59,6 +59,9 @@ function Harness({
       <button data-testid="guarded" onClick={() => consumeDragClick() || rec.ends.push([-1, -1])}>
         guarded
       </button>
+      <div data-testid="chips" style={{ overflowX: 'auto' }}>
+        <button data-testid="chip">chip</button>
+      </div>
     </div>
   );
 }
@@ -148,5 +151,41 @@ describe('useSheetDrag — one pointer at a time', () => {
     fireEvent.pointerDown(panel, { clientY: 200, pointerId: 7 });
     fireEvent.pointerMove(panel, { clientY: 250, pointerId: 7 });
     expect(rec.moves.map(([dy]) => dy)).toEqual([50]);
+  });
+});
+
+/**
+ * A gesture that starts on a row scrolling sideways (the S-klub menu's chips)
+ * is decided by its first move (#662).
+ */
+describe('useSheetDrag — a gesture on a sideways row', () => {
+  const sidewaysRow = () => {
+    const chips = screen.getByTestId('chips');
+    Object.defineProperty(chips, 'scrollWidth', { value: 600, configurable: true });
+    Object.defineProperty(chips, 'clientWidth', { value: 300, configurable: true });
+  };
+  const at = (x: number, y: number) => ({ pointerId: 1, clientX: x, clientY: y });
+
+  it('leaves a sideways swipe to the row: the sheet never moves', () => {
+    const rec = fresh();
+    render(<Harness rec={rec} />);
+    sidewaysRow();
+    fireEvent.pointerDown(screen.getByTestId('chip'), at(200, 400));
+    fireEvent.pointerMove(screen.getByTestId('panel'), at(170, 404));
+    fireEvent.pointerMove(screen.getByTestId('panel'), at(120, 420));
+    fireEvent.pointerUp(screen.getByTestId('panel'), at(120, 420));
+    expect(rec.moves).toEqual([]);
+    expect(rec.ends).toEqual([]);
+  });
+
+  it('still moves the sheet for a drag that starts on a chip going down', () => {
+    const rec = fresh();
+    render(<Harness rec={rec} />);
+    sidewaysRow();
+    fireEvent.pointerDown(screen.getByTestId('chip'), at(200, 400));
+    fireEvent.pointerMove(screen.getByTestId('panel'), at(203, 430));
+    fireEvent.pointerUp(screen.getByTestId('panel'), at(203, 460));
+    expect(rec.moves.map(([dy]) => dy)).toEqual([30]);
+    expect(rec.ends.map(([dy]) => dy)).toEqual([60]);
   });
 });

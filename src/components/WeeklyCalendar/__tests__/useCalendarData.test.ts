@@ -238,7 +238,7 @@ describe('useCalendarData', () => {
           language: 'cz',
           syncStatus: { handshakeDone: true, handshakeTimedOut: false, isSyncing: false },
           customEvents: [],
-          hiddenItems: { events: [{ id: '20260214' }], courses: [] },
+          hiddenItems: { events: [{ id: '20260214', date: '20260214' }], courses: [] },
           teachingWeekData: null,
           now: new Date(),
         })

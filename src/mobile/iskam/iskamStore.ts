@@ -3,37 +3,14 @@ import { isDemoMode } from '../../errors/demoMode';
 import { getPlatform } from '../../platform';
 import { logError } from '../../utils/reportError';
 import { LoginCancelledError } from '../ensureSession';
+import { beginClaimsRead, payClaimFlow } from './iskamClaimFlow';
 import { buildIskamHttpDeps } from './iskamHttp';
 import { buildIskamLoginDeps, signInToIskam } from './iskamLogin';
 import { runSilentChain, type ChainResult } from './iskamSession';
+import { devForcedState } from './iskamDevState';
 import { initTopUp, openGateway } from './iskamTopUp';
-import { parseHlavniKonto, type KontoBalance } from './kontaParser';
-import type { PayMethod } from './topUp';
-
-export type IskamStatus = 'hidden' | 'checking' | 'signed-out' | 'balance' | 'unavailable';
-export type TopUpPhase = 'idle' | 'starting' | 'paying' | 'failed';
-/**
- * What the last top-up came to, as far as the balance can tell: `added` when
- * it rose (by that much), `unseen` when it had not moved after the re-check —
- * which is also what closing GoPay without paying looks like.
- */
-export type TopUpResult = { kind: 'added'; amount: number } | { kind: 'unseen' };
-
-export interface IskamState {
-  status: IskamStatus;
-  balance: KontoBalance | null;
-  signingIn: boolean;
-  topUp: TopUpPhase;
-  lastTopUp: TopUpResult | null;
-  check(): Promise<void>;
-  signIn(): Promise<void>;
-  startTopUp(amount: number, method: PayMethod): Promise<void>;
-  /** Dobít pressed again after a credited top-up: the old result goes. */
-  clearTopUpResult(): void;
-  reset(): void;
-  /** Sign-out: like reset, and also abandons a top-up in flight. */
-  signOut(): void;
-}
+import { parseHlavniKonto } from './kontaParser';
+import type { IskamState, TopUpResult } from './iskamTypes';
 
 /** One more look at the balance when it has not moved yet after the payment page closed. */
 export const RECHECK_MS = 3000;
@@ -64,27 +41,13 @@ function available(): boolean {
 }
 
 /**
- * `?iskam=balance|added|unseen|signed-out|checking|unavailable` on the dev webapp, and
- * nothing anywhere else — `import.meta.env.DEV` strips it from every shipped
- * build, like `?eduroam=` in eduroamNative. The row is Capacitor-gated, so
- * without this verify-ui could only ever report it absent.
+ * Whether to offer a way into the ISIC row at all — the profile's entry asks
+ * before any check has run, when `status` is still 'hidden' everywhere. The
+ * same order as check(): a dev-forced state first (verify-ui), then Capacitor
+ * and not the demo.
  */
-function devForcedState(): Partial<IskamState> | null {
-  if (!import.meta.env.DEV || typeof window === 'undefined') return null;
-  const v = new URLSearchParams(window.location.search).get('iskam');
-  if (v === 'balance') return { status: 'balance', balance: { amount: 2825.58 } };
-  // After a top-up: credited, or not showing yet.
-  if (v === 'added') {
-    const lastTopUp = { kind: 'added', amount: 250 } as const;
-    return { status: 'balance', balance: { amount: 3075.58 }, lastTopUp };
-  }
-  if (v === 'unseen') {
-    return { status: 'balance', balance: { amount: 2825.58 }, lastTopUp: { kind: 'unseen' } };
-  }
-  if (v === 'signed-out' || v === 'checking' || v === 'unavailable') {
-    return { status: v, balance: null };
-  }
-  return null;
+export function iskamOffered(): boolean {
+  return devForcedState() !== null || available();
 }
 
 function fromChain(r: ChainResult): Pick<IskamState, 'status' | 'balance'> {
@@ -100,11 +63,14 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
   signingIn: false,
   topUp: 'idle',
   lastTopUp: null,
+  claims: null,
+  payingClaim: false,
+  lastClaimPaid: null,
 
   async check() {
     const forced = devForcedState();
     if (forced) {
-      set(forced);
+      set({ claims: null, ...forced });
       return;
     }
     if (!available()) {
@@ -112,10 +78,34 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
       return;
     }
     const mine = ++seq;
-    set({ status: 'checking', balance: null });
-    const result = await runSilentChain(await buildIskamHttpDeps());
+    set({ status: 'checking', balance: null, claims: null });
+    const http = await buildIskamHttpDeps();
+    const claimsRead = beginClaimsRead(http);
+    const result = await runSilentChain(http);
     if (mine !== seq) return;
-    set(fromChain(result));
+    const next = fromChain(result);
+    if (next.status !== 'balance') {
+      set({ ...next, claims: null });
+      return;
+    }
+    const claims = await claimsRead.settle();
+    if (mine !== seq) return;
+    // Balance and claims land together, under one skeleton (Dominik,
+    // 2026-11-15: the payment appearing a beat after the balance read as broken).
+    set({ ...next, claims });
+  },
+
+  async payClaim(id) {
+    if (get().payingClaim || !available()) return;
+    const openSheet = sheet;
+    const mine = account;
+    await payClaimFlow(id, {
+      claims: () => get().claims,
+      set,
+      check: () => get().check(),
+      sameAccount: () => mine === account,
+      sameSheet: () => openSheet === sheet,
+    });
   },
 
   async signIn() {
@@ -223,11 +213,16 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
     // A top-up already starting or on the payment page outlives the sheet:
     // clearing its phase here let a reopened sheet start a second payment.
     const inFlight = get().topUp === 'starting' || get().topUp === 'paying';
+    // Same for WebISKAM's pay view: while it is open, Zaplatit stays disabled
+    // on a reopened sheet, so a second view can never open (payClaimFlow
+    // clears the flag itself when its view closes).
     set({
       status: 'hidden',
       balance: null,
       signingIn: false,
       lastTopUp: null,
+      claims: null,
+      lastClaimPaid: null,
       ...(inFlight ? {} : { topUp: 'idle' as const }),
     });
   },
@@ -235,6 +230,15 @@ export const useIskamStore = create<IskamState>()((set, get) => ({
   signOut() {
     account++;
     seq++;
-    set({ status: 'hidden', balance: null, signingIn: false, topUp: 'idle', lastTopUp: null });
+    set({
+      status: 'hidden',
+      balance: null,
+      signingIn: false,
+      topUp: 'idle',
+      lastTopUp: null,
+      claims: null,
+      payingClaim: false,
+      lastClaimPaid: null,
+    });
   },
 }));

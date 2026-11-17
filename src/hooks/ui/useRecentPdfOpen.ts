@@ -7,6 +7,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { logError } from '../../utils/reportError';
 import { courseDisplayName } from '../../utils/courseDisplayName';
 import { openPdfWithInk } from '../../mobile/pdfInk';
+import { storeReviewAfterReaderClosed } from '../../mobile/storeReview';
 import { nativePdfInkDeps } from '../../mobile/pdfInkNative';
 import type { RecentPdf } from '../../utils/mobile/recentPdfs';
 import { groupAndSortFiles } from '../../components/SubjectFileDrawer/utils/groupFiles';
@@ -65,6 +66,8 @@ export function useRecentPdfOpen() {
         });
         if (result.kind === 'failed') logError('useRecentPdfOpen', result.error);
         if (result.kind !== 'shown') toast.error(t('course.file.openFailed'));
+        // The store-rating file moment: the reader has closed by now.
+        else void storeReviewAfterReaderClosed(result.openMs, result.filesShown);
         await refreshRecentPdfs();
       } finally {
         setIsOpening(false);

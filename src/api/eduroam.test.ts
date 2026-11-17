@@ -19,6 +19,14 @@ describe('parseCertPage', () => {
     expect(parseCertPage(html).password).toBe('abc.def.1.ghi');
   });
 
+  // The UIS redesign (is.mendelu.cz, November 2026) writes `<b >`. Shape from a
+  // real certifikat.pl, 2026-11-15, password replaced.
+  it('extracts the password from the redesigned page', () => {
+    const html = `Pro instalaci uživatelského certifikátu použijte prosím heslo <b >wIp.num.7.uzo</b><p ></p>
+      <ul style="" class="" id=""><li ><a href="certifikat.pl?get=user-p12;lang=cz">PKCS#12</a></li></ul>`;
+    expect(parseCertPage(html)).toEqual({ hasCert: true, password: 'wIp.num.7.uzo' });
+  });
+
   it('reports no cert when only the generate button is present', () => {
     const html = `<form><input type="submit" name="gen" value="Vygenerovat certifikát"></form>`;
     expect(parseCertPage(html)).toEqual({ hasCert: false, password: null });

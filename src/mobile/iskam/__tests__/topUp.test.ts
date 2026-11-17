@@ -45,7 +45,21 @@ describe('parseGatewayUrl', () => {
     );
   });
 
+  // WebISKAM's real answer on 2026-11-12: the gateway moved to checkout.gopay.com and
+  // the host allowlist rejected it, so every top-up failed before GoPay opened.
+  it('accepts the checkout.gopay.com gateway WebISKAM sends now', () => {
+    expect(
+      parseGatewayUrl(
+        form('https://checkout.gopay.com/gw-ui/rest/v3/e670ab5207c5c4a815db8bec2f3e3929')
+      )
+    ).toBe('https://checkout.gopay.com/gw-ui/rest/v3/e670ab5207c5c4a815db8bec2f3e3929');
+  });
+
   it.each([
+    'https://checkout.gopay.com.evil.example/gw-ui/rest/v3/1',
+    'https://checkout.gopay.com:8443/gw-ui/rest/v3/1',
+    'http://checkout.gopay.com/gw-ui/rest/v3/1',
+    'https://checkout.gopay.com/other/1',
     'https://gate.gopay.com.evil.example/gw-ui/rest/v3/1',
     'https://gate.gopay.com:8443/gw-ui/rest/v3/1',
     'http://gate.gopay.com/gw-ui/rest/v3/1',

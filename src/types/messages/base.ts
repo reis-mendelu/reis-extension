@@ -28,8 +28,13 @@ export type ActionType =
  * "no studium this run" alike — and the Předměty screen releasing on that said
  * "Zatím žádné předměty" to a student who has plenty. That screen waits for a
  * usable plan or for the sync to finish, and nothing shorter.
+ *
+ * Subjects ARE in it, on one condition: only a subjects fetch that ran and
+ * answered marks it (`injector/syncService.ts`), never a TTL skip. No screen
+ * gates on it yet; the diagnostic log reads it, so a report of an empty
+ * Předměty can say whether IS was ever asked this session.
  */
-export type SyncDomain = 'schedule' | 'exams';
+export type SyncDomain = 'schedule' | 'exams' | 'subjects';
 
 export interface SyncedData {
   /** Domains whose fetch has completed in this run, empty results included. */

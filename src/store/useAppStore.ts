@@ -3,6 +3,7 @@ import type { AppState } from './types';
 import { watchSignedInStudent } from '../services/identity/watchSignedInStudent';
 import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
+import { createNewExamTermsSlice } from './slices/createNewExamTermsSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
 import { createZaznamnikSlice } from './slices/createZaznamnikSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
@@ -31,11 +32,14 @@ import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSystemNotificationsSlice } from './slices/createSystemNotificationsSlice';
 import { createQuestionsSlice } from './slices/createQuestionsSlice';
 import { createSocietyPinsSlice } from './slices/createSocietyPinsSlice';
+import { createSportPlacesSlice } from './slices/createSportPlacesSlice';
+import { createSklubMenuSlice } from './slices/createSklubMenuSlice';
 import { createSearchSlice } from './slices/createSearchSlice';
 import { createRecentPdfsSlice } from './slices/createRecentPdfsSlice';
 import { createPdfPositionsSlice } from './slices/createPdfPositionsSlice';
 import { createPersonProfileSlice } from './slices/createPersonProfileSlice';
 import { createBulletinSlice } from './slices/createBulletinSlice';
+import { createIsNoticesSlice } from './slices/createIsNoticesSlice';
 import { createViewportSlice } from './slices/createViewportSlice';
 import { createMobileUiSlice } from './slices/createMobileUiSlice';
 import { createMapSlice } from './slices/createMapSlice';
@@ -59,11 +63,13 @@ import { retireSocietyFeatures } from '../services/cleanup/retireSocietyFeatures
 import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
+import { currentSchool } from '../utils/school';
 
 export const useAppStore = create<AppState>()(
   overlayGuard((...a) => ({
     ...createScheduleSlice(...a),
     ...createExamSlice(...a),
+    ...createNewExamTermsSlice(...a),
     ...createSyllabusSlice(...a),
     ...createZaznamnikSlice(...a),
     ...createFilesSlice(...a),
@@ -92,11 +98,14 @@ export const useAppStore = create<AppState>()(
     ...createSystemNotificationsSlice(...a),
     ...createQuestionsSlice(...a),
     ...createSocietyPinsSlice(...a),
+    ...createSportPlacesSlice(...a),
+    ...createSklubMenuSlice(...a),
     ...createSearchSlice(...a),
     ...createRecentPdfsSlice(...a),
     ...createPdfPositionsSlice(...a),
     ...createPersonProfileSlice(...a),
     ...createBulletinSlice(...a),
+    ...createIsNoticesSlice(...a),
     ...createViewportSlice(...a),
     ...createMobileUiSlice(...a),
     ...createMapSlice(...a),
@@ -152,8 +161,12 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
-  s.loadQuestions();
-  s.fetchNotifications();
+  // Novinky and questions are Supabase rows, which a build for another
+  // school cannot reach (scripts/isHostSwap.ts).
+  if (currentSchool.has('novinky')) {
+    s.loadQuestions();
+    s.fetchNotifications();
+  }
   s.fetchSchedule();
   s.fetchExams();
   s.fetchSubjects();
@@ -200,6 +213,8 @@ export const initializeStore = async () => {
     s2.loadGradeHistory();
     s2.fetchCvicneTests();
     s2.fetchOdevzdavarny();
+    void s2.loadExamTermsNew();
+    void s2.loadNotifySocieties();
     s2.fetchAllFiles();
     s2.fetchAllClassmates();
     await s2.hydrateLastFilesFetchedAt();
@@ -214,6 +229,11 @@ export const initializeStore = async () => {
     s2.loadRecentSearches();
     s2.refreshRecentPdfs();
     s2.hydrateBulletin();
+    // The notices on the student's own IS home page, shown under MENDELU in
+    // Novinky. The cache first, then IS; useNotificationFeed re-asks with the
+    // feed's five-minute refresh, and the 30-minute TTL keeps that to one
+    // request per language per half hour.
+    void s2.hydrateIsNotices().then(() => useAppStore.getState().loadIsNoticesIfStale());
     s2.loadMapEvents();
     // The jídelníček. It used to be fetched from a useEffect in each of the
     // three components that show it (the weekly header, its popover, the

@@ -53,7 +53,16 @@ export async function fetchFolderListing(
 
     const response = await fetchWithAuth(url);
     const respText = await response.text();
-    const { files: initialFiles, paginationLinks, totalRecords } = parseServerFiles(respText);
+    const {
+      files: initialFiles,
+      paginationLinks,
+      paginationTruncated,
+      totalRecords,
+    } = parseServerFiles(respText);
+    if (paginationTruncated) {
+      logError('Documents.paginationTruncated', new Error('folder has more pages than fetched'));
+      complete = false;
+    }
 
     // Tag initial files with language
     initialFiles.forEach((f) => (f.language = lang));

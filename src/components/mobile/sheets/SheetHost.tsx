@@ -9,9 +9,15 @@ import { DocsSheet } from './DocsSheet';
 import { SettingsSheet } from './SettingsSheet';
 import { SearchSheet } from './SearchSheet';
 import { BulletinSheet } from './BulletinSheet';
+import { InternshipsSheet } from './InternshipsSheet';
 import { MenuSheet } from './MenuSheet';
+import { IskamSheet } from './IskamSheet';
 import { VenueSheet } from './VenueSheet';
 import { ImpersonationSheet } from './ImpersonationSheet';
+import { HideLessonSheet } from './HideLessonSheet';
+import { LibraryBookSheet } from './LibraryBookSheet';
+import { LibraryCancelSheet } from './LibraryCancelSheet';
+import { LibraryBookingSheet } from './LibraryBookingSheet';
 import { useEscapeClosesSheet } from './useEscapeClosesSheet';
 
 /**
@@ -50,16 +56,28 @@ export function SheetHost() {
             return <SettingsSheet key={index} onClose={popSheet} />;
           case 'bulletin':
             return <BulletinSheet key={index} onClose={popSheet} />;
+          case 'internships':
+            return <InternshipsSheet key={index} onClose={popSheet} />;
           case 'venue':
             return <VenueSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'menu':
             return (
               <MenuSheet key={index} dayIso={sheet.dayIso} week={sheet.week} onClose={popSheet} />
             );
+          case 'isic':
+            return <IskamSheet key={index} onClose={popSheet} />;
           case 'search':
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'impersonation':
             return <ImpersonationSheet key={index} onClose={popSheet} />;
+          case 'hideLesson':
+            return <HideLessonSheet key={index} lesson={sheet.lesson} onClose={popSheet} />;
+          case 'libraryBook':
+            return <LibraryBookSheet key={index} sheet={sheet} onClose={popSheet} />;
+          case 'libraryBooking':
+            return <LibraryBookingSheet key={index} eventId={sheet.eventId} onClose={popSheet} />;
+          case 'libraryCancel':
+            return <LibraryCancelSheet key={index} eventId={sheet.eventId} onClose={popSheet} />;
           default:
             return null;
         }

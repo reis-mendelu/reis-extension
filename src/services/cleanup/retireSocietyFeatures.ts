@@ -26,11 +26,18 @@ const RETIRED_META_KEYS = [
 const RETIRED_CHANNELS = ['reis-event-reminders', 'reis-society-digest'];
 
 /**
- * The kinds today's builds schedule: exam openings (spec 2026-10-20) and the
- * záznamník's "Nové body" — the latter spelled out, since its constant lives in
- * src/mobile, which shared code must not import. A test pins it to that constant.
+ * The kinds today's builds schedule: exam openings (spec 2026-10-20) and
+ * Novinky's rows (src/mobile/novinkyNotifications, 2026-11-17), plus 5.7.x's
+ * "Nové body" a phone may still hold. Spelled out, since the constants live in
+ * src/mobile, which shared code must not import; a test pins 'novinky' to it.
  */
-const CURRENT_KINDS: readonly unknown[] = [EXAM_OPENING_KIND, 'zaznamnik-new-points'];
+// 'zaznamnik-new-points' stays listed: a phone may still hold one from 5.7.x.
+const CURRENT_KINDS: readonly unknown[] = [
+  EXAM_OPENING_KIND,
+  'zaznamnik-new-points',
+  'novinky',
+  'deadline-reminder',
+];
 
 /**
  * What 5.3.0 left behind, pending or in the tray: everything but today's kinds.

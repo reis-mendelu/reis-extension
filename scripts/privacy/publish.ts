@@ -1,12 +1,15 @@
-// npm run privacy:publish [-- --skip-gist] [-- --skip-play] [-- --ref <branch>]
+// npm run privacy:publish [-- --skip-gist] [-- --skip-play] [-- --gist-local] [-- --ref <branch>]
 //
 // The two disclosure steps that have an API, run before the release PR merges:
 //  1. the privacy-policy gist, republished from docs/privacy-policy-app.md and
-//     read back. It is owned by ElijaahInverted, so gh is switched to that
-//     account for the write and ALWAYS switched back (memory: privacy-policy-gist).
+//     read back: dispatches .github/workflows/privacy-gist.yml (GIST_TOKEN) and
+//     waits for it. --gist-local writes it from this machine's gh instead, the
+//     way it was done before that workflow reached main.
 //  2. Play Data safety: dispatches .github/workflows/play-data-safety.yml, which
 //     pushes privacy/play-data-safety.csv with the store's service account, and
 //     waits for it.
+// Both workflows can also be dispatched by hand (Actions → Run workflow, ref
+// `test`), which is how a cloud session runs them.
 // Apple's label and the Chrome Web Store have no API; the release checklist says who does those.
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -32,12 +35,12 @@ function publishGist(): void {
   console.log(`gist ${GIST_ID}: published and read back — matches docs/privacy-policy-app.md`);
 }
 
-const latestRun = (ref: string) =>
+const latestRun = (workflow: string, ref: string) =>
   run('gh', [
     'run',
     'list',
     '--workflow',
-    'play-data-safety.yml',
+    workflow,
     '--branch',
     ref,
     '--limit',
@@ -48,18 +51,24 @@ const latestRun = (ref: string) =>
     '.[0].databaseId // ""',
   ]);
 
-function publishPlay(): void {
+/** Dispatches a workflow on the ref, waits for its run to finish, returns its id. */
+function dispatchAndWatch(workflow: string): string {
   const ref = refArg ?? run('git', ['rev-parse', '--abbrev-ref', 'HEAD']);
-  const before = latestRun(ref);
-  run('gh', ['workflow', 'run', 'play-data-safety.yml', '--ref', ref]);
+  const before = latestRun(workflow, ref);
+  run('gh', ['workflow', 'run', workflow, '--ref', ref]);
   // The run appears a moment after dispatch; wait for one newer than before.
   let id = '';
   for (let i = 0; i < 20 && (!id || id === before); i++) {
     execFileSync('sleep', ['3']);
-    id = latestRun(ref);
+    id = latestRun(workflow, ref);
   }
-  if (!id || id === before) throw new Error('play-data-safety.yml run did not appear');
+  if (!id || id === before) throw new Error(`${workflow} run did not appear`);
   execFileSync('gh', ['run', 'watch', id, '--exit-status'], { stdio: 'inherit' });
+  return id;
+}
+
+function publishPlay(): void {
+  const id = dispatchAndWatch('play-data-safety.yml');
   console.log(
     `Play Data safety: pushed by run ${id}. Check Publishing overview for "Send for review".`
   );
@@ -73,7 +82,10 @@ function publishPlay(): void {
 const previous = run('gh', ['config', 'get', '-h', 'github.com', 'user']);
 try {
   run('gh', ['auth', 'switch', '--user', 'ElijaahInverted']);
-  if (!has('--skip-gist')) publishGist();
+  if (!has('--skip-gist')) {
+    if (has('--gist-local')) publishGist();
+    else console.log(`gist: published by run ${dispatchAndWatch('privacy-gist.yml')}`);
+  }
   if (!has('--skip-play')) publishPlay();
 } finally {
   if (previous && previous !== 'ElijaahInverted') run('gh', ['auth', 'switch', '--user', previous]);

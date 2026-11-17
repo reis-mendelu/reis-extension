@@ -28,11 +28,19 @@ vi.mock('../../../services/storage', () => ({
     EXAMS_LAST_MODIFIED: 'exams_last_modified',
   },
 }));
+const maybeAskForStoreReview = vi.hoisted(() => vi.fn(async () => false));
+vi.mock('../../../mobile/storeReview', () => ({ maybeAskForStoreReview }));
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
   },
+}));
+
+// What the resit check reads from the store; each test sets it.
+const storeExtras = vi.hoisted(() => ({
+  gradeHistory: null as unknown,
+  subjects: null as unknown,
 }));
 
 const { mockSetExams, mockFetchExams, mockTriggerExamsRefresh, mockOpenReport } = vi.hoisted(
@@ -54,6 +62,12 @@ vi.mock('../../../store/useAppStore', () => {
     triggerExamsRefresh: mockTriggerExamsRefresh,
     language: 'en',
     openReport: mockOpenReport,
+    get gradeHistory() {
+      return storeExtras.gradeHistory;
+    },
+    get subjects() {
+      return storeExtras.subjects;
+    },
   };
   const mockUseAppStore = vi.fn((selector: (s: typeof mockState) => unknown) =>
     selector(mockState)
@@ -382,6 +396,99 @@ describe('useExamActions - Optimistic Updates', () => {
 
       // Should NOT update state on failure
       expect(mockSetExams).not.toHaveBeenCalled();
+    });
+  });
+
+  // The store-rating prompt follows a first-attempt registration that went
+  // through, and only that: never a resit, the likeliest 1★. The helper then
+  // decides whether this install is ready to be asked.
+  describe('Store rating moment', () => {
+    const grade = (letter: string) => ({
+      period: 'ZS 2025/2026 - PEF',
+      predmetId: '159410',
+      courseCode: 'EBC-ZON',
+      courseName: 'Základy objektového návrhu',
+      examType: 'zk',
+      attempt: 1,
+      gradeText: '',
+      gradeLetter: letter,
+      credits: 5,
+    });
+    const register = async (exams: ExamSubject[], termId = 'term-2') => {
+      const { result } = renderHook(() =>
+        useExamActions({ exams, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      await act(async () => {
+        await result.current.handleRegisterDirect(exams[0].sections[0], termId);
+      });
+    };
+    const withTypes = (attemptTypes: string[]) =>
+      createMockExams(
+        {},
+        {
+          terms: [
+            createMockTerm('term-1'),
+            createMockTerm('term-2', { attemptTypes }),
+            createMockTerm('term-3'),
+          ] as unknown as ExamSection['terms'],
+        }
+      );
+
+    beforeEach(() => {
+      storeExtras.gradeHistory = { studium: '1', fetchedAt: '', grades: [] };
+      storeExtras.subjects = { data: { 'EBC-ZON': { subjectId: '159410' } } };
+    });
+
+    it('offers the moment after a first-attempt registration', async () => {
+      await register(withTypes(['regular', 'retake1']));
+      expect(maybeAskForStoreReview).toHaveBeenCalledWith('exam_registered');
+    });
+
+    // Only a zkouška: a credit test, a defence or a seminar-group signup goes
+    // through the same register call but is not the exam moment.
+    it('not after registering a term of a non-exam section', async () => {
+      const exams = withTypes(['regular']);
+      exams[0].sections[0] = { ...exams[0].sections[0], type: 'test' };
+      await register(exams);
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
+    });
+
+    it('not after registering a retake-only term', async () => {
+      await register(withTypes(['retake1']));
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
+    });
+
+    it('not after a mixed term when the subject already has an F', async () => {
+      storeExtras.gradeHistory = { studium: '1', fetchedAt: '', grades: [grade('F')] };
+      await register(withTypes(['regular', 'retake1']));
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
+    });
+
+    it('not after a failed registration', async () => {
+      vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: false, error: 'plno' });
+      await register(withTypes(['regular']));
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
+    });
+
+    it('not after unregistering', async () => {
+      const registered = createMockExams(
+        {},
+        {
+          status: 'registered',
+          registeredTerm: { id: 'term-1', date: '20.01.2026', time: '09:00', room: 'Q01' },
+        }
+      );
+      const { result } = renderHook(() =>
+        useExamActions({ exams: registered, setExpandedSectionId: mockSetExpandedSectionId })
+      );
+      await act(async () => {
+        result.current.handleUnregisterRequest(registered[0].sections[0]);
+      });
+      await act(async () => {
+        await result.current.handleConfirmAction();
+      });
+      await waitFor(() => expect(mockSetExams).toHaveBeenCalled());
+      expect(maybeAskForStoreReview).not.toHaveBeenCalled();
     });
   });
 });

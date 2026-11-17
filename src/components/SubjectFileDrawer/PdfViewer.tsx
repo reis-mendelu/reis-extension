@@ -27,6 +27,8 @@ interface PdfViewerProps {
   initialPage?: number | null;
   /** The page being read, once scrolling settles and when the viewer closes. */
   onPageChange?: (page: number) => void;
+  /** pdf.js parsed the document; never called for one that failed to load. */
+  onDocumentLoaded?: () => void;
 }
 
 // pdf.js advises against mounting more than ~25 page canvases at once; mobile
@@ -47,6 +49,7 @@ export function PdfViewer({
   hasNotesOpen,
   initialPage,
   onPageChange,
+  onDocumentLoaded,
 }: PdfViewerProps) {
   const [numPages, setNumPages] = useState<number>(0);
   const [scale, setScale] = useState(1.0);
@@ -120,7 +123,13 @@ export function PdfViewer({
     [trackRow]
   );
 
+  // Read through a ref so the load callback keeps its identity for react-pdf.
+  const loadedRef = useRef(onDocumentLoaded);
+  useEffect(() => {
+    loadedRef.current = onDocumentLoaded;
+  }, [onDocumentLoaded]);
   const onDocumentLoadSuccess = useCallback(async (pdf: PDFDocumentProxy) => {
+    loadedRef.current?.();
     setNumPages(pdf.numPages);
     const page = await pdf.getPage(1);
     const viewport = page.getViewport({ scale: 1 });

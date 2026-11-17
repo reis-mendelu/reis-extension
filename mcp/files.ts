@@ -1,8 +1,21 @@
 import { fetchFilesFromFolder } from '../src/api/documents/service';
+import { documentTitle } from '../src/utils/documentLabels';
 // The plugin build aliases this import to ./documentHandover (vite.mcp.plugin.config.ts).
 import { documentResult, MAX_DOCUMENT_BYTES } from './documentText';
 
-export type SubjectFile = { name: string; author: string; date: string; downloadUrl: string };
+export type SubjectFile = {
+  /** The document's title as IS prints it. */
+  name: string;
+  /** The file's own name and extension; a document can hold several files. */
+  file?: string;
+  /** The subfolder the teacher filed it under, when there is one. */
+  folder?: string;
+  author: string;
+  date: string;
+  /** IS's Modifikace: later than `date` when the teacher replaced the files. */
+  modified?: string;
+  downloadUrl: string;
+};
 export type FileText = {
   filename?: string;
   kind: string;
@@ -18,16 +31,29 @@ const TEXT_EXTENSIONS = ['.txt', '.md', '.csv'];
 export const clean = (t: string) => t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
 const extOf = (name?: string) => /\.[^./\\]+$/.exec(name ?? '')?.[0].toLowerCase() ?? '';
 
-/** One entry per file that has a download link, deduplicated by that link. */
+/**
+ * One entry per file that has a download link, deduplicated by that link.
+ * Every file of a document is listed, not only the first: a lecture row in IS
+ * can hold five PDFs, and Claude could only ever read one of them.
+ */
 export async function listFolderFiles(folderUrl: string): Promise<SubjectFile[]> {
   const entries = await fetchFilesFromFolder(folderUrl);
   const seen = new Set<string>();
   const out: SubjectFile[] = [];
   for (const e of entries ?? []) {
-    const link = e.files?.find((f) => /download=/.test(f.link))?.link;
-    if (!link || seen.has(link)) continue;
-    seen.add(link);
-    out.push({ name: e.file_name, author: e.author, date: e.date, downloadUrl: link });
+    for (const f of e.files ?? []) {
+      if (!/download=/.test(f.link) || seen.has(f.link)) continue;
+      seen.add(f.link);
+      out.push({
+        name: documentTitle(e),
+        ...(f.filename ? { file: f.filename } : {}),
+        ...(e.subfolder ? { folder: e.subfolder } : {}),
+        author: e.author,
+        date: e.date,
+        ...(e.modified ? { modified: e.modified } : {}),
+        downloadUrl: f.link,
+      });
+    }
   }
   return out;
 }

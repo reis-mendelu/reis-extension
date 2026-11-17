@@ -40,6 +40,13 @@ edge-function deploy already has. A dry run only lists what would apply.
   Release gate goes red without it, and the tag job checks again before tagging.
   Agree the words with Dominik per release, as before.
 
+## Before the release PR
+
+`npm run release:preflight -- --version X.Y.Z` reports main/test drift and an App
+Store version that would block the submit, read-only. What each finding means
+and the recipes (sync main into test; wait, withdraw or rename an App Store
+version): [`docs/release-preflight.md`](release-preflight.md).
+
 ## One-time setup: repository secrets (Dominik adds these)
 
 Nobody and nothing else may add them: they are credentials. A job whose secrets
@@ -76,6 +83,14 @@ the secrets) and the profile goes stale if the app's entitlements change.
 
 Already present and reused: `CHROME_*`, `FIREFOX_*`, and the Google service
 account `CHROME_SERVICE_ACCOUNT_*`, which also calls the Play Developer API.
+
+**The privacy-policy gist** is republished by `privacy-gist.yml` with `GIST_TOKEN`:
+a fine-grained personal access token of ElijaahInverted (the gist's owner) with
+only the account permission **Gists: Read and write**. `GITHUB_TOKEN` is not
+accepted for gists. `npm run privacy:publish` dispatches it and `play-data-safety.yml`;
+a cloud session, which has no local `gh` login, dispatches the same two workflows
+on `test` instead. Without the secret, `npm run privacy:publish -- --gist-local`
+writes the gist from the Mac's `gh` the old way.
 
 **Play Console, once:** Users and permissions → the service account → app
 permissions for `cz.reis.app` → **Release to production, exclude devices and use

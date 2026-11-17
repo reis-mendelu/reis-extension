@@ -2,9 +2,11 @@
  * Maps table header names to their corresponding column indices.
  *
  * Moved out of parser.ts unchanged. These indices are load-bearing — a one-off
- * change silently breaks production data — so this is a pure relocation: the
- * matching order, the `=== undefined` first-wins guards and the header strings
- * are byte-for-byte what the parser has always run.
+ * change silently breaks production data — so the matching order, the
+ * `=== undefined` first-wins guards and the header strings are what the parser
+ * has always run. One addition since: `modified`, IS's Modifikace column
+ * (en: "Modifications"), recorded only once a document date is already found,
+ * so `date` is assigned exactly as before.
  */
 export function getColumnIndices(table: Element): Record<string, number> {
   const indices: Record<string, number> = {};
@@ -27,9 +29,11 @@ export function getColumnIndices(table: Element): Record<string, number> {
     else if (
       text.includes('poslední změna') ||
       text.includes('last change') ||
-      text.includes('modifikace')
+      text.includes('modifikace') ||
+      text.includes('modification')
     ) {
       if (indices.date === undefined) indices.date = i;
+      else if (indices.modified === undefined) indices.modified = i;
     } else if (
       (text.includes('komentář') || text.includes('comment')) &&
       indices.comment === undefined

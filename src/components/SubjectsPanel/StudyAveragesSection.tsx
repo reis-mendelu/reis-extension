@@ -7,6 +7,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 interface Props {
   studyStats: StudyStats | null;
   comparison?: StudyComparison | null;
+  /** Width and placement; centred at max-w-xl unless the caller sizes it. */
+  className?: string;
 }
 
 // IS Mendelu grade averages use a Czech decimal comma (lower is better).
@@ -36,7 +38,11 @@ function Row({ label, value, info }: { label: string; value: string; info?: stri
   );
 }
 
-export function StudyAveragesSection({ studyStats, comparison }: Props) {
+export function StudyAveragesSection({
+  studyStats,
+  comparison,
+  className = 'max-w-xl mx-auto',
+}: Props) {
   const { t } = useTranslation();
   // Expanded by default (no information lost for anyone who hasn't touched
   // it) — collapsing is an opt-out, not the default state.
@@ -59,7 +65,9 @@ export function StudyAveragesSection({ studyStats, comparison }: Props) {
     : null;
 
   return (
-    <div className="max-w-xl mx-auto bg-base-200 border border-base-300 rounded-xl shadow-sm overflow-hidden">
+    <div
+      className={`${className} bg-base-200 border border-base-300 rounded-xl shadow-sm overflow-hidden`}
+    >
       <button
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}

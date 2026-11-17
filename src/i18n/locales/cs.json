@@ -20,7 +20,10 @@
     "unavailable": "Menu není k dispozici",
     "outletOne": "1 výdejna",
     "outletFew": "{count} výdejny",
-    "outletOther": "{count} výdejen"
+    "outletOther": "{count} výdejen",
+    "venueFullMenu": "Celé menu a ceny",
+    "venueFullMenuOnMap": "Celé menu a ceny na mapě",
+    "venuePlaceOnMap": "Ukázat na mapě"
   },
   "iskam": {
     "show": "Zobrazit zůstatek ISIC",
@@ -34,11 +37,16 @@
     "invalid": "Zadej celé číslo od 1 do 15 000 Kč",
     "failed": "Platbu se nepodařilo zahájit",
     "added": "Dobito +{amount}",
-    "unseen": "Zůstatek se zatím nezměnil. Pokud jsi zaplatil(a), brzy se aktualizuje."
+    "unseen": "Zůstatek se zatím nezměnil. Pokud jsi zaplatil(a), brzy se aktualizuje.",
+    "claimDue": "splatné do {date}",
+    "payClaim": "Zaplatit",
+    "claimShort": "Na kontě chybí {amount}. Nejdřív dobij, pak zaplať.",
+    "claimPaid": "Zaplaceno {amount}"
   },
   "settings": {
     "title": "Nastavení",
     "reportBug": "Nahlásit chybu / Nápad",
+    "rateReis": "Ohodnotit reIS",
     "darkMode": "Tmavý režim",
     "language": "Jazyk",
     "czech": "Čeština",
@@ -102,6 +110,8 @@
     "today": "Dnes",
     "back": "Zpět",
     "close": "Zavřít",
+    "enlargePhoto": "Zvětšit fotku",
+    "photo": "Fotka",
     "cancel": "Zrušit",
     "confirm": "Potvrdit",
     "save": "Uložit",
@@ -179,6 +189,7 @@
     "emptyTitle": "Žádné zkoušky v dohledu",
     "emptySubtitle": "Užij si volno!",
     "noOpenRegistrations": "Momentálně se není na co přihlásit.",
+    "signupGroup": "Zápisy na cvičení",
     "autoBooking": "Auto-rezervace aktivní. Nezavírej tuhle stránku!",
     "statusLabel": "Status:",
     "subjectLabel": "Předmět:",
@@ -469,6 +480,8 @@
     "wasCredit": "dříve zápočet, nyní zkouška",
     "wasExam": "dříve zkouška, nyní zápočet",
     "lastTaught": "naposledy {year}",
+    "garant": "Garant: {name}",
+    "garantChanged": "Garant se změnil v {semester} (dříve {before}, nyní {now}) – starší semestry nemusí odpovídat.",
     "previewOf": "Výsledky jiného předmětu",
     "back": "Zpět"
   },
@@ -507,15 +520,42 @@
     "systemOn": "Zapnutá",
     "systemOff": "Vypnutá",
     "systemEnable": "Zapnout",
-    "systemBanner": "Oznámení jsou vypnutá, takže ti nepřijdou nové body, odevzdávárny, termíny ani připomínky zkoušek."
+    "systemBanner": "Oznámení jsou vypnutá, takže ti nepřijdou nové body, odevzdávárny, termíny ani připomínky zkoušek.",
+    "openInIs": "Otevřít v IS",
+    "openLink": "Otevřít odkaz"
   },
   "examReminders": {
     "title": "Za chvíli se otvírá zkouška",
     "body": "{subject} – {section} · přihlašování v {time}",
     "channel": "Otevírání zkoušek"
   },
+  "novinkyPush": {
+    "channelTerms": "Nové termíny zkoušek",
+    "channelPoints": "Nové body",
+    "channelBoxes": "Nové odevzdávárny",
+    "channelSocieties": "Od spolků a MENDELU",
+    "termsOne": "Nový termín: {subject}",
+    "termsMany": "Nové termíny zkoušek",
+    "pointsOne": "Nové body: {subject}",
+    "pointsMany": "Nové body",
+    "boxesOne": "Nová odevzdávárna: {subject}",
+    "boxesMany": "Nové odevzdávárny",
+    "societiesMany": "Novinky od spolků",
+    "societiesSwitch": "Od spolků a MENDELU",
+    "societiesSwitchHint": "Akce spolků a oznámení školy"
+  },
+  "deadlineReminders": {
+    "channel": "Termíny a odevzdání",
+    "examTitle": "Zítra: {subject}",
+    "closingTitle": "{subject}: přihlašování končí",
+    "closingBody": "{section} · poslední možnost zítra do {time}",
+    "boxTitle": "{subject}: odevzdání do zítra",
+    "boxBody": "{box} · do {time}"
+  },
   "deadlines": {
     "title": "Blížící se termíny",
+    "examNewTerm": "Nový termín",
+    "examRegistered": "Tvoje zkouška",
     "examRegOpens": "Otevírá se přihlašování",
     "examReg": "Uzavírá se přihlašování",
     "assignment": "Odevzdávárna",
@@ -550,7 +590,6 @@
     "creditsShort": "kr.",
     "studyPlan": "Studijní plán",
     "noData": "Žádná data o studijním plánu",
-    "noPlanExchange": "Studijní plán není pro výměnná studia dostupný — zobrazujeme tvoje zapsané předměty.",
     "loading": "Načítání...",
     "fulfilled": "Splněno",
     "enrolled": "Zapsáno",
@@ -945,6 +984,10 @@
     "loading": "Načítání…",
     "error": "Nepodařilo se načíst"
   },
+  "internships": {
+    "title": "Stáže",
+    "close": "Zavřít stáže"
+  },
   "customEvent": {
     "titlePlaceholder": "Přidat název",
     "locationPlaceholder": "Místnost nebo místo",
@@ -983,6 +1026,39 @@
     "moreHere": "dalších zde",
     "moreInfo": "Více informací",
     "moreOnInstagram": "Více na Instagramu",
+    "venueOpen": "Otevřeno",
+    "venueClosed": "Zavřeno",
+    "venueUntilToday": "dnes do {time}",
+    "venueOpensToday": "otevírá v {time}",
+    "venueOpensTomorrow": "otevírá zítra v {time}",
+    "venueOpensOn": "otevírá {day} v {time}",
+    "venueOpensDate": "otevírá {date} v {time}",
+    "venueOnDay1": "v pondělí",
+    "venueOnDay2": "v úterý",
+    "venueOnDay3": "ve středu",
+    "venueOnDay4": "ve čtvrtek",
+    "venueOnDay5": "v pátek",
+    "venueOnDay6": "v sobotu",
+    "venueOnDay7": "v neděli",
+    "venueDayShort1": "Po",
+    "venueDayShort2": "Út",
+    "venueDayShort3": "St",
+    "venueDayShort4": "Čt",
+    "venueDayShort5": "Pá",
+    "venueDayShort6": "So",
+    "venueDayShort7": "Ne",
+    "venueClosureNow": "Dočasně zavřeno",
+    "venueClosureSoon": "Zavřeno od {date}",
+    "venueClosureRange": "{from}–{until} · znovu otevře {opens}",
+    "venueClosureRangeNoReopen": "{from}–{until}",
+    "venueRoute": "Trasa sem",
+    "venueLunch": "K obědu",
+    "venueLunchToday": "Dnes k obědu",
+    "venueSoup": "Polévka",
+    "venueMenu": "Menu",
+    "venueMenuOf": "{venue} · menu",
+    "venueBackTo": "Zpět na {venue}",
+    "venueEvents": "Akce",
     "hostedBy": "Pořádá",
     "myEvents": "Moje akce",
     "prevMonth": "Předchozí měsíc",
@@ -1092,6 +1168,28 @@
       "title": "Mapa potřebuje jedno povolení",
       "text": "OpenStreetMap blokuje podklad mapy, když neví, kdo se ptá. Povolte reIS, ať se mu může představit.",
       "allow": "Povolit"
+    },
+    "sport": {
+      "open": "Otevřít na Sporteře",
+      "note": "Fotky, hodnocení a spoluhráči jsou na sportera.cz.",
+      "near": "{metres} m od budovy {building}",
+      "nonstop": "Nonstop",
+      "surface": {
+        "tartan": "Tartan",
+        "gravel": "Kačírek"
+      },
+      "hoopsOne": "{count} koš",
+      "hoopsFew": "{count} koše",
+      "hoopsMany": "{count} košů",
+      "tablesOne": "{count} stůl",
+      "tablesFew": "{count} stoly",
+      "tablesMany": "{count} stolů",
+      "kind": {
+        "basketball": "Basketbal",
+        "football": "Fotbal",
+        "workout": "Workout",
+        "pingpong": "Ping-pong"
+      }
     }
   },
   "admin": {
@@ -1183,11 +1281,21 @@
       "unknown": "neuvedeno",
       "loadFailed": "Statistiky se nepodařilo načíst.",
       "signals": "Funkce (30 dní)",
-      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat. Podpora: kolik instalací otázku vidělo a kolik odpovědělo „Ano“ – nic se neplatí.",
+      "signalsNote": "Instalace, ne lidé. Mapa se počítá po třech sekundách na obrazovce; eduroam zvlášť pro „aplikace síť nastavila“ a „profil jsme předali k instalaci“ — předaný profil ještě musí student sám nainstalovat. Obrazovky se počítají, když se ukážou, jednou za den na instalaci; procento je podíl z instalací, které reIS ten den otevřely. Kalendář je na telefonu úvodní obrazovka, takže tam je skoro vždy.",
       "signalMapDwell": "Mapa aspoň 3 sekundy",
       "signalEduroamConfigured": "eduroam nastaven aplikací",
       "signalEduroamDelivered": "eduroam profil předán",
       "signalCalendarWeekView": "Kalendář v zobrazení Týden",
+      "signalScreenCalendar": "Otevřený Kalendář",
+      "signalScreenSubjects": "Otevřené Předměty",
+      "signalScreenMenu": "Otevřený Jídelníček",
+      "signalScreenSearch": "Otevřené vyhledávání",
+      "signalScreenBulletin": "Otevřená Vývěska",
+      "signalScreenNotifications": "Otevřené Novinky",
+      "signalScreenInternships": "Otevřené Stáže",
+      "signalInternshipClickEy": "Klik na Cestu s EY",
+      "signalShare": "{pct} % denních instalací",
+      "signalShareHint": "Průměrný den za 30 dní: kolik z instalací, které ten den reIS otevřely, otevřelo i tohle. Kalendář je na telefonu úvodní obrazovka, takže tam je skoro vždy.",
       "signalInstalls": "instalací",
       "reachTitle": "Akce: Novinky a mapa vedle sebe",
       "reachNotice": "oznámení",
@@ -1309,6 +1417,16 @@
       "day": "Den",
       "devices": "Počítá zařízení, ne lidi. Studenti s verzí do 5.4.1 otázky nevidí.",
       "errNote": "Poznámka může mít nejvýš 300 znaků."
+    },
+    "isNotices": {
+      "title": "Oznámení z IS",
+      "note": "Co ukazuje tvůj IS na úvodní stránce. Studenti je vidí v Novinkách pod MENDELU, každý ta svoje. Skryté se neukáže nikomu.",
+      "empty": "Tvůj IS teď žádné oznámení neukazuje.",
+      "hide": "Skrýt všem",
+      "show": "Zobrazit",
+      "hidden": "Skryto",
+      "notInYourIs": "Už není ve tvém IS",
+      "error": "Nepodařilo se uložit. Zkus to znovu."
     }
   },
   "mobile": {
@@ -1360,6 +1478,9 @@
       "groupRegistered": "Přihlášené zkoušky",
       "myTermDetailsAria": "Podrobnosti tvého termínu",
       "termDetailsAria": "Podrobnosti termínu",
+      "sectionDetailsAria": "Podrobnosti zkoušky",
+      "noDetails": "IS k tomu nic dalšího neuvádí.",
+      "detailsFailed": "Některé podrobnosti se nepodařilo načíst.",
       "detailForm": "Forma termínu",
       "detailDuration": "Délka trvání",
       "detailRoom": "Místnost",
@@ -1378,6 +1499,7 @@
       "attemptRegularShort": "Ř",
       "groupOpen": "Otevřené termíny",
       "groupNotYetOpen": "Ještě neotevřené",
+      "groupSignup": "Zápisy na cvičení",
       "opensAtLabel": "otevírá se",
       "refresh": "Obnovit zkoušky",
       "refreshing": "Aktualizuji…",
@@ -1489,7 +1611,9 @@
     "profile": {
       "settings": "Nastavení",
       "atSchool": "Ve škole",
-      "settingsSub": "Oznámení, jazyk, vzhled"
+      "settingsSub": "Oznámení, jazyk, vzhled",
+      "isic": "ISIC",
+      "isicSub": "zůstatek a dobití"
     },
     "loadFailed": {
       "title": "Data se nepodařilo načíst",
@@ -1526,7 +1650,59 @@
       "deleteTape": "Smazat pásku",
       "tapeHint": "Přelep odpověď a zkus si ji vybavit. Klepnutím pásku odkryješ, podržením ji smažeš nebo přesuneš."
     },
-    "openingLink": "Otevírám…"
+    "openingLink": "Otevírám…",
+    "library": {
+      "pinLabel": "Studovny",
+      "title": "Knihovna",
+      "place": "Budova A, −1. patro",
+      "today": "Dnes",
+      "seats": "{n} míst",
+      "seatsOne": "1 místo",
+      "offline": "Rezervace se teď nepodařilo načíst. Zkontroluj připojení.",
+      "loading": "Načítám volné hodiny z knihovny…",
+      "pickHour": "Vyber hodiny",
+      "lessonTag": "výuka",
+      "capReached": "Na tento den už máš {cap} h, víc knihovna nedovolí.",
+      "confirmTitle": "Rezervovat studovnu?",
+      "confirmBody": "Knihovna dostane tvé jméno, e-mail, osobní číslo a fakultu. Potvrzení ti přijde e-mailem.",
+      "confirm": "Rezervovat",
+      "sending": "Rezervuji…",
+      "slow": "Knihovna odpovídá pomalu, může to trvat i minutu.",
+      "booked": "Rezervováno: {room}, {time}",
+      "partial": "Rezervováno jen {time}. Zbytek se nepovedl.",
+      "taken": "Některou z hodin mezitím někdo vzal. Nic se nerezervovalo.",
+      "cap": "Nejvýše {cap} h denně.",
+      "checkFailed": "Volný termín se nepodařilo ověřit. Zkus to znovu.",
+      "unknown": "Knihovna neodpověděla. Rezervace mohla vzniknout: zkontroluj e-mail, než to zkusíš znovu.",
+      "failed": "Rezervace se nepovedla.",
+      "blockTitle": "Studovna v knihovně",
+      "mine": "Máš rezervováno",
+      "cancelTitle": "Zrušit rezervaci v knihovně?",
+      "cancelBody": "Zrušíš skutečnou rezervaci a studovna se uvolní. Knihovna ti pošle e-mail o zrušení.",
+      "cancelAction": "Zrušit rezervaci v knihovně",
+      "cancelling": "Ruším…",
+      "keep": "Ponechat",
+      "cancelled": "Rezervace zrušena.",
+      "cancelUnknown": "Knihovna neodpověděla. Zkontroluj e-mail, jestli rezervace zmizela.",
+      "cancelFailed": "Rezervaci se nepodařilo zrušit.",
+      "searchRow": "Knihovna – studovny k rezervaci",
+      "freeAt": "Volné {time}",
+      "holiday": "{name}: knihovna má zavřeno.",
+      "unconfirmed": "Knihovna neodpověděla včas, rezervace ale nejspíš vznikla. Je v kalendáři, potvrzení přijde e-mailem.",
+      "cancelUnconfirmed": "Tuhle rezervaci reIS zrušit neumí, nemá k ní klíč od knihovny. Zrušit ji jde přes knihovnu; z kalendáře ji tady odebereš.",
+      "removeFromCalendar": "Odebrat z kalendáře",
+      "onMap": "Na mapě",
+      "kindTeam": "týmová studovna",
+      "kindIndividual": "individuální studovna",
+      "confirmed": "Potvrzeno",
+      "noKey": "reIS ji zrušit neumí",
+      "extend": "Prodloužit do {time}",
+      "extended": "Prodlouženo do {time}",
+      "otherTime": "Jiný čas nebo studovna",
+      "busy": "Počkej, předchozí rezervace se ještě vyřizuje.",
+      "someUnknown": "Některé studovny se nepodařilo načíst, jejich hodiny tu chybí.",
+      "unsaved": "Rezervace vznikla, ale telefon si ji nepodařilo uložit. Po restartu aplikace zmizí z kalendáře a zrušit ji půjde jen přes knihovnu (potvrzení máš v e-mailu)."
+    }
   },
   "session": {
     "expired": "Přihlášení do IS vypršelo.",
@@ -1596,6 +1772,8 @@
     "openFew": "{n} otevřené",
     "openOther": "{n} otevřených",
     "nothingDueSoon": "Nic k odevzdání do 14 dní",
+    "submittedCount": "Odevzdáno ({n})",
+    "awaitingGrading": "čeká na hodnocení",
     "instructions": "Pokyny"
   },
   "questions": {
@@ -1626,5 +1804,8 @@
     "examTitleMany": "Nové termíny zkoušek",
     "boxTitleOne": "Nová odevzdávárna: {subject}",
     "boxTitleMany": "Nové odevzdávárny"
+  },
+  "guides": {
+    "help": "Nápověda"
   }
 }

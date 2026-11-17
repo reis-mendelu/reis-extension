@@ -62,11 +62,14 @@ describe('SubjectsPanel — odevzdávárny', () => {
   });
 
   // jsdom lays nothing out, so this pins the structure; the geometry was
-  // measured with the dev webapp (PR body). Below lg the card stacks under the
-  // average, and the panel itself does not scroll: at 1000×768 the study-plan
-  // button sat 73 px below the visible edge. The middle block scrolls instead,
-  // and the button stays outside it, pinned under it.
-  it('keeps Studijní plán outside a middle block that scrolls when space runs out', () => {
+  // measured with the dev webapp (PR bodies). The panel itself does not
+  // scroll: once, at 1000×768, the study-plan button sat 73 px below the
+  // visible edge with no way to reach it. The middle block scrolls instead.
+  // With a box open, the button rides inside it, in the row under the box
+  // (layout (a), SubjectsPanel.layout.test): pinned below it, the expanded
+  // average cut the box down to its title at 1280×800. At the top of its half
+  // it is still on screen at 1000×768 and 1280×800, and never out of reach.
+  it('keeps Studijní plán inside a middle block that scrolls when space runs out', () => {
     render(
       <SubjectsPanel
         onOpenSubject={() => {}}
@@ -79,6 +82,6 @@ describe('SubjectsPanel — odevzdávárny', () => {
     expect(middle!.className).toContain('min-h-0');
     expect(middle!.className).not.toContain('shrink-0');
     const studyPlan = screen.getByText('Studijní plán').closest('button')!;
-    expect(middle!.contains(studyPlan)).toBe(false);
+    expect(middle!.contains(studyPlan)).toBe(true);
   });
 });

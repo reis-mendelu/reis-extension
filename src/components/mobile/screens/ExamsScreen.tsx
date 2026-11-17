@@ -10,6 +10,7 @@ import { useExamActions } from '../../ExamPanel/useExamActions';
 import {
   buildRegisteredExams,
   buildOpenExams,
+  buildSignupExams,
   withNicknames,
   type RegisteredExam,
   type OpenExam,
@@ -24,9 +25,11 @@ import { NotYetOpenCard } from './exams/NotYetOpenCard';
 import { RegisteredCard } from './exams/RegisteredCard';
 import { OpenCard } from './exams/OpenCard';
 import { ExamsPullArea } from './exams/ExamsPullArea';
+import { SignupGroup } from './exams/SignupGroup';
 import { RefreshButton } from '../primitives/RefreshButton';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
+import { useMarkExamTermsSeen } from '../../../hooks/ui/useMarkExamTermsSeen';
 
 function ExamsSkeleton() {
   const { t } = useTranslation();
@@ -56,6 +59,8 @@ export function ExamsScreen() {
   const { exams } = useExams();
   const now = useAppStore((s) => s.now);
   const userSemester = useAppStore((s) => s.userSemester);
+  // In front = its tab, with no sheet (a subject, settings) covering it.
+  const examsInFront = useAppStore((s) => s.mobileTab === 'exams' && s.mobileSheets.length === 0);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
@@ -93,6 +98,10 @@ export function ExamsScreen() {
     () => withNicknames(buildOpenExams(exams, language), nicknames),
     [exams, language, nicknames]
   );
+  const signups = useMemo(
+    () => withNicknames(buildSignupExams(exams, language), nicknames),
+    [exams, language, nicknames]
+  );
   // "Otevřené termíny 2" has to mean two things that can be booked. A section
   // whose registration opens in December is not one of them — see
   // utils/mobile/examOpening.
@@ -113,12 +122,12 @@ export function ExamsScreen() {
   // used to be prefixed to is real information, so that survives on its own —
   // and where there is none, the row goes away and gives the title its width
   // back, which matters at 320px.
-  // A subject can be present and still yield no row: a "Zápis na cvičení"
-  // section is stripped but its subject kept, and a registered exam whose day
-  // is over is hidden. Keyed on `exams.length` alone, that rendered the header
-  // over a blank body (Návrhy #33) — so the empty state follows what renders.
+  // A subject can be present and still yield no row: a registered exam whose
+  // day is over is hidden. Keyed on `exams.length` alone, that rendered the
+  // header over a blank body (Návrhy #33) — so the empty state follows what
+  // renders.
   const nothingToShow =
-    registered.length + notYetOpen.length + bookable.length + blocked.length === 0;
+    registered.length + notYetOpen.length + bookable.length + blocked.length + signups.length === 0;
 
   const eyebrow = userSemester || undefined;
   const toggle = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
@@ -201,16 +210,21 @@ export function ExamsScreen() {
     </div>
   );
 
-  if (
+  const loading =
     (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !syncLoaded.exams && exams.length === 0)
-  ) {
+    (isSyncing && !syncLoaded.exams && exams.length === 0);
+  // Same rule as the calendar: a settled sync that never delivered exams, with
+  // nothing cached, is a failure and not an answer.
+  const failed = firstSyncSettled && !syncLoaded.exams && exams.length === 0;
+  // Novinky's "Nový termín" rows go once the list itself is on screen: not
+  // behind the skeleton, the error, or a sheet.
+  useMarkExamTermsSeen(examsInFront && !loading && !failed);
+
+  if (loading) {
     return shell(<ExamsSkeleton />);
   }
 
-  // Same rule as the calendar: a settled sync that never delivered exams, with
-  // nothing cached, is a failure and not an answer.
-  if (firstSyncSettled && !syncLoaded.exams && exams.length === 0) {
+  if (failed) {
     return shell(<ScreenError testId="exams-error" />);
   }
 
@@ -295,6 +309,15 @@ export function ExamsScreen() {
                 ))}
               </ExamGroup>
             )}
+            {/* Last and folded: seminar-group signup is not an exam (report #37). */}
+            <SignupGroup
+              rows={signups}
+              now={now}
+              expandedId={expandedId}
+              onToggle={toggle}
+              processingSectionId={processingSectionId}
+              onRegister={handleRegisterRequest}
+            />
           </ExamsPullArea>
         </>
       )}

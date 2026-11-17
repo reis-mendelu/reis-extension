@@ -2,6 +2,7 @@ import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { NEW_POINTS_META_KEY } from '../../services/sync/zaznamnikNewPoints';
 import { resetNewBoxes } from '../../services/sync/newSubmissionBoxes';
 import { resetExamTerms } from '../../services/sync/newExamTerms';
+import { resetUnseenTerms } from '../../services/sync/examTermsUnseen';
 
 /**
  * Stores whose contents belong to ONE study. Everything else stays: the
@@ -57,4 +58,5 @@ export async function clearStudyData(): Promise<void> {
   // stored would otherwise write its boxes back as this study's known ones.
   await resetNewBoxes();
   await resetExamTerms();
+  await resetUnseenTerms();
 }

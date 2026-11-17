@@ -132,8 +132,10 @@ export function Sheet({ size, onClose, children, elevated, variant = 'sheet' }: 
       setOffset(dy);
     },
     onEnd: (dy, velocity) => {
+      // Back to rest whether or not the close is taken: a sheet that refuses it
+      // (a booking still answering) otherwise stayed dragged half-way down.
       if (shouldDismiss(dy, velocity)) onClose();
-      else setOffset(null);
+      setOffset(null);
     },
     onCancel: () => setOffset(null),
   });

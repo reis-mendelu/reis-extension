@@ -11,7 +11,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
+      // Every optional peer of officeparser goes here (optionalPeers.test.ts).
       'pdf-lib': resolve(__dirname, 'mcp/optionalPeerStub.ts'),
+      '@pdf-lib/fontkit': resolve(__dirname, 'mcp/optionalPeerStub.ts'),
       puppeteer: resolve(__dirname, 'mcp/optionalPeerStub.ts'),
       'tesseract.js': resolve(__dirname, 'mcp/optionalPeerStub.ts'),
     },

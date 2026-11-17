@@ -35,6 +35,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, statSync, realpathSync } from 'node:fs';
 import { dirname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { enterSessionRoot } from './sessionRoot.mjs';
 
 export const MOBILE_ENTRY = ['src/components/mobile/MobileApp.tsx'];
 export const DESKTOP_ENTRY = [
@@ -146,6 +147,9 @@ const main = () => {
   // Belt only: this field is absent from the published Stop input field list,
   // so it cannot be relied on. The braces are the fingerprint marker below.
   if (payload.stop_hook_active) ok();
+  // Before any git call or relative read: the process cwd is the MAIN checkout
+  // in a desktop session, not the worktree this turn changed.
+  enterSessionRoot(payload);
 
   const git = (...args) => {
     try {

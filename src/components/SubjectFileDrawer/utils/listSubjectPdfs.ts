@@ -1,6 +1,8 @@
 import type { ParsedFile } from '../../../types/documents';
 import { collapseAttachments } from '../../../api/documents/collapseAttachments';
 import { isPdfFile } from './isPdfFile';
+import { attachmentLabel } from '../../../utils/documentLabels';
+import { changedOn } from './fileDate';
 
 /** One PDF the iPad reader's sidebar can switch to. */
 export interface SubjectPdf {
@@ -12,8 +14,8 @@ export interface SubjectPdf {
 /**
  * The subject's PDFs in the order and with the names the file list shows them,
  * so the reader's sidebar and the drawer never disagree about what a file is
- * called. Same collapse (viewer+download pair → one) and the same "(n)" suffix
- * rule as FileList; non-PDF attachments are skipped.
+ * called. Same collapse (viewer+download pair → one) and the same label rule
+ * as FileList (attachmentLabel); non-PDF attachments are skipped.
  */
 export function listSubjectPdfs(files: ParsedFile[] | null | undefined): SubjectPdf[] {
   if (!files) return [];
@@ -24,8 +26,8 @@ export function listSubjectPdfs(files: ParsedFile[] | null | undefined): Subject
       if (!isPdfFile(attachment)) return;
       out.push({
         link: attachment.link,
-        name: attachments.length > 1 ? `${file.file_name} (${j + 1})` : file.file_name,
-        date: file.date,
+        name: attachmentLabel(file, attachment, j, attachments.length),
+        date: changedOn(file),
       });
     });
   }

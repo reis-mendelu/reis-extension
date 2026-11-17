@@ -31,6 +31,9 @@ describe('ProfileScreen — the hidden way into admin', () => {
     fireEvent.pointerDown(screen.getByTestId('profile-identity-name'), { clientX: 0, clientY: 0 });
     act(() => void vi.advanceTimersByTime(700));
     expect(open).toHaveBeenCalledOnce();
+    // The hold swallows its lift's click for up to a second (useLongPress);
+    // let that window close so the next test's click is a click.
+    act(() => void vi.advanceTimersByTime(1000));
   });
 
   it('shows no Správa row to a student', () => {

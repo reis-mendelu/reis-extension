@@ -4,6 +4,9 @@ export const TOP_UP_MIN = 1;
 export const TOP_UP_MAX = 15_000;
 
 export type AmountCheck = { ok: true; amount: number } | { ok: false };
+/** GoPay's own gateway hosts. WebISKAM moved from gate. to checkout. in Nov 2026. */
+const GATEWAY_ORIGINS = new Set(['https://gate.gopay.com', 'https://checkout.gopay.com']);
+
 export type PayMethod = 'card' | 'gpay';
 
 /** Whole crowns, 1 – 15 000; spaces and NBSP allowed as thousands separators. */
@@ -39,7 +42,7 @@ export function initTopUpUrl(amount: number, method: PayMethod): string {
  *
  * This URL is opened in a browser on the student's phone and they type card
  * details into whatever it shows, so only GoPay's own gateway is accepted —
- * exact host, https, the /gw-ui/ path. An empty body is what an expired
+ * an exact origin from GATEWAY_ORIGINS (https), the /gw-ui/ path. An empty body is what an expired
  * session gets; the caller tells that case apart before calling this.
  */
 export function parseGatewayUrl(html: string): string | null {
@@ -57,7 +60,7 @@ export function parseGatewayUrl(html: string): string | null {
   }
   if (
     // origin, not hostname: hostname ignores the port, and :8443 is another server.
-    u.origin !== 'https://gate.gopay.com' ||
+    !GATEWAY_ORIGINS.has(u.origin) ||
     !u.pathname.startsWith('/gw-ui/')
   ) {
     return null;

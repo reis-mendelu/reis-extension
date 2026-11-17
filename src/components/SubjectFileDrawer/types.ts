@@ -33,7 +33,10 @@ export interface FileGroup {
   files: ParsedFile[];
 }
 
-/** What a PDF row knows that the iPad reader needs: the display name and IS's document date. */
+/**
+ * What a PDF row knows that the iPad reader needs: the display name and the
+ * date it caches by, which is when the document last changed (changedOn).
+ */
 export interface PdfRowMeta {
   name: string;
   date: string;

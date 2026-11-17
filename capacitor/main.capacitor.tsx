@@ -48,11 +48,18 @@ registerSignOutCleanup(async () => {
   await clearExamReminders();
 });
 
-// A notification names this student's subjects and points; the next person on
-// the device must not see it. Registered here for the same reason as above.
+// A notification names this student's subjects, points and dates; the next
+// person on the device must not see it. Registered here for the same reason as above.
 registerSignOutCleanup(async () => {
-  const { clearZaznamnikNotifications } = await import('@/mobile/zaznamnikNotifications');
-  await clearZaznamnikNotifications();
+  const { clearNovinkyNotifications } = await import('@/mobile/novinkyNotifications');
+  await clearNovinkyNotifications();
+});
+
+// Scheduled reminders name this student's exams and boxes; the next person on
+// the device must not get them.
+registerSignOutCleanup(async () => {
+  const { clearDeadlineReminders } = await import('@/mobile/deadlineReminders');
+  await clearDeadlineReminders();
 });
 
 // The background check's notifications name this student's subjects and points.

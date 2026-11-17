@@ -57,7 +57,8 @@ export const createHiddenItemsSlice: AppSlice<HiddenItemsSlice> = (set, get) => 
 
   hideEvent: async (id: string, courseCode: string, courseName: string, date: string) => {
     const { hiddenItems } = get();
-    if (hiddenItems.events.some((e) => e.id === id)) return;
+    // One occurrence: IS reuses the id across the weeks a lesson repeats.
+    if (hiddenItems.events.some((e) => e.id === id && e.date === date)) return;
 
     const newHiddenItems = {
       ...hiddenItems,
@@ -68,11 +69,14 @@ export const createHiddenItemsSlice: AppSlice<HiddenItemsSlice> = (set, get) => 
     await IndexedDBService.set('hidden_items', 'current', newHiddenItems);
   },
 
-  unhideEvent: async (id: string) => {
+  // With a date, that one occurrence; without, every hide of the id.
+  unhideEvent: async (id: string, date?: string) => {
     const { hiddenItems } = get();
     const newHiddenItems = {
       ...hiddenItems,
-      events: hiddenItems.events.filter((e) => e.id !== id),
+      events: hiddenItems.events.filter(
+        (e) => !(e.id === id && (date === undefined || e.date === date))
+      ),
     };
 
     set({ hiddenItems: newHiddenItems });

@@ -5,6 +5,7 @@ import { DetailPanel } from './DetailPanel';
 import { RoomSearch } from './RoomSearch';
 import { EventLayer } from './EventLayer';
 import { SocietyPinLayer } from './SocietyPinLayer';
+import { SportPlaceLayer } from './SportPlaceLayer';
 import { OsmTileAccessBanner } from './OsmTileAccessBanner';
 import { useAppStore } from '../../store/useAppStore';
 import { useMapDwell } from '../../hooks/useMapDwell';
@@ -27,6 +28,7 @@ export function CampusMapView() {
       <MapCanvas />
       <EventLayer />
       <SocietyPinLayer />
+      <SportPlaceLayer />
       {/* Floor selector moved off the right edge (it overlapped the Místa panel)
           into the left column under the search. */}
       <div className="absolute top-3 left-3 z-[1000] flex flex-col items-start gap-2">
@@ -36,8 +38,11 @@ export function CampusMapView() {
       <div className="absolute top-3 right-3 z-[1000]">
         <MapSidePanel />
       </div>
+      {/* Bounded by the map, below the search, and scrolls: a venue card
+          (S-klub's photos, lunch and menu) is taller than the map, and
+          unbounded its name and "Trasa sem" sat above it, out of reach. */}
       {selection && (
-        <div className="absolute bottom-3 left-3 z-[1000] w-72">
+        <div className="absolute bottom-3 left-3 z-[1000] max-h-[calc(100%-5rem)] w-72 overflow-y-auto overscroll-contain rounded-lg">
           <DetailPanel />
         </div>
       )}

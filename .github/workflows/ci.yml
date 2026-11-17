@@ -63,6 +63,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx vitest run
+      # reIS for Claude: build the .mcpb server and start it (initialize +
+      # tools/list, no IS traffic). Here, in a required check, because a
+      # dependency bump can break the bundle without touching mcp/ (officeparser
+      # 8.4 did), and Dependabot auto-merges on the required checks alone.
+      - name: reIS for Claude server starts
+        run: npm run mcp:smoke
 
   # The preview build target is exercised by nothing else — no test imports it
   # and no developer runs it by hand — so without this job it would break

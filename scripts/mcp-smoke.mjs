@@ -44,7 +44,8 @@ function finish(code, message) {
 }
 child.on('exit', (code) => finish(1, `server exited with ${code}`));
 toServer.on('error', (e) => finish(1, `server stdin: ${e.message}`));
-const timer = setTimeout(() => finish(1, 'timed out'), 90000);
+// Live runs download real files (mendelu_read_file), which takes longer.
+const timer = setTimeout(() => finish(1, 'timed out'), live ? 300000 : 90000);
 
 let buf = '';
 const waiters = new Map();
@@ -77,7 +78,80 @@ const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sor
 console.log('tools:', tools.length, tools.join(', '));
 let failed = tools.length !== 10;
 
+const json = async (name, args) => {
+  const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
+  const text = r.result.content[0].text;
+  if (r.result.isError) throw new Error(text);
+  if (!text.includes('\n\n[truncated at ')) return JSON.parse(text);
+  // Only a document's text may run past the character limit. The cut JSON no
+  // longer parses, but its kind comes before the text.
+  if (name !== 'mendelu_read_file') throw new Error(`${name}: output cut at the limit`);
+  return { kind: /"kind": "([^"]+)"/.exec(text)?.[1], truncated: text.length };
+};
+
+/** The one refusal a healthy server gives on purpose (files.ts readCapped). */
+const TOO_BIG = 'too big to read here';
+/** mendelu_subject_files errors that mean "nothing to list", not a broken server. */
+const SKIPPABLE_LISTING = ['has no file folder', 'output cut at the limit'];
+
+/**
+ * mendelu_read_file takes a downloadUrl, so `{}` proves nothing. IS file names
+ * carry no extension, so read the student's own subject files in turn until a
+ * PDF and a DOCX have given text. Prints only the kind and the length of the
+ * text, never the text or a file name.
+ */
+async function readRealFiles() {
+  const MAX_READS = 25;
+  const longest = new Map(); // kind -> longest text read of that kind
+  const refusals = [];
+  const listingErrors = [];
+  let reads = 0;
+  const done = () => longest.get('pdf') > 0 && longest.get('docx') > 0;
+  outer: for (const s of await json('mendelu_subjects', {})) {
+    // Stop before listing another folder once the reads are done.
+    if (done() || reads >= MAX_READS) break;
+    let files;
+    try {
+      files = await json('mendelu_subject_files', { code: s.subjectCode });
+    } catch (e) {
+      const m = e.message.split('\n')[0];
+      // Expected: a subject with no IS folder (tools.ts), or a list too long to
+      // come back whole. Anything else is a broken listing, which could hide
+      // the only DOCX, so it fails the run.
+      if (!SKIPPABLE_LISTING.some((s) => m.includes(s))) listingErrors.push(m);
+      else console.log(`  a subject's file list was skipped: ${m}`);
+      continue;
+    }
+    for (const f of files) {
+      if (done() || reads >= MAX_READS) break outer;
+      reads++;
+      try {
+        const doc = await json('mendelu_read_file', { url: f.downloadUrl });
+        const chars = doc.truncated ?? (typeof doc.text === 'string' ? doc.text.length : 0);
+        // A scanned file reads as 0 chars; a later file of its kind may still have text.
+        if (doc.kind) longest.set(doc.kind, Math.max(longest.get(doc.kind) ?? 0, chars));
+      } catch (e) {
+        refusals.push(e.message.split('\n')[0]);
+      }
+    }
+  }
+  // Unsupported types come back as a note, not an error, so any refusal but
+  // the size cap is a broken read (of a file whose kind we never learn).
+  const broken = [...listingErrors, ...refusals.filter((m) => !m.includes(TOO_BIG))];
+  console.log(`mendelu_read_file: ${reads} files read, ${refusals.length} refused`);
+  for (const [kind, chars] of longest) console.log(`  ${kind}: ${chars} chars of text`);
+  for (const m of broken) console.log(`  broken read: ${m}`);
+  // A PDF is the case that matters; a DOCX only if the student has one.
+  return (
+    longest.get('pdf') > 0 && (!longest.has('docx') || longest.get('docx') > 0) && !broken.length
+  );
+}
+
 for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
+  if (name === 'mendelu_read_file') {
+    if (!(await readRealFiles())) failed = true;
+    continue;
+  }
   const r = await call('tools/call', { name, arguments: {} });
   const text = r.result.content[0].text;
   const summary = r.result.isError

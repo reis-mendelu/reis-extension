@@ -43,6 +43,8 @@ import './snapshotUserParams';
 // canteen menu is fetched through the content-script proxy, which does not
 // exist here. See menuSeed.ts.
 import './menuSeed';
+// S-klub's week, the same way. See sklubMenuSeed.ts.
+import './sklubMenuSeed';
 
 // Last, and deliberately after the app: signs the harness in as a real society
 // / reIS-admin account when credentials are configured, so the admin console

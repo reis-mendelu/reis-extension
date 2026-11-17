@@ -13,6 +13,8 @@ import { useTranslation } from '../../../../hooks/useTranslation';
 import { MapPanelBody } from './MapPanelBody';
 import { MapSheetPeek } from './MapSheetPeek';
 import { MapSheetHeader } from './MapSheetHeader';
+import { useMapCardDetent } from './useMapCardDetent';
+import { libraryOf } from './library/libraryOf';
 import { useRoomDirections } from '../../../CampusMap/useRoomDirections';
 import { floorText } from '../../../CampusMap/floorText';
 import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
@@ -58,7 +60,23 @@ export function MapSheet() {
   const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
-  const selectedCard = selectedEvent || selectedGardenPlace || selectedSocietyPin;
+  // A Sportera place likewise.
+  const selectedSportPlace = selection?.kind === 'sportPlace' ? selection.place : null;
+  // The library's room list, or one of its rooms (also when tapped on the plan).
+  const selectedLibrary = libraryOf(selection);
+  const selectedCard =
+    selectedEvent ||
+    selectedGardenPlace ||
+    selectedSocietyPin ||
+    selectedSportPlace ||
+    selectedLibrary;
+  // The phone shows a venue's menu category as a page of its own (VenueCard).
+  const venueMenuSection = useAppStore((s) => s.venueMenuSection);
+  const setVenueMenuSection = useAppStore((s) => s.setVenueMenuSection);
+  const venueMenuOpen =
+    !!selectedSocietyPin?.venue &&
+    !!venueMenuSection &&
+    selectedSocietyPin.venue.menu.some((m) => m.id === venueMenuSection);
 
   // `peek` is the only stop that hides the LIST. It is no longer blank — it
   // shows the next event (`MapSheetPeek`) — but one row is not the week, which
@@ -118,29 +136,23 @@ export function MapSheet() {
     goToDetent(expanded ? 'peek' : 'half');
   };
 
-  /**
-   * Tapping an event pin selects it, and on a phone this sheet is the only
-   * surface that can show it — desktop has DetailPanel floating over the map,
-   * which there is no room for here. A selection made at peek height would
-   * otherwise be invisible: the pin would highlight and nothing else would
-   * happen.
-   */
-  //
-  // Keyed on the selection OBJECT, not the event: a second tap on the same pin
-  // selects the same event reference, and must still open the card.
-  useEffect(() => {
-    if (
-      !selection ||
-      (selection.kind !== 'event' &&
-        selection.kind !== 'gardenPlace' &&
-        selection.kind !== 'societyPin')
-    )
-      return;
-    // 'half', not 'expanded' — and the height below hugs the card anyway. Any
-    // state out of 'peek' will do; what this call is really for is getting the
-    // peek row out of the way so the card can render at all.
-    setSheetState('half');
-  }, [selection, setSheetState]);
+  // A card opens the sheet ('half'; the height below hugs it), remembers where
+  // the sheet was for Back, and a room picked from a card collapses it.
+  useMapCardDetent();
+  const cardReturn = useAppStore((s) => s.mapCardReturn);
+  const backFromCard = () => {
+    const to = cardReturn ?? 'half';
+    clearMapSelection();
+    setSheetState(to);
+  };
+  // Opened on the collapsed sheet — an arrival from another screen, a pin
+  // tapped over the map — the card shows its top (name, open now, "Trasa
+  // sem") and leaves the map in view; pulling up gives it the tall sheet.
+  // Not the library: its card is something to work in (six rooms, then a day
+  // of hours and the button that books them), and at 40vh the button sat below
+  // the fold under the nav.
+  const compactCard =
+    !!selectedCard && !selectedLibrary && sheetState === 'half' && cardReturn === 'peek';
 
   // A drawn route is an answer, and the sheet is 45% of the screen in front of
   // it. Whatever the student had open, the map wins the moment directions
@@ -218,7 +230,9 @@ export function MapSheet() {
         dragHeight === null ? 'transition-[height] duration-300 ease-out' : ''
       } ${
         hugContent
-          ? 'h-auto max-h-[70vh] pb-[calc(72px_+_var(--safe-bottom,0px))]'
+          ? // The compact cap only while resting: mid-drag it held the sheet
+            // back at 40vh under a finger pulling it higher (review on #666).
+            `h-auto ${compactCard && dragHeight === null ? 'max-h-[40vh]' : 'max-h-[70vh]'} pb-[calc(72px_+_var(--safe-bottom,0px))]`
           : fullyExpanded
             ? 'h-[70vh]'
             : sheetState === 'half'
@@ -291,9 +305,29 @@ export function MapSheet() {
         <>
           <MapSheetHeader
             showingCard={!!selectedCard}
-            heading={directions ? `${directions.label} · ${floorText(directions.level, t)}` : null}
+            heading={
+              selectedLibrary
+                ? t('mobile.library.title')
+                : venueMenuOpen
+                  ? selectedSocietyPin!.title
+                  : directions
+                    ? `${directions.label} · ${floorText(directions.level, t)}`
+                    : null
+            }
             onCollapse={toggle}
-            onBack={clearMapSelection}
+            // A venue's menu category is a page inside its card, so Back from
+            // there returns to the card, and the header names where it goes.
+            // From one library room Back returns to the room list, not to nothing.
+            onBack={
+              selectedLibrary?.featureId != null
+                ? () => useAppStore.getState().selectMapLibrary()
+                : venueMenuOpen
+                  ? () => setVenueMenuSection(null)
+                  : backFromCard
+            }
+            backLabel={
+              venueMenuOpen ? t('map.venueBackTo', { venue: selectedSocietyPin!.title }) : undefined
+            }
           />
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
@@ -302,6 +336,8 @@ export function MapSheet() {
               selectedEvent={selectedEvent}
               selectedGardenPlace={selectedGardenPlace}
               selectedSocietyPin={selectedSocietyPin}
+              selectedSportPlace={selectedSportPlace}
+              selectedLibrary={selectedLibrary}
             />
           </div>
         </>

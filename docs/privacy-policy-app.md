@@ -1,6 +1,7 @@
 # Privacy Policy for reIS
 
 **Last Updated: 31 October 2026**
+**Last Updated: 17 November 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -41,11 +42,15 @@ yourself — see *Report attachments* below.
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
 | Week view used | when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day | the random install identifier and the fixed `calendar_week_view` label |
+| Screen opened | when the calendar, Předměty, Jídelníček, search, Vývěska, Novinky or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day | the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`) — nothing about what was on it, what you searched for or how long you stayed |
+| Partner programme opened | you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day | the random install identifier and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website |
+| Library study-room booking (mobile app only) | you book or cancel a study room | your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS |
 <!-- END generated:flows -->
 
 Which partner company you are shown, if any, is decided on your device from your
 faculty and study programme. Partners never receive anything about you; they see
-only aggregate counts of views, clicks and map views for their own events.
+only aggregate counts of views, clicks and map views for their own events, and,
+for a programme shown under Stáže, how many installs opened it.
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
 the usage count and counters follow the technical-data switch in `about:addons`,
@@ -79,38 +84,61 @@ database — infrastructure, not a recipient doing anything of its own.
 
 **WebISKAM** (the university's accommodation and canteen system) receives, only
 in the mobile app (Android, iPhone, iPad) and only when you ask for your ISIC
-balance or a top-up, the MENDELU sign-in you make on MENDELU's own page — your
+balance, a top-up or a dorm payment, the MENDELU sign-in you make on MENDELU's own page — your
 password goes to MENDELU, never to reIS. reIS keeps the sign-in encrypted on your
 device; while you are signed in the device's own web-cookie store holds it too,
-like any browser, and signing out deletes both. The balance is shown, never
-stored. A top-up sends WebISKAM the amount you typed and whether you chose card or
+like any browser, and signing out deletes both. The balance and your open dorm
+payments (pohledávky) are shown, never stored. To pay one, reIS opens WebISKAM's
+own page with its pay dialog up; you confirm it there, and reIS sends no payment. A top-up sends WebISKAM the amount you typed and whether you chose card or
 Google Pay, so it can create the payment; it then opens **GoPay**'s payment page
 in your device's browser view, and your card or Google Pay details go to GoPay
 and never to reIS.
+
+**S-klub Pixie** (`sklubpixie.cz`), the café in budova Z, serves its public
+daily menu page, which reIS reads at startup (and again when you return to the
+app, if the menu is over ten minutes old) to show the café's lunch in the
+Jídelníček and on its map card. The request carries no reIS identifier, sign-in
+or academic data; like any web request, it shows S-klub's server your IP address
+and app version.
+
+**Microsoft Bookings** (the library's booking system, in MENDELU's Microsoft
+tenant) receives, only in the mobile app (Android, iPhone, iPad) and only when you
+reserve or cancel a library study room, your name, MENDELU e-mail, student number
+and faculty code, which is what the library asks for, plus a short marker ("reIS")
+so the librarians can tell the booking came from the app. The request goes from
+your device straight to the library's booking page, never through reIS, and
+Microsoft e-mails you the confirmation or the cancellation. The app keeps the
+booking's cancellation key and a calendar entry on your device only. Looking at
+which rooms are free sends the room and the dates, nothing about you.
 
 We do **not** sell or trade your personal information, and transfer it to no one
 else.
 
 ## Permissions
 
-**Android:** internet; notifications (so a download can say it finished, and
-so reIS can tell you about new exam terms, submission boxes and points); network
-state, so the background check below runs only while the phone is online;
-running at startup and keeping the device awake briefly, which come with the
-same notifications library — reIS no longer schedules event reminders, and these
-two leave with the library in a later release; Wi-Fi state, only for optional
-one-tap eduroam, where Android's own dialog saves the network.
+**Android:** internet; notifications (what is new in Novinky — a new exam
+date, new points, a new submission box, society events and school notices,
+which you can switch off in Nastavení — reminders of your exams and deadlines,
+and a finished download); network state, so the background check below runs
+only while the phone is online; running at startup and keeping the device awake
+briefly, which come with the same notifications library; Wi-Fi state, only for
+optional one-tap eduroam, where Android's own dialog saves the network.
 
 **Android background check:** at most every 15 minutes (less often when the
 phone saves battery), while reIS is closed and the phone is online, the app asks IS Mendelu — with the sign-in you already gave
 it, exactly as when you open it — for new exam terms, submission boxes and
 points, and shows what is new as a notification. Nothing it reads is sent
-anywhere else. You can switch it off in Settings, and signing out stops it.
+anywhere else. Switching reIS notifications off in the phone's settings, or
+signing out, stops it.
 
 **iOS:** the camera, only if you choose to take a photo — to attach to a problem
 report, where the photo goes into the report form like any other picture, or, on
 an iPad, to put on a page of your notes, where it stays on the device with your
-ink. iOS asks you first. reIS no longer asks for notifications on iOS.
+ink. iOS asks you first. Notifications, for the same Novinky news and exam
+reminders as on Android, asked once you are registered for an exam.
+
+Notifications are made on the phone from what reIS already has there; nothing
+is sent anywhere to show them.
 
 **Neither app requests location** — the campus map shows the campus, not you.
 
@@ -124,10 +152,12 @@ and we will delete it; the daily-count rows hold nothing that identifies you.
 
 We may update this policy; changes appear here with a new date. Google Drive
 backup, Outlook calendar sync, the earlier WebISKAM integration (dorm, meals and
-the rest), library study-room booking, AI syllabus comparison and automatic error
-reporting have all been removed from reIS, along with everything they sent. In
-October 2026 WebISKAM came back for one thing only — the ISIC balance and its
-top-up, described above.
+the rest), AI syllabus comparison and automatic error reporting have all been
+removed from reIS, along with everything they sent. In October 2026 WebISKAM came
+back for one thing only — the ISIC balance and its top-up, described above; since
+November 2026 that row also shows open dorm payments and opens WebISKAM's page to
+pay one. Library study-room booking, removed in September 2026, returned in the
+mobile app, described above.
 
 ## Contact
 

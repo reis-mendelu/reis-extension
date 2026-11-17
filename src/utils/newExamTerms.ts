@@ -1,8 +1,12 @@
 import type { ExamSubject } from '../types/exams';
 
-/** A term's identity across syncs: IS's own term id under its subject and section. */
-export const examTermKey = (courseCode: string, sectionId: string, termId: string): string =>
-  `${courseCode}\u0000${sectionId}\u0000${termId}`;
+/**
+ * A term's identity across syncs: IS's own term id under its subject. Not the
+ * section id: that is built from the section's name, which differs between
+ * IS's Czech and English pages, and the sync falls back to English alone.
+ */
+export const examTermKey = (courseCode: string, termId: string): string =>
+  `${courseCode}\u0000${termId}`;
 
 export interface NewExamTerm {
   key: string;
@@ -20,7 +24,7 @@ export interface NewExamTerm {
  */
 export function allTermKeys(exams: readonly ExamSubject[]): string[] {
   return exams.flatMap((s) =>
-    s.sections.flatMap((sec) => sec.terms.map((t) => examTermKey(s.code, sec.id, t.id)))
+    s.sections.flatMap((sec) => sec.terms.map((t) => examTermKey(s.code, t.id)))
   );
 }
 
@@ -44,9 +48,9 @@ export function findNewTerms(
       .filter((sec) => sec.status !== 'registered')
       .flatMap((sec) =>
         sec.terms
-          .filter((t) => !t.cannotRegister && !known.has(examTermKey(s.code, sec.id, t.id)))
+          .filter((t) => !t.cannotRegister && !known.has(examTermKey(s.code, t.id)))
           .map((t) => ({
-            key: examTermKey(s.code, sec.id, t.id),
+            key: examTermKey(s.code, t.id),
             courseCode: s.code,
             subjectCs: s.nameCs ?? s.name,
             subjectEn: s.nameEn ?? s.name,

@@ -23,9 +23,16 @@ export interface Flow {
   what: string;
   when: 'background' | 'student-action';
   identifier: 'install_id' | 'none' | 'contact';
-  /** Files under src/ that make this flow's Supabase calls. */
+  /**
+   * `direct`: the device sends it straight to a third party (the library's
+   * Microsoft Bookings), never through reIS's Supabase. Its `files` and `calls`
+   * then name that code and endpoint, and are not held to the Supabase checks;
+   * its store declarations and policy rows are.
+   */
+  transport?: 'supabase' | 'direct';
+  /** Files under src/ that make this flow's Supabase calls (or, `direct`, its requests). */
   files: string[];
-  /** RPC or table names this flow uses. */
+  /** RPC or table names this flow uses (or, `direct`, the endpoints). */
   calls: string[];
   /** Rows of the "What we do send" table in docs/privacy-policy-app.md: [what, when, carries]. */
   policyRows: Array<[string, string, string]>;
@@ -165,7 +172,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Four feature counters on the random install id, one whitelisted label each.',
+    what: 'Twelve feature counters on the random install id, one whitelisted label each: five feature uses (one of them a tap on a partner programme card in Stáže) and seven screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -191,12 +198,54 @@ export const FLOWS: Flow[] = [
         'when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day',
         'the random install identifier and the fixed `calendar_week_view` label',
       ],
+      [
+        'Screen opened',
+        'when the calendar, Předměty, Jídelníček, search, Vývěska, Novinky or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day',
+        'the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`) — nothing about what was on it, what you searched for or how long you stayed',
+      ],
+      [
+        'Partner programme opened',
+        'you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day',
+        'the random install identifier and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website',
+      ],
     ],
     stores: {
-      apple: [INSTALL_ID_APPLE],
-      play: ['PSL_USER_ACCOUNT'],
+      // Which screens an install opened is "how the user interacts with the
+      // app" in both stores' own words (Apple Product Interaction, Play App
+      // interactions), linked through the same install id.
+      apple: [
+        INSTALL_ID_APPLE,
+        { type: 'Product Interaction', purpose: 'Analytics', linked: true, tracking: false },
+      ],
+      play: ['PSL_USER_ACCOUNT', 'PSL_USER_INTERACTION'],
       firefox: ['technicalAndInteraction'],
       cws: ['User activity'],
+    },
+  },
+  {
+    id: 'library_booking',
+    what: "A library study-room booking (phone and iPad only): the student's name, MENDELU e-mail, student number and faculty code, and a \"reIS\" note, sent from the device straight to the library's Microsoft Bookings (MENDELU's tenant) when the student books or cancels. Looking at free hours sends only rooms and dates.",
+    when: 'student-action',
+    identifier: 'contact',
+    transport: 'direct',
+    files: ['src/mobile/library/createBooking.ts', 'src/mobile/library/cancelBooking.ts'],
+    calls: ['bookings.cloud.microsoft/appointments'],
+    policyRows: [
+      [
+        'Library study-room booking (mobile app only)',
+        'you book or cancel a study room',
+        "your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS",
+      ],
+    ],
+    stores: {
+      apple: [
+        { type: 'Name', purpose: 'App Functionality', linked: true, tracking: false },
+        { type: 'Email Address', purpose: 'App Functionality', linked: true, tracking: false },
+        { type: 'User ID', purpose: 'App Functionality', linked: true, tracking: false },
+      ],
+      play: ['PSL_NAME', 'PSL_EMAIL', 'PSL_USER_ACCOUNT'],
+      firefox: [],
+      cws: [],
     },
   },
 ];
@@ -221,6 +270,16 @@ export const EXEMPT: Exempt[] = [
     call: 'map_pins',
     files: ['src/api/mapEvents.ts'],
     why: 'Public read of the live society pins on the map; written by reIS staff in Supabase, never a student.',
+  },
+  {
+    call: 'venues',
+    files: ['src/api/venues.ts'],
+    why: 'Public read of the venues on the map (hours, menu, photo paths); written by reIS staff in Supabase, never a student.',
+  },
+  {
+    call: 'is_notice_mutes',
+    files: ['src/api/isNoticeMutes.ts', 'src/api/isNoticeMutesAdmin.ts'],
+    why: 'Public read of the whole list of IS notices reIS muted, filtered on the device: the request says nothing about what the student’s IS shows them, which never leaves the device. Writes are by a signed-in reis_admin, never a student.',
   },
   {
     call: 'reis_questions',

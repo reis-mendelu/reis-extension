@@ -8,6 +8,8 @@ import type {
 import { SubjectsDataSchema } from '../schemas/subjectSchema';
 import { logError } from '../utils/reportError';
 import { parseAttendance } from './attendance';
+import { subjectsPageShape, type SubjectsPageShape } from './subjectsPageShape';
+import { classifyIsPage, notUnderstood } from './isPage';
 
 const STUDENT_LIST_URL = `${BASE_URL}/auth/student/list.pl`;
 
@@ -42,6 +44,10 @@ export interface SubjectsFetchResult {
   subjects: SubjectsData;
   attendance: Record<string, SubjectAttendance[]>;
   availablePeriods: AvailablePeriod[];
+  /** Counts of what the Czech page offered the parser — for the diagnostic
+   *  log when the list comes back short. Optional: tests and callers that
+   *  build a result by hand need not invent one. */
+  shape?: SubjectsPageShape;
 }
 
 function buildListUrl(lang: string, studium?: string, obdobi?: string): string {
@@ -176,6 +182,15 @@ export async function fetchDualLanguageSubjects(
       }
     }
 
+    // `{ data: {} }` is truthy, so a page this parser could not read used to be
+    // stored as "no subjects" over the real list (reports 30, 41, 42). Such a
+    // page is a failed read: null keeps the cache, as a failed fetch does.
+    const shape = subjectsPageShape(czHtml);
+    if (classifyIsPage(merged, Object.keys(merged).length, shape).kind === 'unrecognised') {
+      logError('Api.fetchDualLanguageSubjects', notUnderstood('subjects', shape));
+      return null;
+    }
+
     const subjectsData: SubjectsData = {
       version: 1,
       lastUpdated: new Date().toISOString(),
@@ -184,7 +199,12 @@ export async function fetchDualLanguageSubjects(
 
     const result = SubjectsDataSchema.safeParse(subjectsData);
     const availablePeriods = parseAvailablePeriods(periodsHtml);
-    return { subjects: result.success ? result.data : subjectsData, attendance, availablePeriods };
+    return {
+      subjects: result.success ? result.data : subjectsData,
+      attendance,
+      availablePeriods,
+      shape,
+    };
   } catch (e) {
     logError('Api.fetchDualLanguageSubjects', e);
     return null;

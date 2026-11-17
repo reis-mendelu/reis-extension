@@ -72,7 +72,7 @@ export function HiddenItemsSection() {
           ))}
           {hiddenItems.events.map((event) => (
             <div
-              key={event.id}
+              key={`${event.id}-${event.date}`}
               className="flex items-center gap-3 p-2 bg-base-200/50 rounded-lg group/item"
             >
               <Calendar size={14} className="text-info/60 shrink-0" />
@@ -84,7 +84,7 @@ export function HiddenItemsSection() {
                 </p>
               </div>
               <button
-                onClick={() => unhideEvent(event.id)}
+                onClick={() => unhideEvent(event.id, event.date)}
                 className="btn btn-ghost btn-xs btn-circle hover:bg-primary/20 hover:text-primary transition-colors shrink-0"
                 title={t('calendar.hide.restore')}
               >

@@ -3,10 +3,13 @@ import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import { SNAPSHOT_FILENAMES } from './scripts/stripDevRealData.mjs';
 import { pdfjsLegacyAliases } from './scripts/pdfjsLegacyAlias';
+import { IS_HOST, isHostSwapped, isHostSwapPlugin, swapManifest } from './scripts/isHostSwap';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   srcDir: 'src',
+  // A prototype for another school builds next to the real one, never over it.
+  ...(isHostSwapped && { outDir: `.output/${IS_HOST}` }),
   modules: ['@wxt-dev/module-react'],
   hooks: {
     // Never ship the localhost real-data snapshot in a production build.
@@ -37,6 +40,7 @@ export default defineConfig({
     // the release fails with "Could not find manifest.version". Learned the
     // hard way, twice, in one release.
     'build:manifestGenerated'(wxt, manifest) {
+      if (isHostSwapped) swapManifest(manifest);
       if (wxt.config.manifestVersion === 3) return;
       delete manifest.declarative_net_request;
       const osmTiles = 'https://tile.openstreetmap.org/*';
@@ -65,7 +69,7 @@ export default defineConfig({
   },
   manifest: {
     name: 'reIS',
-    version: '5.6.0',
+    version: '5.7.2',
     description: 'Modernizovaný reIS rozšířený pro IS Mendelu',
     icons: {
       16: 'reIS_logo_16.png',
@@ -117,6 +121,10 @@ export default defineConfig({
       'https://raw.githubusercontent.com/reis-mendelu/reis-data/*',
       'https://cdn.jsdelivr.net/gh/reis-mendelu/reis-data@main/*',
       'https://skm.mendelu.cz/*',
+      // S-klub Pixie's daily menu (api/sklubMenu.ts), read through the
+      // background fetch like SKM's. New in this release, so Chrome and Firefox
+      // ask existing installs to approve it on update.
+      'https://sklubpixie.cz/*',
       'https://mendelu.cz/*',
       'https://zvbpgkmnrqyprtkyxkwn.supabase.co/*',
       'https://hei.api.uni-foundation.eu/*',
@@ -173,7 +181,7 @@ export default defineConfig({
     ],
   },
   vite: () => ({
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), isHostSwapPlugin()],
     resolve: {
       alias: [{ find: '@', replacement: path.resolve(__dirname, './src') }, ...pdfjsLegacyAliases],
     },

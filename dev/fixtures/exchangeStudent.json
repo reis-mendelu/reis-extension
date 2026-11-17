@@ -1,0 +1,64 @@
+{
+  "_comment": "Synthetic Erasmus/exchange student: no study plan (IS has no KontrolaPlanu for them), no averages, and four subject folders from student/list.pl. Subject codes and ids are public catalogue entries from the snapshot; folder ids are invented. Exercises the subjects-store fallback on both trees (useEffectiveStudyPlan). Serve with: REIS_FIXTURE=exchangeStudent npm run dev:web",
+  "studyPlan": null,
+  "studyStats": null,
+  "studyComparison": null,
+  "subjects": {
+    "version": 1,
+    "lastUpdated": "2026-11-06T00:00:00.000Z",
+    "data": {
+      "EBC-MNG": {
+        "displayName": "Management",
+        "fullName": "EBC-MNG Management",
+        "nameCs": "Management",
+        "nameEn": "Management",
+        "subjectCode": "EBC-MNG",
+        "subjectId": "164226",
+        "folderUrl": "https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=1;id=fx-ex1;lang=cz",
+        "hasPrubezne": false,
+        "hasTest": false,
+        "autoHref": null,
+        "fetchedAt": "2026-11-06T00:00:00.000Z"
+      },
+      "EBC-M": {
+        "displayName": "Matlab",
+        "fullName": "EBC-M Matlab",
+        "nameCs": "Matlab",
+        "nameEn": "Matlab",
+        "subjectCode": "EBC-M",
+        "subjectId": "164073",
+        "folderUrl": "https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=1;id=fx-ex2;lang=cz",
+        "hasPrubezne": false,
+        "hasTest": false,
+        "autoHref": null,
+        "fetchedAt": "2026-11-06T00:00:00.000Z"
+      },
+      "EBA-OTII": {
+        "displayName": "Odborná terminologie v AJ: IS/ICT",
+        "fullName": "EBA-OTII Odborná terminologie v AJ: IS/ICT",
+        "nameCs": "Odborná terminologie v AJ: IS/ICT",
+        "nameEn": "English Terminology: IS/ICT",
+        "subjectCode": "EBA-OTII",
+        "subjectId": "164062",
+        "folderUrl": "https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=1;id=fx-ex3;lang=cz",
+        "hasPrubezne": false,
+        "hasTest": false,
+        "autoHref": null,
+        "fetchedAt": "2026-11-06T00:00:00.000Z"
+      },
+      "EBC-PS": {
+        "displayName": "Počítačové sítě",
+        "fullName": "EBC-PS Počítačové sítě",
+        "nameCs": "Počítačové sítě",
+        "nameEn": "Computer Networks",
+        "subjectCode": "EBC-PS",
+        "subjectId": "164074",
+        "folderUrl": "https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=1;id=fx-ex4;lang=cz",
+        "hasPrubezne": false,
+        "hasTest": false,
+        "autoHref": null,
+        "fetchedAt": "2026-11-06T00:00:00.000Z"
+      }
+    }
+  }
+}

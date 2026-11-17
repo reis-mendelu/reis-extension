@@ -11,8 +11,8 @@ import { useTranslation } from '../../../../hooks/useTranslation';
  * row is the nearest grab surface to the content the student is reading, which
  * is why `touch-none` is on it too and not only on the pill.
  *
- * It replaced a segmented control. Library study-room reservation is hidden on
- * mobile, so unless a building is selected there is exactly one tab, and a
+ * It replaced a segmented control. There is exactly one thing in this panel at
+ * a time (the events, or a card from a pin, the library's rooms included), and a
  * track with a selected pill framing the only thing you could pick is all
  * chrome. The row still had to exist for the grab, so it became a heading whose
  * tap collapses.
@@ -22,6 +22,7 @@ export function MapSheetHeader({
   heading,
   onCollapse,
   onBack,
+  backLabel,
 }: {
   /** A tapped pin's card is showing, so the row is Back rather than a heading. */
   showingCard: boolean;
@@ -29,6 +30,8 @@ export function MapSheetHeader({
   heading?: string | null;
   onCollapse: () => void;
   onBack: () => void;
+  /** Where Back goes, for a screen reader, when the heading alone does not say so. */
+  backLabel?: string;
 }) {
   const { t } = useTranslation();
   const title = (
@@ -45,6 +48,7 @@ export function MapSheetHeader({
       <button
         type="button"
         onClick={onBack}
+        aria-label={backLabel}
         className="flex flex-shrink-0 touch-none items-center gap-1.5 px-5 pb-2 text-left"
       >
         <ChevronLeft size={18} className="flex-shrink-0 text-base-content/40" />

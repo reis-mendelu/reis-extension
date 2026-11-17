@@ -3,6 +3,7 @@ import { fetchSubjectZaznamnik } from '../../api/zaznamnik';
 import type { SubjectZaznamnik } from '../../types/zaznamnik';
 import { IndexedDBService } from '../storage/IndexedDBService';
 import { logError } from '../../utils/reportError';
+import { traceOnce } from '../../utils/diagnostics/syncTrace';
 
 // Domain-specific cap: each call fans out to PH + VT (2 fetches), so 2 in flight = 4 sockets.
 const zaznamnikLimit = pLimit(2);
@@ -20,19 +21,28 @@ export async function syncZaznamnik(
   inputs: ZaznamnikSyncInput[]
 ): Promise<Record<string, SubjectZaznamnik | null>> {
   const result: Record<string, SubjectZaznamnik | null> = {};
+  const asked = inputs.filter((i) => i.subjectId && (i.hasPrubezne || i.hasTest));
+  let failed = 0;
+  let empty = 0;
   await Promise.all(
-    inputs
-      .filter((i) => i.subjectId && (i.hasPrubezne || i.hasTest))
-      .map((i) =>
-        zaznamnikLimit(async () => {
-          try {
-            result[i.courseCode] = await fetchSubjectZaznamnik(studium, obdobi, i.subjectId);
-          } catch {
-            // Swallow per-subject failures — partial map is fine, merge guard prevents overwrite
-          }
-        })
-      )
+    asked.map((i) =>
+      zaznamnikLimit(async () => {
+        try {
+          const z = await fetchSubjectZaznamnik(studium, obdobi, i.subjectId);
+          result[i.courseCode] = z;
+          if (!z) failed++;
+          else if (z.ph.sections.length === 0 && z.vt.tests.length === 0) empty++;
+        } catch {
+          // Swallow per-subject failures — partial map is fine, merge guard prevents overwrite
+          failed++;
+        }
+      })
+    )
   );
+  // Counts only, never which subject: what a "Zápisník is empty" report needs
+  // to tell "IS had nothing" from "the fetch failed".
+  if (failed > 0 || empty > 0)
+    traceOnce('Sync.zaznamnik', `${asked.length} asked, ${failed} failed, ${empty} empty`);
   return result;
 }
 
