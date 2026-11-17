@@ -32,15 +32,25 @@ describe('society events stay reduced', () => {
     expect(grep('set_event_rsvp|get_event_rsvps')).toBe('');
   });
 
-  // Two schedulers, both about IS, neither about societies: exam-opening
-  // reminders (spec 2026-10-20) and the záznamník's "Nové body" (decided
-  // 2026-10-20). Nothing else may schedule: event reminders stay gone.
-  it('no scheduled local notifications besides exam openings and záznamník points', () => {
+  // Two schedulers. Exam-opening reminders (spec 2026-10-20), and Novinky's rows
+  // as notifications, 1:1 (decided with Dominik 2026-11-17): a society event is
+  // announced when it appears in Novinky, behind the "Od spolků a MENDELU"
+  // switch. That is an announcement, never a reminder before the event: event
+  // reminders stay gone, which the second test pins.
+  it('no scheduled local notifications besides exam openings and Novinky rows', () => {
     expect(
       grep('LocalNotifications\\.schedule', [
         'src/mobile/examReminders.ts',
-        'src/mobile/zaznamnikNotifications.ts',
+        'src/mobile/novinkyPost.ts',
       ])
+    ).toBe('');
+  });
+
+  it('Novinky rows are posted now, never scheduled for later', () => {
+    expect(
+      execSync('git grep -n -E "schedule: \\{|\\bat:" -- src/mobile/novinkyPost.ts || true', {
+        encoding: 'utf8',
+      })
     ).toBe('');
   });
 

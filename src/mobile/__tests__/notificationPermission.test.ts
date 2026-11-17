@@ -18,6 +18,7 @@ vi.mock('@capacitor/core', async (importOriginal) => {
 });
 
 import {
+  askAfterFirstRegistration,
   askNotificationsIfNeverAsked,
   enableNotifications,
   refreshNotificationStatus,
@@ -98,5 +99,39 @@ describe('notification permission', () => {
     ln.checkPermissions.mockResolvedValue({ display: 'denied' });
     await enableNotifications();
     expect(launch).toHaveBeenCalledWith('app-settings:');
+  });
+
+  // Agreed 2026-11-17: the one system dialog comes when it means something,
+  // after the student's first exam registration — "připomeneme ti ji večer
+  // předem" — not at first launch, when there is nothing to remind.
+  describe('asked after the first exam registration', () => {
+    const exam = (status: 'open' | 'registered') => ({
+      version: 1 as const,
+      id: 'A',
+      name: 'A',
+      code: 'EBC-A',
+      sections: [{ id: 's', name: 'zkouška', type: 'exam', status, terms: [] }],
+    });
+    const settle = () => new Promise((r) => setTimeout(r, 0));
+
+    it('waits while the student is registered nowhere, then asks once', async () => {
+      ln.checkPermissions.mockResolvedValue({ display: 'prompt' });
+      ln.requestPermissions.mockResolvedValue({ display: 'granted' });
+      useAppStore.setState({ exams: { data: [exam('open')], status: 'success', error: null } });
+      const stop = askAfterFirstRegistration();
+      await settle();
+      expect(ln.requestPermissions).not.toHaveBeenCalled();
+
+      useAppStore.setState({
+        exams: { data: [exam('registered')], status: 'success', error: null },
+      });
+      await settle();
+      useAppStore.setState({
+        exams: { data: [exam('registered')], status: 'success', error: null },
+      });
+      await settle();
+      expect(ln.requestPermissions).toHaveBeenCalledTimes(1);
+      stop();
+    });
   });
 });
