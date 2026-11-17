@@ -5,8 +5,7 @@ import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
 import { persistZaznamnikBatch } from '../services/sync/zaznamnikNewPoints';
 import { persistNewBoxes } from '../services/sync/newSubmissionBoxes';
-import { notifyNewPoints } from '../services/newPointsNotifier';
-import { pastSubjectCodesOf, withoutPastSubjects } from '../utils/pastSubjects';
+import { recordExamTerms } from '../services/sync/recordExamTerms';
 
 import { useAppStore, initializeStore } from '../store/useAppStore';
 import { signalReady, requestData, isInIframe } from '../api/proxyClient';
@@ -224,8 +223,13 @@ export function useAppLogic() {
           await IndexedDBService.set('schedule', 'current', r.schedule);
         }
 
-        if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan))
+        if (r.studyPlan && isDualLanguageStudyPlan(r.studyPlan)) {
           await IndexedDBService.set('study_plan', 'current', r.studyPlan);
+          // Into the store now, not at the sync's end: Novinky and the phone's
+          // notifier leave out earlier-semester subjects by this plan, and
+          // the záznamník points of this same push come after.
+          await useAppStore.getState().fetchStudyPlan();
+        }
         if (r.studyStats) {
           useAppStore.getState().setStudyStats(r.studyStats as StudyStats);
           await IndexedDBService.set('meta', 'study_stats', r.studyStats);
@@ -265,6 +269,9 @@ export function useAppLogic() {
           }
         }
         if (r.exams) useAppStore.getState().setExams(r.exams);
+        // Novinky's "Nový termín" rows: see services/sync/recordExamTerms.
+        const unseenTerms = await recordExamTerms(r);
+        if (unseenTerms) useAppStore.getState().setExamTermsNew(unseenTerms);
 
         if (r.subjects?.data) {
           const existing = (await IndexedDBService.get('subjects', 'current')) as {
@@ -353,19 +360,10 @@ export function useAppLogic() {
           useAppStore.getState().setZaznamnikBatch(r.zaznamnik);
           // Compared with the stored copy before replacing it: what the teacher
           // added since is highlighted, and on the phone also notified.
-          const { found, unseen } = await persistZaznamnikBatch(r.zaznamnik);
+          const { unseen } = await persistZaznamnikBatch(r.zaznamnik);
           useAppStore.getState().setZaznamnikNewPoints(unseen);
-          // Never a system notification about an earlier semester's subject:
-          // the fallback crawl (subjectScope) can reach those. `unseen` stays
-          // whole — Novinky filters on read, with the plan current by then.
-          // This run's plan, not the store's: the store reloads it from
-          // IndexedDB only once the sync ends, and the push that carried it
-          // (this one, or an earlier one of the run) has already written it.
-          const plan = r.studyPlan ?? (await IndexedDBService.get('study_plan', 'current'));
-          const past = pastSubjectCodesOf(
-            isDualLanguageStudyPlan(plan) ? plan : useAppStore.getState().studyPlanDual
-          );
-          notifyNewPoints(withoutPastSubjects(found, past));
+          // The phone's notification follows the Novinky row (src/mobile/novinkyNotifications),
+          // which already leaves out an earlier semester's subject.
         }
 
         if (r.lastSync) await IndexedDBService.set('meta', 'last_sync', r.lastSync);

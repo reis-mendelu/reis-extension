@@ -529,8 +529,33 @@
     "body": "{subject} – {section} · registration opens at {time}",
     "channel": "Exam openings"
   },
+  "novinkyPush": {
+    "channelTerms": "New exam dates",
+    "channelPoints": "New points",
+    "channelBoxes": "New submission boxes",
+    "channelSocieties": "From societies and MENDELU",
+    "termsOne": "New exam date: {subject}",
+    "termsMany": "New exam dates",
+    "pointsOne": "New points: {subject}",
+    "pointsMany": "New points",
+    "boxesOne": "New submission box: {subject}",
+    "boxesMany": "New submission boxes",
+    "societiesMany": "News from societies",
+    "societiesSwitch": "From societies and MENDELU",
+    "societiesSwitchHint": "Society events and school notices"
+  },
+  "deadlineReminders": {
+    "channel": "Exams and deadlines",
+    "examTitle": "Tomorrow: {subject}",
+    "closingTitle": "{subject}: registration closes",
+    "closingBody": "{section} · last chance tomorrow until {time}",
+    "boxTitle": "{subject}: due tomorrow",
+    "boxBody": "{box} · until {time}"
+  },
   "deadlines": {
     "title": "Upcoming deadlines",
+    "examNewTerm": "New date",
+    "examRegistered": "Your exam",
     "examRegOpens": "Registration opens",
     "examReg": "Registration closes",
     "assignment": "Assignment due",
@@ -1267,6 +1292,8 @@
       "signalScreenSearch": "Search opened",
       "signalScreenBulletin": "Bulletin Board (Vývěska) opened",
       "signalScreenNotifications": "News (Novinky) opened",
+      "signalScreenInternships": "Internships (Stáže) opened",
+      "signalInternshipClickEy": "Click on “Cesta s EY”",
       "signalShare": "{pct}% of daily installs",
       "signalShareHint": "An average day over 30 days: of the installs that opened reIS that day, how many also opened this. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalInstalls": "installs",

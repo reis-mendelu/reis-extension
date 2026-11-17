@@ -50,6 +50,15 @@ export const FEATURE_SIGNALS = [
   'screen_bulletin',
   /** Novinky: the feed behind the bell. */
   'screen_notifications',
+  /** Stáže opened: the denominator for the click count below. Seen only by students a partner is shown to. */
+  'screen_internships',
+  /**
+   * A click on a partner programme's card in Stáže, one label per programme
+   * because the count is handed to that partner (2026-11-17: EY's "Cesta s EY").
+   * A partner's label is added with its programme, never shared: a migration
+   * widens the whitelist, so each is a deliberate step.
+   */
+  'internship_click_ey',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */

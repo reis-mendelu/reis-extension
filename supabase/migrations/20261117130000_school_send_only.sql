@@ -126,7 +126,7 @@ begin
   -- An unknown label is dropped rather than stored or raised: a future client
   -- sending a key this deployment has not learned yet must not error in a
   -- student's face over a counter.
-  if p_feature not in ('map_dwell_3s','eduroam_wifi_configured','eduroam_profile_delivered','calendar_week_view','screen_calendar','screen_subjects','screen_menu','screen_search','screen_bulletin','screen_notifications') then
+  if p_feature not in ('map_dwell_3s','eduroam_wifi_configured','eduroam_profile_delivered','calendar_week_view','screen_calendar','screen_subjects','screen_menu','screen_search','screen_bulletin','screen_notifications','screen_internships','internship_click_ey') then
     return;
   end if;
   insert into public.feature_usage (install_id, usage_date, feature, hits, school)

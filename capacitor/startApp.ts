@@ -20,9 +20,10 @@ import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
 import { noteAppUsedToday } from '@/mobile/storeReview';
 import { installNotificationTaps } from '@/mobile/notificationTaps';
-import { installZaznamnikNotifications } from '@/mobile/zaznamnikNotifications';
+import { installNovinkyNotifications } from '@/mobile/novinkyNotifications';
+import { installDeadlineReminders } from '@/mobile/deadlineReminders';
 import {
-  askNotificationsIfNeverAsked,
+  askAfterFirstRegistration,
   refreshNotificationStatus,
 } from '@/mobile/notificationPermission';
 
@@ -131,16 +132,20 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // again on every resume below, for the same reason the daily count is.
   void noteAppUsedToday();
 
-  // "Nové body" from the záznamník as a system notification. After the demo
-  // return (the demo never syncs, so it has nothing new) and before the sync
-  // starts, so its first batch already has somewhere to go.
-  installZaznamnikNotifications();
+  // Novinky's news rows (new exam dates, points, boxes, society events) as
+  // system notifications, 1:1. After the demo return (the demo never syncs,
+  // so it has nothing new) and before the sync starts.
+  installNovinkyNotifications();
+  // "Zítra: zkouška", "přihlašování končí", "odevzdání do zítra": scheduled
+  // ahead, so they arrive with reIS closed. After the demo return, like the rest.
+  installDeadlineReminders();
 
   // Whether the phone lets reIS notify at all, in the store for Nastavení and
-  // the bell's banner. Asked here, once, while the system still treats it as a
-  // plain first request; after a refusal the banner takes over rather than a
-  // second dialog. A student once ran for weeks with it off and no sign of it.
-  void askNotificationsIfNeverAsked();
+  // the bell's banner (a student once ran for weeks with it off and no sign of
+  // it). The system dialog itself waits for the first exam registration, when
+  // a reminder means something; after a refusal the banner takes over.
+  void refreshNotificationStatus();
+  askAfterFirstRegistration();
 
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe

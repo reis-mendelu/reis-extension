@@ -19,6 +19,12 @@ const config: CapacitorConfig = {
     // and on Android so does openLogin (src/mobile/inAppLoginDeps.ts), because
     // before Android 12 a held splash keeps the login dialog itself hidden.
     SplashScreen: { launchAutoHide: false },
+    // iOS, while reIS is open: a notification goes quietly into Notification
+    // Center, no banner or sound (agreed 2026-11-17). Novinky's rows are posted
+    // while the app is open, where the student already sees them; an exam
+    // reminder that fires then is quiet too. With the app closed, iOS shows
+    // them as usual. Android does the same per channel (importance 2).
+    LocalNotifications: { presentationOptions: ['list'] },
   },
 };
 

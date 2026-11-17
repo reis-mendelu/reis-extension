@@ -20,6 +20,7 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { enterSessionRoot } from './sessionRoot.mjs';
 
 export const SOURCE = 'privacy/disclosures.ts';
 
@@ -70,6 +71,8 @@ const main = () => {
     /* never fail a turn on malformed input */
   }
   if (payload.stop_hook_active) ok();
+  // The process cwd is the MAIN checkout in a desktop session (sessionRoot.mjs).
+  enterSessionRoot(payload);
 
   const git = (...args) => {
     try {

@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 15 November 2026**
+**Last Updated: 17 November 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -41,13 +41,15 @@ yourself — see *Report attachments* below.
 | eduroam network configured | the app itself saves the eduroam network (phone) | the random install identifier, the school and the fixed `eduroam_wifi_configured` label |
 | eduroam profile handed over | a profile is prepared for you to install (Mac, Windows) | the random install identifier, the school and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it |
 | Week view used | when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day | the random install identifier, the school and the fixed `calendar_week_view` label |
-| Screen opened | when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session (again only if a send fails); stored as one row per install per day | the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed |
+| Screen opened | when the calendar, Předměty, Jídelníček, search, Vývěska, Novinky or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day | the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`) — nothing about what was on it, what you searched for or how long you stayed |
+| Partner programme opened | you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day | the random install identifier, the school and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website |
 | Library study-room booking (mobile app only) | you book or cancel a study room | your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS |
 <!-- END generated:flows -->
 
 Which partner company you are shown, if any, is decided on your device from your
 faculty and study programme. Partners never receive anything about you; they see
-only aggregate counts of views, clicks and map views for their own events.
+only aggregate counts of views, clicks and map views for their own events, and,
+for a programme shown under Stáže, how many installs opened it.
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
 the usage count and counters follow the technical-data switch in `about:addons`,
@@ -113,16 +115,21 @@ else.
 
 ## Permissions
 
-**Android:** internet; notifications (so a download can say it finished);
-running at startup and keeping the device awake briefly, which come with the
-same notifications library — reIS no longer schedules event reminders, and these
-two leave with the library in a later release; Wi-Fi state, only for optional
-one-tap eduroam, where Android's own dialog saves the network.
+**Android:** internet; notifications (what is new in Novinky — a new exam
+date, new points, a new submission box, society events and school notices,
+which you can switch off in Nastavení — a reminder before exam registration
+opens, and a finished download); running at startup and keeping the device
+awake briefly, which come with the same notifications library; Wi-Fi state,
+only for optional one-tap eduroam, where Android's own dialog saves the network.
 
 **iOS:** the camera, only if you choose to take a photo — to attach to a problem
 report, where the photo goes into the report form like any other picture, or, on
 an iPad, to put on a page of your notes, where it stays on the device with your
-ink. iOS asks you first. reIS no longer asks for notifications on iOS.
+ink. iOS asks you first. Notifications, for the same Novinky news and exam
+reminders as on Android, asked once you are registered for an exam.
+
+Notifications are made on the phone from what reIS already has there; nothing
+is sent anywhere to show them.
 
 **Neither app requests location** — the campus map shows the campus, not you.
 

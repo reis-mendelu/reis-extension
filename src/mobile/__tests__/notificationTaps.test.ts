@@ -1,13 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { ln, openExams, openPoints } = vi.hoisted(() => ({
+const { ln, openExams, openPoints, openDeadline } = vi.hoisted(() => ({
   ln: { addListener: vi.fn() },
   openExams: vi.fn(),
   openPoints: vi.fn(),
+  openDeadline: vi.fn(),
 }));
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: ln }));
 vi.mock('../examReminders', () => ({ openExamsFromNotification: openExams }));
-vi.mock('../zaznamnikNotifications', () => ({ openFromNotification: openPoints }));
+vi.mock('../novinkyTaps', () => ({
+  openNovinkyFromNotification: openPoints,
+  openDeadlineFromNotification: openDeadline,
+}));
 
 import { installNotificationTaps } from '../notificationTaps';
 
@@ -29,11 +33,13 @@ describe('notification taps', () => {
   it.each([
     [{ kind: 'exam-opening', key: 'k' }],
     [{ kind: 'zaznamnik-new-points', courseCode: 'EBC-PS' }],
-  ])('hands %o to both features', (extra) => {
+    [{ kind: 'deadline-reminder', group: 'exam' }],
+  ])('hands %o to every feature', (extra) => {
     installNotificationTaps();
     const handler = ln.addListener.mock.calls[0]![1];
     handler({ notification: { extra } });
     expect(openExams).toHaveBeenCalledWith(extra);
     expect(openPoints).toHaveBeenCalledWith(extra);
+    expect(openDeadline).toHaveBeenCalledWith(extra);
   });
 });

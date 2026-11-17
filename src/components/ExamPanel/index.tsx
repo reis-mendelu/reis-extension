@@ -15,6 +15,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
 import { LoadFailed } from '../LoadFailed';
 import { SignupGroup } from './SignupGroup';
+import { useMarkExamTermsSeen } from '../../hooks/ui/useMarkExamTermsSeen';
 
 interface RegisteredExam extends TimelineExam {
   subject: ExamSubject;
@@ -42,6 +43,8 @@ function PanelTopBar({ href }: { href: string }) {
 export function ExamPanel() {
   const { t, language } = useTranslation();
   const { params } = useUserParams();
+  // Mounted only as the extension's Zkoušky view: on screen = Novinky's new terms seen.
+  useMarkExamTermsSeen(true);
   const { exams, showSkeleton, showFailed, sections, signupSections } = useExamsData();
   const studium = params?.studium || '';
   const obdobi = params?.obdobi || '';

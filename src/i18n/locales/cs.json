@@ -529,8 +529,33 @@
     "body": "{subject} – {section} · přihlašování v {time}",
     "channel": "Otevírání zkoušek"
   },
+  "novinkyPush": {
+    "channelTerms": "Nové termíny zkoušek",
+    "channelPoints": "Nové body",
+    "channelBoxes": "Nové odevzdávárny",
+    "channelSocieties": "Od spolků a MENDELU",
+    "termsOne": "Nový termín: {subject}",
+    "termsMany": "Nové termíny zkoušek",
+    "pointsOne": "Nové body: {subject}",
+    "pointsMany": "Nové body",
+    "boxesOne": "Nová odevzdávárna: {subject}",
+    "boxesMany": "Nové odevzdávárny",
+    "societiesMany": "Novinky od spolků",
+    "societiesSwitch": "Od spolků a MENDELU",
+    "societiesSwitchHint": "Akce spolků a oznámení školy"
+  },
+  "deadlineReminders": {
+    "channel": "Termíny a odevzdání",
+    "examTitle": "Zítra: {subject}",
+    "closingTitle": "{subject}: přihlašování končí",
+    "closingBody": "{section} · poslední možnost zítra do {time}",
+    "boxTitle": "{subject}: odevzdání do zítra",
+    "boxBody": "{box} · do {time}"
+  },
   "deadlines": {
     "title": "Blížící se termíny",
+    "examNewTerm": "Nový termín",
+    "examRegistered": "Tvoje zkouška",
     "examRegOpens": "Otevírá se přihlašování",
     "examReg": "Uzavírá se přihlašování",
     "assignment": "Odevzdávárna",
@@ -1267,6 +1292,8 @@
       "signalScreenSearch": "Otevřené vyhledávání",
       "signalScreenBulletin": "Otevřená Vývěska",
       "signalScreenNotifications": "Otevřené Novinky",
+      "signalScreenInternships": "Otevřené Stáže",
+      "signalInternshipClickEy": "Klik na Cestu s EY",
       "signalShare": "{pct} % denních instalací",
       "signalShareHint": "Průměrný den za 30 dní: kolik z instalací, které ten den reIS otevřely, otevřelo i tohle. Kalendář je na telefonu úvodní obrazovka, takže tam je skoro vždy.",
       "signalInstalls": "instalací",

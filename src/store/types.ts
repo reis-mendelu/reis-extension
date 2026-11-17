@@ -746,6 +746,7 @@ export interface DemoSlice {
 
 export type AppState = ScheduleSlice &
   ExamSlice &
+  import('./slices/createNewExamTermsSlice').NewExamTermsSlice &
   SyllabusSlice &
   ZaznamnikSlice &
   FilesSlice &
