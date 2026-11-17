@@ -42,6 +42,10 @@ describe('a new exam term in Novinky', () => {
       odevzdavarnyNew: [],
       exams: { data: [vwa], status: 'success', error: null },
       examTermsNew: [examTermKey('EBC-VWA', '1')],
+      notifications: {
+        ...useAppStore.getState().notifications,
+        seenDeadlineAlertIds: new Set(),
+      },
     } as never);
   });
 
@@ -101,5 +105,14 @@ describe('a new exam term in Novinky', () => {
     const later = renderHook(() => useDeadlineAlerts()).result;
     expect(later.current.alerts.map((a) => a.body)).toEqual(['zkouška · 17. 12.']);
     expect(later.current.unseenCount).toBe(0);
+  });
+
+  // A sync that read the record before Zkoušky cleared it answers with the
+  // seen term still in it: it must not come back.
+  it('a sync answering from before the acknowledgement does not bring a seen term back', () => {
+    const key = examTermKey('EBC-VWA', '1');
+    renderHook(() => useMarkExamTermsSeen(true));
+    useAppStore.getState().setExamTermsNew([key, examTermKey('EBC-VWA', '2')]);
+    expect(useAppStore.getState().examTermsNew).toEqual([examTermKey('EBC-VWA', '2')]);
   });
 });

@@ -59,10 +59,8 @@ export function ExamsScreen() {
   const { exams } = useExams();
   const now = useAppStore((s) => s.now);
   const userSemester = useAppStore((s) => s.userSemester);
-  // Novinky's "Nový termín" rows go once the tab is in front.
   // In front = its tab, with no sheet (a subject, settings) covering it.
   const examsInFront = useAppStore((s) => s.mobileTab === 'exams' && s.mobileSheets.length === 0);
-  useMarkExamTermsSeen(examsInFront);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
@@ -212,16 +210,21 @@ export function ExamsScreen() {
     </div>
   );
 
-  if (
+  const loading =
     (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !syncLoaded.exams && exams.length === 0)
-  ) {
+    (isSyncing && !syncLoaded.exams && exams.length === 0);
+  // Same rule as the calendar: a settled sync that never delivered exams, with
+  // nothing cached, is a failure and not an answer.
+  const failed = firstSyncSettled && !syncLoaded.exams && exams.length === 0;
+  // Novinky's "Nový termín" rows go once the list itself is on screen: not
+  // behind the skeleton, the error, or a sheet.
+  useMarkExamTermsSeen(examsInFront && !loading && !failed);
+
+  if (loading) {
     return shell(<ExamsSkeleton />);
   }
 
-  // Same rule as the calendar: a settled sync that never delivered exams, with
-  // nothing cached, is a failure and not an answer.
-  if (firstSyncSettled && !syncLoaded.exams && exams.length === 0) {
+  if (failed) {
     return shell(<ScreenError testId="exams-error" />);
   }
 
