@@ -80,6 +80,15 @@ class BackgroundWebRun {
         done.finished(status);
     }
 
+    /**
+     * The app stopped the run (it came to the front, or the student signs
+     * out): the job is finished now, so Android does not count it as running
+     * until it times out.
+     */
+    void stop() {
+        finish("stopped by the app");
+    }
+
     /** The system stopped the job: nothing this run says from now on counts. */
     void cancel() {
         finished = true;

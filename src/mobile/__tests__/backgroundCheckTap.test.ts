@@ -146,4 +146,25 @@ describe('the channel names follow the language', () => {
     useAppStore.setState({ language: 'en' } as never);
     expect(plugin.setChannelNames).toHaveBeenCalledTimes(1);
   });
+
+  // The stored language can land while the native start is still pending:
+  // the channels were named in the old one, so they are renamed at once.
+  // A fresh module: no subscription left over from an earlier start to do it instead.
+  it('renames them when the language changed while the check was starting', async () => {
+    vi.resetModules();
+    const { useAppStore: store } = await import('../../store/useAppStore');
+    const { startBackgroundCheck: start } = await import('../backgroundCheckNative');
+    store.setState({ language: 'cz' } as never);
+    plugin.start.mockImplementation(async () => {
+      store.setState({ language: 'en' } as never);
+      return { enabled: true };
+    });
+    await start();
+    expect(plugin.start).toHaveBeenCalledWith({
+      channelNames: expect.objectContaining({ boxes: 'Nové odevzdávárny' }),
+    });
+    expect(plugin.setChannelNames).toHaveBeenCalledWith({
+      channelNames: expect.objectContaining({ boxes: 'New submission boxes' }),
+    });
+  });
 });

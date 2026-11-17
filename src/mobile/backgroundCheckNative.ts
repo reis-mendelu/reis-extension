@@ -60,11 +60,10 @@ export async function startBackgroundCheck(): Promise<void> {
   if (!onAndroid()) return;
   try {
     // Named with the language the store has now. The stored one can land later
-    // at boot; the subscription below renames them then. Not a second
-    // loadLanguage(): it could overwrite a language chosen meanwhile.
-    const { enabled } = await BackgroundCheck.start({
-      channelNames: channelNames(useAppStore.getState().language),
-    });
+    // at boot, even during the awaits below; the rename below catches it. Not
+    // a second loadLanguage(): it could overwrite a language chosen meanwhile.
+    let named = useAppStore.getState().language;
+    const { enabled } = await BackgroundCheck.start({ channelNames: channelNames(named) });
     // No switch of its own (folded 2026-11-17): it runs while reIS may notify,
     // and the phone's own notification setting turns both off. A job a tester
     // switched off in an earlier build is armed again.
@@ -76,15 +75,18 @@ export async function startBackgroundCheck(): Promise<void> {
     void BackgroundCheck.addListener('notificationTap', (tap) => openFromBackgroundTap(tap));
     // A language switch while the app is open renames the channels too, so the
     // phone's own notification settings do not keep the old words until relaunch.
-    let named = useAppStore.getState().language;
-    unsubscribeLanguage?.();
-    unsubscribeLanguage = useAppStore.subscribe((state) => {
-      if (state.language === named) return;
-      named = state.language;
+    const rename = () => {
+      const language = useAppStore.getState().language;
+      if (language === named) return;
+      named = language;
       BackgroundCheck.setChannelNames({ channelNames: channelNames(named) }).catch((err) =>
         logError('Mobile.nameBackgroundChannels', err)
       );
-    });
+    };
+    unsubscribeLanguage?.();
+    unsubscribeLanguage = useAppStore.subscribe(rename);
+    // A language that landed while start() or getLaunchTap() was pending.
+    rename();
   } catch (err) {
     logError('Mobile.startBackgroundCheck', err);
   }

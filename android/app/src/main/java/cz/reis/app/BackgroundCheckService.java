@@ -83,7 +83,8 @@ public class BackgroundCheckService extends JobService {
     static void stopActive() {
         BackgroundWebRun r = active;
         active = null;
-        if (r != null) r.cancel();
+        // Finished, not just cancelled: the system still holds the job until jobFinished().
+        if (r != null) r.stop();
     }
 
     /** Whether a student is signed in: the token the app keeps in its secure store. */
