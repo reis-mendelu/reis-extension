@@ -117,10 +117,18 @@ else.
 
 **Android:** internet; notifications (what is new in Novinky — a new exam
 date, new points, a new submission box, society events and school notices,
-which you can switch off in Nastavení — a reminder before exam registration
-opens, and a finished download); running at startup and keeping the device
-awake briefly, which come with the same notifications library; Wi-Fi state,
-only for optional one-tap eduroam, where Android's own dialog saves the network.
+which you can switch off in Nastavení — reminders of your exams and deadlines,
+and a finished download); network state, so the background check below runs
+only while the phone is online; running at startup and keeping the device awake
+briefly, which come with the same notifications library; Wi-Fi state, only for
+optional one-tap eduroam, where Android's own dialog saves the network.
+
+**Android background check:** at most every 15 minutes (less often when the
+phone saves battery), while reIS is closed and the phone is online, the app asks IS Mendelu — with the sign-in you already gave
+it, exactly as when you open it — for new exam terms, submission boxes and
+points, and shows what is new as a notification. Nothing it reads is sent
+anywhere else. Switching reIS notifications off in the phone's settings, or
+signing out, stops it.
 
 **iOS:** the camera, only if you choose to take a photo — to attach to a problem
 report, where the photo goes into the report form like any other picture, or, on

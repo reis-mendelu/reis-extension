@@ -20,6 +20,7 @@ import { trackDailyUsage } from '@/api/feedback';
 import { installExamReminders } from '@/mobile/examReminders';
 import { noteAppUsedToday } from '@/mobile/storeReview';
 import { installNotificationTaps } from '@/mobile/notificationTaps';
+import { startBackgroundCheck } from '@/mobile/backgroundCheckNative';
 import { installNovinkyNotifications } from '@/mobile/novinkyNotifications';
 import { installDeadlineReminders } from '@/mobile/deadlineReminders';
 import {
@@ -146,6 +147,10 @@ export async function startApp({ demo }: { demo: boolean }): Promise<void> {
   // a reminder means something; after a refusal the banner takes over.
   void refreshNotificationStatus();
   askAfterFirstRegistration();
+
+  // Android only: arms the background check that notifies while the app is
+  // closed, and names its channels. After the demo return, like the rest.
+  void startBackgroundCheck();
 
   // In the extension the CONTENT SCRIPT drives this and posts results into the
   // iframe. Capacitor has neither, so the app drives its own sync; sendToIframe

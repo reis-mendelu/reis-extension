@@ -520,7 +520,7 @@
     "systemOn": "Zapnutá",
     "systemOff": "Vypnutá",
     "systemEnable": "Zapnout",
-    "systemBanner": "Oznámení jsou vypnutá, takže ti nepřijdou nové body ani připomínky zkoušek.",
+    "systemBanner": "Oznámení jsou vypnutá, takže ti nepřijdou nové body, odevzdávárny, termíny ani připomínky zkoušek.",
     "openInIs": "Otevřít v IS",
     "openLink": "Otevřít odkaz"
   },
@@ -532,7 +532,7 @@
   "novinkyPush": {
     "channelTerms": "Nové termíny zkoušek",
     "channelPoints": "Nové body",
-    "channelBoxes": "Nové odevzdávárny",
+    "channelBoxes": "Nové odevzdávárny (na pozadí)",
     "channelSocieties": "Od spolků a MENDELU",
     "termsOne": "Nový termín: {subject}",
     "termsMany": "Nové termíny zkoušek",
@@ -1792,6 +1792,11 @@
   "newBox": {
     "kind": "Nová odevzdávárna",
     "badge": "Nová"
+  },
+  "backgroundCheck": {
+    "channelExams": "Nové termíny zkoušek (na pozadí)",
+    "channelBoxes": "Nové odevzdávárny",
+    "channelPoints": "Nové body v záznamníku (na pozadí)"
   },
   "guides": {
     "help": "Nápověda"

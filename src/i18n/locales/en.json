@@ -520,7 +520,7 @@
     "systemOn": "On",
     "systemOff": "Off",
     "systemEnable": "Turn on",
-    "systemBanner": "Notifications are off, so you won't get new points or exam reminders.",
+    "systemBanner": "Notifications are off, so you won't get new points, submission boxes, exam dates or exam reminders.",
     "openInIs": "Open in IS",
     "openLink": "Open link"
   },
@@ -532,7 +532,7 @@
   "novinkyPush": {
     "channelTerms": "New exam dates",
     "channelPoints": "New points",
-    "channelBoxes": "New submission boxes",
+    "channelBoxes": "New submission boxes (in the background)",
     "channelSocieties": "From societies and MENDELU",
     "termsOne": "New exam date: {subject}",
     "termsMany": "New exam dates",
@@ -1792,6 +1792,11 @@
   "newBox": {
     "kind": "New submission box",
     "badge": "New"
+  },
+  "backgroundCheck": {
+    "channelExams": "New exam dates (in the background)",
+    "channelBoxes": "New submission boxes",
+    "channelPoints": "New points in Záznamník (in the background)"
   },
   "guides": {
     "help": "Help"

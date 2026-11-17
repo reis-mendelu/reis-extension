@@ -3,12 +3,7 @@ import { IndexedDBService } from '../services/storage/IndexedDBService';
 /** The 'meta' key holding the row ids already notified, per source. */
 export const NOVINKY_NOTIFIED_KEY = 'novinky_notified';
 
-/** Per source; a source with no key has no record yet (its silent first run). */
-export interface Notified {
-  alerts?: string[];
-  feed?: string[];
-  notices?: string[];
-}
+import type { Notified } from '../utils/novinky/planRun';
 
 export async function readRecord(): Promise<Notified> {
   return ((await IndexedDBService.get('meta', NOVINKY_NOTIFIED_KEY)) ?? {}) as Notified;
