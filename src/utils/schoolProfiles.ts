@@ -71,11 +71,12 @@ export interface SchoolListing {
 }
 
 /**
- * Not published yet. `npm run zip:vse` and the ship job refuse to make a store
- * zip while this is still the placeholder: publish docs/privacy-policy-vse.md
- * (a gist, like MENDELU's policy) and put its URL here first.
+ * docs/privacy-policy-vse.md, published as a gist like MENDELU's policy
+ * (2026-11-17). Edit both together. `npm run zip:vse` and the ship job refuse
+ * a store zip if this ever goes back to a placeholder.
  */
-export const VSE_PRIVACY_POLICY_URL = 'TODO: gist URL';
+export const VSE_PRIVACY_POLICY_URL =
+  'https://gist.github.com/ElijaahInverted/d9d8e5cc17b7ce3f724831d8189ffe15';
 
 export interface SchoolProfile {
   id: SchoolId;
