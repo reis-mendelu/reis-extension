@@ -357,8 +357,11 @@ The mechanism is the existing install-level feature counter, nothing new:
    (`featureSignalLabels.ts` + `admin.stats.*` in cs/en).
 
 **One label per partner programme**, never a shared one, because the count is
-given to that partner. Never record *which* student, and never pair a click with
-anything else about the install. The admin panel shows "under 5" for a count
+given to that partner. Never record *which* student. A counter carries the random
+install id and nothing else: no event, partner-side or student identifier beyond it, so
+the only join is the one the policy already discloses (install id to the daily row's
+faculty, programme, platform and version labels). The partner is told a number, never
+a row. The admin panel shows "under 5" for a count
 below its floor, so a young counter looks empty; that is the floor, not a bug.
 If you decide a new feature needs no counter, say so in the PR in one line.
 
