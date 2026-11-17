@@ -71,7 +71,9 @@ const SUPABASE_CALLERS = new Set([
   'src/api/suggestions.ts',
   // Random install id only, since the privacy refactor. Since September 2026
   // the daily-usage event also carries two GROUP labels (faculty, platform) —
-  // counts over thousands of installs, not per-student data. Disclosed in
+  // counts over thousands of installs, not per-student data. Since November
+  // 2026 (track_daily_usage_v2) also the school the BUILD is for, the same on
+  // every install of it. Disclosed in
   // PRIVACY.md ("Daily Usage") and docs/privacy-policy-app.md. The NPS rating
   // that also lived here was retired in October 2026 for the questions below.
   'src/api/feedback.ts',
@@ -99,7 +101,7 @@ const SUPABASE_CALLERS = new Set([
   // Two feature counters, added September 2026, both disclosed in PRIVACY.md
   // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
   //
-  // `track_feature_usage` sends the random per-install UUID and one label from
+  // `track_feature_usage_v2` sends the random per-install UUID, the build's school and one label from
   // a whitelist enforced in the database ('map_dwell_3s',
   // 'eduroam_wifi_configured', 'eduroam_profile_delivered';
   // featureSignalWhitelist.test.ts pins the list). Same identifier
@@ -401,14 +403,14 @@ describe('no student data leaves the device', () => {
 
   // The one sanctioned exception to "nothing about a failure leaves": the
   // student attaches it to a report themselves. These two tests keep it the
-  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v3 (v2 for older builds) and
+  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v4 (v2/v3 for older builds) and
   // nowhere else, and no file that talks to Supabase may read the log itself —
   // so it can only ever arrive as what the report form was handed.
   it('sends diagnostics only through the report form, as the student chose', () => {
     const offenders: string[] = [];
     for (const f of files) {
       if (f.path === 'src/api/suggestions.ts') continue;
-      if (/submit_suggestion_v[23]|p_diagnostics|p_screenshot/.test(f.text)) {
+      if (/submit_suggestion_v[234]|p_diagnostics|p_screenshot/.test(f.text)) {
         offenders.push(`${f.path} → names the attachment RPC`);
       }
     }
@@ -422,7 +424,7 @@ describe('no student data leaves the device', () => {
       offenders,
       `Diagnostics are leaving by a path the student did not choose. The only ` +
         `sanctioned route is FeedbackModal → submitSuggestion(draft, attachments) ` +
-        `→ submit_suggestion_v3, and only after the student ticks the box:\n` +
+        `→ submit_suggestion_v4, and only after the student ticks the box:\n` +
         offenders.join('\n')
     ).toEqual([]);
   });

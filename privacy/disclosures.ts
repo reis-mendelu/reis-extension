@@ -59,7 +59,7 @@ export const FLOWS: Flow[] = [
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/feedback.ts'],
-    calls: ['track_daily_usage'],
+    calls: ['track_daily_usage_v2'],
     policyRows: [
       [
         'Daily count',
@@ -80,7 +80,7 @@ export const FLOWS: Flow[] = [
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v3'],
+    calls: ['submit_suggestion_v4'],
     policyRows: [
       [
         'Feedback',
@@ -104,7 +104,7 @@ export const FLOWS: Flow[] = [
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v3'],
+    calls: ['submit_suggestion_v4'],
     policyRows: [
       [
         'Report attachments',
@@ -176,7 +176,7 @@ export const FLOWS: Flow[] = [
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
-    calls: ['track_feature_usage'],
+    calls: ['track_feature_usage_v2'],
     policyRows: [
       [
         'Map used for 3 seconds',

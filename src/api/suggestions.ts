@@ -7,6 +7,7 @@ import { isAppView, type AppView } from '@/types/app';
 import { useAppStore } from '@/store/useAppStore';
 import { readPhoneViewport } from '@/hooks/ui/usePhoneViewport';
 import { reportEnvironment } from '@/utils/reportEnvironment';
+import { currentSchool } from '@/utils/school';
 import type {
   ReportScreen,
   SuggestionDraft,
@@ -69,7 +70,7 @@ async function currentScreen(): Promise<ReportScreen> {
 }
 
 /**
- * Writes a suggestion through the `submit_suggestion_v3` RPC: a SECURITY
+ * Writes a suggestion through the `submit_suggestion_v4` RPC: a SECURITY
  * DEFINER function granted to `anon`, because an anonymous write needs no
  * shared secret. This is the ONLY thing reIS sends that a student composed.
  * v3 adds the platform and OS the report was sent from. v1 and v2 stay
@@ -99,7 +100,9 @@ export async function submitSuggestion(
     const payload = buildSuggestionPayload(draft, await currentScreen());
     const env = await reportEnvironment().catch(() => ({ platform: '', os: '' }));
     const screenshot = attachments.screenshotBase64 ?? null;
-    const { data, error } = await supabase.rpc('submit_suggestion_v3', {
+    const { data, error } = await supabase.rpc('submit_suggestion_v4', {
+      // Which school's IS the report is about; the build's, never the student's.
+      p_school: currentSchool.id,
       p_type: payload.type,
       p_title: payload.title,
       p_body: payload.body,

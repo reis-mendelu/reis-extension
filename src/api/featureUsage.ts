@@ -5,6 +5,7 @@ import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { logError } from '../utils/reportError';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
 import { claimFirstOpen, confirmOpen, releaseOpen } from '../services/spolky/countedOpens';
+import { currentSchool } from '../utils/school';
 
 /**
  * The counters reIS keeps about its own features, and the per-event map view
@@ -118,9 +119,10 @@ export async function trackFeatureSignal(signal: FeatureSignal): Promise<boolean
     return true;
   }
   try {
-    const { error } = await supabase.rpc('track_feature_usage', {
+    const { error } = await supabase.rpc('track_feature_usage_v2', {
       p_install_id: await getInstallId(),
       p_feature: signal,
+      p_school: currentSchool.id,
     });
     if (error) {
       sentSignals.delete(signal);
