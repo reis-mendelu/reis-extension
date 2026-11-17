@@ -4,6 +4,7 @@ import { watchSignedInStudent } from '../services/identity/watchSignedInStudent'
 import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
 import { createNewExamTermsSlice } from './slices/createNewExamTermsSlice';
+import { createAppUpdateSlice } from './slices/createAppUpdateSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
 import { createZaznamnikSlice } from './slices/createZaznamnikSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
@@ -73,6 +74,7 @@ export const useAppStore = create<AppState>()(
     ...createScheduleSlice(...a),
     ...createExamSlice(...a),
     ...createNewExamTermsSlice(...a),
+    ...createAppUpdateSlice(...a),
     ...createSyllabusSlice(...a),
     ...createZaznamnikSlice(...a),
     ...createFilesSlice(...a),
