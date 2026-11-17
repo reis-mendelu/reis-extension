@@ -17,6 +17,8 @@ import { describe, it, expect } from 'vitest';
 const READERS: Record<string, string> = {
   'src/hooks/useVisibleMapEvents.ts': 'the map seam: filters through visibleToStudent',
   'src/hooks/useNotificationFeed.ts': 'hands the raw list to buildFeed, the Novinky seam',
+  'src/mobile/novinkyNotifications.ts':
+    'watches the raw list only to know when to rebuild; its rows come from buildFeed',
   'src/utils/novinky/buildFeed.ts':
     "the Novinky seam, both trees and the phone's system notifications: filters through canSee",
   'src/hooks/useOpenNotification.ts': 'looks up the event of a row the feed already filtered',
