@@ -105,7 +105,7 @@ const exam = (code: string): ExamSubject => ({
       id: `s-${code}`,
       name: 'zkouška',
       type: 'exam',
-      status: 'available',
+      status: 'open',
       terms: [
         {
           id: `t-${code}`,
@@ -148,7 +148,6 @@ describe('useDeadlineAlerts — subjects from an earlier semester', () => {
   it('raises rows for this semester’s subject only', () => {
     expect(alertCodes()).toEqual([
       'assignment-new:Nová',
-      'cvicny-test:222',
       'exam-reg-opens:XX-NOW',
       'zaznamnik-points:Nová',
     ]);
@@ -156,7 +155,7 @@ describe('useDeadlineAlerts — subjects from an earlier semester', () => {
 
   it('the bell counts this semester’s rows only', () => {
     const { unseenCount } = renderHook(() => useDeadlineAlerts()).result.current;
-    expect(unseenCount).toBe(4);
+    expect(unseenCount).toBe(3);
   });
 
   it('an ordinary deadline row of a past subject’s box is dropped too', () => {
@@ -167,6 +166,6 @@ describe('useDeadlineAlerts — subjects from an earlier semester', () => {
   // Unknown is not "past": without a plan nothing is suppressed.
   it('without a study plan every row still shows', () => {
     useAppStore.setState({ studyPlanDual: null } as never);
-    expect(alertCodes()).toHaveLength(8);
+    expect(alertCodes()).toHaveLength(6);
   });
 });

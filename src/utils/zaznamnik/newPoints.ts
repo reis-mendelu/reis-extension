@@ -66,11 +66,26 @@ function phChanges(prev: SubjectZaznamnik, fresh: SubjectZaznamnik): NewPoint[] 
 }
 
 function vtChanges(prev: SubjectZaznamnik, fresh: SubjectZaznamnik): NewPoint[] {
-  const key = (t: { name: string; submittedAt: string }) =>
+  // Several attempts can share a name and a time (a real subject lists 25 under
+  // 12 pairs), so they are compared as a multiset of scores per name and time:
+  // each earlier attempt cancels one equal attempt now, and what is left over
+  // is new. Keyed by name and time alone, the last duplicate's score stood for
+  // all of them and the rest were "new" on every sync; counted by position, a
+  // reordered or removed duplicate did the same.
+  const keyOf = (t: SubjectZaznamnik['vt']['tests'][number]) =>
     `${norm(t.name)}\u0000${norm(t.submittedAt)}`;
-  const before = new Map(prev.vt.tests.map((t) => [key(t), t.score]));
+  const unmatched = new Map<string, number[]>();
+  for (const t of prev.vt.tests) {
+    unmatched.set(keyOf(t), [...(unmatched.get(keyOf(t)) ?? []), t.score]);
+  }
   return fresh.vt.tests
-    .filter((t) => before.get(key(t)) !== t.score)
+    .filter((t) => {
+      const left = unmatched.get(keyOf(t)) ?? [];
+      const at = left.indexOf(t.score);
+      if (at === -1) return true;
+      left.splice(at, 1);
+      return false;
+    })
     .map((t) => ({ label: norm(t.name), value: `${t.score}/${t.maxScore}` }));
 }
 

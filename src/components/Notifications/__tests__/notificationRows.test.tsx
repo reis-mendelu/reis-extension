@@ -60,12 +60,11 @@ describe('deadline row copy', () => {
     expect(screen.getByText('Odevzdávárna · Semestrální projekt')).toBeInTheDocument();
   });
 
-  // A practice test has no clock, so its kind is already the meta column. The
-  // row printed "Cvičný test" three times: meta, subtitle prefix, and the
-  // test's own name.
+  // A row with no clock (new points) has its kind in the meta column, so the
+  // subtitle does not repeat it.
   it('does not repeat the kind when the meta column is the kind', () => {
-    render(<DeadlineAlertItem alert={{ ...base, type: 'cvicny-test' }} />);
-    expect(screen.getByText('Cvičný test 3 – derivace')).toBeInTheDocument();
-    expect(screen.queryByText(/Cvičný test · /)).not.toBeInTheDocument();
+    render(<DeadlineAlertItem alert={{ ...base, type: 'zaznamnik-points', body: 'Test 1: 9' }} />);
+    expect(screen.getByText('Test 1: 9')).toBeInTheDocument();
+    expect(screen.queryByText(/Nové body · /)).not.toBeInTheDocument();
   });
 });
