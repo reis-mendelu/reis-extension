@@ -25,10 +25,20 @@ describe('the societies switch at boot', () => {
   });
 
   it('applies the stored value when nothing changed meanwhile', async () => {
-    useAppStore.setState({ notifySocieties: true } as never);
+    useAppStore.setState({ notifySocieties: true, notifySocietiesTouched: false } as never);
     const load = useAppStore.getState().loadNotifySocieties();
     resolveRead(false);
     await load;
     expect(useAppStore.getState().notifySocieties).toBe(false);
+  });
+
+  it('keeps the student’s choice even when they flip it off and back on meanwhile', async () => {
+    useAppStore.setState({ notifySocieties: true, notifySocietiesTouched: false } as never);
+    const load = useAppStore.getState().loadNotifySocieties();
+    useAppStore.getState().setNotifySocieties(false);
+    useAppStore.getState().setNotifySocieties(true);
+    resolveRead(false);
+    await load;
+    expect(useAppStore.getState().notifySocieties).toBe(true);
   });
 });

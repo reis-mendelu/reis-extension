@@ -21,6 +21,24 @@ const CHANNEL: Record<PushKind, { id: string; name: string }> = {
   societies: { id: 'reis-novinky-societies', name: 'novinkyPush.channelSocieties' },
 };
 
+/**
+ * Android's channel per kind, created before the caller's last re-check of
+ * what may be posted: postGroups itself then awaits nothing but the post.
+ */
+export async function ensureChannels(groups: PushGroup[], language: string): Promise<void> {
+  const t = (key: string) => translate(language, key);
+  // iOS has no channels; the call rejects there.
+  if (Capacitor.getPlatform() === 'android') {
+    for (const g of groups) {
+      await LocalNotifications.createChannel({
+        id: CHANNEL[g.kind].id,
+        name: t(CHANNEL[g.kind].name),
+        importance: 2,
+      });
+    }
+  }
+}
+
 /** The last notification id handed out (see postGroups). */
 let lastId = 0;
 
@@ -34,16 +52,6 @@ export async function postGroups(
   current: () => boolean
 ): Promise<void> {
   const t = (key: string, params?: Record<string, string>) => translate(language, key, params);
-  // iOS has no channels; the call rejects there.
-  if (Capacitor.getPlatform() === 'android') {
-    for (const g of groups) {
-      await LocalNotifications.createChannel({
-        id: CHANNEL[g.kind].id,
-        name: t(CHANNEL[g.kind].name),
-        importance: 2,
-      });
-    }
-  }
   if (!current()) return;
   // Seconds since the epoch fit the plugin's int32 id and grow across launches;
   // never below the last id used, so a batch a second later cannot reuse one

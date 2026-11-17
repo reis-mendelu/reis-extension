@@ -15,7 +15,7 @@ import { pragueMinuteIso } from '../utils/isNoticeRows';
 import { planPushes, type PushGroup, type PushRow } from '../utils/novinky/pushPlan';
 import { pushRowsOf } from '../utils/novinky/pushText';
 
-import { NOVINKY_KIND, postGroups } from './novinkyPost';
+import { NOVINKY_KIND, ensureChannels, postGroups } from './novinkyPost';
 
 /** Waits for a sync's pushes to settle, so one sync is one notification per kind. */
 const SETTLE_MS = 1500;
@@ -88,13 +88,25 @@ async function run(gen: number): Promise<void> {
   }
   // What is about to be posted stays out of the record until it has been, so
   // a post the system refuses is tried again on the next run.
-  const held = new Set(toPost.flatMap((g) => g.rows.flatMap((r) => [r.id, ...(r.parts ?? [])])));
+  // Only what was not recorded before: a date already announced in a row that
+  // gained a new one stays announced, whatever happens to this post.
+  const recorded = new Set([
+    ...(before.alerts ?? []),
+    ...(before.feed ?? []),
+    ...(before.notices ?? []),
+  ]);
+  const held = new Set(
+    toPost
+      .flatMap((g) => g.rows.flatMap((r) => [r.id, ...(r.parts ?? [])]))
+      .filter((id) => !recorded.has(id))
+  );
   const without = (ids?: string[]) => ids?.filter((id) => !held.has(id));
   await saveRecord({
     alerts: without(full.alerts),
     feed: without(full.feed),
     notices: without(full.notices),
   });
+  await ensureChannels(toPost, s.language);
   // Right before posting: the switch or a read may have changed meanwhile.
   const now = useAppStore.getState();
   const seenNow = new Set<string>([

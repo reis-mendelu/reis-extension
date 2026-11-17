@@ -25,6 +25,8 @@ export interface SystemNotificationsSlice {
    * the student switched it off (agreed 2026-11-17); Novinky lists them either way.
    */
   notifySocieties: boolean;
+  /** The student flipped it this session: their choice beats the boot read. */
+  notifySocietiesTouched: boolean;
   setNotifySocieties: (on: boolean) => void;
   loadNotifySocieties: () => Promise<void>;
 }
@@ -33,18 +35,18 @@ export const createSystemNotificationsSlice: AppSlice<SystemNotificationsSlice> 
   systemNotifications: 'unknown',
   setSystemNotifications: (next) => set({ systemNotifications: next }),
   notifySocieties: true,
+  notifySocietiesTouched: false,
   setNotifySocieties: (on) => {
-    set({ notifySocieties: on });
+    set({ notifySocieties: on, notifySocietiesTouched: true });
     IndexedDBService.set('meta', NOTIFY_SOCIETIES_KEY, on).catch((err) =>
       logError('SystemNotificationsSlice.setNotifySocieties', err)
     );
   },
   loadNotifySocieties: async () => {
     try {
-      const before = get().notifySocieties;
       const stored = await IndexedDBService.get('meta', NOTIFY_SOCIETIES_KEY);
       // The student flipped it while this was loading: their choice wins.
-      if (get().notifySocieties !== before) return;
+      if (get().notifySocietiesTouched) return;
       if (typeof stored === 'boolean') set({ notifySocieties: stored });
     } catch (err) {
       logError('SystemNotificationsSlice.loadNotifySocieties', err);

@@ -34,7 +34,7 @@ import { installNovinkyNotifications, clearNovinkyNotifications } from '../novin
 import { NOVINKY_NOTIFIED_KEY } from '../novinkyRecord';
 import { NOVINKY_KIND } from '../novinkyPost';
 import { examTermKey } from '../../utils/newExamTerms';
-import { NOW, baseState, event, settle } from './novinkyFixtures';
+import { NOW, baseState, event, settle, vwa } from './novinkyFixtures';
 
 const posted = () =>
   ln.schedule.mock.calls.flatMap((c) => c[0].notifications as { title: string; body: string }[]);
@@ -136,6 +136,36 @@ describe('Novinky rows as phone notifications', () => {
     await settle();
     expect(ln.schedule).toHaveBeenCalledTimes(2);
     useAppStore.setState({ zaznamnikNewPoints: { x: [] } } as never);
+    await settle();
+    expect(ln.schedule).toHaveBeenCalledTimes(2);
+  });
+
+  // Dates 1 and 2 were announced; date 3 failed to post; then 1 and 3 drop out.
+  // Date 2 was announced already and must not come again.
+  it('a failed post does not make dates already announced news again', async () => {
+    const three = {
+      ...vwa,
+      sections: [
+        {
+          ...vwa.sections[0]!,
+          terms: [...vwa.sections[0]!.terms, { id: '3', date: '20.12.2026', time: '11:00' }],
+        },
+      ],
+    };
+    useAppStore.setState({ exams: { data: [three], status: 'success', error: null } } as never);
+    await settle();
+    useAppStore.setState({
+      examTermsNew: [examTermKey('EBC-VWA', '1'), examTermKey('EBC-VWA', '2')],
+    });
+    await settle();
+    expect(ln.schedule).toHaveBeenCalledTimes(1);
+    ln.schedule.mockRejectedValueOnce(new Error('refused'));
+    useAppStore.setState({
+      examTermsNew: [1, 2, 3].map((n) => examTermKey('EBC-VWA', `${n}`)),
+    });
+    await settle();
+    expect(ln.schedule).toHaveBeenCalledTimes(2);
+    useAppStore.setState({ examTermsNew: [examTermKey('EBC-VWA', '2')] });
     await settle();
     expect(ln.schedule).toHaveBeenCalledTimes(2);
   });
