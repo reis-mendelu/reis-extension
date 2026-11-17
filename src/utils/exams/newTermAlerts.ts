@@ -72,6 +72,7 @@ export function newTermAlerts(
             title: names.subject(subject),
             body: `${names.section(section)} · ${fresh.map((t) => shortDate(t.date)).join(', ')}`,
             courseCode: subject.code,
+            parts: keys.map((k) => `exam-new-${k}`),
           },
         ];
       })

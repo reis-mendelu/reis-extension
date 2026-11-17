@@ -33,6 +33,12 @@ export interface DeadlineAlert {
   boxKey?: string;
   /** Counted as seen when this id is: a deadline row whose box's new-box row was seen. */
   seenWith?: string;
+  /**
+   * Ids of what the row is made of (a "Nový termín" row's dates). Seeing the
+   * row sees every part, and the row counts as seen while every part has
+   * been — so a date dropping out of it does not light the bell again.
+   */
+  parts?: string[];
 }
 
 function parseCzDateTime(s: string): Date | null {
@@ -60,13 +66,6 @@ export function useDeadlineAlerts() {
   const newBoxes = useAppStore((s) => s.odevzdavarnyNew);
   const newTerms = useAppStore((s) => s.examTermsNew);
   const studyPlan = useAppStore((s) => s.studyPlanDual);
-
-  const markAllSeen = useCallback(
-    (ids: string[]) => {
-      markDeadlineAlertsSeen(ids);
-    },
-    [markDeadlineAlertsSeen]
-  );
 
   const alerts = useMemo(() => {
     const now = pulseNow.getTime();
@@ -154,9 +153,22 @@ export function useDeadlineAlerts() {
     studyPlan,
   ]);
 
+  const markAllSeen = useCallback(
+    (ids: string[]) => {
+      const wanted = new Set(ids);
+      const parts = alerts.filter((a) => wanted.has(a.id)).flatMap((a) => a.parts ?? []);
+      markDeadlineAlertsSeen([...ids, ...parts]);
+    },
+    [alerts, markDeadlineAlertsSeen]
+  );
+
   const unseenCount = useMemo(
     () =>
-      alerts.filter((a) => !seenIds.has(a.id) && !(a.seenWith && seenIds.has(a.seenWith))).length,
+      alerts.filter((a) =>
+        a.parts
+          ? !a.parts.every((p) => seenIds.has(p))
+          : !seenIds.has(a.id) && !(a.seenWith && seenIds.has(a.seenWith))
+      ).length,
     [alerts, seenIds]
   );
 

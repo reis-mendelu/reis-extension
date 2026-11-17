@@ -75,4 +75,31 @@ describe('a new exam term in Novinky', () => {
     expect(useAppStore.getState().examTermsNew).toEqual([]);
     vis.mockRestore();
   });
+
+  // Two dates read, then the first one passes: the row now names one date and
+  // has another id, but nothing was added, so the bell stays quiet.
+  it('does not light the bell again when a date it showed drops out', () => {
+    const two: ExamSubject = {
+      ...vwa,
+      sections: [
+        {
+          ...vwa.sections[0]!,
+          terms: [
+            { id: '1', date: '14.12.2026', time: '11:00' },
+            { id: '2', date: '17.12.2026', time: '11:00' },
+          ],
+        },
+      ],
+    };
+    useAppStore.setState({
+      exams: { data: [two], status: 'success', error: null },
+      examTermsNew: [examTermKey('EBC-VWA', '1'), examTermKey('EBC-VWA', '2')],
+    } as never);
+    const first = renderHook(() => useDeadlineAlerts()).result;
+    act(() => first.current.markAllSeen(first.current.alerts.map((a) => a.id)));
+    useAppStore.setState({ now: new Date(2026, 11, 15, 12, 0) } as never);
+    const later = renderHook(() => useDeadlineAlerts()).result;
+    expect(later.current.alerts.map((a) => a.body)).toEqual(['zkouška · 17. 12.']);
+    expect(later.current.unseenCount).toBe(0);
+  });
 });
