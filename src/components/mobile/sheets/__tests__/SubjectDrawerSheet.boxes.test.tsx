@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { SubjectDrawerSheet } from '../SubjectDrawerSheet';
 import { useAppStore } from '../../../../store/useAppStore';
 import { NOW, box } from '../../../SubmissionBoxes/__tests__/boxFixtures';
@@ -57,5 +57,28 @@ describe('SubjectDrawerSheet — submission boxes', () => {
       />
     );
     expect(tab('Záznamník').textContent).toContain('1');
+  });
+
+  // A tap on a notification can cold-start the app before the subjects load:
+  // the drawer opens on Úspěšnost, then has to move to the tab that was asked.
+  it('moves to the asked tab once the subject loads', () => {
+    useAppStore.setState({ subjects: null } as never);
+    render(
+      <SubjectDrawerSheet
+        sheet={{ kind: 'subjectDrawer', courseCode: 'EBC-PJ', initialTab: 'zaznamnik' }}
+        onClose={() => {}}
+      />
+    );
+    expect(tab('Záznamník')).not.toHaveClass('border-primary');
+    act(() => {
+      useAppStore.setState({
+        subjects: {
+          version: 1,
+          lastUpdated: '',
+          data: { 'EBC-PJ': { subjectId: 'P1', subjectCode: 'EBC-PJ' } },
+        },
+      } as never);
+    });
+    expect(tab('Záznamník')).toHaveClass('border-primary');
   });
 });

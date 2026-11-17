@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { SyntheticEvent } from 'react';
 import { Sheet } from '../primitives/Sheet';
 import { SubjectSheetHeader } from './SubjectSheetHeader';
@@ -70,6 +70,18 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
       return sheet.initialTab;
     return enrolled ? 'files' : 'stats';
   });
+  // The tab asked for but not yet usable (the subject has no id until the
+  // subjects load: a notification tap that cold-starts the app). It is taken
+  // once the subject resolves, and only then; later the student's own choice wins.
+  const pendingTab = useRef(
+    sheet.initialTab && sheet.initialTab !== activeTab ? sheet.initialTab : null
+  );
+  const enrolledNow = !!getSubject(courseCode)?.subjectId;
+  useEffect(() => {
+    if (!enrolledNow || !pendingTab.current) return;
+    setActiveTab(pendingTab.current);
+    pendingTab.current = null;
+  }, [enrolledNow]);
   // A sheet on the stack is open; its Záznamník tab on screen means seen.
   useMarkZaznamnikSeen(courseCode, activeTab, true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
