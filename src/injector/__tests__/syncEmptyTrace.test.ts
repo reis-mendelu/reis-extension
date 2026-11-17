@@ -98,7 +98,11 @@ function primeResponses() {
   });
   api.exams.mockResolvedValue([]);
   api.schedule.mockResolvedValue([{ id: 'l1' }]);
-  api.studyPlan.mockResolvedValue({ cz: { groups: [] }, en: { groups: [] } });
+  // Healthy: a block per semester, each with subjects.
+  const healthyPlan = {
+    blocks: [1, 2].map((n) => ({ groups: [{ subjects: [{ code: `XX${n}` }] }] })),
+  };
+  api.studyPlan.mockResolvedValue({ cz: healthyPlan, en: healthyPlan });
   api.pastSubjects.mockResolvedValue({ cz: {}, en: {} });
   api.studyStats.mockResolvedValue({ credits: 30 });
   api.studyComparison.mockResolvedValue({ rank: 1 });
@@ -268,5 +272,24 @@ describe('an empty answer leaves a trace in the diagnostic log', () => {
     const { syncAllData, log } = await loadSync();
     await syncAllData();
     expect(log.getDiagnostics()).toEqual([]);
+  });
+});
+
+/** Suggestion 46: the plan's own cases live in syncTraceStudyPlan.test.ts. */
+describe('the sync traces a thin study plan', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    params.value = { studium: 'st1', obdobi: 'ob1' };
+    primeResponses();
+  });
+
+  it('records a plan collapsed to one semester block', async () => {
+    const one = { blocks: [{ groups: [{ subjects: [{ code: 'XX1' }] }] }] };
+    api.studyPlan.mockResolvedValue({ cz: one, en: one });
+    const { syncAllData, log } = await loadSync();
+    await syncAllData();
+    expect(log.getDiagnostics().find((e) => e.ctx === 'Sync.studyPlan')?.msg).toContain(
+      'IS answered, 1 semester blocks · 1 subjects · study id present'
+    );
   });
 });

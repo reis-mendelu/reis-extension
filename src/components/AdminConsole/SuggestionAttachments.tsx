@@ -118,6 +118,15 @@ function DiagnosticsTable({ d }: { d: NonNullable<SuggestionAttachment['diagnost
           {count(d.sync.zaznamnikEmpty)} empty)
         </p>
       )}
+      {/* Absent up to 5.7.2. Předměty draws from the study plan, so an empty
+          Předměty is read here: 1 block = a heading the parser missed, 0
+          subjects = no plan (exchange), subject list used instead. */}
+      {d.sync.studyPlan !== undefined && (
+        <p className="break-words">
+          plan {d.sync.studyPlan} · {count(d.sync.planBlocks)} semester blocks ·{' '}
+          {count(d.sync.planSubjects)} subjects · {count(d.sync.planEnrolledNow)} enrolled now
+        </p>
+      )}
       <ul className="mt-1 max-h-56 overflow-y-auto space-y-1">
         {d.entries.map((e, i) => (
           <li key={`${e.t}-${i}`} className="break-words">

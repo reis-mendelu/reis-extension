@@ -38,6 +38,10 @@ vi.mock('@/store/useAppStore', () => ({
         XX3: null,
         ...syncState.extraZaznamnik,
       },
+      // Counted by studyPlanCounts (its own tests); here only that the
+      // report carries them.
+      studyPlanDual: null,
+      studyPlanLoaded: true,
     }),
   },
 }));
@@ -113,6 +117,10 @@ describe('collectDiagnostics', () => {
       zaznamnikCount: 3,
       zaznamnikFailed: 1,
       zaznamnikEmpty: 1,
+      studyPlan: 'none',
+      planBlocks: 0,
+      planSubjects: 0,
+      planEnrolledNow: 0,
     });
     expect(out.env.lang).toBe('en');
     expect(out.env.platform).toBe('extension');
