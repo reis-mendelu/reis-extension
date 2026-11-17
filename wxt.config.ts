@@ -3,7 +3,13 @@ import path from 'path';
 import tailwindcss from '@tailwindcss/vite';
 import { SNAPSHOT_FILENAMES } from './scripts/stripDevRealData.mjs';
 import { pdfjsLegacyAliases } from './scripts/pdfjsLegacyAlias';
-import { IS_HOST, isHostSwapped, isHostSwapPlugin, swapManifest } from './scripts/isHostSwap';
+import {
+  IS_HOST,
+  SCHOOL,
+  isHostSwapped,
+  isHostSwapPlugin,
+  swapManifest,
+} from './scripts/isHostSwap';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -54,6 +60,8 @@ export default defineConfig({
         manifest.host_permissions = manifest.host_permissions.filter(
           (p: string) => !dropped.includes(p)
         );
+      // The rest is for the map's tiles, which a school without it never loads.
+      if (!SCHOOL.features.campusMap) return;
       // Firefox's half of the tile identity instead: a blocking webRequest
       // listener in the background page (src/utils/osmTileIdentity.ts). Neither
       // webRequest permission carries an install warning. The tile host does,

@@ -6,6 +6,8 @@ export interface School {
   host: string;
   name: string;
   has(feature: Feature): boolean;
+  /** The student's school address for an IS username, or '' where the format is unknown. */
+  emailFor(username: string | undefined): string;
 }
 
 export function schoolFor(profile: SchoolProfile): School {
@@ -14,6 +16,8 @@ export function schoolFor(profile: SchoolProfile): School {
     host: profile.host,
     name: profile.name,
     has: (feature) => profile.features[feature],
+    emailFor: (username) =>
+      username && profile.emailDomain ? `${username}@${profile.emailDomain}` : '',
   };
 }
 

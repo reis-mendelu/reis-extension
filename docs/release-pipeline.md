@@ -12,6 +12,7 @@ release PR merged into main
        ├─ Google Play   signed AAB → production, full rollout
        ├─ App Store     archive → upload → attach to version → submit for review
        ├─ Extension     Chrome Web Store + Firefox Add-ons (publish.yml)
+       ├─ VŠE           reIS pro VŠE → its own Chrome Web Store item (off until set up)
        └─ Summary       one table; red if any store failed
 ```
 
@@ -102,6 +103,44 @@ name fails with the real track names listed. A newer production version also
 reaches the Alpha testers: Play gives everyone the highest versionCode they can
 see, so the closed track needs no upload of its own.
 
+## reIS pro VŠE (Chrome only)
+
+The same release, built for VŠE (`REIS_SCHOOL=vse`, `src/utils/schoolProfiles.ts`),
+goes to its **own** Chrome Web Store item: job `extension-vse` in `ship.yml`. Same
+version, same tag, same publisher and service account, so **no new secret**. No
+Firefox add-on, and no release notes (CWS has no field for them).
+
+- **Off until the repo variable `CWS_VSE_ITEM_ID` is set** (Settings → Secrets
+  and variables → Actions → *Variables*, not *Secrets*: a job's `if:` cannot read
+  secrets, and the id is public in the store URL anyway). Until then the job is
+  skipped, the summary row says so, and the dry run stays green.
+- **Before uploading it checks the built zip's manifest**, inline in the
+  workflow: name `reIS pro VŠE`, host permissions `https://insis.vse.cz/*` only,
+  no `mendelu` anywhere. A tag older than the VŠE listing ignores `REIS_SCHOOL`
+  and builds MENDELU's extension; the check stops that before it reaches the
+  VŠE item.
+- **It refuses while the VŠE privacy policy URL is a placeholder**
+  (`VSE_PRIVACY_POLICY_URL` in `src/utils/schoolProfiles.ts`;
+  `scripts/assertStoreReady.ts`). So does `npm run zip:vse`. A plain
+  `REIS_SCHOOL=vse npx wxt zip` still builds, for testing.
+- **Its own row in the summary**: `success` when it ran, `skipped` while
+  `CWS_VSE_ITEM_ID` is unset. Set and selected but not `success` is red.
+- **Re-run failed jobs** reruns it alone; MENDELU's extension job is separate.
+
+**The first version is uploaded by hand**: the publishing tool only updates an
+item that exists. In order:
+
+1. Publish `docs/privacy-policy-vse.md` (a gist, like MENDELU's) and put its URL
+   in `VSE_PRIVACY_POLICY_URL`. That lands in a release like any change.
+2. From that release's tag: `git checkout vX.Y.Z && npm ci && npm run zip:vse`.
+   The zip is `.output/insis.vse.cz/reis-X.Y.Z-chrome.zip`.
+3. Chrome Web Store dashboard, the same publisher as MENDELU's reIS: **New
+   item**, upload that zip, fill in the listing and the Privacy tab (single
+   purpose; `storage`, `unlimitedStorage`, `alarms` and the one host; no remote
+   code; **no data collected**; the policy URL), submit.
+4. Copy the item id from its URL into the repo **variable** `CWS_VSE_ITEM_ID`.
+   Every later release ships it.
+
 ## Proving it before a release depends on it
 
 `ship-dryrun.yml` runs the whole pipeline with `dry_run: true` on every PR that
@@ -114,7 +153,8 @@ builds and signs for real and **releases nothing**:
 - iOS: archives and exports a distribution-signed `.ipa` (`--skip-upload`),
   queries App Store Connect.
 - Extension: `wxt submit --dry-run`, on the **latest existing tag**, not the PR's
-  code (the extension leg is not exercised by a change to it).
+  code (the extension leg is not exercised by a change to it). The VŠE job does
+  the same once `CWS_VSE_ITEM_ID` is set, after its manifest check.
 
 If iOS signing fails here, that is the one real unknown: a CI runner has no
 Apple ID, so `xcodebuild` signs with the API key

@@ -21,7 +21,10 @@
  *   studyDocuments, practiceTests: MENDELU only;
  * - storeRating ("Ohodnotit reIS"): the store listings are MENDELU's reIS;
  * - guides (Nápověda): reisapp.cz's guides describe MENDELU's IS, eduroam
- *   and ISIC.
+ *   and ISIC;
+ * - usageCounts: the daily install count and the feature counters, Supabase
+ *   rows like the ones above. Off, nothing is even attempted: a VŠE build
+ *   sends nothing to reIS (docs/privacy-policy-vse.md).
  */
 export const ALL_FEATURES = [
   'campusMap',
@@ -44,11 +47,35 @@ export const ALL_FEATURES = [
   'practiceTests',
   'storeRating',
   'guides',
+  'usageCounts',
 ] as const;
 
 export type Feature = (typeof ALL_FEATURES)[number];
 
 export type SchoolId = 'mendelu' | 'vse' | 'czu';
+
+/**
+ * A school with its own store listing. The manifest name and description come
+ * from here (scripts/isHostSwap.ts); a school without one is a prototype build.
+ * MENDELU has none: its listing is the manifest literal in wxt.config.ts.
+ */
+export interface SchoolListing {
+  /** Manifest and store name. Users search for it, so it barely ever changes. */
+  name: string;
+  /** Manifest description, at most 132 characters (the Chrome Web Store's limit). */
+  description: string;
+  /** The policy text, in this repo. */
+  privacyPolicyDoc: string;
+  /** Where it is published, pasted into the store's privacy form. */
+  privacyPolicyUrl: string;
+}
+
+/**
+ * Not published yet. `npm run zip:vse` and the ship job refuse to make a store
+ * zip while this is still the placeholder: publish docs/privacy-policy-vse.md
+ * (a gist, like MENDELU's policy) and put its URL here first.
+ */
+export const VSE_PRIVACY_POLICY_URL = 'TODO: gist URL';
 
 export interface SchoolProfile {
   id: SchoolId;
@@ -56,6 +83,13 @@ export interface SchoolProfile {
   host: string;
   name: string;
   features: Readonly<Record<Feature, boolean>>;
+  /**
+   * The domain of a student's school address, `<IS username>@<domain>`. Null
+   * where nobody has confirmed the format: the profile then shows no address
+   * rather than a guessed one.
+   */
+  emailDomain: string | null;
+  listing: SchoolListing | null;
 }
 
 const everything = Object.fromEntries(ALL_FEATURES.map((f) => [f, true])) as Record<
@@ -70,9 +104,38 @@ const generalUis = Object.fromEntries(ALL_FEATURES.map((f) => [f, false])) as Re
 >;
 
 export const SCHOOL_PROFILES: Readonly<Record<SchoolId, SchoolProfile>> = {
-  mendelu: { id: 'mendelu', host: 'is.mendelu.cz', name: 'MENDELU', features: everything },
-  vse: { id: 'vse', host: 'insis.vse.cz', name: 'VŠE', features: generalUis },
-  czu: { id: 'czu', host: 'is.czu.cz', name: 'ČZU', features: generalUis },
+  mendelu: {
+    id: 'mendelu',
+    host: 'is.mendelu.cz',
+    name: 'MENDELU',
+    features: everything,
+    emailDomain: 'mendelu.cz',
+    listing: null,
+  },
+  vse: {
+    id: 'vse',
+    host: 'insis.vse.cz',
+    name: 'VŠE',
+    features: generalUis,
+    // Not confirmed by a VŠE student yet (no VŠE account on the team).
+    emailDomain: null,
+    listing: {
+      // No "neoficiální" in the name (Dominik, 2026-11-17); the description says it.
+      name: 'reIS pro VŠE',
+      description:
+        'Přehlednější InSIS: rozvrh, zkoušky, předměty a soubory na jednom místě. Neoficiální studentský projekt, s VŠE nesouvisí.',
+      privacyPolicyDoc: 'docs/privacy-policy-vse.md',
+      privacyPolicyUrl: VSE_PRIVACY_POLICY_URL,
+    },
+  },
+  czu: {
+    id: 'czu',
+    host: 'is.czu.cz',
+    name: 'ČZU',
+    features: generalUis,
+    emailDomain: null,
+    listing: null,
+  },
 };
 
 export const isSchoolId = (value: string): value is SchoolId =>

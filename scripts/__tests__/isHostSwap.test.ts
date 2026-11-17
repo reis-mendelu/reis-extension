@@ -87,6 +87,22 @@ describe('isHostSwap', () => {
     );
   });
 
+  it('refuses a store zip while the privacy policy URL is a placeholder', async () => {
+    const m = await load({ REIS_SCHOOL: 'vse' });
+    const { SCHOOL_PROFILES } = await import('../../src/utils/schoolProfiles');
+    const vse = SCHOOL_PROFILES.vse;
+    const at = (url: string) => ({
+      ...vse,
+      listing: vse.listing && { ...vse.listing, privacyPolicyUrl: url },
+    });
+    expect(m.storeZipProblems(at('TODO: gist URL'))).toEqual([
+      expect.stringContaining('docs/privacy-policy-vse.md'),
+    ]);
+    expect(m.storeZipProblems(at('https://gist.github.com/x/1'))).toEqual([]);
+    // A school without a listing has no store zip at all.
+    expect(m.storeZipProblems(SCHOOL_PROFILES.czu)).toHaveLength(1);
+  });
+
   it('swaps the manifest and names the prototype', async () => {
     const m = await load({ REIS_SCHOOL: 'czu' });
     const manifest: Record<string, unknown> = {

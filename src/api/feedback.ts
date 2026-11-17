@@ -83,6 +83,9 @@ function pragueDay(): string {
  */
 export function trackDailyUsage(): Promise<void> {
   if (isDemoMode()) return Promise.resolve();
+  // A school without the count (VŠE at launch) sends reIS nothing at all, so
+  // nothing is attempted, not even against the build's cut-off Supabase host.
+  if (!currentSchool.has('usageCounts')) return Promise.resolve();
 
   // A dev server and the deployed preview are not installs, and counting them
   // is not a rounding error. `npm run dev:web` has no demo-mode guard — only

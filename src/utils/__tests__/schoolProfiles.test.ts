@@ -42,6 +42,26 @@ describe('school profiles', () => {
     expect(schoolFor(SCHOOL_PROFILES.mendelu).has('campusMap')).toBe(true);
   });
 
+  it("gives the student's school address only where its format is known", () => {
+    expect(schoolFor(SCHOOL_PROFILES.mendelu).emailFor('xnovak')).toBe('xnovak@mendelu.cz');
+    expect(schoolFor(SCHOOL_PROFILES.mendelu).emailFor('')).toBe('');
+    // Never a MENDELU address for a VŠE student, and no guessed one either.
+    expect(schoolFor(SCHOOL_PROFILES.vse).emailFor('xnovj01')).toBe('');
+    expect(schoolFor(SCHOOL_PROFILES.czu).emailFor('xnovj01')).toBe('');
+  });
+
+  it('VŠE is its own listing, named "reIS pro VŠE"; ČZU is still a prototype', () => {
+    const listing = SCHOOL_PROFILES.vse.listing;
+    expect(listing?.name).toBe('reIS pro VŠE');
+    expect(listing?.description.length).toBeLessThanOrEqual(132);
+    expect(listing?.description).toMatch(/[Nn]eoficiální/);
+    expect(listing?.description).not.toMatch(/mendelu/i);
+    expect(listing?.privacyPolicyDoc).toBe('docs/privacy-policy-vse.md');
+    expect(SCHOOL_PROFILES.czu.listing).toBeNull();
+    // MENDELU's listing is the manifest literal in wxt.config.ts.
+    expect(SCHOOL_PROFILES.mendelu.listing).toBeNull();
+  });
+
   it('every real build (no VITE_REIS_SCHOOL) is MENDELU with everything', () => {
     expect(currentSchool.id).toBe('mendelu');
     expect(currentSchool.host).toBe('is.mendelu.cz');

@@ -2,6 +2,7 @@ import { IndexedDBService } from '../services/storage';
 import { STORAGE_KEYS } from '../services/storage/keys';
 import { fetchUserBaseIds, fetchUserStudyDetails, fetchUserNetId } from './userParams/fetchers';
 import { logError } from './reportError';
+import { currentSchool } from './school';
 import { announceIdentityChange } from './userParams/identityEvents';
 import { chooseStudy, needsStudyResolution } from './userParams/chooseStudy';
 import { getPreferredStudium } from './userParams/studyPreference';
@@ -195,7 +196,7 @@ export async function getUserParams(): Promise<UserParams | null> {
         ...chosen,
         ...study,
         ...net,
-        email: net.username ? `${net.username}@mendelu.cz` : '',
+        email: currentSchool.emailFor(net.username),
         isErasmus: chosen.isErasmus,
         ...(choice.studies && choice.studies.length > 1 ? { studies: choice.studies } : {}),
       };
