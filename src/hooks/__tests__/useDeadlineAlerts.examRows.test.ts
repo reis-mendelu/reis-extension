@@ -99,6 +99,27 @@ describe('useDeadlineAlerts – exam rows', () => {
     expect(examRows()).toEqual([]);
   });
 
+  // A term that opens later is still a chance to register: nothing is closing yet.
+  it('says nothing is closing while a later term has yet to open', () => {
+    setExams(
+      subject({
+        terms: [
+          term('a', { registrationStart: '20.11.2026 00:00', registrationEnd: '01.12.2026 18:00' }),
+          term('b', { registrationStart: '02.12.2026 06:00', registrationEnd: '09.12.2026 08:00' }),
+        ],
+      })
+    );
+    expect(examRows().filter((a) => a.type === 'exam-reg')).toEqual([]);
+  });
+
+  // IS can leave the time blank; a row with an invalid date says nothing useful.
+  it('leaves out an own exam whose time IS left blank', () => {
+    setExams(
+      subject({ status: 'registered', registeredTerm: { id: 'r', date: '03.12.2026', time: '' } })
+    );
+    expect(examRows()).toEqual([]);
+  });
+
   it('says nothing about registration in a section the student is registered in', () => {
     setExams(
       subject({

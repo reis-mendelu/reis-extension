@@ -11,9 +11,11 @@ const CLOSES_WITHIN_H = 24;
 /** The student's own exams: the coming week. */
 const MINE_WITHIN_H = 7 * 24;
 
+/** null for what IS left blank or malformed: parseDate answers Invalid Date, not a throw. */
 function at(date: string, time = '00:00'): Date | null {
   try {
-    return parseDate(date, time);
+    const d = parseDate(date, time);
+    return Number.isNaN(d.getTime()) ? null : d;
   } catch {
     return null;
   }
@@ -94,16 +96,19 @@ export function examSectionAlerts(
       });
   }
 
-  const takingNow = terms.filter(registrable).filter((t) => {
-    const start = stamp(t.registrationStart);
-    const end = stamp(t.registrationEnd);
-    return (!start || start.getTime() <= now) && (!end || end.getTime() > now);
-  });
-  // A term with no end IS shows still takes registrations: nothing is closing.
-  const ends = takingNow.map((t) => ({ t, end: stamp(t.registrationEnd) }));
-  const last = ends.some((x) => !x.end)
+  // Every chance still ahead, open now or later. A term with no end IS shows
+  // still takes registrations, so nothing is closing; nor while the latest
+  // chance has yet to open.
+  const chances = terms
+    .filter(registrable)
+    .map((t) => ({ t, start: stamp(t.registrationStart), end: stamp(t.registrationEnd) }))
+    .filter((x) => !x.end || x.end.getTime() > now);
+  const latest = chances.some((x) => !x.end)
     ? undefined
-    : (ends as { t: ExamTerm; end: Date }[]).sort((a, b) => b.end.getTime() - a.end.getTime())[0];
+    : (chances as { t: ExamTerm; start: Date | null; end: Date }[]).sort(
+        (a, b) => b.end.getTime() - a.end.getTime()
+      )[0];
+  const last = latest && (!latest.start || latest.start.getTime() <= now) ? latest : undefined;
   if (last) {
     const h = (last.end.getTime() - now) / H;
     if (h <= CLOSES_WITHIN_H)
