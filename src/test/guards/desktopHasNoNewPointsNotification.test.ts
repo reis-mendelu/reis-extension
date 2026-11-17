@@ -44,7 +44,7 @@ describe('záznamník new points: system notification on the phone only', () => 
   });
 
   it('both trees list the new points in Novinky, and a row opens the subject', () => {
-    expect(read('src/hooks/useDeadlineAlerts.ts')).toContain('newPointsAlerts(');
+    expect(read('src/utils/novinky/buildDeadlineAlerts.ts')).toContain('newPointsAlerts(');
     // desktop: the bell dropdown, fed from the header that can open a drawer
     expect(read('src/components/AppHeader.tsx')).toContain(
       "onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')"

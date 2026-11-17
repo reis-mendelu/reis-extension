@@ -45,7 +45,7 @@ describe('exam-opening reminders stay on the phone', () => {
   // The exam rows live in utils/exams/examAlerts.ts; the shared hook both
   // trees' bells read still builds them from it.
   it('src/hooks/useDeadlineAlerts.ts still gives both trees the opening in the bell', () => {
-    expect(read('src/hooks/useDeadlineAlerts.ts')).toContain('examAlerts(');
+    expect(read('src/utils/novinky/buildDeadlineAlerts.ts')).toContain('examAlerts(');
     expect(read('src/utils/exams/examAlerts.ts')).toContain("type: 'exam-reg-opens'");
   });
 });
