@@ -73,9 +73,14 @@ class BackgroundWebRun {
     }
 
     /**
-     * Held across a post's check-and-post and across marking a run over, so a
-     * stop that returns has waited for a post in flight: sign-out clears the
-     * tray only after it, and a later post sees the run over.
+     * Held across a post's check-and-post and across the whole of ending a run
+     * (marking it over, queueing the teardown, telling the job), so each path
+     * runs to its end before another starts:
+     * - a stop that returns has waited for a post in flight (sign-out clears
+     *   the tray only after it), and a later post sees the run over;
+     * - the teardown is queued on the main thread before stopRun queues its
+     *   reply there, so sign-out wipes only once the page is gone;
+     * - jobFinished() runs once, and never after onStopJob's cancel().
      */
     static final Object POSTING = new Object();
 
@@ -83,10 +88,10 @@ class BackgroundWebRun {
         synchronized (POSTING) {
             if (finished) return;
             finished = true;
+            main.removeCallbacksAndMessages(null);
+            destroy();
+            done.finished(status);
         }
-        main.removeCallbacksAndMessages(null);
-        destroy();
-        done.finished(status);
     }
 
     /**
@@ -101,10 +106,12 @@ class BackgroundWebRun {
     /** The system stopped the job: nothing this run says from now on counts. */
     void cancel() {
         synchronized (POSTING) {
+            // Already ended: its teardown is queued and must not be removed.
+            if (finished) return;
             finished = true;
+            main.removeCallbacksAndMessages(null);
+            destroy();
         }
-        main.removeCallbacksAndMessages(null);
-        destroy();
     }
 
     void destroy() {
