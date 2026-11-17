@@ -172,7 +172,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Ten feature counters on the random install id, one whitelisted label each: four feature uses and six screens opened.',
+    what: 'Twelve feature counters on the random install id, one whitelisted label each: five feature uses (one of them a tap on a partner programme card in Stáže) and seven screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -200,8 +200,13 @@ export const FLOWS: Flow[] = [
       ],
       [
         'Screen opened',
-        'when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session (again only if a send fails); stored as one row per install per day',
-        'the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed',
+        'when the calendar, Předměty, Jídelníček, search, Vývěska, Novinky or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day',
+        'the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`) — nothing about what was on it, what you searched for or how long you stayed',
+      ],
+      [
+        'Partner programme opened',
+        'you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day',
+        'the random install identifier and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website',
       ],
     ],
     stores: {

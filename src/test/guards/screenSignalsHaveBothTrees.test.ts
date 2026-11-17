@@ -56,6 +56,12 @@ const SCREENS: Record<string, { phone: string[]; extension: string[] }> = {
     phone: ['components/mobile/sheets/NotificationsSheet.tsx'],
     extension: ['components/Notifications/NotificationDropdown.tsx'],
   },
+  // Stáže: the denominator for the click count handed to partners. Only a
+  // student a partner is shown to ever sees it, so it is a share of THEM.
+  screen_internships: {
+    phone: ['components/mobile/sheets/InternshipsSheet.tsx'],
+    extension: ['components/Internships/InternshipsMenu.tsx'],
+  },
 };
 
 describe('screen counters fire on both trees', () => {
@@ -78,6 +84,7 @@ describe('screen counters fire on both trees', () => {
     ['components/SearchBar/MobileSearchOverlay.tsx', "useScreenSignal('screen_search', isOpen)"],
     ['components/SearchBar/index.tsx', "useScreenSignal('screen_search', isOpen)"],
     ['components/Bulletin/BulletinBanner.tsx', "useScreenSignal('screen_bulletin', expanded)"],
+    ['components/Internships/InternshipsMenu.tsx', "useScreenSignal('screen_internships', shown)"],
     // Not the boot default: only once useAppLogic has restored the saved view.
     ['components/WeeklyCalendar/index.tsx', "useScreenSignal('screen_calendar', countVisit)"],
     ['components/AppMain.tsx', 'countVisit={viewRestored}'],

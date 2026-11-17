@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: November 15, 2026**
+**Last Updated: November 17, 2026**
 
 ## Introduction
 reIS ("we", "our", or "us") is a Chrome extension designed to modernize and enhance the user experience of the Mendel University Information System (IS Mendelu). We are committed to protecting your privacy and ensuring the security of your data.
@@ -73,7 +73,7 @@ reIS contacts the following services. **IS Mendelu is the only one that receives
 9. **GoPay** (`checkout.gopay.com` and `gate.gopay.com`) — the payment page for a top-up opens in your device's browser view. Your card or Google Pay details go to GoPay; reIS never sees them.
 10. **Microsoft Bookings** (`bookings.cloud.microsoft`) — mobile app only (Android, iPhone, iPad), when you reserve or cancel a library study room. The app sends the library's booking page your name, MENDELU e-mail, student number and faculty code, which is what the library asks for, and a short marker ("reIS") so the librarians can tell the booking came from the app; Microsoft e-mails you the confirmation, or the cancellation. The request goes from your device straight to the library's booking page, never through reIS. The app keeps the booking's cancellation key on your device so you can cancel it, and a copy in your reIS calendar. Looking at which rooms are free sends only the room and the dates, nothing about you.
 
-**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles, partner programme websites under Stáže, the emoji licence, the extension's "Ohodnotit reIS" link to its Chrome Web Store page or its Firefox Add-ons page at addons.mozilla.org, the Nápověda link to reIS's own guides at reisapp.cz, which carries only `z=app`) are handed to your browser or the relevant app. reIS makes no background request to them.
+**Links you open yourself** (Teams, Outlook, geteduroam, society websites and Instagram profiles, partner programme websites under Stáže, the emoji licence, the extension's "Ohodnotit reIS" link to its Chrome Web Store page or its Firefox Add-ons page at addons.mozilla.org, the Nápověda link to reIS's own guides at reisapp.cz, which carries only `z=app`) are handed to your browser or the relevant app. reIS makes no background request to them. Tapping a partner programme's card in Stáže is counted as one number on your install (the feature counters in section 2); the website itself receives nothing from reIS.
 
 ## User Control
 You have full control over your data:

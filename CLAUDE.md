@@ -333,6 +333,17 @@ file in the same PR** (the `disclosure-drift` Stop hook asks if you forget), the
 `npm run privacy:generate` for the policy table. At release, Claude runs
 `npm run privacy:publish` and does the store forms itself — see `/release`.
 
+## Count what you ship
+
+**When you add something a student can open or click, ask whether anyone will
+later need to know how many did.** A number nobody counted at launch cannot be
+recovered (the Stáže card for EY shipped in #651 with no counter). Ask it
+especially for anything a **partner** is shown or linked to: that count is what
+reIS hands the partner. The mechanism is the existing install-level feature
+counter, one label per partner programme; the steps, the migration and the
+disclosure are in `docs/feature-counters.md`. If a new feature needs no
+counter, say so in the PR in one line.
+
 ## Error Reporting & Privacy
 
 **reIS transmits nothing about a failure on its own.** No error type, message,

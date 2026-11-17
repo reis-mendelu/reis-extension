@@ -1284,6 +1284,8 @@
       "signalScreenSearch": "Search opened",
       "signalScreenBulletin": "Bulletin Board (Vývěska) opened",
       "signalScreenNotifications": "News (Novinky) opened",
+      "signalScreenInternships": "Internships (Stáže) opened",
+      "signalInternshipClickEy": "Click on “Cesta s EY”",
       "signalShare": "{pct}% of daily installs",
       "signalShareHint": "An average day over 30 days: of the installs that opened reIS that day, how many also opened this. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalInstalls": "installs",

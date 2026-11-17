@@ -13,4 +13,6 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   screen_search: 'signalScreenSearch',
   screen_bulletin: 'signalScreenBulletin',
   screen_notifications: 'signalScreenNotifications',
+  screen_internships: 'signalScreenInternships',
+  internship_click_ey: 'signalInternshipClickEy',
 };

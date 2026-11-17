@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BriefcaseBusiness, X } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useEscapeLayer } from '../../hooks/ui/useEscapeLayer';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 import { usePartnerInternships } from '../../hooks/usePartnerInternships';
 import { InternshipList } from './InternshipList';
 
@@ -31,6 +32,8 @@ export function InternshipsMenu() {
   const shown = open && items.length > 0;
   // Adjusted during render, React's pattern for state derived from props.
   if (open && items.length === 0) setOpen(false);
+  // Counted when the panel is shown (it stays mounted while closed).
+  useScreenSignal('screen_internships', shown);
 
   useEffect(() => {
     if (!shown) return;
