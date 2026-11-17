@@ -135,6 +135,18 @@ describe('Novinky rows as phone notifications', () => {
     expect(posted()).toHaveLength(1);
   });
 
+  // The store's clock ticks every second (useAppStore's pulse). A tick must
+  // not restart the settle wait, or nothing is ever posted.
+  it('posts while the one-second clock keeps ticking', async () => {
+    await settle();
+    const pulse = setInterval(() => useAppStore.setState({ now: new Date() }), 1000);
+    useAppStore.setState({ examTermsNew: [examTermKey('EBC-VWA', '1')] });
+    await vi.advanceTimersByTimeAsync(5000);
+    for (let i = 0; i < 10; i++) await Promise.resolve();
+    clearInterval(pulse);
+    expect(posted()).toHaveLength(1);
+  });
+
   it('records but posts nothing while notifications are not allowed', async () => {
     await settle();
     ln.checkPermissions.mockResolvedValue({ display: 'denied' });
@@ -174,15 +186,20 @@ describe('Novinky rows as phone notifications', () => {
 
   it('sign-out clears what it posted and the record', async () => {
     await settle();
+    // 5.7.x posted points under its own kind; one may still be in the tray.
     ln.getDeliveredNotifications.mockResolvedValue({
       notifications: [
         { id: 1, extra: { kind: NOVINKY_KIND } },
         { id: 2, extra: { kind: 'other' } },
+        { id: 3, extra: { kind: 'zaznamnik-new-points' } },
       ],
     });
     await clearNovinkyNotifications();
     expect(ln.removeDeliveredNotifications).toHaveBeenCalledWith({
-      notifications: [{ id: 1, extra: { kind: NOVINKY_KIND } }],
+      notifications: [
+        { id: 1, extra: { kind: NOVINKY_KIND } },
+        { id: 3, extra: { kind: 'zaznamnik-new-points' } },
+      ],
     });
     expect(db.has(`meta/${NOVINKY_NOTIFIED_KEY}`)).toBe(false);
   });

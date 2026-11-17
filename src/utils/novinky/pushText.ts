@@ -25,7 +25,9 @@ export function pushRowsOf(
 ): PushRow[] {
   const news = alerts.flatMap((a): PushRow[] => {
     const kind = KIND_OF[a.type];
-    return kind ? [{ id: a.id, kind, title: a.title, body: a.body, courseCode: a.courseCode }] : [];
+    return kind
+      ? [{ id: a.id, kind, title: a.title, body: a.body, courseCode: a.courseCode, parts: a.parts }]
+      : [];
   });
   return [
     ...news,

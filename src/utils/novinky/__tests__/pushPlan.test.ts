@@ -54,4 +54,16 @@ describe('planPushes: Novinky rows → system notifications, 1:1', () => {
     expect(plan.notified).toHaveLength(500);
     expect(plan.notified.at(-1)).toBe('new');
   });
+
+  // A "Nový termín" row's id is its dates. When one passes, the row gets a new
+  // id with no new date in it: nothing to announce.
+  it('does not post a row again when only a date it announced dropped out', () => {
+    const ab = { ...row('ab', 'terms', 'VWA'), parts: ['A', 'B'] };
+    const first = planPushes([ab], [], none);
+    expect(first.post).toHaveLength(1);
+    const b = { ...row('b', 'terms', 'VWA'), parts: ['B'] };
+    expect(planPushes([b], first.notified, none).post).toEqual([]);
+    const bc = { ...row('bc', 'terms', 'VWA'), parts: ['B', 'C'] };
+    expect(planPushes([bc], first.notified, none).post).toHaveLength(1);
+  });
 });

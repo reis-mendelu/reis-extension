@@ -128,6 +128,27 @@ async function show(groups: PushGroup[], language: string, gen: number): Promise
   });
 }
 
+/** The inputs of Novinky's news rows and of the decision to post them. */
+const watchedOf = (s: AppState): unknown[] => [
+  s.firstSyncSettled,
+  s.exams.data,
+  s.examTermsNew,
+  s.odevzdavarny,
+  s.odevzdavarnyNew,
+  s.zaznamnikNewPoints,
+  s.subjects,
+  s.studyPlanDual,
+  s.notifications.data,
+  s.notifications.status,
+  s.notifications.readIds,
+  s.notifications.seenDeadlineAlertIds,
+  s.isNotices,
+  s.isNoticeMutes,
+  s.societies,
+  s.notifySocieties,
+  s.language,
+];
+
 function schedule(): void {
   if (timer) clearTimeout(timer);
   const gen = generation;
@@ -147,7 +168,15 @@ export function installNovinkyNotifications(): () => void {
     // Its importance was 4 and cannot change; the new channels replace it.
     void LocalNotifications.deleteChannel({ id: 'reis-zaznamnik-points' }).catch(() => undefined);
   }
-  unsubscribe = useAppStore.subscribe(schedule);
+  // Only what the rows are built from. The store's clock ticks every second,
+  // and a subscription to every change restarted the settle wait for ever.
+  let watched = watchedOf(useAppStore.getState());
+  unsubscribe = useAppStore.subscribe((s) => {
+    const next = watchedOf(s);
+    if (next.every((v, i) => v === watched[i])) return;
+    watched = next;
+    schedule();
+  });
   schedule();
   return () => unsubscribe?.();
 }
@@ -160,8 +189,12 @@ export async function clearNovinkyNotifications(): Promise<void> {
   if (timer) clearTimeout(timer);
   // A run already handed to the plugin lands in the tray; wait for it, then clear.
   await queue;
+  // 5.7.x posted points under their own kind, and one may still be in the tray.
   const delivered = (await LocalNotifications.getDeliveredNotifications()).notifications.filter(
-    (n) => (n.extra as { kind?: unknown } | undefined)?.kind === NOVINKY_KIND
+    (n) => {
+      const kind = (n.extra as { kind?: unknown } | undefined)?.kind;
+      return kind === NOVINKY_KIND || kind === 'zaznamnik-new-points';
+    }
   );
   if (delivered.length > 0) {
     await LocalNotifications.removeDeliveredNotifications({ notifications: delivered });

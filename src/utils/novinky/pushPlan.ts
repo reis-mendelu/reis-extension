@@ -19,6 +19,11 @@ export interface PushRow {
   body: string;
   /** The subject a tap opens, when the row is about one. */
   courseCode?: string;
+  /**
+   * What the row is made of (a "Nový termín" row's dates). Its id changes when
+   * one drops out; it is news only while it holds a part not announced yet.
+   */
+  parts?: string[];
 }
 
 export interface PushGroup {
@@ -37,8 +42,11 @@ export function planPushes(
   seenInApp: ReadonlySet<string>
 ): { post: PushGroup[]; notified: string[] } {
   const known = new Set(notifiedBefore ?? []);
-  const fresh = rows.filter((r) => !known.has(r.id));
-  const notified = [...known, ...fresh.map((r) => r.id)].slice(-NOTIFIED_CAP);
+  const isNews = (r: PushRow) =>
+    !known.has(r.id) && (!r.parts || r.parts.some((p) => !known.has(p)));
+  const fresh = rows.filter(isNews);
+  const added = rows.flatMap((r) => [r.id, ...(r.parts ?? [])]).filter((id) => !known.has(id));
+  const notified = [...known, ...new Set(added)].slice(-NOTIFIED_CAP);
   if (!notifiedBefore) return { post: [], notified };
   const toPost = fresh.filter((r) => !seenInApp.has(r.id));
   const post = KIND_ORDER.map((kind) => ({
