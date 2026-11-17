@@ -532,7 +532,7 @@
   "novinkyPush": {
     "channelTerms": "Nové termíny zkoušek",
     "channelPoints": "Nové body",
-    "channelBoxes": "Nové odevzdávárny",
+    "channelBoxes": "Nové odevzdávárny (na pozadí)",
     "channelSocieties": "Od spolků a MENDELU",
     "termsOne": "Nový termín: {subject}",
     "termsMany": "Nové termíny zkoušek",
@@ -1794,16 +1794,9 @@
     "badge": "Nová"
   },
   "backgroundCheck": {
-    "label": "Oznámení",
-    "hint": "Nové body, odevzdávárny a termíny zkoušek, i když je aplikace zavřená.",
-    "channelExams": "Nové termíny zkoušek",
+    "channelExams": "Nové termíny zkoušek (na pozadí)",
     "channelBoxes": "Nové odevzdávárny",
-    "channelPoints": "Nové body v záznamníku",
-    "examTitleOne": "Nový termín zkoušky: {subject}",
-    "examBodyOne": "{date} v {time}",
-    "examTitleMany": "Nové termíny zkoušek",
-    "boxTitleOne": "Nová odevzdávárna: {subject}",
-    "boxTitleMany": "Nové odevzdávárny"
+    "channelPoints": "Nové body v záznamníku (na pozadí)"
   },
   "guides": {
     "help": "Nápověda"

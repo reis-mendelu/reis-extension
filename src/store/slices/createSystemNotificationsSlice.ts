@@ -21,12 +21,6 @@ export interface SystemNotificationsSlice {
   systemNotifications: SystemNotificationStatus;
   setSystemNotifications: (next: SystemNotificationStatus) => void;
   /**
-   * The Android background check (see desktopHasNoBackgroundCheck.test.ts): `unknown`
-   * until the native side has answered, and for ever on iOS and in the
-   * extension, which have none.
-   */
-  backgroundCheck: 'unknown' | 'on' | 'off';
-  setBackgroundCheck: (next: 'on' | 'off') => void;
    * Society events and MENDELU notices as phone notifications too. On unless
    * the student switched it off (agreed 2026-11-17); Novinky lists them either way.
    */
@@ -40,8 +34,6 @@ export interface SystemNotificationsSlice {
 export const createSystemNotificationsSlice: AppSlice<SystemNotificationsSlice> = (set, get) => ({
   systemNotifications: 'unknown',
   setSystemNotifications: (next) => set({ systemNotifications: next }),
-  backgroundCheck: 'unknown',
-  setBackgroundCheck: (next) => set({ backgroundCheck: next }),
   notifySocieties: true,
   notifySocietiesTouched: false,
   setNotifySocieties: (on) => {

@@ -3,7 +3,6 @@ import { SheetHeader } from '../primitives/SheetHeader';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { AppearanceRows } from '../screens/profile/AppearanceRows';
 import { SystemNotificationsRow } from '../screens/profile/SystemNotificationsRow';
-import { BackgroundCheckRow } from '../screens/profile/BackgroundCheckRow';
 import { HiddenLessonsRows } from '../screens/profile/HiddenLessonsRows';
 
 export interface SettingsSheetProps {
@@ -24,7 +23,6 @@ export function SettingsSheet({ onClose }: SettingsSheetProps) {
           caps its height (PR #638 review). */}
       <div className="min-h-0 flex-1 overflow-y-auto pb-6">
         <SystemNotificationsRow />
-        <BackgroundCheckRow />
         <AppearanceRows />
         {/* Where the first-hide hint sends a student (HideLessonSheet). */}
         <HiddenLessonsRows />

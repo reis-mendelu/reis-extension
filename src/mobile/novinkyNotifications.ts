@@ -12,7 +12,8 @@ import {
 } from '../utils/novinky/buildDeadlineAlerts';
 import { buildFeed, feedInputsOf, viewerOf } from '../utils/novinky/buildFeed';
 import { pragueMinuteIso } from '../utils/isNoticeRows';
-import { planPushes, type PushGroup, type PushRow } from '../utils/novinky/pushPlan';
+import { planRun } from '../utils/novinky/planRun';
+import { withKnownStateLock } from '../services/sync/knownStateLock';
 import { pushRowsOf } from '../utils/novinky/pushText';
 
 import { NOVINKY_KIND, ensureChannels, postGroups } from './novinkyPost';
@@ -66,19 +67,15 @@ async function run(gen: number): Promise<void> {
   ]);
   const before = await readRecord();
   if (gen !== generation) return;
-  const plan = (ready: boolean, rows: PushRow[], known: string[] | undefined) =>
-    ready ? planPushes(rows, known, seen) : { post: [], notified: known };
-  const news = plan(src.alerts, pushRowsOf(alerts, [], nameOf), before.alerts);
-  const events = plan(src.feed, pushRowsOf([], src.events, nameOf), before.feed);
-  const notices = plan(src.notices, pushRowsOf([], src.isNotices, nameOf), before.notices);
-  // Society events and IS notices are one kind, so one notification.
-  const school = [...events.post, ...notices.post].flatMap((g) => g.rows);
-  const candidates: PushGroup[] = [
-    ...news.post,
-    ...(school.length > 0 ? [{ kind: 'societies' as const, rows: school }] : []),
-  ];
-  const full = { alerts: news.notified, feed: events.notified, notices: notices.notified };
-  const toPost = candidates.filter((g) => g.kind !== 'societies' || s.notifySocieties);
+  const { toPost, full, held } = planRun({
+    news: pushRowsOf(alerts, [], nameOf),
+    events: pushRowsOf([], src.events, nameOf),
+    notices: pushRowsOf([], src.isNotices, nameOf),
+    ready: { alerts: src.alerts, feed: src.feed, notices: src.notices },
+    seen,
+    before,
+    notifySocieties: s.notifySocieties,
+  });
   const granted =
     toPost.length > 0 && (await LocalNotifications.checkPermissions()).display === 'granted';
   if (!granted || gen !== generation) {
@@ -88,24 +85,7 @@ async function run(gen: number): Promise<void> {
   }
   // What is about to be posted stays out of the record until it has been, so
   // a post the system refuses is tried again on the next run.
-  // Only what was not recorded before: a date already announced in a row that
-  // gained a new one stays announced, whatever happens to this post.
-  const recorded = new Set([
-    ...(before.alerts ?? []),
-    ...(before.feed ?? []),
-    ...(before.notices ?? []),
-  ]);
-  const held = new Set(
-    toPost
-      .flatMap((g) => g.rows.flatMap((r) => [r.id, ...(r.parts ?? [])]))
-      .filter((id) => !recorded.has(id))
-  );
-  const without = (ids?: string[]) => ids?.filter((id) => !held.has(id));
-  await saveRecord({
-    alerts: without(full.alerts),
-    feed: without(full.feed),
-    notices: without(full.notices),
-  });
+  await saveRecord(held);
   await ensureChannels(toPost, s.language);
   // Right before posting: the switch or a read may have changed meanwhile.
   const now = useAppStore.getState();
@@ -153,7 +133,11 @@ function schedule(): void {
   if (timer) clearTimeout(timer);
   const gen = generation;
   timer = setTimeout(() => {
-    queue = queue.then(() => run(gen)).catch((err) => logError('Mobile.novinkyNotifications', err));
+    queue = queue
+      // The record is shared with the Android background check's WebView (same
+      // IndexedDB): read, post and write take turns with it, or both post a row.
+      .then(() => withKnownStateLock(() => run(gen)))
+      .catch((err) => logError('Mobile.novinkyNotifications', err));
   }, SETTLE_MS);
 }
 

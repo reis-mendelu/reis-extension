@@ -50,10 +50,10 @@ describe('openFromBackgroundTap', () => {
     expect(useAppStore.getState().mobileTab).toBe('exams');
   });
 
-  it('ignores a tap it does not know', () => {
-    openFromBackgroundTap({ kind: 'something-else', courseCode: null });
-    expect(useAppStore.getState().mobileTab).toBe('calendar');
+  it('ignores a tap with no kind', () => {
     openFromBackgroundTap(undefined);
+    openFromBackgroundTap({ courseCode: 'EBC-A' });
+    expect(useAppStore.getState().mobileTab).toBe('calendar');
     expect(useAppStore.getState().mobileSheets).toEqual([]);
   });
 });
@@ -80,21 +80,17 @@ describe('startBackgroundCheck taps', () => {
     expect(useAppStore.getState().mobileTab).toBe('exams');
   });
 
-  it('a cold-start subject tap waits until the subjects have loaded', async () => {
+  // Opened at once: the drawer itself takes Záznamník once the subjects load
+  // (SubjectDrawerSheet.boxes.test.tsx).
+  it('a cold-start subject tap opens the subject on Záznamník', async () => {
     plugin.getLaunchTap.mockResolvedValue({ kind: 'boxes', courseCode: 'EBC-AP' });
     useAppStore.setState({ subjects: undefined } as never);
     await startBackgroundCheck();
-    expect(useAppStore.getState().mobileSheets).toEqual([]);
-    useAppStore.setState({
-      subjects: { data: { 'EBC-AP': { subjectId: '123', nameCs: 'AP' } } },
-    } as never);
-    await vi.waitFor(() =>
-      expect(useAppStore.getState().mobileSheets.at(-1)).toMatchObject({
-        kind: 'subjectDrawer',
-        courseId: '123',
-        initialTab: 'zaznamnik',
-      })
-    );
+    expect(useAppStore.getState().mobileSheets.at(-1)).toMatchObject({
+      kind: 'subjectDrawer',
+      courseCode: 'EBC-AP',
+      initialTab: 'zaznamnik',
+    });
   });
 
   it('no launch tap, no navigation', async () => {

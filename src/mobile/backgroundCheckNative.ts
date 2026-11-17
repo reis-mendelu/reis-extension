@@ -2,9 +2,8 @@ import { Capacitor, registerPlugin } from '@capacitor/core';
 import { useAppStore } from '../store/useAppStore';
 import { translate } from '../i18n/translate';
 import { logError } from '../utils/reportError';
-import { openExamsFromNotification } from './examReminders';
-import { openFromNotification, NEW_POINTS_KIND } from './zaznamnikNotifications';
-import { EXAM_OPENING_KIND } from '../utils/examOpeningReminders';
+import { openNovinkyFromNotification } from './novinkyTaps';
+import { NOVINKY_KIND } from './novinkyPost';
 
 /** Android-only: BackgroundCheckPlugin.java. */
 interface BackgroundCheckPlugin {
@@ -34,45 +33,18 @@ const channelNames = (language: string) => ({
 });
 
 /**
- * A tap on a notification the background check posted. Boxes and points both
- * open that subject's Záznamník (a summary opens Novinky), which is what the
- * bell's rows do; new exam terms open Zkoušky. The words are the other
- * features' own, so they cannot drift apart.
+ * A tap on a notification the background check posted opens what tapping the
+ * same notification from the open app does (novinkyTaps): Zkoušky for new
+ * terms, the subject's Záznamník for points or a box in one subject, Novinky
+ * otherwise. The drawer itself takes the asked tab once the subjects load.
  */
 export function openFromBackgroundTap(tap: Partial<BackgroundTap> | null | undefined): void {
-  if (tap?.kind === 'exams') {
-    openExamsFromNotification({ kind: EXAM_OPENING_KIND });
-  } else if (tap?.kind === 'boxes' || tap?.kind === 'points') {
-    openFromNotification({ kind: NEW_POINTS_KIND, courseCode: tap.courseCode ?? null });
-  }
-}
-
-const SUBJECTS_WAIT_MS = 8000;
-
-/**
- * A cold start's tap arrives before the subjects have loaded from the cache,
- * and a drawer built without the subject's IS id opens on Statistics instead
- * of Záznamník. So a tap for a subject waits (briefly) until the store knows
- * it, then opens it; a subject that never appears opens as it is.
- */
-function whenSubjectKnown(courseCode: string | null | undefined): Promise<void> {
-  const known = () =>
-    !courseCode || !!useAppStore.getState().subjects?.data?.[courseCode]?.subjectId;
-  if (known()) return Promise.resolve();
-  return new Promise((resolve) => {
-    const stop = () => {
-      unsubscribe();
-      clearTimeout(timer);
-      resolve();
-    };
-    const unsubscribe = useAppStore.subscribe(() => known() && stop());
-    const timer = setTimeout(stop, SUBJECTS_WAIT_MS);
+  if (!tap?.kind) return;
+  openNovinkyFromNotification({
+    kind: NOVINKY_KIND,
+    group: tap.kind === 'exams' ? 'terms' : tap.kind,
+    courseCode: tap.courseCode ?? null,
   });
-}
-
-async function handleTap(tap: Partial<BackgroundTap> | null | undefined): Promise<void> {
-  if (tap?.kind === 'boxes' || tap?.kind === 'points') await whenSubjectKnown(tap.courseCode);
-  openFromBackgroundTap(tap);
 }
 
 /**
@@ -89,12 +61,15 @@ export async function startBackgroundCheck(): Promise<void> {
     const { enabled } = await BackgroundCheck.start({
       channelNames: channelNames(useAppStore.getState().language),
     });
-    useAppStore.getState().setBackgroundCheck(enabled ? 'on' : 'off');
+    // No switch of its own (folded 2026-11-17): it runs while reIS may notify,
+    // and the phone's own notification setting turns both off. A job a tester
+    // switched off in an earlier build is armed again.
+    if (!enabled) await BackgroundCheck.setEnabled({ enabled: true });
     // The mounted app is what a tap navigates, so this comes after it: first
     // the tap that launched us (the intent outlives the process start), then
     // any later one while the app is open.
-    void handleTap(await BackgroundCheck.getLaunchTap());
-    void BackgroundCheck.addListener('notificationTap', (tap) => void handleTap(tap));
+    openFromBackgroundTap(await BackgroundCheck.getLaunchTap());
+    void BackgroundCheck.addListener('notificationTap', (tap) => openFromBackgroundTap(tap));
     // A language switch while the app is open renames the channels too, so the
     // phone's own notification settings do not keep the old words until relaunch.
     let named = useAppStore.getState().language;
@@ -108,11 +83,6 @@ export async function startBackgroundCheck(): Promise<void> {
   } catch (err) {
     logError('Mobile.startBackgroundCheck', err);
   }
-}
-
-/** Rejects when the phone could not apply it, so the switch does not lie. */
-export async function setBackgroundCheckEnabled(enabled: boolean): Promise<void> {
-  await BackgroundCheck.setEnabled({ enabled });
 }
 
 /** Sign-out: this student's notifications must not stay for the next person. */

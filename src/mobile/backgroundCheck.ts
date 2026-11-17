@@ -2,14 +2,8 @@ import type { ExamSubject } from '../types/exams';
 import type { SubjectsData } from '../types/documents';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
 import type { Odevzdavarna, OdevzdavarnyResult } from '../api/odevzdavarny';
-import type { NewExamTerm } from '../utils/newExamTerms';
-import type { NewPointsBySubject } from '../services/sync/zaznamnikNewPoints';
 import type { ZaznamnikSyncInput } from '../services/sync/syncZaznamnik';
-import { boxCourseCode } from '../utils/submissionBoxes';
-import {
-  composeBackgroundNotifications,
-  type BackgroundNotification,
-} from '../utils/backgroundNotifications';
+import type { Language } from '../store/types';
 
 /** Everything the check touches outside itself, so the order of steps is testable. */
 export interface BackgroundDeps {
@@ -20,22 +14,21 @@ export interface BackgroundDeps {
   withSyncLock(job: () => Promise<void>): Promise<boolean>;
   fetchSubjects(studium: string, obdobi: string): Promise<SubjectsData | null>;
   fetchExams(): Promise<ExamSubject[]>;
-  persistExamTerms(exams: ExamSubject[]): Promise<NewExamTerm[]>;
+  /** Remembers the terms and keeps the new ones for Novinky (services/sync/recordExamTerms). */
+  recordTerms(exams: ExamSubject[]): Promise<void>;
   syncBoxes(studium: string, obdobi: string): Promise<OdevzdavarnyResult | null>;
-  persistBoxes(
-    boxes: Odevzdavarna[],
-    obdobi: string
-  ): Promise<{ found: string[]; unseen: string[] }>;
-  boxKey(box: Odevzdavarna): string;
+  persistBoxes(boxes: Odevzdavarna[], obdobi: string): Promise<unknown>;
   syncZaznamnik(
     studium: string,
     obdobi: string,
     inputs: ZaznamnikSyncInput[]
   ): Promise<Record<string, SubjectZaznamnik | null>>;
-  persistZaznamnik(
-    batch: Record<string, SubjectZaznamnik | null>
-  ): Promise<{ found: NewPointsBySubject }>;
-  notify(list: BackgroundNotification[]): void;
+  persistZaznamnik(batch: Record<string, SubjectZaznamnik | null>): Promise<unknown>;
+  /** Posts what Novinky would show that is not announced yet (mobile/backgroundAnnounce). */
+  announce(
+    fresh: { exams: ExamSubject[]; boxes: Odevzdavarna[]; subjects: SubjectsData['data'] },
+    language: Language
+  ): Promise<void>;
   logError(context: string, err: unknown): void;
 }
 
@@ -57,9 +50,8 @@ export async function runBackgroundCheck(d: BackgroundDeps): Promise<BackgroundS
   if (!p?.studium || !p.obdobi) return 'no-params';
   const { studium, obdobi } = p;
 
-  const terms: NewExamTerm[] = [];
-  const newBoxes: Odevzdavarna[] = [];
-  let points: NewPointsBySubject = {};
+  let exams: ExamSubject[] = [];
+  let boxes: Odevzdavarna[] = [];
   let subjects: SubjectsData['data'] = {};
 
   const ran = await d.withSyncLock(async () => {
@@ -69,16 +61,16 @@ export async function runBackgroundCheck(d: BackgroundDeps): Promise<BackgroundS
       d.logError('Background.subjects', err);
     }
     try {
-      terms.push(...(await d.persistExamTerms(await d.fetchExams())));
+      exams = await d.fetchExams();
+      await d.recordTerms(exams);
     } catch (err) {
       d.logError('Background.exams', err);
     }
     try {
       const result = await d.syncBoxes(studium, obdobi);
       if (result) {
-        const { found } = await d.persistBoxes(result.assignments, obdobi);
-        const wanted = new Set(found);
-        newBoxes.push(...result.assignments.filter((b) => wanted.has(d.boxKey(b))));
+        await d.persistBoxes(result.assignments, obdobi);
+        boxes = result.assignments;
       }
     } catch (err) {
       d.logError('Background.boxes', err);
@@ -90,38 +82,20 @@ export async function runBackgroundCheck(d: BackgroundDeps): Promise<BackgroundS
         hasPrubezne: s.hasPrubezne,
         hasTest: s.hasTest,
       }));
-      points = (await d.persistZaznamnik(await d.syncZaznamnik(studium, obdobi, inputs))).found;
+      await d.persistZaznamnik(await d.syncZaznamnik(studium, obdobi, inputs));
     } catch (err) {
       d.logError('Background.zaznamnik', err);
     }
   });
   if (!ran) return 'busy';
 
-  // After the persists have consumed the new items: a failed read of the
+  // After the persists have recorded the new items: a failed read of the
   // language must cost only the wording, never the notification.
-  const language = await d.language().catch(() => 'cz');
-  const boxCourseNames = new Map(newBoxes.map((b) => [b.courseId, b.courseNameCs]));
-  const nameOf = (code: string) => {
-    const s = subjects[code];
-    return (
-      (language === 'en' ? s?.nameEn : s?.nameCs) ||
-      s?.displayName ||
-      boxCourseNames.get(code) ||
-      code
-    );
-  };
-  const list = composeBackgroundNotifications(
-    {
-      terms,
-      boxes: newBoxes.map((b) => {
-        const code = boxCourseCode(b, subjects);
-        return { courseCode: code ?? b.courseId, name: b.name, resolved: !!code };
-      }),
-      points,
-    },
-    language,
-    nameOf
-  );
-  if (list.length > 0) d.notify(list);
+  const language: Language = (await d.language().catch(() => 'cz')) === 'en' ? 'en' : 'cz';
+  try {
+    await d.announce({ exams, boxes, subjects }, language);
+  } catch (err) {
+    d.logError('Background.announce', err);
+  }
   return 'done';
 }

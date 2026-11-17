@@ -12,8 +12,8 @@ import { syncOdevzdavarny } from '@/services/sync/syncOdevzdavarny';
 import { syncZaznamnik } from '@/services/sync/syncZaznamnik';
 import { persistZaznamnikBatch } from '@/services/sync/zaznamnikNewPoints';
 import { persistNewBoxes } from '@/services/sync/newSubmissionBoxes';
-import { persistExamTerms } from '@/services/sync/newExamTerms';
-import { boxKey } from '@/utils/newBoxDetection';
+import { recordExamTerms } from '@/services/sync/recordExamTerms';
+import { announceNovinky } from '@/mobile/backgroundAnnounce';
 import { logError } from '@/utils/reportError';
 import { SYNC_LOCK_NAME } from '@/injector/config';
 import { runBackgroundCheck } from '@/mobile/backgroundCheck';
@@ -53,13 +53,18 @@ async function main(): Promise<string> {
     fetchSubjects: async (studium, obdobi) =>
       (await fetchDualLanguageSubjects(studium, obdobi))?.subjects ?? null,
     fetchExams: fetchDualLanguageExams,
-    persistExamTerms,
+    // Through the same step as the app's sync: the new terms also become
+    // Novinky rows, not only "known" (services/sync/recordExamTerms).
+    recordTerms: async (exams) => {
+      await recordExamTerms({ exams, loaded: ['exams'] });
+    },
     syncBoxes: syncOdevzdavarny,
     persistBoxes: persistNewBoxes,
-    boxKey,
     syncZaznamnik,
     persistZaznamnik: persistZaznamnikBatch,
-    notify: (list) => host.notify(JSON.stringify(list)),
+    // What Novinky would show, in its words, from the foreground's record.
+    announce: (fresh, language) =>
+      announceNovinky(fresh, language, (list) => host.notify(JSON.stringify(list))),
     logError,
   });
 }

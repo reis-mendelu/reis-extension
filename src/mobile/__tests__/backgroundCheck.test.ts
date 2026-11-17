@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { runBackgroundCheck, type BackgroundDeps } from '../backgroundCheck';
 import type { Odevzdavarna } from '../../api/odevzdavarny';
+import type { ExamSubject } from '../../types/exams';
 
 const box = (id: string): Odevzdavarna =>
   ({
@@ -10,6 +11,8 @@ const box = (id: string): Odevzdavarna =>
     name: `Box ${id}`,
     odevzdavarnaId: id,
   }) as Odevzdavarna;
+
+const exam = { version: 1, id: 'EBC-A', name: 'Alg', code: 'EBC-A', sections: [] } as ExamSubject;
 
 function deps(over: Partial<BackgroundDeps> = {}): BackgroundDeps {
   return {
@@ -36,14 +39,13 @@ function deps(over: Partial<BackgroundDeps> = {}): BackgroundDeps {
         },
       },
     }),
-    fetchExams: async () => [],
-    persistExamTerms: async () => [],
+    fetchExams: async () => [exam],
+    recordTerms: vi.fn(async () => undefined),
     syncBoxes: async () => ({ assignments: [box('b1')], lastFetched: 0, periods: [] }),
-    persistBoxes: async () => ({ found: [], unseen: [] }),
-    boxKey: (b) => b.odevzdavarnaId,
+    persistBoxes: vi.fn(async () => undefined),
     syncZaznamnik: async () => ({}),
-    persistZaznamnik: async () => ({ found: {} }),
-    notify: vi.fn(),
+    persistZaznamnik: vi.fn(async () => undefined),
+    announce: vi.fn(async () => undefined),
     logError: vi.fn(),
     ...over,
   };
@@ -53,78 +55,55 @@ describe('runBackgroundCheck', () => {
   it('does nothing without a session or without the student params', async () => {
     const signedOut = deps({ hasSession: async () => false });
     expect(await runBackgroundCheck(signedOut)).toBe('signed-out');
-    expect(signedOut.notify).not.toHaveBeenCalled();
+    expect(signedOut.announce).not.toHaveBeenCalled();
     const noParams = deps({ params: async () => null });
     expect(await runBackgroundCheck(noParams)).toBe('no-params');
-    expect(noParams.notify).not.toHaveBeenCalled();
+    expect(noParams.announce).not.toHaveBeenCalled();
   });
 
   it('skips the whole run while a sync holds the lock', async () => {
     const d = deps({ withSyncLock: async () => false, fetchExams: vi.fn() });
     expect(await runBackgroundCheck(d)).toBe('busy');
     expect(d.fetchExams).not.toHaveBeenCalled();
+    expect(d.announce).not.toHaveBeenCalled();
   });
 
-  it('stays silent when nothing is new', async () => {
+  // The terms go through the app's own step, so a new one is a Novinky row too.
+  it('records the terms, persists boxes and points, then announces with the fresh lists', async () => {
     const d = deps();
     expect(await runBackgroundCheck(d)).toBe('done');
-    expect(d.notify).not.toHaveBeenCalled();
-  });
-
-  it('notifies once per kind for a new box, term and point', async () => {
-    const d = deps({
-      persistExamTerms: async () => [
-        {
-          key: 'k',
-          courseCode: 'EBC-A',
-          subjectCs: 'Algoritmy',
-          subjectEn: 'Algo',
-          date: '1.2.2027',
-          time: '8:00',
-        },
-      ],
-      persistBoxes: async () => ({ found: ['b1'], unseen: ['b1'] }),
-      persistZaznamnik: async () => ({ found: { 'EBC-A': [{ label: 'Test', value: '9' }] } }),
-    });
-    await runBackgroundCheck(d);
-    expect(d.notify).toHaveBeenCalledTimes(1);
-    const [list] = (d.notify as ReturnType<typeof vi.fn>).mock.calls[0] as [
-      { kind: string; title: string }[],
-    ];
-    expect(list.map((n) => n.kind)).toEqual(['exams', 'boxes', 'points']);
-    expect(list[1]?.title).toBe('Nová odevzdávárna: Algoritmy');
-  });
-
-  it('a failing language read still announces what was found, in Czech', async () => {
-    const d = deps({
-      language: async () => {
-        throw new Error('idb gone');
+    expect(d.recordTerms).toHaveBeenCalledWith([exam]);
+    expect(d.persistBoxes).toHaveBeenCalledWith([box('b1')], 'o');
+    expect(d.persistZaznamnik).toHaveBeenCalled();
+    expect(d.announce).toHaveBeenCalledWith(
+      {
+        exams: [exam],
+        boxes: [box('b1')],
+        subjects: expect.objectContaining({ 'EBC-A': expect.anything() }),
       },
-      persistBoxes: async () => ({ found: ['b1'], unseen: ['b1'] }),
-    });
-    await runBackgroundCheck(d);
-    expect(d.notify).toHaveBeenCalledTimes(1);
-    const [list] = (d.notify as ReturnType<typeof vi.fn>).mock.calls[0] as [{ title: string }[]];
-    expect(list[0]?.title).toMatch(/^Nová odevzdávárna/);
+      'cz'
+    );
   });
 
-  it('one failing step does not cost the others', async () => {
+  it('IS failing for one step costs only that step', async () => {
     const d = deps({
       fetchExams: async () => {
-        throw new Error('IS down');
+        throw new Error('IS hiccup');
       },
-      persistBoxes: async () => ({ found: ['b1'], unseen: ['b1'] }),
     });
     expect(await runBackgroundCheck(d)).toBe('done');
-    expect(d.logError).toHaveBeenCalledWith('Background.exams', expect.any(Error));
-    expect(d.notify).toHaveBeenCalledTimes(1);
+    expect(d.recordTerms).not.toHaveBeenCalled();
+    expect(d.persistBoxes).toHaveBeenCalled();
+    expect(d.announce).toHaveBeenCalledWith(expect.objectContaining({ exams: [] }), 'cz');
   });
 
-  it('asks záznamník only for the current semester subjects it fetched', async () => {
-    const syncZaznamnik = vi.fn(async () => ({}));
-    await runBackgroundCheck(deps({ syncZaznamnik }));
-    expect(syncZaznamnik).toHaveBeenCalledWith('s', 'o', [
-      { courseCode: 'EBC-A', subjectId: '1', hasPrubezne: true, hasTest: undefined },
-    ]);
+  it('a failed language read costs only the wording', async () => {
+    const d = deps({
+      language: async () => {
+        throw new Error('IndexedDB unavailable');
+      },
+    });
+    await runBackgroundCheck(d);
+    expect(d.announce).toHaveBeenCalledWith(expect.anything(), 'cz');
   });
 });

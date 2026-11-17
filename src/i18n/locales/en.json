@@ -532,7 +532,7 @@
   "novinkyPush": {
     "channelTerms": "New exam dates",
     "channelPoints": "New points",
-    "channelBoxes": "New submission boxes",
+    "channelBoxes": "New submission boxes (in the background)",
     "channelSocieties": "From societies and MENDELU",
     "termsOne": "New exam date: {subject}",
     "termsMany": "New exam dates",
@@ -1794,16 +1794,9 @@
     "badge": "New"
   },
   "backgroundCheck": {
-    "label": "Notifications",
-    "hint": "New points, submission boxes and exam dates, even when the app is closed.",
-    "channelExams": "New exam dates",
+    "channelExams": "New exam dates (in the background)",
     "channelBoxes": "New submission boxes",
-    "channelPoints": "New points in Záznamník",
-    "examTitleOne": "New exam date: {subject}",
-    "examBodyOne": "{date} at {time}",
-    "examTitleMany": "New exam dates",
-    "boxTitleOne": "New submission box: {subject}",
-    "boxTitleMany": "New submission boxes"
+    "channelPoints": "New points in Záznamník (in the background)"
   },
   "guides": {
     "help": "Help"

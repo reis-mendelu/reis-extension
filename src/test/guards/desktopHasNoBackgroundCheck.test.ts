@@ -17,7 +17,6 @@ import { describe, expect, it } from 'vitest';
  * Phone side:
  *   capacitor/background.ts, src/mobile/backgroundCheck.ts,
  *   src/mobile/backgroundCheckNative.ts,
- *   src/components/mobile/screens/profile/BackgroundCheckRow.tsx
  */
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), 'utf8');
 
@@ -42,16 +41,13 @@ describe('the background check stays on Android', () => {
       'capacitor/background.ts',
       'capacitor/main.capacitor.tsx',
       'capacitor/startApp.ts',
-      'src/components/mobile/screens/profile/BackgroundCheckRow.tsx',
     ]);
   });
 
-  it('the row is reached from the phone Settings sheet only', () => {
-    expect(importers('BackgroundCheckRow')).toEqual([
-      'src/components/mobile/screens/profile/BackgroundCheckRow.tsx',
-      'src/components/mobile/sheets/SettingsSheet.tsx',
-    ]);
-    expect(read('src/components/mobile/sheets/SettingsSheet.tsx')).toContain('BackgroundCheckRow');
+  // No switch of its own (folded 2026-11-17): the phone's notification setting
+  // turns it off, so no "Oznámení" row sits beside "Oznámení v telefonu".
+  it('has no Settings row of its own', () => {
+    expect(read('src/components/mobile/sheets/SettingsSheet.tsx')).not.toMatch(/BackgroundCheck/);
   });
 
   it('the desktop bell mentions none of it', () => {
