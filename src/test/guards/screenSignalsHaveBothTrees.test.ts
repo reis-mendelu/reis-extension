@@ -140,6 +140,15 @@ describe('screen counters fire on both trees', () => {
     expect(read(file)).toContain(call);
   });
 
+  // Study plan is one shared page, so the loop above only proves the hook is in
+  // it. Each tree must still render that page.
+  it.each([
+    ['components/mobile/sheets/StudyPlanSheet.tsx', '<StudyPlanPage'],
+    ['components/AppMain.tsx', '<StudyPlanPage'],
+  ])('%s renders StudyPlanPage', (file, tag) => {
+    expect(read(file)).toContain(tag);
+  });
+
   it('the map keeps map_dwell_3s on both trees instead', () => {
     expect(FEATURE_SIGNALS).not.toContain('screen_map');
     expect(read('components/mobile/screens/MapScreen.tsx')).toContain('useMapDwell()');
