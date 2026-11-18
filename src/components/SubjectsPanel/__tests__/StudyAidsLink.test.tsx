@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
-import { BUNDLED_SOCIETIES } from '../../../data/societies';
 import { trackFeatureSignal } from '../../../api/featureUsage';
 import { StudyAidsLink } from '../StudyAidsLink';
 
@@ -9,20 +8,13 @@ vi.mock('../../../api/featureUsage', () => ({ trackFeatureSignal: vi.fn() }));
 
 // The extension's half of the study-aids link (the phone's is StudyAidsRow).
 // A plain link: the extension has a real browser, so it opens in a new tab.
+// Who sees it is `studyAids` in the store, the active rows of `study_aids`.
 describe('StudyAidsLink (extension)', () => {
   beforeEach(() => {
     vi.mocked(trackFeatureSignal).mockClear();
     useAppStore.setState({
       language: 'cz',
-      societies: {
-        ...BUNDLED_SOCIETIES,
-        'mendelu-app': {
-          ...BUNDLED_SOCIETIES.ey!,
-          id: 'mendelu-app',
-          name: 'mendelu.app',
-          audience: ['af:B-ATE'],
-        },
-      },
+      studyAids: { 'mendelu-app': ['af:B-ATE'] },
       userFaculty: 'AF',
       userProgramme: 'B-ATE',
       isErasmus: false,
@@ -40,6 +32,12 @@ describe('StudyAidsLink (extension)', () => {
 
   it('renders nothing for a student of another programme', () => {
     useAppStore.setState({ userProgramme: 'B-FYT' } as never);
+    const { container } = render(<StudyAidsLink />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it('renders nothing while the admin has the link switched off', () => {
+    useAppStore.setState({ studyAids: {} } as never);
     const { container } = render(<StudyAidsLink />);
     expect(container.firstChild).toBeNull();
   });

@@ -1,24 +1,24 @@
 import { BookOpen, ExternalLink } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
-import { usePartnerStudyAids } from '@/hooks/usePartnerStudyAids';
+import { useStudyAids } from '@/hooks/useStudyAids';
 import { trackFeatureSignal } from '@/api/featureUsage';
 
 /**
- * "Studijní opory" under the subjects: a partner's study aids (mendelu.app), the
+ * "Studijní opory" under the subjects: the study aids on mendelu.app, the
  * extension's half of the phone's StudyAidsRow.
  *
  * A plain `target="_blank"` link: a browser tab is exactly right in a browser.
- * Shown only to the students the partner's audience names (set in the admin
- * console by faculty and programme, decided on the device), nothing otherwise.
+ * Shown only to the students whose faculty and programme the admin console has
+ * picked (the `study_aids` row, decided on the device), nothing otherwise.
  *
- * The tap is counted on the install, because the partner is told how many
- * installs followed its link. The primary click and a middle-click count, never
+ * The tap is counted on the install, because the site's author is told how many
+ * installs followed the link. The primary click and a middle-click count, never
  * a right-click (`auxclick` fires for the right button too, which only opens the
  * context menu). Nothing about the student goes with the link.
  */
 export function StudyAidsLink({ className = '' }: { className?: string }) {
   const { t } = useTranslation();
-  const aids = usePartnerStudyAids();
+  const aids = useStudyAids();
   if (!aids) return null;
 
   return (

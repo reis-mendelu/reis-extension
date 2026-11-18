@@ -1,29 +1,29 @@
 import { BookOpen } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
-import { usePartnerStudyAids } from '../../../../hooks/usePartnerStudyAids';
+import { useStudyAids } from '../../../../hooks/useStudyAids';
 import { trackFeatureSignal } from '../../../../api/featureUsage';
 import { openExternal } from '../../../../mobile/openExternal';
 import { logError } from '../../../../utils/reportError';
 import { NavRow } from '../../primitives/NavRow';
 
 /**
- * "Studijní opory" under the semester card: a partner's study aids (mendelu.app),
- * one tap to its site. A NavRow that leaves the app, in a card of its own, with
- * the sublabel saying what is behind it.
+ * "Studijní opory" under the semester card: the study aids on mendelu.app, one
+ * tap to the site. A NavRow that leaves the app, in a card of its own, with the
+ * sublabel saying what is behind it.
  *
- * Shown only to the students the partner's audience names, which the admin
- * console sets by faculty and programme and which is decided on the device
- * (`usePartnerStudyAids`). It renders nothing otherwise, so no empty slot.
+ * Shown only to the students whose faculty and programme the admin console has
+ * picked (the `study_aids` row, decided on the device by `useStudyAids`). It
+ * renders nothing otherwise, so no empty slot.
  *
  * `openExternal` rather than a `target="_blank"` link, like the page directory:
  * a third-party host goes to the real browser view, never the IS WebView. The
  * tap is counted on the install (`study_aids_click_mendelu_app`), because the
- * partner is told how many installs followed its link. The extension's half is
- * SubjectsPanel/StudyAidsLink.
+ * site's author is told how many installs followed the link. The extension's
+ * half is SubjectsPanel/StudyAidsLink.
  */
 export function StudyAidsRow() {
   const { t } = useTranslation();
-  const aids = usePartnerStudyAids();
+  const aids = useStudyAids();
   if (!aids) return null;
 
   const open = () => {

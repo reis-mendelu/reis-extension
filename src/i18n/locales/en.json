@@ -1436,6 +1436,18 @@
       "hidden": "Hidden",
       "notInYourIs": "No longer in your IS",
       "error": "Could not save. Try again."
+    },
+    "studyAids": {
+      "title": "Study aids",
+      "note": "The link to mendelu.app under Subjects. Shown only to students of the chosen faculties and programmes, and only once switched on.",
+      "audience": "Who sees the link",
+      "active": "Show to students",
+      "save": "Save",
+      "saved": "Saved.",
+      "error": "Could not save. Try again.",
+      "invalid": "Pick at least one faculty and check the programme codes.",
+      "loadError": "Could not load the study aids.",
+      "empty": "No link is set up yet."
     }
   },
   "mobile": {

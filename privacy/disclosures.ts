@@ -172,7 +172,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Fourteen feature counters on the random install id and the school label, one whitelisted label each: seven feature uses (one a tap on a partner programme card in Stáže, one a tap on the new-version row in Novinky, one a tap on a partner’s study-aids link in Předměty) and seven screens opened.',
+    what: 'Fourteen feature counters on the random install id and the school label, one whitelisted label each: seven feature uses (one a tap on a partner programme card in Stáže, one a tap on the new-version row in Novinky, one a tap on the study-aids link under Předměty) and seven screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -215,8 +215,8 @@ export const FLOWS: Flow[] = [
       ],
       [
         'Study aids opened',
-        'you tap the "Studijní opory" link under Předměty (shown only to students of the programmes a partner chose; today only mendelu.app), once per app session; stored as one row per install per day',
-        'the random install identifier, the school and a fixed label naming the partner (`study_aids_click_mendelu_app`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website',
+        'you tap the "Studijní opory" link under Předměty (shown only to students of the faculties and programmes reIS has chosen; today it leads to mendelu.app), once per app session; stored as one row per install per day',
+        "the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`). We count how many installs tapped, which the site's author is told as a number; we never tell them who, and we cannot see what you do on the website",
       ],
     ],
     stores: {
@@ -312,6 +312,11 @@ export const EXEMPT: Exempt[] = [
     call: 'reis_questions',
     files: ['src/api/questions.ts', 'src/api/adminQuestions.ts'],
     why: 'Public read of the live Novinky questions; writes are by a signed-in reis_admin, never a student.',
+  },
+  {
+    call: 'study_aids',
+    files: ['src/api/studyAids.ts', 'src/api/adminStudyAids.ts'],
+    why: 'Public read of which faculties and programmes the study-aids link is shown to, matched on the device: the request says nothing about the student, whose faculty and programme never leave it. Writes are by a signed-in reis_admin, never a student.',
   },
   {
     call: 'question_results',

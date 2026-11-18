@@ -38,6 +38,7 @@ export function AdminConsole() {
   const unread = useAppStore((s) => s.suggestionsUnread);
   const loadAdminStats = useAppStore((s) => s.loadAdminStats);
   const loadAdminQuestions = useAppStore((s) => s.loadAdminQuestions);
+  const loadAdminStudyAids = useAppStore((s) => s.loadAdminStudyAids);
   const [pane, setPane] = useState<'events' | 'suggestions' | 'accounts' | 'stats' | 'questions'>(
     'events'
   );
@@ -135,6 +136,7 @@ export function AdminConsole() {
                 aria-selected={pane === 'questions'}
                 onClick={() => {
                   void loadAdminQuestions();
+                  void loadAdminStudyAids();
                   setPane('questions');
                 }}
                 className={`tab flex-1 ${pane === 'questions' ? 'tab-active font-semibold' : 'text-base-content'}`}

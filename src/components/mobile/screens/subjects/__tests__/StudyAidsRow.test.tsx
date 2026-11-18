@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { useAppStore } from '../../../../../store/useAppStore';
-import { BUNDLED_SOCIETIES } from '../../../../../data/societies';
 import { trackFeatureSignal } from '../../../../../api/featureUsage';
 import { openExternal } from '../../../../../mobile/openExternal';
 import { StudyAidsRow } from '../StudyAidsRow';
@@ -12,22 +11,16 @@ vi.mock('../../../../../mobile/openExternal', () => ({
 }));
 
 // The phone's half of the study-aids link (the extension's is StudyAidsLink).
-// A NavRow that leaves the app, so the in-app browser opens it, not the system one.
+// A NavRow that leaves the app: a third-party host goes to the real browser
+// view through openExternal. Who sees it is `studyAids` in the store, the
+// active rows of `study_aids` that the admin console edits.
 describe('StudyAidsRow (phone)', () => {
   beforeEach(() => {
     vi.mocked(trackFeatureSignal).mockClear();
     vi.mocked(openExternal).mockClear();
     useAppStore.setState({
       language: 'cz',
-      societies: {
-        ...BUNDLED_SOCIETIES,
-        'mendelu-app': {
-          ...BUNDLED_SOCIETIES.ey!,
-          id: 'mendelu-app',
-          name: 'mendelu.app',
-          audience: ['af:B-ATE'],
-        },
-      },
+      studyAids: { 'mendelu-app': ['af:B-ATE'] },
       userFaculty: 'AF',
       userProgramme: 'B-ATE',
       isErasmus: false,
@@ -41,7 +34,7 @@ describe('StudyAidsRow (phone)', () => {
     expect(screen.getByText(/Prezentace, simulace a kvízy/)).toBeInTheDocument();
   });
 
-  it('opens mendelu.app in the in-app browser and counts the click under its own label', () => {
+  it('hands mendelu.app to openExternal and counts the click under its own label', () => {
     render(<StudyAidsRow />);
     fireEvent.click(screen.getByRole('button', { name: /Studijní opory k předmětům/ }));
     expect(openExternal).toHaveBeenCalledWith('https://mendelu.app/');
@@ -56,10 +49,7 @@ describe('StudyAidsRow (phone)', () => {
   });
 
   it('follows the admin console: switched off, it disappears', () => {
-    const societies = useAppStore.getState().societies;
-    useAppStore.setState({
-      societies: { ...societies, 'mendelu-app': { ...societies['mendelu-app']!, isActive: false } },
-    } as never);
+    useAppStore.setState({ studyAids: {} } as never);
     const { container } = render(<StudyAidsRow />);
     expect(container.firstChild).toBeNull();
   });

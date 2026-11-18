@@ -44,6 +44,7 @@ export function MobileAdminConsole() {
   const unread = useAppStore((s) => s.suggestionsUnread);
   const loadAdminStats = useAppStore((s) => s.loadAdminStats);
   const loadAdminQuestions = useAppStore((s) => s.loadAdminQuestions);
+  const loadAdminStudyAids = useAppStore((s) => s.loadAdminStudyAids);
   const [tab, setTab] = useState<Tab>('list');
   const draftFocus = useAppStore((s) => s.draftFocusRequest);
   // "Ukázat na mapě" has to bring the map forward as well as move the camera —
@@ -74,7 +75,10 @@ export function MobileAdminConsole() {
       className={`tab flex-1 px-1 ${tab === key ? 'tab-active font-semibold' : 'text-base-content'}`}
       onClick={() => {
         if (key === 'stats') void loadAdminStats();
-        if (key === 'questions') void loadAdminQuestions();
+        if (key === 'questions') {
+          void loadAdminQuestions();
+          void loadAdminStudyAids();
+        }
         setTab(key);
       }}
     >

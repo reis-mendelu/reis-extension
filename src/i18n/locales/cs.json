@@ -1436,6 +1436,18 @@
       "hidden": "Skryto",
       "notInYourIs": "Už není ve tvém IS",
       "error": "Nepodařilo se uložit. Zkus to znovu."
+    },
+    "studyAids": {
+      "title": "Studijní opory",
+      "note": "Odkaz na mendelu.app pod Předměty. Ukáže se jen studentům vybraných fakult a programů, a to až po zapnutí.",
+      "audience": "Komu se odkaz ukáže",
+      "active": "Zobrazovat studentům",
+      "save": "Uložit",
+      "saved": "Uloženo.",
+      "error": "Nepodařilo se uložit. Zkus to znovu.",
+      "invalid": "Vyber aspoň jednu fakultu a zkontroluj kódy programů.",
+      "loadError": "Nepodařilo se načíst studijní opory.",
+      "empty": "Žádný odkaz zatím není nastavený."
     }
   },
   "mobile": {
