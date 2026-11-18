@@ -5,6 +5,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 import { useExams } from '../../../hooks/data/useExams';
 import { useExamActions } from '../../ExamPanel/useExamActions';
 import {
@@ -55,6 +56,7 @@ function ExamsSkeleton() {
  * list by date would bury that distinction.
  */
 export function ExamsScreen() {
+  useScreenSignal('screen_exams');
   const { t, language } = useTranslation();
   const { exams } = useExams();
   const now = useAppStore((s) => s.now);

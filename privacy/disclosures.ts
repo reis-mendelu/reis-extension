@@ -200,8 +200,8 @@ export const FLOWS: Flow[] = [
       ],
       [
         'Screen opened',
-        'when the calendar, Předměty, Jídelníček, search, Vývěska, Novinky or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day',
-        'the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`) — nothing about what was on it, what you searched for or how long you stayed',
+        'when the calendar, Zkoušky, Předměty, Studijní plán, Jídelníček, search, Vývěska, Novinky, Doklady, ISIC, the library card on the map or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day',
+        'the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`, `screen_exams`, `screen_study_plan`, `screen_documents`, `screen_isic`, `screen_library`) — nothing about what was on it, what you searched for or how long you stayed',
       ],
       [
         'Partner programme opened',

@@ -1,6 +1,7 @@
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 import { useIskamResetOnLeave } from './useIskamResetOnLeave';
 import { IskamBalanceRow } from './IskamBalanceRow';
 
@@ -16,6 +17,7 @@ export interface IskamSheetProps {
  * reIS sends. Phone/iPad only — src/test/guards/desktopHasNoIskam.test.ts.
  */
 export function IskamSheet({ onClose }: IskamSheetProps) {
+  useScreenSignal('screen_isic');
   const { t } = useTranslation();
   // As in MenuSheet: the balance never outlives the sheet.
   useIskamResetOnLeave();

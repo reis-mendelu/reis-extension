@@ -10,6 +10,7 @@ import type { TimelineExam } from '../Exams/Timeline/ExamTimeline';
 import { useAutoRegistration } from './useAutoRegistration';
 import { Zap, ExternalLink } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
@@ -41,6 +42,7 @@ function PanelTopBar({ href }: { href: string }) {
 }
 
 export function ExamPanel() {
+  useScreenSignal('screen_exams');
   const { t, language } = useTranslation();
   const { params } = useUserParams();
   // Mounted only as the extension's Zkoušky view: on screen = Novinky's new terms seen.

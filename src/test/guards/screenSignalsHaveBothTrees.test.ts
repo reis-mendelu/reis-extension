@@ -19,6 +19,9 @@ import { FEATURE_SIGNALS } from '../../api/featureUsage';
  * - The phone's Den menu card (`MenuCard`) is not `screen_menu`: it sits under
  *   every day, so it would count the calendar a second time. Only an opened
  *   menu counts — the sheet on the phone, the chef-hat popover in the extension.
+ * - ISIC and Knihovna are phone-only BY DECISION (`desktopHasNoIskam.test.ts`,
+ *   `desktopHasNoLibraryBooking.test.ts` say why), so their `extension` list is
+ *   empty on purpose and the admin share is a phone share. Pinned below.
  * - Vývěska (`bulletin`, IS posts behind the pin) and Novinky (`notifications`,
  *   the feed behind the bell) are two surfaces with two labels.
  */
@@ -62,9 +65,49 @@ const SCREENS: Record<string, { phone: string[]; extension: string[] }> = {
     phone: ['components/mobile/sheets/InternshipsSheet.tsx'],
     extension: ['components/Internships/InternshipsMenu.tsx'],
   },
+  screen_exams: {
+    phone: ['components/mobile/screens/ExamsScreen.tsx'],
+    extension: ['components/ExamPanel/index.tsx'],
+  },
+  // One page, hosted by both trees (the phone's StudyPlanSheet wraps it).
+  screen_study_plan: {
+    phone: ['components/SubjectsPanel/StudyPlanPage.tsx'],
+    extension: ['components/SubjectsPanel/StudyPlanPage.tsx'],
+  },
+  // Doklady: the phone's sheet, the extension's drawer from the Student flyout.
+  screen_documents: {
+    phone: ['components/mobile/sheets/DocsSheet.tsx'],
+    extension: ['components/StudyDocuments/DocumentsDrawer.tsx'],
+  },
+  // ISIC and Knihovna: phone/iPad only, by decision (see the header).
+  screen_isic: {
+    phone: ['components/mobile/sheets/IskamSheet.tsx'],
+    extension: [],
+  },
+  // The study-rooms card on the phone map, shown when a library is selected.
+  screen_library: {
+    phone: ['components/mobile/screens/map/library/LibraryCard.tsx'],
+    extension: [],
+  },
+};
+
+const PHONE_ONLY: Record<string, string> = {
+  screen_isic: 'src/test/guards/desktopHasNoIskam.test.ts',
+  screen_library: 'src/test/guards/desktopHasNoLibraryBooking.test.ts',
 };
 
 describe('screen counters fire on both trees', () => {
+  it('an empty extension list is only for a phone-only surface with a recorded decision', () => {
+    const empty = Object.entries(SCREENS)
+      .filter(([, t]) => t.extension.length === 0)
+      .map(([k]) => k)
+      .sort();
+    expect(empty).toEqual(Object.keys(PHONE_ONLY).sort());
+    for (const guard of Object.values(PHONE_ONLY)) {
+      expect(readFileSync(resolve(process.cwd(), guard), 'utf8').length).toBeGreaterThan(0);
+    }
+  });
+
   it('every screen_* label the client sends is pinned here', () => {
     const sent = FEATURE_SIGNALS.filter((s) => s.startsWith('screen_')).sort();
     expect(Object.keys(SCREENS).sort()).toEqual(sent);
@@ -85,6 +128,11 @@ describe('screen counters fire on both trees', () => {
     ['components/SearchBar/index.tsx', "useScreenSignal('screen_search', isOpen)"],
     ['components/Bulletin/BulletinBanner.tsx', "useScreenSignal('screen_bulletin', expanded)"],
     ['components/Internships/InternshipsMenu.tsx', "useScreenSignal('screen_internships', shown)"],
+    // The drawer stays mounted while closed.
+    [
+      'components/StudyDocuments/DocumentsDrawer.tsx',
+      "useScreenSignal('screen_documents', isOpen)",
+    ],
     // Not the boot default: only once useAppLogic has restored the saved view.
     ['components/WeeklyCalendar/index.tsx', "useScreenSignal('screen_calendar', countVisit)"],
     ['components/AppMain.tsx', 'countVisit={viewRestored}'],

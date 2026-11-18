@@ -51,6 +51,16 @@ export const FEATURE_SIGNALS = [
   'screen_bulletin',
   /** Novinky: the feed behind the bell. */
   'screen_notifications',
+  /** Zkoušky: the phone's tab, the extension's `exams` view. */
+  'screen_exams',
+  /** Studijní plán: one page, hosted by both trees. */
+  'screen_study_plan',
+  /** Doklady: the phone's sheet, the extension's drawer. */
+  'screen_documents',
+  /** ISIC balance sheet. Phone/iPad only, by decision (desktopHasNoIskam.test.ts). */
+  'screen_isic',
+  /** The library study-rooms card on the phone map. Phone/iPad only (desktopHasNoLibraryBooking.test.ts). */
+  'screen_library',
   /** Stáže opened: the denominator for the click count below. Seen only by students a partner is shown to. */
   'screen_internships',
   /**

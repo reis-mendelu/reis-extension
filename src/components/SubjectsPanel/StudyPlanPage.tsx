@@ -4,6 +4,7 @@ import { SearchBar } from '../SearchBar/index';
 import { useStudyPlan } from '@/hooks/useStudyPlan';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useScreenSignal } from '@/hooks/useScreenSignal';
 import { SemesterSection } from './SemesterSection';
 import { FailRateLegend } from './FailRateLegend';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
@@ -46,6 +47,7 @@ export function StudyPlanPage({
   showSearch = true,
   onSearchSubject: onSearchSubjectProp,
 }: StudyPlanPageProps) {
+  useScreenSignal('screen_study_plan');
   const { t } = useTranslation();
   const searchPrefillRef = useRef<((query: string) => void) | null>(null);
   const prefillSearch = useCallback((name: string) => {
