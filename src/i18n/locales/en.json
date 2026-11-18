@@ -1446,6 +1446,7 @@
       "saved": "Saved.",
       "error": "Could not save. Try again.",
       "invalid": "Pick at least one faculty and check the programme codes.",
+      "loading": "Loading…",
       "loadError": "Could not load the study aids.",
       "empty": "No link is set up yet."
     }

@@ -13,6 +13,8 @@ import {
 export interface AdminStudyAidsSlice {
   /** null until loaded, or when the last load failed. */
   adminStudyAids: AdminStudyAids[] | null;
+  /** A read is out. Null rows while loading is "not yet", not "failed". */
+  adminStudyAidsLoading: boolean;
   loadAdminStudyAids: () => Promise<void>;
   /** True once written; the list is reloaded either way. */
   saveAdminStudyAids: (
@@ -21,18 +23,29 @@ export interface AdminStudyAidsSlice {
   ) => Promise<boolean>;
 }
 
-export const createAdminStudyAidsSlice: AppSlice<AdminStudyAidsSlice> = (set, get) => ({
-  adminStudyAids: null,
+export const createAdminStudyAidsSlice: AppSlice<AdminStudyAidsSlice> = (set, get) => {
+  // Which read is the newest. A tab refresh that read the old row can answer
+  // after a save and its reload; it must not put the old row back.
+  let latest = 0;
+  return {
+    adminStudyAids: null,
+    adminStudyAidsLoading: false,
 
-  loadAdminStudyAids: async () => {
-    const list = await fetchAdminStudyAids();
-    // A failed reload keeps what is on screen rather than blanking it.
-    set({ adminStudyAids: list ?? get().adminStudyAids });
-  },
+    loadAdminStudyAids: async () => {
+      const mine = ++latest;
+      set({ adminStudyAidsLoading: true });
+      const list = await fetchAdminStudyAids();
+      // Superseded: the newer read's answer is the one to keep, and it lowers
+      // the flag when it lands.
+      if (mine !== latest) return;
+      // A failed reload keeps what is on screen rather than blanking it.
+      set({ adminStudyAids: list ?? get().adminStudyAids, adminStudyAidsLoading: false });
+    },
 
-  saveAdminStudyAids: async (id, patch) => {
-    const ok = await saveAdminStudyAids(id, patch);
-    await get().loadAdminStudyAids();
-    return ok;
-  },
-});
+    saveAdminStudyAids: async (id, patch) => {
+      const ok = await saveAdminStudyAids(id, patch);
+      await get().loadAdminStudyAids();
+      return ok;
+    },
+  };
+};

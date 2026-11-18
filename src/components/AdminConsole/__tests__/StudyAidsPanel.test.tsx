@@ -13,6 +13,7 @@ beforeEach(() => {
     adminStudyAids: [
       { id: 'mendelu-app', audience: ['af:B-ATE', 'af:N-PTE', 'af:B-ZIN'], isActive: false },
     ],
+    adminStudyAidsLoading: false,
     saveAdminStudyAids,
   } as any);
 });
@@ -72,7 +73,7 @@ describe('StudyAidsPanel', () => {
   });
 
   it('says so when the list could not be read', () => {
-    useAppStore.setState({ adminStudyAids: null } as any);
+    useAppStore.setState({ adminStudyAids: null, adminStudyAidsLoading: false } as any);
     render(<StudyAidsPanel />);
     expect(screen.getByText(/Nepodařilo se načíst/)).toBeInTheDocument();
   });
@@ -110,5 +111,29 @@ describe('StudyAidsPanel', () => {
     expect(
       screen.getByRole('textbox', { name: /Agronomická fakulta/ }) as HTMLInputElement
     ).toHaveValue('B-ATE, N-TZO');
+  });
+
+  it('clears the error as soon as the admin corrects the input', () => {
+    render(<StudyAidsPanel />);
+    const programmes = screen.getByRole('textbox', { name: /Agronomická fakulta/ });
+    fireEvent.change(programmes, { target: { value: 'not a code' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Uložit' }));
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    fireEvent.change(programmes, { target: { value: 'B-ATE' } });
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  // The store holds null until the first read lands: that is loading, not failure.
+  it('shows loading, not a failure, while the first read is pending', () => {
+    useAppStore.setState({ adminStudyAids: null, adminStudyAidsLoading: true } as any);
+    render(<StudyAidsPanel />);
+    expect(screen.getByText('Načítám…')).toBeInTheDocument();
+    expect(screen.queryByText(/Nepodařilo se načíst/)).toBeNull();
+  });
+
+  it('does not let Save write cached values while a fresh read is on its way', () => {
+    useAppStore.setState({ adminStudyAidsLoading: true } as any);
+    render(<StudyAidsPanel />);
+    expect(screen.getByRole('button', { name: 'Uložit' })).toBeDisabled();
   });
 });

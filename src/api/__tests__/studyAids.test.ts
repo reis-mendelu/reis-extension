@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { select, adminSelect, update, eq } = vi.hoisted(() => ({
+const { select, adminSelect, update, eq, returning } = vi.hoisted(() => ({
   select: vi.fn<(...a: unknown[]) => Promise<{ data: unknown; error: unknown }>>(),
   adminSelect: vi.fn<(...a: unknown[]) => unknown>(),
   update: vi.fn<(...a: unknown[]) => unknown>(),
-  eq: vi.fn<(...a: unknown[]) => Promise<{ error: unknown }>>(async () => ({ error: null })),
+  eq: vi.fn<(...a: unknown[]) => unknown>(),
+  // What the update answers with: the rows it changed.
+  returning: vi.fn<(...a: unknown[]) => Promise<{ data: unknown; error: unknown }>>(),
 }));
 vi.mock('../../services/spolky/supabaseClient', () => ({
   supabase: { from: () => ({ select: (...a: unknown[]) => select(...a) }) },
@@ -15,7 +17,12 @@ vi.mock('../../services/admin/authClient', () => ({
       select: (...a: unknown[]) => adminSelect(...a),
       update: (...a: unknown[]) => {
         update(...a);
-        return { eq: (...b: unknown[]) => eq(...b) };
+        return {
+          eq: (...b: unknown[]) => {
+            eq(...b);
+            return { select: (...c: unknown[]) => returning(...c) };
+          },
+        };
       },
     }),
   },
@@ -55,7 +62,10 @@ describe('fetchStudyAids (what students read)', () => {
 });
 
 describe('the console side (reis_admin only, by RLS)', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    returning.mockResolvedValue({ data: [{ id: 'mendelu-app' }], error: null });
+  });
 
   it('reads every row, switched off ones included, as camelCase', async () => {
     adminSelect.mockReturnValue({
@@ -83,10 +93,20 @@ describe('the console side (reis_admin only, by RLS)', () => {
       expect.objectContaining({ audience: ['af:B-ATE'], is_active: true })
     );
     expect(eq).toHaveBeenCalledWith('id', 'mendelu-app');
+    expect(returning).toHaveBeenCalledWith('id');
   });
 
   it('answers false when the write is refused', async () => {
-    eq.mockResolvedValueOnce({ error: { message: 'denied' } });
+    returning.mockResolvedValueOnce({ data: null, error: { message: 'denied' } });
+    expect(await saveAdminStudyAids('mendelu-app', { audience: ['af'], isActive: true })).toBe(
+      false
+    );
+  });
+
+  // RLS does not error on an update it hides the row from: it changes nothing
+  // and answers success. A console whose session lost its role must not say Saved.
+  it('answers false when the update changed no row', async () => {
+    returning.mockResolvedValueOnce({ data: [], error: null });
     expect(await saveAdminStudyAids('mendelu-app', { audience: ['af'], isActive: true })).toBe(
       false
     );

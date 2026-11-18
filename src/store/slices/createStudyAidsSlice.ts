@@ -19,8 +19,9 @@ export const STUDY_AIDS_REFRESH_GAP_MS = 15 * 60_000;
  * `studyAids` maps a link's id to its audience tokens and holds only the links
  * the admin has switched on. It starts empty, which shows nothing: no row
  * flashes in on a cold start and goes away again. The last answer is kept on
- * the device, so a student offline still sees the link their programme is
- * shown; a failed read keeps what is there rather than clearing it.
+ * the device and used only when the network cannot answer, so a student offline
+ * still sees the link their programme is shown; a failed read keeps what is
+ * there rather than clearing it.
  *
  * Read at boot and again by `loadStudyAidsIfStale`: a phone process can stay
  * alive for days, and a read that failed at boot should be tried again.
@@ -48,20 +49,22 @@ export const createStudyAidsSlice: AppSlice<StudyAidsSlice> = (set, get) => ({
   studyAidsFetchedAt: null,
 
   loadStudyAids: async () => {
-    // The device's copy only while nothing newer has been heard: once the
-    // network has answered, memory is already the latest.
-    if (get().studyAidsFetchedAt === null) {
-      try {
-        const cached: unknown = await IndexedDBService.get('meta', STUDY_AIDS_CACHE_KEY);
-        if (isAudiences(cached)) set({ studyAids: cached });
-      } catch (err) {
-        logError('StudyAidsSlice.readCache', err);
-      }
-    }
     const fresh = await fetchStudyAids();
-    // null is "ask again later": the cache survives a failed request. An empty
-    // record is an answer (the admin switched the link off) and clears it.
-    if (fresh === null) return;
+    if (fresh === null) {
+      // The network could not answer. The device's copy stands in only while
+      // nothing newer is held, and only then: applied first, a link the admin
+      // has since switched off would show and then go away again.
+      if (get().studyAidsFetchedAt === null) {
+        try {
+          const cached: unknown = await IndexedDBService.get('meta', STUDY_AIDS_CACHE_KEY);
+          if (isAudiences(cached)) set({ studyAids: cached });
+        } catch (err) {
+          logError('StudyAidsSlice.readCache', err);
+        }
+      }
+      return;
+    }
+    // An empty record is an answer (the admin switched the link off) and clears it.
     set({ studyAids: fresh, studyAidsFetchedAt: Date.now() });
     try {
       await IndexedDBService.set('meta', STUDY_AIDS_CACHE_KEY, fresh);

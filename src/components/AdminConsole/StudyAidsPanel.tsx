@@ -1,18 +1,28 @@
-import { useState } from 'react';
+import { useState, type SetStateAction } from 'react';
 import { toast } from 'sonner';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import type { AdminStudyAids } from '../../api/adminStudyAids';
-import { audienceFromDraft, draftFromAudience } from '../../utils/partnerAudience';
+import {
+  audienceFromDraft,
+  draftFromAudience,
+  type AudienceDraft,
+} from '../../utils/partnerAudience';
 import { AudiencePicker } from './AudiencePicker';
 
-function StudyAidsAdminRow({ row }: { row: AdminStudyAids }) {
+function StudyAidsAdminRow({ row, locked }: { row: AdminStudyAids; locked: boolean }) {
   const { t } = useTranslation();
   const save = useAppStore((s) => s.saveAdminStudyAids);
   const [draft, setDraft] = useState(() => draftFromAudience(row.audience));
   const [active, setActive] = useState(row.isActive);
   const [invalid, setInvalid] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  // Editing the audience ends the complaint about it; submit still validates.
+  const editDraft = (next: SetStateAction<AudienceDraft>) => {
+    setInvalid(false);
+    setDraft(next);
+  };
 
   const submit = async () => {
     const audience = audienceFromDraft(draft);
@@ -37,7 +47,7 @@ function StudyAidsAdminRow({ row }: { row: AdminStudyAids }) {
         />
         {t('admin.studyAids.active')}
       </label>
-      <AudiencePicker draft={draft} setDraft={setDraft} legend={t('admin.studyAids.audience')} />
+      <AudiencePicker draft={draft} setDraft={editDraft} legend={t('admin.studyAids.audience')} />
       {invalid && (
         <p role="alert" className="text-xs text-error">
           {t('admin.studyAids.invalid')}
@@ -46,7 +56,7 @@ function StudyAidsAdminRow({ row }: { row: AdminStudyAids }) {
       <button
         type="button"
         className="btn btn-primary btn-sm self-start"
-        disabled={busy}
+        disabled={busy || locked}
         onClick={() => void submit()}
       >
         {t('admin.studyAids.save')}
@@ -64,12 +74,16 @@ function StudyAidsAdminRow({ row }: { row: AdminStudyAids }) {
 export function StudyAidsPanel() {
   const { t } = useTranslation();
   const rows = useAppStore((s) => s.adminStudyAids);
+  const loading = useAppStore((s) => s.adminStudyAidsLoading);
 
   return (
     <section data-testid="admin-study-aids" className="flex flex-col gap-2">
       <h3 className="text-sm font-semibold text-base-content">{t('admin.studyAids.title')}</h3>
       <p className="text-xs text-base-content/70">{t('admin.studyAids.note')}</p>
-      {rows === null && (
+      {rows === null && loading && (
+        <p className="text-sm text-base-content/70">{t('admin.studyAids.loading')}</p>
+      )}
+      {rows === null && !loading && (
         <p className="text-sm text-base-content/70">{t('admin.studyAids.loadError')}</p>
       )}
       {rows?.length === 0 && (
@@ -81,7 +95,13 @@ export function StudyAidsPanel() {
           would write the old switch and programmes back. A reload that brings
           the same row keeps the editor, and what the admin has typed in it. */}
       {rows?.map((row) => (
-        <StudyAidsAdminRow key={`${row.id}:${row.isActive}:${row.audience.join(',')}`} row={row} />
+        // Save is off while a fresh read is out: the editor may still hold the
+        // list from the last visit, and Save would write its values back.
+        <StudyAidsAdminRow
+          key={`${row.id}:${row.isActive}:${row.audience.join(',')}`}
+          row={row}
+          locked={loading}
+        />
       ))}
     </section>
   );

@@ -49,14 +49,25 @@ export async function saveAdminStudyAids(
   patch: Pick<AdminStudyAids, 'audience' | 'isActive'>
 ): Promise<boolean> {
   if (DEV_SOCIETY) return devStudyAidsStore.save(id, patch);
-  const { error } = await adminAuthClient
+  const { data, error } = await adminAuthClient
     .from('study_aids')
     .update({
       audience: patch.audience,
       is_active: patch.isActive,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', id);
-  if (error) logError('Api.saveAdminStudyAids', error);
-  return !error;
+    .eq('id', id)
+    .select('id');
+  if (error) {
+    logError('Api.saveAdminStudyAids', error);
+    return false;
+  }
+  // RLS does not error on an update it hides the row from (a session that lost
+  // its role): it changes nothing and answers success. Only one changed row is a
+  // save.
+  if (!Array.isArray(data) || data.length !== 1) {
+    logError('Api.saveAdminStudyAids', new Error(`study_aids update changed ${data?.length} rows`));
+    return false;
+  }
+  return true;
 }

@@ -316,7 +316,7 @@ export const EXEMPT: Exempt[] = [
   {
     call: 'study_aids',
     files: ['src/api/studyAids.ts', 'src/api/adminStudyAids.ts'],
-    why: 'Public read of which faculties and programmes the study-aids link is shown to, matched on the device: the request says nothing about the student, whose faculty and programme never leave it. Writes are by a signed-in reis_admin, never a student.',
+    why: 'Public read of which faculties and programmes the study-aids link is shown to, matched on the device: the lookup does not send the student’s faculty or programme. Writes are by a signed-in reis_admin, never a student.',
   },
   {
     call: 'question_results',

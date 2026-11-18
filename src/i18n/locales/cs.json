@@ -1446,6 +1446,7 @@
       "saved": "Uloženo.",
       "error": "Nepodařilo se uložit. Zkus to znovu.",
       "invalid": "Vyber aspoň jednu fakultu a zkontroluj kódy programů.",
+      "loading": "Načítám…",
       "loadError": "Nepodařilo se načíst studijní opory.",
       "empty": "Žádný odkaz zatím není nastavený."
     }

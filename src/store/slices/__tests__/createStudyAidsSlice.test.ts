@@ -35,6 +35,21 @@ describe('study aids audiences in the store', () => {
     expect(useAppStore.getState().studyAids).toEqual({ 'mendelu-app': ['af:B-ATE'] });
   });
 
+  // The cache is for when the network cannot answer. Applied first, a link the
+  // admin has since switched off would show and then go away again.
+  it('does not show a cached link while the fresh answer is still on its way', async () => {
+    await IndexedDBService.set('meta', STUDY_AIDS_CACHE_KEY, { 'mendelu-app': ['af:B-ATE'] });
+    let answer!: (v: Record<string, string[]>) => void;
+    fetchStudyAids.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    const loading = useAppStore.getState().loadStudyAids();
+    // Long enough for a cache read to have landed, were it applied first.
+    await new Promise((r) => setTimeout(r, 30));
+    expect(useAppStore.getState().studyAids).toEqual({});
+    answer({});
+    await loading;
+    expect(useAppStore.getState().studyAids).toEqual({});
+  });
+
   it('shows no link when nothing is cached and the read fails', async () => {
     fetchStudyAids.mockResolvedValue(null);
     await useAppStore.getState().loadStudyAids();
