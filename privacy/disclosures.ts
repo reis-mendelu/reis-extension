@@ -172,7 +172,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Thirteen feature counters on the random install id and the school label, one whitelisted label each: six feature uses (one of them a tap on a partner programme card in Stáže, one a tap on the new-version row in Novinky) and seven screens opened.',
+    what: 'Fourteen feature counters on the random install id and the school label, one whitelisted label each: seven feature uses (one a tap on a partner programme card in Stáže, one a tap on the new-version row in Novinky, one a tap on a partner’s study-aids link in Předměty) and seven screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -212,6 +212,11 @@ export const FLOWS: Flow[] = [
         'New version opened',
         'you tap "Nová verze reISu" in Novinky (mobile app), once per app session; stored as one row per install per day',
         'the random install identifier, the school and the fixed `app_update_opened` label. We cannot see whether you go on to update',
+      ],
+      [
+        'Study aids opened',
+        'you tap the "Studijní opory" link under Předměty (shown only to students of the programmes a partner chose; today only mendelu.app), once per app session; stored as one row per install per day',
+        'the random install identifier, the school and a fixed label naming the partner (`study_aids_click_mendelu_app`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website',
       ],
     ],
     stores: {

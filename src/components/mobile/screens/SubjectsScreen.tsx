@@ -10,6 +10,7 @@ import type { SubjectStatus } from '../../../types/studyPlan';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { CreditRing } from './subjects/CreditRing';
 import { SemesterCard } from './subjects/SemesterCard';
+import { StudyAidsRow } from './subjects/StudyAidsRow';
 import { AverageAccordion } from './subjects/AverageAccordion';
 import { NavRow } from '../primitives/NavRow';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
@@ -164,6 +165,7 @@ export function SubjectsScreen() {
               {t('mobile.subjects.noneEnrolled')}
             </div>
           )}
+          <StudyAidsRow />
           {/* Under the semester it belongs to; renders nothing with no box open or handed in. */}
           <SubmissionBoxesSummary
             className="flex-shrink-0"

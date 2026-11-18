@@ -237,6 +237,8 @@ const ALLOWED_HOSTS = [
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
   'checkout.gopay.com', // the same page, at the host WebISKAM has sent since Nov 2026
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
+  'mendelu.app', // study aids (data/partnerStudyAids.ts), linked under Předměty for the
+  // programmes its partner audience names. A plain link: nothing about the student rides along.
   'addons.mozilla.org', // the Firefox extension's "Ohodnotit reIS" link (utils/extensionReviewUrl.ts)
   'reisapp.cz', // reIS's own how-to guides (utils/guideUrl.ts), opened from Nápověda.
   // Only `z=app` rides along, nothing about the student.

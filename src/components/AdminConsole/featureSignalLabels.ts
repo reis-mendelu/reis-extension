@@ -16,4 +16,5 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   screen_internships: 'signalScreenInternships',
   internship_click_ey: 'signalInternshipClickEy',
   app_update_opened: 'signalAppUpdateOpened',
+  study_aids_click_mendelu_app: 'signalStudyAidsClickMendeluApp',
 };
