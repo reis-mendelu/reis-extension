@@ -30,13 +30,15 @@ describe('StudyAidsRow (phone)', () => {
 
   it('shows the row, with what is behind it, to a student of a listed programme', () => {
     render(<StudyAidsRow />);
-    expect(screen.getByRole('button', { name: /Studijní opory k předmětům/ })).toBeInTheDocument();
-    expect(screen.getByText(/Prezentace, simulace a kvízy/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Studijní opory/ })).toBeInTheDocument();
+    // The domain first: at 320px the sublabel truncates, and it is the tail
+    // ("prezentace, simulace…") that may go, never where the link leads.
+    expect(screen.getByText(/^mendelu\.app · prezentace, simulace a kvízy/)).toBeInTheDocument();
   });
 
   it('hands mendelu.app to openExternal and counts the click under its own label', () => {
     render(<StudyAidsRow />);
-    fireEvent.click(screen.getByRole('button', { name: /Studijní opory k předmětům/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Studijní opory/ }));
     expect(openExternal).toHaveBeenCalledWith('https://mendelu.app/');
     expect(trackFeatureSignal).toHaveBeenCalledWith('study_aids_click_mendelu_app');
   });

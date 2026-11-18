@@ -24,7 +24,7 @@ describe('StudyAidsLink (extension)', () => {
 
   it('links a student of a listed programme to mendelu.app in a new tab', () => {
     render(<StudyAidsLink />);
-    const link = screen.getByRole('link', { name: /Studijní opory k předmětům/ });
+    const link = screen.getByRole('link', { name: /Studijní opory/ });
     expect(link).toHaveAttribute('href', 'https://mendelu.app/');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
@@ -44,7 +44,7 @@ describe('StudyAidsLink (extension)', () => {
 
   it('counts a click under its own label, and a middle-click but not a right-click', () => {
     render(<StudyAidsLink />);
-    const link = screen.getByRole('link', { name: /Studijní opory k předmětům/ });
+    const link = screen.getByRole('link', { name: /Studijní opory/ });
     fireEvent(link, new MouseEvent('auxclick', { bubbles: true, button: 2 }));
     expect(trackFeatureSignal).not.toHaveBeenCalled();
     fireEvent(link, new MouseEvent('auxclick', { bubbles: true, button: 1 }));
