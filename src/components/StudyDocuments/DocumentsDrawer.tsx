@@ -11,6 +11,7 @@ import {
 import { useAppStore } from '../../store/useAppStore';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 import { AdaptiveDrawer } from '../ui/AdaptiveDrawer';
 import {
   STUDY_DOCUMENTS,
@@ -41,6 +42,8 @@ function StatusIcon({ status }: { status: DownloadStatus }) {
 export function DocumentsDrawer() {
   const { t } = useTranslation();
   const isOpen = useAppStore((s) => s.isDocumentsOpen);
+  // Stays mounted while closed, so it counts on the open transition.
+  useScreenSignal('screen_documents', isOpen);
   const setOpen = useAppStore((s) => s.setIsDocumentsOpen);
   const language = useAppStore((s) => s.language);
   const { params } = useUserParams();

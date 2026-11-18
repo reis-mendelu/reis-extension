@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
+import { useScreenSignal } from '../../../../../hooks/useScreenSignal';
 import { cardPick, useLibraryStore } from '../../../../../mobile/library/libraryStore';
 import { DAILY_CAP } from '../../../../../mobile/library/slots';
 import { bookedOn } from '../../../../../mobile/library/bookingService';
@@ -31,6 +32,7 @@ import type { LibraryView } from './libraryOf';
  * answer; no legends.
  */
 export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolean }) {
+  useScreenSignal('screen_library');
   const { t, language } = useTranslation();
   const raw = useLibraryStore((s) => s.blocks);
   const status = useLibraryStore((s) => s.status);
