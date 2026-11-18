@@ -4,6 +4,8 @@ Your IS Mendelu data in Claude Desktop: timetable, exams, grades, deadlines and 
 
 ## Install
 
+For a step-by-step guide in Czech and English, see [INSTALL.md](INSTALL.md).
+
 1. Download `reis-for-claude.mcpb` from the latest `mcp-v*` release on [GitHub](https://github.com/reis-mendelu/reis-extension/releases).
 2. Double-click it, or drag it into Claude Desktop.
 3. Enter your IS Mendelu username and password when Claude Desktop asks.

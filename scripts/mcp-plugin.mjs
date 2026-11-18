@@ -14,6 +14,7 @@ import { join, relative, sep } from 'node:path';
 const OUT = join('dist-plugin', 'reis');
 const EXPECTED = [
   '.claude-plugin/icon.png',
+  '.claude-plugin/marketplace.json',
   '.claude-plugin/plugin.json',
   'LICENSE',
   'PRIVACY.md',

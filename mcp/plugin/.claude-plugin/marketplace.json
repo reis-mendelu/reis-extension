@@ -1,0 +1,17 @@
+{
+  "name": "reis",
+  "owner": {
+    "name": "reIS",
+    "url": "https://github.com/reis-mendelu/reis-extension"
+  },
+  "metadata": {
+    "description": "reIS for Claude Code: your IS Mendelu data in Claude Code."
+  },
+  "plugins": [
+    {
+      "name": "reis",
+      "source": "./",
+      "description": "Your IS Mendelu timetable, exams, grades, deadlines and subject files in Claude Code. Read-only; runs on your computer."
+    }
+  ]
+}
