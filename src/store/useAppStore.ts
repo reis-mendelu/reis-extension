@@ -32,6 +32,8 @@ import { createCustomEventsSlice } from './slices/createCustomEventsSlice';
 import { createNotificationSlice } from './slices/createNotificationSlice';
 import { createSystemNotificationsSlice } from './slices/createSystemNotificationsSlice';
 import { createQuestionsSlice } from './slices/createQuestionsSlice';
+import { createStudyAidsSlice } from './slices/createStudyAidsSlice';
+import { createAdminStudyAidsSlice } from './slices/createAdminStudyAidsSlice';
 import { createSocietyPinsSlice } from './slices/createSocietyPinsSlice';
 import { createSportPlacesSlice } from './slices/createSportPlacesSlice';
 import { createSklubMenuSlice } from './slices/createSklubMenuSlice';
@@ -102,6 +104,8 @@ export const useAppStore = create<AppState>()(
     ...createNotificationSlice(...a),
     ...createSystemNotificationsSlice(...a),
     ...createQuestionsSlice(...a),
+    ...createStudyAidsSlice(...a),
+    ...createAdminStudyAidsSlice(...a),
     ...createSocietyPinsSlice(...a),
     ...createSportPlacesSlice(...a),
     ...createSklubMenuSlice(...a),
@@ -166,10 +170,11 @@ export const initializeStore = async () => {
 
   // Tier 1: User-visible data — load immediately
   s.loadNotificationState();
-  // Novinky and questions are Supabase rows, which a build for another
-  // school cannot reach (scripts/isHostSwap.ts).
+  // Novinky, questions and the study-aids audiences are Supabase rows, which a
+  // build for another school cannot reach (scripts/isHostSwap.ts).
   if (currentSchool.has('novinky')) {
     s.loadQuestions();
+    void s.loadStudyAids();
     s.fetchNotifications();
   }
   s.fetchSchedule();

@@ -594,6 +594,8 @@
     "credits": "kreditů",
     "creditsShort": "kr.",
     "studyPlan": "Studijní plán",
+    "studyAids": "Studijní opory",
+    "studyAidsHint": "mendelu.app",
     "noData": "Žádná data o studijním plánu",
     "loading": "Načítání...",
     "fulfilled": "Splněno",
@@ -1300,6 +1302,7 @@
       "signalScreenInternships": "Otevřené Stáže",
       "signalInternshipClickEy": "Klik na Cestu s EY",
       "signalAppUpdateOpened": "Klik na „Nová verze reISu“",
+      "signalStudyAidsClickMendeluApp": "Klik na Studijní opory (mendelu.app)",
       "signalShare": "{pct} % denních instalací",
       "signalShareHint": "Průměrný den za 30 dní: kolik z instalací, které ten den reIS otevřely, otevřelo i tohle. Kalendář je na telefonu úvodní obrazovka, takže tam je skoro vždy.",
       "signalInstalls": "instalací",
@@ -1433,6 +1436,20 @@
       "hidden": "Skryto",
       "notInYourIs": "Už není ve tvém IS",
       "error": "Nepodařilo se uložit. Zkus to znovu."
+    },
+    "studyAids": {
+      "title": "Studijní opory",
+      "note": "Odkaz na mendelu.app pod Předměty. Ukáže se jen studentům vybraných fakult a programů, a to až po zapnutí.",
+      "audience": "Komu se odkaz ukáže",
+      "active": "Zobrazovat studentům",
+      "save": "Uložit",
+      "saved": "Uloženo.",
+      "error": "Nepodařilo se uložit. Zkus to znovu.",
+      "invalid": "Vyber aspoň jednu fakultu a zkontroluj kódy programů.",
+      "loading": "Načítám…",
+      "loadError": "Nepodařilo se načíst aktuální stav, zobrazené hodnoty můžou být zastaralé.",
+      "retry": "Zkusit znovu",
+      "empty": "Žádný odkaz zatím není nastavený."
     }
   },
   "mobile": {

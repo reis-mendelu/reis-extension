@@ -775,6 +775,8 @@ export type AppState = ScheduleSlice &
   NotificationSlice &
   import('./slices/createSystemNotificationsSlice').SystemNotificationsSlice &
   import('./slices/createQuestionsSlice').QuestionsSlice &
+  import('./slices/createStudyAidsSlice').StudyAidsSlice &
+  import('./slices/createAdminStudyAidsSlice').AdminStudyAidsSlice &
   import('./slices/createSocietyPinsSlice').SocietyPinsSlice &
   import('./slices/createSportPlacesSlice').SportPlacesSlice &
   import('./slices/createSklubMenuSlice').SklubMenuSlice &

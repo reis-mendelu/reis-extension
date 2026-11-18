@@ -62,6 +62,12 @@ export const FEATURE_SIGNALS = [
   'internship_click_ey',
   /** "Nová verze reISu" tapped in Novinky (phone/iPad): how many outdated installs went to update. */
   'app_update_opened',
+  /**
+   * The "Studijní opory" link under Předměty (both trees) tapped. One label per
+   * partner, since the count is handed to that partner: mendelu.app's, shown by
+   * programme from the admin console (2026-11-18).
+   */
+  'study_aids_click_mendelu_app',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */

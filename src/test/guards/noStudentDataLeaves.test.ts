@@ -122,6 +122,10 @@ const SUPABASE_CALLERS = new Set([
   // own IS shows them; those are read from IS and never leave the device
   // (test/guards/isNoticesStayOnDevice.test.tsx).
   'src/api/isNoticeMutes.ts',
+  // Who is shown the study-aids link under Předměty (November 2026): an
+  // anonymous select of the active `study_aids` rows, matched on the device
+  // against the student's own faculty and programme. Nothing goes up.
+  'src/api/studyAids.ts',
 ]);
 
 /**
@@ -135,6 +139,8 @@ const SUPABASE_CALLERS = new Set([
  */
 const ADMIN_CALLERS = new Set([
   'src/api/adminQuestions.ts',
+  // Changes one study-aids link's audience or switch. reis_admin only, by RLS.
+  'src/api/adminStudyAids.ts',
   'src/api/featureStats.ts',
   // Mutes an IS notice for everyone: the notice's key and title as the
   // ADMIN's own IS shows them. reis_admin only, by RLS.
@@ -237,6 +243,8 @@ const ALLOWED_HOSTS = [
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
   'checkout.gopay.com', // the same page, at the host WebISKAM has sent since Nov 2026
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
+  'mendelu.app', // study aids (data/studyAids.ts), linked under Předměty for the programmes
+  // the admin console picks. A plain link: nothing about the student rides along.
   'addons.mozilla.org', // the Firefox extension's "Ohodnotit reIS" link (utils/extensionReviewUrl.ts)
   'reisapp.cz', // reIS's own how-to guides (utils/guideUrl.ts), opened from Nápověda.
   // Only `z=app` rides along, nothing about the student.

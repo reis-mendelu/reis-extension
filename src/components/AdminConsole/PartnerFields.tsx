@@ -1,26 +1,13 @@
 import { useTranslation } from '../../hooks/useTranslation';
-import { ORGANIZERS, type FacultyKey } from '../../types/events';
+import { AudiencePicker } from './AudiencePicker';
 import { MarkPreview } from './MarkPreview';
 import type { usePartnerDraft } from './usePartnerDraft';
-
-const FACULTIES = Object.keys(ORGANIZERS) as FacultyKey[];
 
 type PartnerDraft = ReturnType<typeof usePartnerDraft>;
 
 export function PartnerFields({ state }: { state: PartnerDraft }) {
-  const { t, language } = useTranslation();
+  const { t } = useTranslation();
   const { kind, setKind, draft, setDraft, light, setLight, dark, setDark } = state;
-  const facultyName = (k: FacultyKey) =>
-    k === 'mendelu'
-      ? t('admin.societies.wholeMendelu')
-      : ORGANIZERS[k][language === 'en' ? 'en' : 'cz'];
-  const toggle = (k: FacultyKey) =>
-    setDraft((d) => {
-      const next = { ...d };
-      if (k in next) delete next[k];
-      else next[k] = '';
-      return next;
-    });
   const fileInput = 'file-input file-input-bordered file-input-sm w-full';
 
   return (
@@ -44,34 +31,11 @@ export function PartnerFields({ state }: { state: PartnerDraft }) {
       </div>
       {kind === 'partner' && (
         <>
-          <fieldset className="flex flex-col gap-2 text-sm">
-            <legend className="mb-1 opacity-70">{t('admin.societies.audience')}</legend>
-            {FACULTIES.map((k) => (
-              <div key={k} className="flex flex-col gap-1">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-sm"
-                    checked={k in draft}
-                    onChange={() => toggle(k)}
-                  />
-                  {facultyName(k)}
-                </label>
-                {k in draft && k !== 'mendelu' && (
-                  <input
-                    className="input input-bordered input-sm ml-6"
-                    aria-label={`${facultyName(k)}: ${t('admin.societies.programmesPlaceholder')}`}
-                    placeholder={t('admin.societies.programmesPlaceholder')}
-                    value={draft[k] ?? ''}
-                    onChange={(e) => setDraft((d) => ({ ...d, [k]: e.target.value }))}
-                  />
-                )}
-              </div>
-            ))}
-            <span className="text-xs text-base-content/70">
-              {t('admin.societies.audienceHint')}
-            </span>
-          </fieldset>
+          <AudiencePicker
+            draft={draft}
+            setDraft={setDraft}
+            legend={t('admin.societies.audience')}
+          />
           <label className="flex flex-col gap-1 text-sm">
             <span className="opacity-70">{t('admin.societies.markLight')}</span>
             <input

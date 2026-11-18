@@ -1,6 +1,6 @@
 # Privacy Policy for reIS
 
-**Last Updated: 17 November 2026**
+**Last Updated: 18 November 2026**
 
 reIS is a student-built project that simplifies the Mendel University in Brno
 Information System (IS Mendelu). It is a browser extension (Chrome, Edge,
@@ -44,6 +44,7 @@ yourself — see *Report attachments* below.
 | Screen opened | when the calendar, Předměty, Jídelníček, search, Vývěska, Novinky or Stáže is shown, once per app session (again only if a send fails); stored as one row per install per day | the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`) — nothing about what was on it, what you searched for or how long you stayed |
 | Partner programme opened | you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day | the random install identifier, the school and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website |
 | New version opened | you tap "Nová verze reISu" in Novinky (mobile app), once per app session; stored as one row per install per day | the random install identifier, the school and the fixed `app_update_opened` label. We cannot see whether you go on to update |
+| Study aids opened | you tap the "Studijní opory" link under Předměty (shown only to students of the faculties and programmes reIS has chosen; today it leads to mendelu.app), once per app session; stored as one row per install per day | the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`). We count how many installs tapped, which the site's author is told as a number; we never tell them who, and we cannot see what you do on the website |
 | Library study-room booking (mobile app only) | you book or cancel a study room | your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS |
 | Checking for a newer version (mobile app only) | the app starts or you return to it | iPhone and iPad: reIS's app id, to Apple's public App Store lookup. Android: the Play Store app on your phone is asked. Nothing about you; the store sees your device's IP address, as it does for any app |
 <!-- END generated:flows -->
@@ -51,7 +52,9 @@ yourself — see *Report attachments* below.
 Which partner company you are shown, if any, is decided on your device from your
 faculty and study programme. Partners never receive anything about you; they see
 only aggregate counts of views, clicks and map views for their own events, and,
-for a programme shown under Stáže, how many installs opened it.
+for a programme shown under Stáže, how many installs opened it. The study-aids
+link under Předměty is shown to the faculties and programmes reIS chooses, again
+decided on your device; its author is told only how many installs tapped it.
 
 In the Firefox extension each of these is optional and Firefox asks you for it:
 the usage count and counters follow the technical-data switch in `about:addons`,

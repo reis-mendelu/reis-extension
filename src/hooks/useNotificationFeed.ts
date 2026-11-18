@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { localTodayIso } from '../components/CampusMap/eventWindow';
 import { useViewer } from './useViewer';
 import { useAppStore } from '../store/useAppStore';
+import { STUDY_AIDS_REFRESH_GAP_MS } from '../store/slices/createStudyAidsSlice';
 import { pragueMinuteIso } from '../utils/isNoticeRows';
 import { buildFeed } from '../utils/novinky/buildFeed';
 
@@ -23,6 +24,7 @@ export function useNotificationFeed() {
   const isNotices = useAppStore((s) => s.isNotices);
   const isNoticeMutes = useAppStore((s) => s.isNoticeMutes);
   const loadIsNoticesIfStale = useAppStore((s) => s.loadIsNoticesIfStale);
+  const loadStudyAidsIfStale = useAppStore((s) => s.loadStudyAidsIfStale);
   const viewer = useViewer();
 
   // A string, so it is stable across renders within a day and the memo below
@@ -60,10 +62,17 @@ export function useNotificationFeed() {
     [allNotifications, societies, viewer, todayIso, nowMinute, isNotices, isNoticeMutes, language]
   );
 
-  // Novinky's questions refresh with the feed they sit in.
+  // Novinky's questions refresh with the feed they sit in, and so does who the
+  // study-aids link is shown to: both are public content a phone left running for
+  // days would otherwise never see change.
   const load = useCallback(async () => {
-    await Promise.all([fetchNotifications(), refreshQuestions(), loadIsNoticesIfStale()]);
-  }, [fetchNotifications, refreshQuestions, loadIsNoticesIfStale]);
+    await Promise.all([
+      fetchNotifications(),
+      refreshQuestions(),
+      loadIsNoticesIfStale(),
+      loadStudyAidsIfStale(STUDY_AIDS_REFRESH_GAP_MS),
+    ]);
+  }, [fetchNotifications, refreshQuestions, loadIsNoticesIfStale, loadStudyAidsIfStale]);
 
   useEffect(() => {
     const id = setInterval(load, 300000);
