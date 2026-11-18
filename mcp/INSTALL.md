@@ -6,6 +6,8 @@ Potřebuješ účet Claude ([claude.ai](https://claude.ai)) a počítač (macOS 
 
 ## Varianta A: Claude Desktop (doporučeno)
 
+> **Poznámka:** soubor `.mcpb` zatím nemá zveřejněnou verzi na stránce verzí. Dokud ji nezveřejníme, použij variantu B.
+
 1. Nainstaluj si [Claude Desktop](https://claude.ai/download) a přihlas se.
 2. Otevři [stránku s verzemi](https://github.com/reis-mendelu/reis-extension/releases) a v nejnovější verzi nazvané **reIS for Claude** (štítek `mcp-v…`) stáhni soubor `reis-for-claude.mcpb`.
 3. Dvakrát na něj klikni (nebo ho přetáhni do okna Claude Desktop) a potvrď **Install**.
@@ -22,7 +24,7 @@ Potřebuješ účet Claude ([claude.ai](https://claude.ai)) a počítač (macOS 
    /plugin install reis@reis
    ```
 
-3. Zadej přihlašovací jméno a heslo do IS, až se Claude Code zeptá.
+3. Pokud Claude Code nabídne výběr rozsahu instalace, zvol uživatelský (User), pak zadej přihlašovací jméno a heslo do IS.
 
 ## Co to umí
 
@@ -30,7 +32,7 @@ Rozvrh na 14 dní dopředu, zkouškové termíny, předměty a studijní plán, 
 
 ## Aktualizace
 
-Dokud reIS for Claude není v adresáři Claude, aktualizuje se ručně: stáhni nový `.mcpb` a otevři ho znovu. Plugin pro Claude Code se aktualizuje přes `/plugin marketplace update reis`.
+Dokud reIS for Claude není v adresáři Claude, aktualizuje se ručně: stáhni nový `.mcpb` a otevři ho znovu. Plugin pro Claude Code aktualizuješ dvěma kroky: `/plugin marketplace update reis` obnoví seznam a `claude plugin update reis@reis` (v terminálu) aktualizuje samotný plugin; poté restartuj Claude Code.
 
 ## Když něco nejde
 
@@ -49,8 +51,10 @@ reIS o tobě nedostane nic. Co Claude přečte, jde do tvého chatu s Claude jak
 
 Claude reads your IS Mendelu timetable, exams, grades, deadlines and subject files, and answers questions about them. It runs on your own computer and is strictly read-only.
 
+*Note: no `.mcpb` release has been published on the releases page yet; until one is, use the Claude Code route.*
+
 **Claude Desktop (recommended):** install [Claude Desktop](https://claude.ai/download), download `reis-for-claude.mcpb` from the latest `mcp-v*` [release](https://github.com/reis-mendelu/reis-extension/releases), double-click it (or drag it into Claude Desktop), enter your IS username and password, then ask "what exams do I have left?".
 
 **Claude Code:** with Node.js 20+ installed, run `/plugin marketplace add reis-mendelu/reis-for-claude`, then `/plugin install reis@reis`, and enter your IS login when asked.
 
-Updates are manual for the `.mcpb` (download and open the new file); the plugin updates with `/plugin marketplace update reis`. Two-factor IS accounts are not supported yet.
+Updates are manual for the `.mcpb` (download and open the new file); the plugin takes two steps: `/plugin marketplace update reis` refreshes the listing, then `claude plugin update reis@reis` (in a terminal) updates the plugin itself; restart Claude Code afterwards. Two-factor IS accounts are not supported yet.

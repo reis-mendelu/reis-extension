@@ -4,6 +4,8 @@ Your IS Mendelu data in Claude Desktop: timetable, exams, grades, deadlines and 
 
 ## Install
 
+> No `mcp-v*` release is published yet, so there is nothing to download until the first one is.
+
 For a step-by-step guide in Czech and English, see [INSTALL.md](INSTALL.md).
 
 1. Download `reis-for-claude.mcpb` from the latest `mcp-v*` release on [GitHub](https://github.com/reis-mendelu/reis-extension/releases).
