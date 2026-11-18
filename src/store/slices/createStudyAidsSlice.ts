@@ -6,6 +6,14 @@ import { logError } from '../../utils/reportError';
 export const STUDY_AIDS_CACHE_KEY = 'study_aids_audiences';
 
 /**
+ * How often a running session may ask again, when the Novinky feed refreshes
+ * (every five minutes, both trees). A long gap, so most refreshes cost nothing;
+ * short enough that switching the link off or changing its programmes reaches a
+ * student the same day without an app restart.
+ */
+export const STUDY_AIDS_REFRESH_GAP_MS = 15 * 60_000;
+
+/**
  * Who is shown each study-aids link (`api/studyAids.ts`), on both trees.
  *
  * `studyAids` maps a link's id to its audience tokens and holds only the links
@@ -13,10 +21,17 @@ export const STUDY_AIDS_CACHE_KEY = 'study_aids_audiences';
  * flashes in on a cold start and goes away again. The last answer is kept on
  * the device, so a student offline still sees the link their programme is
  * shown; a failed read keeps what is there rather than clearing it.
+ *
+ * Read at boot and again by `loadStudyAidsIfStale`: a phone process can stay
+ * alive for days, and a read that failed at boot should be tried again.
  */
 export interface StudyAidsSlice {
   studyAids: Record<string, string[]>;
+  /** When the network last answered, null until it has. */
+  studyAidsFetchedAt: number | null;
   loadStudyAids: () => Promise<void>;
+  /** Asks again unless the network answered less than `minGapMs` ago. */
+  loadStudyAidsIfStale: (minGapMs: number) => Promise<void>;
 }
 
 function isAudiences(value: unknown): value is Record<string, string[]> {
@@ -28,25 +43,36 @@ function isAudiences(value: unknown): value is Record<string, string[]> {
   );
 }
 
-export const createStudyAidsSlice: AppSlice<StudyAidsSlice> = (set) => ({
+export const createStudyAidsSlice: AppSlice<StudyAidsSlice> = (set, get) => ({
   studyAids: {},
+  studyAidsFetchedAt: null,
 
   loadStudyAids: async () => {
-    try {
-      const cached: unknown = await IndexedDBService.get('meta', STUDY_AIDS_CACHE_KEY);
-      if (isAudiences(cached)) set({ studyAids: cached });
-    } catch (err) {
-      logError('StudyAidsSlice.readCache', err);
+    // The device's copy only while nothing newer has been heard: once the
+    // network has answered, memory is already the latest.
+    if (get().studyAidsFetchedAt === null) {
+      try {
+        const cached: unknown = await IndexedDBService.get('meta', STUDY_AIDS_CACHE_KEY);
+        if (isAudiences(cached)) set({ studyAids: cached });
+      } catch (err) {
+        logError('StudyAidsSlice.readCache', err);
+      }
     }
     const fresh = await fetchStudyAids();
     // null is "ask again later": the cache survives a failed request. An empty
     // record is an answer (the admin switched the link off) and clears it.
     if (fresh === null) return;
-    set({ studyAids: fresh });
+    set({ studyAids: fresh, studyAidsFetchedAt: Date.now() });
     try {
       await IndexedDBService.set('meta', STUDY_AIDS_CACHE_KEY, fresh);
     } catch (err) {
       logError('StudyAidsSlice.writeCache', err);
     }
+  },
+
+  loadStudyAidsIfStale: async (minGapMs) => {
+    const at = get().studyAidsFetchedAt;
+    if (at !== null && Date.now() - at < minGapMs) return;
+    await get().loadStudyAids();
   },
 });

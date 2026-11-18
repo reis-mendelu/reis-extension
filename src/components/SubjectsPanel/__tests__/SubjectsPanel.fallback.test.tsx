@@ -103,6 +103,32 @@ describe('SubjectsPanel Erasmus fallback', () => {
     expect(screen.queryByText('Study Plan')).toBeNull();
   });
 
+  // The phone shows the link in this state (it sits under the semester card
+  // whatever the plan); a student with no usable plan must not lose it here.
+  it('shows the study-aids link beside the fallback subjects, as the phone does', () => {
+    useAppStore.setState({
+      studyAids: { 'mendelu-app': ['mendelu'] },
+      userFaculty: 'PEF',
+      userProgramme: 'B-OI',
+      isErasmus: false,
+      impersonation: null,
+    } as never);
+    setStore({ plan: null, subjects });
+    renderPanel();
+    expect(screen.getByTestId('enrolled-now').textContent).toBe('EBC-ST');
+    expect(screen.getByRole('link', { name: /Study aids/ })).toHaveAttribute(
+      'href',
+      'https://mendelu.app/'
+    );
+  });
+
+  it('shows no study-aids link in the fallback when the admin has it off', () => {
+    useAppStore.setState({ studyAids: {}, userFaculty: 'PEF', userProgramme: 'B-OI' } as never);
+    setStore({ plan: null, subjects });
+    renderPanel();
+    expect(screen.queryByRole('link', { name: /Study aids/ })).toBeNull();
+  });
+
   it('still shows the noData empty state when both plan and subjects are missing', () => {
     setStore({ plan: null, subjects: null });
     renderPanel();

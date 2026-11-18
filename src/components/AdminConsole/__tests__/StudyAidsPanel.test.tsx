@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { StudyAidsPanel } from '../StudyAidsPanel';
 import { useAppStore } from '../../../store/useAppStore';
 
@@ -75,5 +75,40 @@ describe('StudyAidsPanel', () => {
     useAppStore.setState({ adminStudyAids: null } as any);
     render(<StudyAidsPanel />);
     expect(screen.getByText(/Nepodařilo se načíst/)).toBeInTheDocument();
+  });
+
+  // Reopening Otázky shows the list the store still holds while a new read runs.
+  // When that read changes a row, the editor must follow it: it used to keep
+  // the first values in its own state, so a later Save wrote the old switch back.
+  it('follows the list when a fresh read changes the row, instead of keeping stale fields', () => {
+    render(<StudyAidsPanel />);
+    expect(screen.getByRole('checkbox', { name: 'Zobrazovat studentům' })).not.toBeChecked();
+    act(() => {
+      useAppStore.setState({
+        adminStudyAids: [{ id: 'mendelu-app', audience: ['af:N-TZO'], isActive: true }],
+      } as any);
+    });
+    expect(screen.getByRole('checkbox', { name: 'Zobrazovat studentům' })).toBeChecked();
+    expect(
+      screen.getByRole('textbox', { name: /Agronomická fakulta/ }) as HTMLInputElement
+    ).toHaveValue('N-TZO');
+  });
+
+  it('keeps what the admin is typing while nothing changes on the server', () => {
+    render(<StudyAidsPanel />);
+    fireEvent.change(screen.getByRole('textbox', { name: /Agronomická fakulta/ }), {
+      target: { value: 'B-ATE, N-TZO' },
+    });
+    act(() => {
+      // A reload that brings back the very same row.
+      useAppStore.setState({
+        adminStudyAids: [
+          { id: 'mendelu-app', audience: ['af:B-ATE', 'af:N-PTE', 'af:B-ZIN'], isActive: false },
+        ],
+      } as any);
+    });
+    expect(
+      screen.getByRole('textbox', { name: /Agronomická fakulta/ }) as HTMLInputElement
+    ).toHaveValue('B-ATE, N-TZO');
   });
 });

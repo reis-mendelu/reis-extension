@@ -105,6 +105,8 @@ export function SubjectsPanel({
             onOpenSubject={onOpenSubject}
             onSearchSubject={onSearchSubject}
           />
+          {/* The phone shows the link whatever the plan; so does this branch. */}
+          <StudyAidsLink className="mt-3" />
           {boxesSummary('mt-3 max-w-xl mx-auto')}
         </div>
       </div>

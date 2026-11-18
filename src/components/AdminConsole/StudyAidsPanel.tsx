@@ -75,8 +75,13 @@ export function StudyAidsPanel() {
       {rows?.length === 0 && (
         <p className="text-sm text-base-content/70">{t('admin.studyAids.empty')}</p>
       )}
+      {/* Keyed on what the server holds, not only the id: reopening the tab
+          shows the list the store kept while a new read runs, and a row that
+          comes back changed must replace the editor's fields, or a later Save
+          would write the old switch and programmes back. A reload that brings
+          the same row keeps the editor, and what the admin has typed in it. */}
       {rows?.map((row) => (
-        <StudyAidsAdminRow key={row.id} row={row} />
+        <StudyAidsAdminRow key={`${row.id}:${row.isActive}:${row.audience.join(',')}`} row={row} />
       ))}
     </section>
   );
