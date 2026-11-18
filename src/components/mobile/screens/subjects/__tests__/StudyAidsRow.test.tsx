@@ -31,9 +31,9 @@ describe('StudyAidsRow (phone)', () => {
   it('shows the row, with what is behind it, to a student of a listed programme', () => {
     render(<StudyAidsRow />);
     expect(screen.getByRole('button', { name: /Studijní opory/ })).toBeInTheDocument();
-    // The domain first: at 320px the sublabel truncates, and it is the tail
-    // ("prezentace, simulace…") that may go, never where the link leads.
-    expect(screen.getByText(/^mendelu\.app · prezentace, simulace a kvízy/)).toBeInTheDocument();
+    // Only the domain, nothing to cut: NavRow truncates its sublabel, and a
+    // longer description was cut mid-word at 390px ("…simulace a kví…").
+    expect(screen.getByText('mendelu.app')).toBeInTheDocument();
   });
 
   it('hands mendelu.app to openExternal and counts the click under its own label', () => {
