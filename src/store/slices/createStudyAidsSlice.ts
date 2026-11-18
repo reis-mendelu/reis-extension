@@ -49,6 +49,9 @@ export const createStudyAidsSlice: AppSlice<StudyAidsSlice> = (set, get) => ({
   studyAidsFetchedAt: null,
 
   loadStudyAids: async () => {
+    // Demo mode is the build a store reviewer runs: ask nobody and restore
+    // nothing, on the boot read and on the feed's refresh alike.
+    if (get().demoMode) return;
     const fresh = await fetchStudyAids();
     if (fresh === null) {
       // The network could not answer. The device's copy stands in only while

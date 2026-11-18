@@ -15,7 +15,7 @@ const { STUDY_AIDS_CACHE_KEY } = await import('../createStudyAidsSlice');
 beforeEach(async () => {
   vi.clearAllMocks();
   await IndexedDBService.delete('meta', STUDY_AIDS_CACHE_KEY);
-  useAppStore.setState({ studyAids: {}, studyAidsFetchedAt: null } as any);
+  useAppStore.setState({ studyAids: {}, studyAidsFetchedAt: null, demoMode: false } as any);
 });
 
 describe('study aids audiences in the store', () => {
@@ -110,5 +110,19 @@ describe('refreshing the audience in a long-lived session', () => {
     fetchStudyAids.mockResolvedValueOnce(null);
     await useAppStore.getState().loadStudyAidsIfStale(60_000);
     expect(useAppStore.getState().studyAids).toEqual({ 'mendelu-app': ['af:B-ATE'] });
+  });
+});
+
+// Demo mode is the build a store reviewer runs: nothing of ours is asked and
+// nothing real is restored from the device, on the boot read and on the feed's
+// refresh alike (the loader itself is guarded, as the IS notices' is).
+describe('demo mode', () => {
+  it('asks nobody and reads no saved copy', async () => {
+    await IndexedDBService.set('meta', STUDY_AIDS_CACHE_KEY, { 'mendelu-app': ['af:B-ATE'] });
+    useAppStore.setState({ demoMode: true } as any);
+    await useAppStore.getState().loadStudyAids();
+    await useAppStore.getState().loadStudyAidsIfStale(0);
+    expect(fetchStudyAids).not.toHaveBeenCalled();
+    expect(useAppStore.getState().studyAids).toEqual({});
   });
 });
