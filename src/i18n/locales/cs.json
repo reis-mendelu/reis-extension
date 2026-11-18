@@ -1447,7 +1447,8 @@
       "error": "Nepodařilo se uložit. Zkus to znovu.",
       "invalid": "Vyber aspoň jednu fakultu a zkontroluj kódy programů.",
       "loading": "Načítám…",
-      "loadError": "Nepodařilo se načíst studijní opory.",
+      "loadError": "Nepodařilo se načíst aktuální stav, zobrazené hodnoty můžou být zastaralé.",
+      "retry": "Zkusit znovu",
       "empty": "Žádný odkaz zatím není nastavený."
     }
   },

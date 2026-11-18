@@ -15,6 +15,12 @@ export interface AdminStudyAidsSlice {
   adminStudyAids: AdminStudyAids[] | null;
   /** A read is out. Null rows while loading is "not yet", not "failed". */
   adminStudyAidsLoading: boolean;
+  /**
+   * The last read failed. The list on screen, if any, is what the previous read
+   * brought and may be stale, so the panel warns and keeps Save off until a
+   * read succeeds.
+   */
+  adminStudyAidsFailed: boolean;
   loadAdminStudyAids: () => Promise<void>;
   /** True once written; the list is reloaded either way. */
   saveAdminStudyAids: (
@@ -30,6 +36,7 @@ export const createAdminStudyAidsSlice: AppSlice<AdminStudyAidsSlice> = (set, ge
   return {
     adminStudyAids: null,
     adminStudyAidsLoading: false,
+    adminStudyAidsFailed: false,
 
     loadAdminStudyAids: async () => {
       const mine = ++latest;
@@ -38,8 +45,13 @@ export const createAdminStudyAidsSlice: AppSlice<AdminStudyAidsSlice> = (set, ge
       // Superseded: the newer read's answer is the one to keep, and it lowers
       // the flag when it lands.
       if (mine !== latest) return;
-      // A failed reload keeps what is on screen rather than blanking it.
-      set({ adminStudyAids: list ?? get().adminStudyAids, adminStudyAidsLoading: false });
+      // A failed reload keeps what is on screen rather than blanking it, and
+      // says that it failed.
+      set({
+        adminStudyAids: list ?? get().adminStudyAids,
+        adminStudyAidsLoading: false,
+        adminStudyAidsFailed: list === null,
+      });
     },
 
     saveAdminStudyAids: async (id, patch) => {

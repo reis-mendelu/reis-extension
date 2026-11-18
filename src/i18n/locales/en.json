@@ -1447,7 +1447,8 @@
       "error": "Could not save. Try again.",
       "invalid": "Pick at least one faculty and check the programme codes.",
       "loading": "Loading…",
-      "loadError": "Could not load the study aids.",
+      "loadError": "Could not load the current state, the values shown may be out of date.",
+      "retry": "Try again",
       "empty": "No link is set up yet."
     }
   },

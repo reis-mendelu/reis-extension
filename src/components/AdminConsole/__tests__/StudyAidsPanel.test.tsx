@@ -14,6 +14,7 @@ beforeEach(() => {
       { id: 'mendelu-app', audience: ['af:B-ATE', 'af:N-PTE', 'af:B-ZIN'], isActive: false },
     ],
     adminStudyAidsLoading: false,
+    adminStudyAidsFailed: false,
     saveAdminStudyAids,
   } as any);
 });
@@ -73,7 +74,11 @@ describe('StudyAidsPanel', () => {
   });
 
   it('says so when the list could not be read', () => {
-    useAppStore.setState({ adminStudyAids: null, adminStudyAidsLoading: false } as any);
+    useAppStore.setState({
+      adminStudyAids: null,
+      adminStudyAidsLoading: false,
+      adminStudyAidsFailed: true,
+    } as any);
     render(<StudyAidsPanel />);
     expect(screen.getByText(/Nepodařilo se načíst/)).toBeInTheDocument();
   });
@@ -135,5 +140,17 @@ describe('StudyAidsPanel', () => {
     useAppStore.setState({ adminStudyAidsLoading: true } as any);
     render(<StudyAidsPanel />);
     expect(screen.getByRole('button', { name: 'Uložit' })).toBeDisabled();
+  });
+
+  // A refresh that fails leaves the last list on screen. It may be stale (another
+  // device changed it), so the panel says so and Save stays off until a read lands.
+  it('warns, offers a retry and keeps Save off when a refresh failed over a cached list', () => {
+    const loadAdminStudyAids = vi.fn().mockResolvedValue(undefined);
+    useAppStore.setState({ adminStudyAidsFailed: true, loadAdminStudyAids } as any);
+    render(<StudyAidsPanel />);
+    expect(screen.getByText(/Nepodařilo se načíst/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Uložit' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Zkusit znovu' }));
+    expect(loadAdminStudyAids).toHaveBeenCalledTimes(1);
   });
 });

@@ -75,6 +75,9 @@ export function StudyAidsPanel() {
   const { t } = useTranslation();
   const rows = useAppStore((s) => s.adminStudyAids);
   const loading = useAppStore((s) => s.adminStudyAidsLoading);
+  const failed = useAppStore((s) => s.adminStudyAidsFailed);
+  const reload = useAppStore((s) => s.loadAdminStudyAids);
+  const showFailure = failed && !loading;
 
   return (
     <section data-testid="admin-study-aids" className="flex flex-col gap-2">
@@ -83,8 +86,15 @@ export function StudyAidsPanel() {
       {rows === null && loading && (
         <p className="text-sm text-base-content/70">{t('admin.studyAids.loading')}</p>
       )}
-      {rows === null && !loading && (
-        <p className="text-sm text-base-content/70">{t('admin.studyAids.loadError')}</p>
+      {/* A failed read, with or without a list from an earlier one: what is shown
+          may be stale, so say so, offer the retry, and keep Save off (`locked`). */}
+      {showFailure && (
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-base-content/70">{t('admin.studyAids.loadError')}</p>
+          <button type="button" className="btn btn-ghost btn-xs" onClick={() => void reload()}>
+            {t('admin.studyAids.retry')}
+          </button>
+        </div>
       )}
       {rows?.length === 0 && (
         <p className="text-sm text-base-content/70">{t('admin.studyAids.empty')}</p>
@@ -95,12 +105,13 @@ export function StudyAidsPanel() {
           would write the old switch and programmes back. A reload that brings
           the same row keeps the editor, and what the admin has typed in it. */}
       {rows?.map((row) => (
-        // Save is off while a fresh read is out: the editor may still hold the
-        // list from the last visit, and Save would write its values back.
+        // Save is off while a fresh read is out, and after one that failed: the
+        // editor may still hold the list from the last visit, and Save would
+        // write its values back.
         <StudyAidsAdminRow
           key={`${row.id}:${row.isActive}:${row.audience.join(',')}`}
           row={row}
-          locked={loading}
+          locked={loading || failed}
         />
       ))}
     </section>

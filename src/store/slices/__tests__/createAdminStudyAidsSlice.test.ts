@@ -17,7 +17,11 @@ const later = <T>() => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  useAppStore.setState({ adminStudyAids: null, adminStudyAidsLoading: false } as any);
+  useAppStore.setState({
+    adminStudyAids: null,
+    adminStudyAidsLoading: false,
+    adminStudyAidsFailed: false,
+  } as any);
 });
 
 describe('the console list in the store', () => {
@@ -32,12 +36,21 @@ describe('the console list in the store', () => {
     expect(useAppStore.getState().adminStudyAids).toEqual(row(true));
   });
 
-  it('keeps the list on screen when a reload fails', async () => {
+  it('keeps the list on screen when a reload fails, and says that it failed', async () => {
     useAppStore.setState({ adminStudyAids: row(true) } as any);
     fetchAdminStudyAids.mockResolvedValue(null);
     await useAppStore.getState().loadAdminStudyAids();
     expect(useAppStore.getState().adminStudyAids).toEqual(row(true));
     expect(useAppStore.getState().adminStudyAidsLoading).toBe(false);
+    // What is shown may be stale: the panel needs to know, to warn and keep Save off.
+    expect(useAppStore.getState().adminStudyAidsFailed).toBe(true);
+  });
+
+  it('is no longer failed once a read succeeds', async () => {
+    useAppStore.setState({ adminStudyAidsFailed: true } as any);
+    fetchAdminStudyAids.mockResolvedValue(row(true));
+    await useAppStore.getState().loadAdminStudyAids();
+    expect(useAppStore.getState().adminStudyAidsFailed).toBe(false);
   });
 
   // A tab refresh that read the old row, answering after a save and its reload,
