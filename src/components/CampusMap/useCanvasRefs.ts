@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import type { RoomPoly } from './roomTints';
@@ -73,27 +73,28 @@ export function useCanvasRefs() {
     draftCoordRef.current = draftCoord;
   }, [draftCoord]);
 
-  // One object for the life of the canvas: the hooks list it as a dependency.
-  return useMemo(
-    () => ({
-      railRef,
-      ref,
-      mapRef,
-      layerRef,
-      exitHandlerRef,
-      keepViewRef,
-      roomPolysRef,
-      labelledRoomsRef,
-      roomChipRef,
-      planBoundsRef,
-      buildingPolysRef,
-      poiHighlightRef,
-      routeLayerRef,
-      positionLayerRef,
-      draftCoordRef,
-    }),
-    []
-  );
+  // One object for the life of the canvas: the hooks list it as a dependency,
+  // the camera-owning effect included. Lazy state, not useMemo, because React
+  // may drop a memo, and a new object would re-run that effect and move the
+  // camera. The refs themselves are stable, so the first render's are the ones.
+  const [refs] = useState(() => ({
+    railRef,
+    ref,
+    mapRef,
+    layerRef,
+    exitHandlerRef,
+    keepViewRef,
+    roomPolysRef,
+    labelledRoomsRef,
+    roomChipRef,
+    planBoundsRef,
+    buildingPolysRef,
+    poiHighlightRef,
+    routeLayerRef,
+    positionLayerRef,
+    draftCoordRef,
+  }));
+  return refs;
 }
 
 export type CanvasRefs = ReturnType<typeof useCanvasRefs>;
