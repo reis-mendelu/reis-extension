@@ -61,7 +61,7 @@ PSL_DATA_TYPES_APP_ACTIVITY,PSL_OTHER_APP_ACTIVITY,,MULTIPLE_CHOICE,App activity
 PSL_DATA_TYPES_IDENTIFIERS,PSL_DEVICE_ID,,MULTIPLE_CHOICE,Device or other IDs/Device or other IDs
 PSL_DATA_USAGE_RESPONSES:PSL_NAME:PSL_DATA_USAGE_COLLECTION_AND_SHARING,PSL_DATA_USAGE_ONLY_COLLECTED,true,MULTIPLE_CHOICE,"Data usage and handling (Name)/Is this data collected, shared or both?/Collected"
 PSL_DATA_USAGE_RESPONSES:PSL_NAME:PSL_DATA_USAGE_COLLECTION_AND_SHARING,PSL_DATA_USAGE_ONLY_SHARED,,MULTIPLE_CHOICE,"Data usage and handling (Name)/Is this data collected, shared or both?/Shared"
-PSL_DATA_USAGE_RESPONSES:PSL_NAME:PSL_DATA_USAGE_EPHEMERAL,,,MAYBE_REQUIRED,Data usage and handling (Name)/Is this data processed ephemerally?
+PSL_DATA_USAGE_RESPONSES:PSL_NAME:PSL_DATA_USAGE_EPHEMERAL,,false,MAYBE_REQUIRED,Data usage and handling (Name)/Is this data processed ephemerally?
 PSL_DATA_USAGE_RESPONSES:PSL_NAME:DATA_USAGE_USER_CONTROL,PSL_DATA_USAGE_USER_CONTROL_OPTIONAL,true,SINGLE_CHOICE,"Data usage and handling (Name)/Is this data required for your app, or can users choose whether it's collected?/Users can choose whether this data is collected"
 PSL_DATA_USAGE_RESPONSES:PSL_NAME:DATA_USAGE_USER_CONTROL,PSL_DATA_USAGE_USER_CONTROL_REQUIRED,,SINGLE_CHOICE,"Data usage and handling (Name)/Is this data required for your app, or can users choose whether it's collected?/Data collection is required (users can't turn off this data collection)"
 PSL_DATA_USAGE_RESPONSES:PSL_NAME:DATA_USAGE_COLLECTION_PURPOSE,PSL_APP_FUNCTIONALITY,true,MULTIPLE_CHOICE,Data usage and handling (Name)/Why is this user data collected? Select all that apply./App functionality
