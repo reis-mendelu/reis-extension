@@ -4,7 +4,7 @@ Your IS Mendelu data in Claude Code: timetable, exams, subjects, study plan, syl
 
 ## Install
 
-The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Claude Code itself does not install: check that `node --version` works in a terminal. Install the plugin, then enter your IS Mendelu username and password when Claude Code asks. Ask things like "what's due this week?" or "explain lecture 7 of Počítačové sítě".
+The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Claude Code itself does not install: check that `node --version` works in a terminal. Then run `/plugin marketplace add reis-mendelu/reis-for-claude` and `/plugin install reis@reis`, choose the user scope if Claude Code offers a choice of install scope, and enter your IS Mendelu username and password when Claude Code asks. Ask things like "what's due this week?" or "explain lecture 7 of Počítačové sítě".
 
 ## What Claude can read
 
