@@ -116,12 +116,16 @@ export async function cancelAndRemove(
     }));
     for (const { first, ...part } of parts) {
       if (first === start) continue;
-      // Saved by an earlier attempt that was closed before the original went,
-      // and maybe extended since: never written over, or a newer key is lost.
+      // Made by an earlier attempt that never removed the original, and maybe
+      // extended since: never written over, or a newer key is lost. Stored again
+      // as memory holds it, since that attempt's own save may have failed.
       const id = `${block.id}-${first}`;
       const saved = useAppStore.getState().customEvents.find((e) => e.id === id);
       const keys = part.libraryBooking.selfServiceIds;
-      if (saved && keys.every((k) => saved.libraryBooking?.selfServiceIds.includes(k))) continue;
+      if (saved && keys.every((k) => saved.libraryBooking?.selfServiceIds.includes(k))) {
+        await app.updateCalendarCustomEvent(id, {});
+        continue;
+      }
       await app.addCalendarCustomEvent({
         ...block,
         ...part,

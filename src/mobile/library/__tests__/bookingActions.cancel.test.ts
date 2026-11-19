@@ -186,8 +186,9 @@ describe('cancelAndRemove', () => {
       'library:A1',
       vi.fn(async () => ({ status: n++ === 0 ? 200 : 500, data: {} }))
     );
-    // A write to library:A1-16 would replace S2 + S3 with S2 alone in storage.
-    expect(log).toEqual(['remove library:A1']);
+    // It is stored again as memory holds it (S2 + S3), in case its first save
+    // failed, and only then does the original go.
+    expect(log).toEqual(['update library:A1-16', 'remove library:A1']);
     expect(useAppStore.getState().customEvents).toEqual([extended]);
   });
 
