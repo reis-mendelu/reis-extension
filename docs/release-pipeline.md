@@ -154,7 +154,10 @@ builds and signs for real and **releases nothing**:
   deletes the edit. It does not prove the production permission: only a commit
   needs it, so a missing grant first shows on a real release.
 - iOS: archives and exports a distribution-signed `.ipa` (`--skip-upload`),
-  queries App Store Connect.
+  queries App Store Connect about the version the PR would release
+  (`package.json` at the built ref, not the latest tag): its own draft is fine,
+  another version waiting for review or being edited fails the dry run, as it
+  would fail the real submit.
 - Extension: `wxt submit --dry-run`, on the **latest existing tag**, not the PR's
   code (the extension leg is not exercised by a change to it). The VŠE job does
   the same once `CWS_VSE_ITEM_ID` is set, after its manifest check.
