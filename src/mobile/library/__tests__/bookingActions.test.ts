@@ -155,6 +155,87 @@ describe('cancelAndRemove', () => {
     ]);
   });
 
+  // Every key that still holds an hour at the library must be saved at every
+  // step: the app can be closed between two writes.
+  const logWrites = () => {
+    const log: string[] = [];
+    const s = useAppStore.getState();
+    useAppStore.setState({
+      addCalendarCustomEvent: async (e) => {
+        log.push(`add ${e.id}`);
+        await s.addCalendarCustomEvent(e);
+      },
+      updateCalendarCustomEvent: async (id, patch) => {
+        log.push(`update ${id}`);
+        await s.updateCalendarCustomEvent(id, patch);
+      },
+      removeCalendarCustomEvent: async (id) => {
+        log.push(`remove ${id}`);
+        await s.removeCalendarCustomEvent(id);
+      },
+    });
+    return log;
+  };
+  const twoHours = {
+    ...block,
+    endTime: '17:00',
+    libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1', 'S2'] },
+  };
+  it('saves the hours it keeps before it drops the original block', async () => {
+    useAppStore.setState({ customEvents: [twoHours] });
+    const log = logWrites();
+    let n = 0;
+    await cancelAndRemove(
+      'library:A1',
+      vi.fn(async () => ({ status: n++ === 0 ? 200 : 500, data: {} }))
+    );
+    expect(log).toEqual(['add library:A1-16', 'remove library:A1']);
+  });
+  it('rewrites the original block in place when its first hour is kept', async () => {
+    useAppStore.setState({ customEvents: [twoHours] });
+    const log = logWrites();
+    let n = 0;
+    await cancelAndRemove(
+      'library:A1',
+      vi.fn(async () => ({ status: n++ === 0 ? 500 : 200, data: {} }))
+    );
+    expect(log).toEqual(['update library:A1']);
+    expect(useAppStore.getState().customEvents).toEqual([
+      expect.objectContaining({
+        id: 'library:A1',
+        startTime: '15:00',
+        endTime: '16:00',
+        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1'] },
+      }),
+    ]);
+  });
+
+  it('shrinks the original only after the later hours are saved', async () => {
+    useAppStore.setState({
+      customEvents: [
+        {
+          ...block,
+          endTime: '18:00',
+          libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1', 'S2', 'S3'] },
+        },
+      ],
+    });
+    const log = logWrites();
+    let n = 0;
+    // 15:00 fails, 16:00 is cancelled, 17:00 fails.
+    await cancelAndRemove(
+      'library:A1',
+      vi.fn(async () => ({ status: n++ === 1 ? 200 : 500, data: {} }))
+    );
+    expect(log).toEqual(['add library:A1-17', 'update library:A1']);
+    expect(
+      useAppStore
+        .getState()
+        .customEvents.map((e) => e.id)
+        .sort()
+    ).toEqual(['library:A1', 'library:A1-17']);
+  });
+
   it('frees the cancelled hours for booking again, and reads afresh next time', async () => {
     useAppStore.setState({ customEvents: [block] });
     useLibraryStore.setState({
