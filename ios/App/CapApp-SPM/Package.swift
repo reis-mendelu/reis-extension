@@ -16,6 +16,7 @@ let package = Package(
         .package(name: "CapacitorApp", path: "../../../node_modules/@capacitor/app"),
         .package(name: "CapacitorAppLauncher", path: "../../../node_modules/@capacitor/app-launcher"),
         .package(name: "CapacitorBrowser", path: "../../../node_modules/@capacitor/browser"),
+        .package(name: "CapacitorCalendar", path: "../../../node_modules/@capacitor/calendar"),
         .package(name: "CapacitorFilesystem", path: "../../../node_modules/@capacitor/filesystem"),
         .package(name: "CapacitorLocalNotifications", path: "../../../node_modules/@capacitor/local-notifications"),
         .package(name: "CapacitorPreferences", path: "../../../node_modules/@capacitor/preferences"),
@@ -24,6 +25,7 @@ let package = Package(
         .package(name: "CapawesomeCapacitorAppUpdate", path: "../../../node_modules/@capawesome/capacitor-app-update"),
         .package(name: "CapgoCapacitorInappbrowser", path: "../../../node_modules/@capgo/capacitor-inappbrowser"),
         .package(name: "ReisCapacitorEduroam", path: "../../../native/capacitor-eduroam"),
+        .package(name: "ReisCapacitorGoogleCalendar", path: "../../../native/capacitor-google-calendar"),
         .package(name: "ReisCapacitorMacSave", path: "../../../native/capacitor-mac-save"),
         .package(name: "ReisCapacitorPdfInk", path: "../../../native/capacitor-pdf-ink"),
         .package(name: "ReisCapacitorSecureStore", path: "../../../native/capacitor-secure-store")
@@ -38,6 +40,7 @@ let package = Package(
                 .product(name: "CapacitorApp", package: "CapacitorApp"),
                 .product(name: "CapacitorAppLauncher", package: "CapacitorAppLauncher"),
                 .product(name: "CapacitorBrowser", package: "CapacitorBrowser"),
+                .product(name: "CapacitorCalendar", package: "CapacitorCalendar"),
                 .product(name: "CapacitorFilesystem", package: "CapacitorFilesystem"),
                 .product(name: "CapacitorLocalNotifications", package: "CapacitorLocalNotifications"),
                 .product(name: "CapacitorPreferences", package: "CapacitorPreferences"),
@@ -46,6 +49,7 @@ let package = Package(
                 .product(name: "CapawesomeCapacitorAppUpdate", package: "CapawesomeCapacitorAppUpdate"),
                 .product(name: "CapgoCapacitorInappbrowser", package: "CapgoCapacitorInappbrowser"),
                 .product(name: "ReisCapacitorEduroam", package: "ReisCapacitorEduroam"),
+                .product(name: "ReisCapacitorGoogleCalendar", package: "ReisCapacitorGoogleCalendar"),
                 .product(name: "ReisCapacitorMacSave", package: "ReisCapacitorMacSave"),
                 .product(name: "ReisCapacitorPdfInk", package: "ReisCapacitorPdfInk"),
                 .product(name: "ReisCapacitorSecureStore", package: "ReisCapacitorSecureStore")
