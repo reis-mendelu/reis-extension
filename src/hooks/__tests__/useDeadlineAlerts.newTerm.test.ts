@@ -81,6 +81,43 @@ describe('a new exam term in Novinky', () => {
     vis.mockRestore();
   });
 
+  // The Android background check records a new term's key without saving the
+  // list it came from. Opening Zkoušky on the older cached list must not clear
+  // a date that list does not show: it is news once the fresh list arrives.
+  it('keeps a new term the displayed list does not hold, and clears it once it does', () => {
+    const shownKey = examTermKey('EBC-VWA', '1');
+    const offScreen = examTermKey('EBC-VWA', '2');
+    useAppStore.setState({ examTermsNew: [shownKey, offScreen] } as never);
+    renderHook(() => useMarkExamTermsSeen(true));
+    expect(useAppStore.getState().examTermsNew).toEqual([offScreen]);
+    expect(clearUnseenTerms).toHaveBeenLastCalledWith([shownKey]);
+
+    act(() => {
+      useAppStore.setState({
+        exams: {
+          data: [
+            {
+              ...vwa,
+              sections: [
+                {
+                  ...vwa.sections[0]!,
+                  terms: [
+                    ...vwa.sections[0]!.terms,
+                    { id: '2', date: '17.12.2026', time: '11:00' },
+                  ],
+                },
+              ],
+            },
+          ],
+          status: 'success',
+          error: null,
+        },
+      } as never);
+    });
+    expect(useAppStore.getState().examTermsNew).toEqual([]);
+    expect(clearUnseenTerms).toHaveBeenLastCalledWith([offScreen]);
+  });
+
   // Two dates read, then the first one passes: the row now names one date and
   // has another id, but nothing was added, so the bell stays quiet.
   it('does not light the bell again when a date it showed drops out', () => {
