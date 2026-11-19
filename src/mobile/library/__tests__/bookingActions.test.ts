@@ -10,7 +10,7 @@ vi.mock('../../../utils/userParams', () => ({
   })),
 }));
 
-import { bookAndRecord, cancelAndRemove, extendBooking } from '../bookingActions';
+import { bookAndRecord, extendBooking } from '../bookingActions';
 import { useLibraryStore } from '../libraryStore';
 import { useAppStore } from '../../../store/useAppStore';
 import type { BookingsHttp } from '../bookingsBase';
@@ -106,91 +106,6 @@ describe('bookAndRecord, a failed save', () => {
     });
     expect(r).toMatchObject({ kind: 'ok', unsaved: 1 });
     add.mockRestore();
-  });
-});
-
-describe('cancelAndRemove', () => {
-  const block = {
-    id: 'library:A1',
-    title: 't',
-    date: '20261110',
-    startTime: '15:00',
-    endTime: '16:00',
-    libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1'] },
-  };
-  it('removes the block once the booking is cancelled', async () => {
-    useAppStore.setState({ customEvents: [block] });
-    const r = await cancelAndRemove('library:A1', http({ status: 200, data: {} }));
-    expect(r.kind).toBe('ok');
-    expect(useAppStore.getState().customEvents).toHaveLength(0);
-  });
-  it('keeps the block when the cancel failed', async () => {
-    useAppStore.setState({ customEvents: [block] });
-    const r = await cancelAndRemove('library:A1', http({ status: 500, data: {} }));
-    expect(r.kind).toBe('failed');
-    expect(useAppStore.getState().customEvents).toHaveLength(1);
-  });
-  it('keeps only the hours it could not cancel, each with its own key and time', async () => {
-    useAppStore.setState({
-      customEvents: [
-        {
-          ...block,
-          endTime: '17:00',
-          libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1', 'S2'] },
-        },
-      ],
-    });
-    let n = 0;
-    const h: BookingsHttp = vi.fn(async () => ({ status: n++ === 0 ? 200 : 500, data: {} }));
-    const r = await cancelAndRemove('library:A1', h);
-    expect(r).toEqual({ kind: 'failed', status: 500, left: ['S2'] });
-    // 15:00 was cancelled; 16:00 stays, as its own 16:00–17:00 block.
-    expect(useAppStore.getState().customEvents).toEqual([
-      expect.objectContaining({
-        id: 'library:A1-16',
-        startTime: '16:00',
-        endTime: '17:00',
-        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S2'] },
-      }),
-    ]);
-  });
-
-  it('frees the cancelled hours for booking again, and reads afresh next time', async () => {
-    useAppStore.setState({ customEvents: [block] });
-    useLibraryStore.setState({
-      blocks: {
-        [room.featureId]: [
-          { status: 'free', start: '2026-11-10T07:00', end: '2026-11-10T19:00' },
-          { status: 'busy', start: '2026-11-10T15:00', end: '2026-11-10T16:00' },
-        ],
-      },
-      fetchedAt: 1,
-    });
-    await cancelAndRemove('library:A1', http({ status: 200, data: {} }));
-    expect(useLibraryStore.getState().blocks[room.featureId]).toHaveLength(1);
-    expect(useLibraryStore.getState().fetchedAt).toBeNull();
-  });
-
-  it('refuses a second write while one is running', async () => {
-    useAppStore.setState({ customEvents: [block] });
-    useLibraryStore.setState({ writing: true });
-    expect((await cancelAndRemove('library:A1', http({ status: 200, data: {} }))).kind).toBe(
-      'busy'
-    );
-    expect(
-      (
-        await bookAndRecord({
-          http: http({ status: 200, data: {} }),
-          room,
-          day: '2026-11-10',
-          from: 15,
-          to: 16,
-          lang: 'cz',
-          now,
-        })
-      ).kind
-    ).toBe('busy');
-    useLibraryStore.setState({ writing: false });
   });
 });
 

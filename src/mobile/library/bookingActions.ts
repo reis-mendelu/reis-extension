@@ -105,17 +105,38 @@ export async function cancelAndRemove(
     const day = `${block.date.slice(0, 4)}-${block.date.slice(4, 6)}-${block.date.slice(6, 8)}`;
     const hours = lb.selfServiceIds.map((key, i) => ({ key, hour: start + i }));
     const kept = hours.filter((h) => left.includes(h.key));
-    await app.removeCalendarCustomEvent(eventId);
-    for (const run of runsOf(kept)) {
-      const first = run[0]!.hour;
+    // The new blocks are saved before the original goes, and a kept first hour
+    // rewrites the original in one write: a key that still holds an hour at the
+    // library is in storage at every step, even if the app closes in between.
+    const parts = runsOf(kept).map((run) => ({
+      first: run[0]!.hour,
+      startTime: `${String(run[0]!.hour).padStart(2, '0')}:00`,
+      endTime: `${String(run[0]!.hour + run.length).padStart(2, '0')}:00`,
+      libraryBooking: { ...lb, selfServiceIds: run.map((h) => h.key) },
+    }));
+    for (const { first, ...part } of parts) {
+      if (first === start) continue;
+      // Made by an earlier attempt that never removed the original, and maybe
+      // extended since: never written over, or a newer key is lost. Stored again
+      // as memory holds it, since that attempt's own save may have failed.
+      const id = `${block.id}-${first}`;
+      const saved = useAppStore.getState().customEvents.find((e) => e.id === id);
+      const keys = part.libraryBooking.selfServiceIds;
+      if (saved && keys.every((k) => saved.libraryBooking?.selfServiceIds.includes(k))) {
+        await app.updateCalendarCustomEvent(id, {});
+        continue;
+      }
       await app.addCalendarCustomEvent({
         ...block,
-        id: first === start ? block.id : `${block.id}-${first}`,
-        startTime: `${String(first).padStart(2, '0')}:00`,
-        endTime: `${String(first + run.length).padStart(2, '0')}:00`,
-        libraryBooking: { ...lb, selfServiceIds: run.map((h) => h.key) },
+        ...part,
+        id: saved ? `${id}-${Date.now()}` : id,
       });
     }
+    const own = parts.find((p) => p.first === start);
+    if (own) {
+      const { first: _first, ...part } = own;
+      await app.updateCalendarCustomEvent(block.id, part);
+    } else await app.removeCalendarCustomEvent(eventId);
     useLibraryStore.getState().markFree(
       lb.featureId,
       day,
