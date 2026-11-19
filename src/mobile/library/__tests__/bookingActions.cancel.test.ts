@@ -13,6 +13,7 @@ vi.mock('../../../utils/userParams', () => ({
 import { bookAndRecord, cancelAndRemove } from '../bookingActions';
 import { useLibraryStore } from '../libraryStore';
 import { useAppStore } from '../../../store/useAppStore';
+import type { BookingsHttp } from '../bookingsBase';
 import {
   block,
   http,
