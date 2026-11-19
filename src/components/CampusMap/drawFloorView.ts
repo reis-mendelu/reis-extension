@@ -2,7 +2,6 @@ import L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
 import type { AppState } from '../../store/types';
 import buildingsJson from '../../data/map/buildings.json';
-import { railPaddingPx } from '../../utils/mapRail';
 import {
   ringToLatLng,
   LABELLED_ROOM_SPAN_M,
@@ -13,13 +12,12 @@ import {
   SIBLING_STYLE,
 } from './mapHelpers';
 import { flyAndReveal, drawLandmarks } from './mapLayers';
-import { applyRoomTints, roomTapIntent, selectedRoomId, tintedBoundsOf } from './roomTints';
+import { frameFloor } from './frameFloor';
+import { applyRoomTints, roomTapIntent, selectedRoomId } from './roomTints';
 import { dimsOtherRooms } from './dimsOtherRooms';
 import { LABELS_PANE } from './mapPanes';
-import { roomFocusView, groupFocusView } from './focusBounds';
 import { roomPlanLabels } from './roomPlanLabel';
 import { venueRoomTitles } from './venueSearch';
-import { fitAboveSheet } from './sheetClearance';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 import type { CanvasRefs } from './useCanvasRefs';
 
@@ -181,36 +179,14 @@ export function drawFloorView(a: {
     SELECTED_STYLE,
     dimsOtherRooms(sel, select.mapRoomTints)
   );
-  // The library's card frames the room picked from it, or all six, not the building.
-  const tinted =
-    sel?.kind === 'library'
-      ? // A room chosen from the card (the floor opens at that moment) is the
-        // frame; otherwise all six.
-        (targetBounds ?? tintedBoundsOf(roomPolysRef.current, select.mapRoomTints))
-      : null;
-  const rail = railPaddingPx(map.getSize().x, isPhone, railRef.current.width, railRef.current.open);
-  // Which box to frame is a decision, so it lives in a tested pure module:
-  // a selected room frames its BUILDING, not its own few metres of floor.
-  // See focusBounds.roomFocusView.
-  const view = tinted
-    ? groupFocusView<L.LatLngBoundsExpression>(tinted, rail)
-    : roomFocusView<L.LatLngBoundsExpression>(
-        targetBounds ?? null,
-        (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null,
-        rail
-      );
-  if (view) {
-    const { bounds, maxZoom, paddingTopLeft, paddingBottomRight } = view;
-    flyAndReveal(map, () =>
-      map.fitBounds(bounds, { maxZoom, paddingTopLeft, paddingBottomRight, animate: false })
-    );
-  }
-  // The card hugs the lower part of a phone's screen: the rooms go above it.
-  if (isPhone && tinted)
-    fitAboveSheet(
-      map,
-      tinted,
-      view?.maxZoom ?? 21,
-      () => useAppStore.getState().mapSelection === sel
-    );
+  frameFloor({
+    map,
+    isPhone,
+    sel,
+    polys: roomPolysRef.current,
+    tints: select.mapRoomTints,
+    targetBounds,
+    buildingBounds: (b?.bounds as L.LatLngBoundsExpression | undefined) ?? null,
+    rail: railRef.current,
+  });
 }
