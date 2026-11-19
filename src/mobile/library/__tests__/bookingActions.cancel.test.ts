@@ -13,46 +13,21 @@ vi.mock('../../../utils/userParams', () => ({
 import { bookAndRecord, cancelAndRemove } from '../bookingActions';
 import { useLibraryStore } from '../libraryStore';
 import { useAppStore } from '../../../store/useAppStore';
-import type { BookingsHttp } from '../bookingsBase';
-import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
-import { IndexedDBService } from '../../../services/storage/IndexedDBService';
-import type { CalendarCustomEvent } from '../../../types/calendarTypes';
+import {
+  block,
+  http,
+  logWrites,
+  now,
+  resetCancelState,
+  room,
+  seed,
+  stored,
+  twoHours,
+} from './cancelFixtures';
 
-const room = LIBRARY_ROOMS[0]!;
-const free = {
-  staffAvailabilityResponse: [
-    {
-      availabilityItems: [
-        {
-          status: 'BOOKINGSAVAILABILITYSTATUS_AVAILABLE',
-          startDateTime: { dateTime: '2026-11-10T07:00:00' },
-          endDateTime: { dateTime: '2026-11-10T19:00:00' },
-        },
-      ],
-    },
-  ],
-};
-const http = (create: { status: number; data: unknown }): BookingsHttp =>
-  vi.fn(async (req) =>
-    req.url.endsWith('GetStaffAvailability') ? { status: 200, data: free } : create
-  );
-const now = new Date(2026, 10, 10, 6, 0);
-
-beforeEach(async () => {
-  useAppStore.setState({ customEvents: [] });
-  await IndexedDBService.clear('custom_events');
-  useLibraryStore.getState().reset();
-});
+beforeEach(resetCancelState);
 
 describe('cancelAndRemove', () => {
-  const block = {
-    id: 'library:A1',
-    title: 't',
-    date: '20261110',
-    startTime: '15:00',
-    endTime: '16:00',
-    libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1'] },
-  };
   it('removes the block once the booking is cancelled', async () => {
     useAppStore.setState({ customEvents: [block] });
     const r = await cancelAndRemove('library:A1', http({ status: 200, data: {} }));
@@ -89,40 +64,6 @@ describe('cancelAndRemove', () => {
       }),
     ]);
   });
-
-  // Every key that still holds an hour at the library must be saved at every
-  // step: the app can be closed between two writes. So a cancel is ONE write,
-  // a single IndexedDB transaction, never a sequence of them.
-  const logWrites = () => {
-    const log: string[] = [];
-    const s = useAppStore.getState();
-    const note = (what: string) => async () => {
-      log.push(what);
-    };
-    useAppStore.setState({
-      addCalendarCustomEvent: note('add'),
-      updateCalendarCustomEvent: note('update'),
-      removeCalendarCustomEvent: note('remove'),
-      replaceCalendarCustomEvents: async (put, drop) => {
-        log.push(`replace put ${put.map((e) => e.id).join(',')} drop ${drop.join(',')}`);
-        await s.replaceCalendarCustomEvents(put, drop);
-      },
-    });
-    return log;
-  };
-  const twoHours = {
-    ...block,
-    endTime: '17:00',
-    libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1', 'S2'] },
-  };
-  const stored = async () =>
-    ((await IndexedDBService.getAllWithKeys('custom_events')) ?? [])
-      .map((r) => r.value as CalendarCustomEvent)
-      .sort((a, b) => a.id.localeCompare(b.id));
-  const seed = async (events: CalendarCustomEvent[]) => {
-    useAppStore.setState({ customEvents: events });
-    for (const e of events) await IndexedDBService.set('custom_events', e.id, e);
-  };
 
   it('saves the hours it keeps and drops the original in one write', async () => {
     await seed([twoHours]);
@@ -184,119 +125,6 @@ describe('cancelAndRemove', () => {
     const ids = (es: { id: string }[]) => es.map((e) => e.id).sort();
     expect(ids(useAppStore.getState().customEvents)).toEqual(['library:A1', 'library:A1-17']);
     expect(ids(await stored())).toEqual(['library:A1', 'library:A1-17']);
-  });
-
-  it('a retry never overwrites a block an earlier attempt saved and the student extended', async () => {
-    // An earlier attempt cancelled 15:00, saved 16:00 as its own block and was
-    // closed before the original went. The student then extended 16:00 to 18:00.
-    const extended = {
-      ...block,
-      id: 'library:A1-16',
-      startTime: '16:00',
-      endTime: '18:00',
-      libraryBooking: { featureId: room.featureId, selfServiceIds: ['S2', 'S3'] },
-    };
-    await seed([twoHours, extended]);
-    const log = logWrites();
-    let n = 0;
-    // The retry: 15:00 is gone already, 16:00 still fails.
-    await cancelAndRemove(
-      'library:A1',
-      vi.fn(async () => ({ status: n++ === 0 ? 200 : 500, data: {} }))
-    );
-    // It is stored again as memory holds it (S2 + S3), in case its first save
-    // failed, in the same write that drops the original.
-    expect(log).toEqual(['replace put library:A1-16 drop library:A1']);
-    expect(useAppStore.getState().customEvents).toEqual([extended]);
-    expect(await stored()).toEqual([extended]);
-  });
-
-  // An attempt that died after saving a split but before the original went
-  // leaves both. The retry cancels hours the split still holds: they must
-  // leave the split too, or the calendar shows a booking that is gone.
-  it('a retry drops an earlier split block whose hour it has now cancelled', async () => {
-    await seed([
-      twoHours,
-      {
-        ...block,
-        id: 'library:A1-16',
-        startTime: '16:00',
-        endTime: '17:00',
-        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S2'] },
-      },
-    ]);
-    // 15:00 is gone already (404), 16:00 is cancelled now.
-    let n = 0;
-    const r = await cancelAndRemove(
-      'library:A1',
-      vi.fn(async () => ({ status: n++ === 0 ? 404 : 200, data: {} }))
-    );
-    expect(r.kind).toBe('ok');
-    expect(useAppStore.getState().customEvents).toEqual([]);
-    expect(await stored()).toEqual([]);
-  });
-
-  it('a retry takes the cancelled hour out of an earlier split and keeps its newer key', async () => {
-    // The earlier attempt cancelled 15:00 and saved 16:00–18:00 as A1-16; the
-    // student then extended that block to 19:00 (S4, not part of A1).
-    await seed([
-      {
-        ...block,
-        endTime: '18:00',
-        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1', 'S2', 'S3'] },
-      },
-      {
-        ...block,
-        id: 'library:A1-16',
-        startTime: '16:00',
-        endTime: '19:00',
-        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S2', 'S3', 'S4'] },
-      },
-    ]);
-    // The retry: 15:00 gone, 16:00 cancelled now, 17:00 fails.
-    let n = 0;
-    const r = await cancelAndRemove(
-      'library:A1',
-      vi.fn(async () => ({ status: [404, 200, 500][n++] ?? 500, data: {} }))
-    );
-    expect(r.left).toEqual(['S3']);
-    const want = [
-      expect.objectContaining({
-        id: 'library:A1-17',
-        startTime: '17:00',
-        endTime: '19:00',
-        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S3', 'S4'] },
-      }),
-    ];
-    expect(useAppStore.getState().customEvents).toEqual(want);
-    expect(await stored()).toEqual(want);
-  });
-
-  it('cancelling the leftover split also takes its hour out of the stale original', async () => {
-    // The earlier attempt cancelled 15:00 and saved 16:00 as A1-16, then died
-    // before A1 went. The student now cancels A1-16 itself.
-    await seed([
-      twoHours,
-      {
-        ...block,
-        id: 'library:A1-16',
-        startTime: '16:00',
-        endTime: '17:00',
-        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S2'] },
-      },
-    ]);
-    await cancelAndRemove('library:A1-16', http({ status: 200, data: {} }));
-    // A1 keeps only 15:00 (its key reads 404 → gone the next time it is cancelled).
-    const want = [
-      expect.objectContaining({
-        id: 'library:A1',
-        startTime: '15:00',
-        endTime: '16:00',
-        libraryBooking: { featureId: room.featureId, selfServiceIds: ['S1'] },
-      }),
-    ];
-    expect(useAppStore.getState().customEvents).toEqual(want);
-    expect(await stored()).toEqual(want);
   });
 
   it('frees the cancelled hours for booking again, and reads afresh next time', async () => {
