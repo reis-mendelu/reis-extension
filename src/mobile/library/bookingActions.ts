@@ -115,8 +115,18 @@ export async function cancelAndRemove(
       libraryBooking: { ...lb, selfServiceIds: run.map((h) => h.key) },
     }));
     for (const { first, ...part } of parts) {
-      if (first !== start)
-        await app.addCalendarCustomEvent({ ...block, ...part, id: `${block.id}-${first}` });
+      if (first === start) continue;
+      // Saved by an earlier attempt that was closed before the original went,
+      // and maybe extended since: never written over, or a newer key is lost.
+      const id = `${block.id}-${first}`;
+      const saved = useAppStore.getState().customEvents.find((e) => e.id === id);
+      const keys = part.libraryBooking.selfServiceIds;
+      if (saved && keys.every((k) => saved.libraryBooking?.selfServiceIds.includes(k))) continue;
+      await app.addCalendarCustomEvent({
+        ...block,
+        ...part,
+        id: saved ? `${id}-${Date.now()}` : id,
+      });
     }
     const own = parts.find((p) => p.first === start);
     if (own) {
