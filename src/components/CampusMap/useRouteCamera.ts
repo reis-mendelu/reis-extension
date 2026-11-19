@@ -67,7 +67,7 @@ export function useRouteCamera(refs: CanvasRefs, isPhone: boolean): void {
       railRef.current.width,
       railRef.current.open
     );
-    map.fitBounds(L.latLngBounds(shown.coords.map(([lon, lat]) => L.latLng(lat, lon))), {
+    map.fitBounds(L.latLngBounds(shown.coords.map(([lon, lat]) => L.latLng(lat!, lon!))), {
       paddingTopLeft: [28, topChrome + 12],
       paddingBottomRight: [28 + rail, sheetH + 12],
       // A 1.3 km walk and a 160 m one both deserve to fill the frame, but not

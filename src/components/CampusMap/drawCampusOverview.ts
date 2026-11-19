@@ -1,5 +1,6 @@
 import L from 'leaflet';
-import type { useAppStore } from '../../store/useAppStore';
+import { useAppStore } from '../../store/useAppStore';
+import type { AppState } from '../../store/types';
 import buildingsJson from '../../data/map/buildings.json';
 import { railOffsetPx } from '../../utils/mapRail';
 import { ringToLatLng, remotePlaceBounds, BUILDING_STYLE } from './mapHelpers';
@@ -30,10 +31,10 @@ const EVENT_ZOOM = 16;
 export function drawCampusOverview(a: {
   map: L.Map;
   layer: L.LayerGroup;
-  select: ReturnType<typeof useAppStore.getState>;
+  select: AppState;
   refs: CanvasRefs;
   isPhone: boolean;
-  focusTarget: ReturnType<typeof useAppStore.getState>['mapFocusTarget'];
+  focusTarget: AppState['mapFocusTarget'];
   cameFromMapTap: boolean;
 }): void {
   const { map, layer, select, isPhone, focusTarget, cameFromMapTap } = a;
@@ -45,7 +46,7 @@ export function drawCampusOverview(a: {
   drawCampusPaths(layer);
   buildingPolysRef.current = new Map();
   for (const b of META.buildings) {
-    const poly = L.polygon(ringToLatLng(b.outline.coordinates[0]), BUILDING_STYLE)
+    const poly = L.polygon(ringToLatLng(b.outline.coordinates[0]!), BUILDING_STYLE)
       // Tapping a building opens its floor plan, and that is the only
       // thing it does. It used to mean something else while a gate was
       // chosen — "this is where I am going" — so the same tap drilled in or

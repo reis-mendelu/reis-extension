@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import { useAppStore } from '../../store/useAppStore';
+import type { AppState } from '../../store/types';
 import buildingsJson from '../../data/map/buildings.json';
 import { railPaddingPx } from '../../utils/mapRail';
 import {
@@ -33,12 +34,12 @@ const META = buildingsJson as BuildingsMeta;
 export function drawFloorView(a: {
   map: L.Map;
   layer: L.LayerGroup;
-  select: ReturnType<typeof useAppStore.getState>;
+  select: AppState;
   refs: CanvasRefs;
   isPhone: boolean;
-  activeBuildingId: string;
-  activeFloorId: string | null;
-  roomsByBuilding: ReturnType<typeof useAppStore.getState>['roomsByBuilding'];
+  activeBuildingId: NonNullable<AppState['activeBuildingId']>;
+  activeFloorId: AppState['activeFloorId'];
+  roomsByBuilding: AppState['roomsByBuilding'];
 }): void {
   const { map, layer, select, isPhone, activeBuildingId, activeFloorId, roomsByBuilding } = a;
   const {
@@ -72,7 +73,7 @@ export function drawFloorView(a: {
   // navigation: click one to refocus. No BuildingBar needed.
   for (const sib of META.buildings) {
     if (sib.id === activeBuildingId) continue;
-    L.polygon(ringToLatLng(sib.outline.coordinates[0]), SIBLING_STYLE)
+    L.polygon(ringToLatLng(sib.outline.coordinates[0]!), SIBLING_STYLE)
       .on('click', () => select.setMapBuilding(sib.id))
       .bindTooltip(sib.name, {
         permanent: true,
@@ -93,7 +94,7 @@ export function drawFloorView(a: {
     // Room pins sit inside the outline, where ringContains already returns, so
     // this only matters for a pin at the edge of an odd-shaped footprint.
     if ((e.originalEvent.target as HTMLElement | null)?.closest('.leaflet-reisEvents-pane')) return;
-    if (b && ringContains(b.outline.coordinates[0], e.latlng.lng, e.latlng.lat)) return;
+    if (b && ringContains(b.outline.coordinates[0]!, e.latlng.lng, e.latlng.lat)) return;
     // A screen that owns the floor (the library's card) is left by its own Back.
     if (useAppStore.getState().mapSelection?.kind === 'library') return;
     keepViewRef.current = true;
@@ -129,7 +130,7 @@ export function drawFloorView(a: {
         };
     const effectiveBase = base;
     const poly = L.polygon(
-      ringToLatLng(f.geometry.coordinates[0]),
+      ringToLatLng(f.geometry.coordinates[0]!),
       isSel ? SELECTED_STYLE : effectiveBase
     );
     if (!struct) {
