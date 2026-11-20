@@ -125,8 +125,12 @@ export const TOOLS: ToolDef[] = [
     description:
       'Your study plan: required subject groups per semester, credits earned and required, and which subjects you have completed. Read-only.',
     input: { lang },
-    run: async (a) =>
-      compactStudyPlan(pickLang(await fetchDualLanguageStudyPlan((await study()).studium), a.lang)),
+    run: async (a) => {
+      const plan = await fetchDualLanguageStudyPlan((await study()).studium);
+      // null is a failed fetch: never let it read as "no study plan".
+      if (!plan) throw new Error('IS Mendelu did not return your study plan. Try again.');
+      return compactStudyPlan(pickLang(plan, a.lang));
+    },
   },
   {
     name: 'mendelu_syllabus',
@@ -201,7 +205,8 @@ export const TOOLS: ToolDef[] = [
     run: async () => {
       const { studium, obdobi } = await study();
       const res = await fetchOdevzdavarny(studium, obdobi);
-      if (!res) return null;
+      // null is a failed fetch: never let it read as "no assignments".
+      if (!res) throw new Error('IS Mendelu did not return your submission boxes. Try again.');
       return {
         ...res,
         assignments: res.assignments.map((r) => ({

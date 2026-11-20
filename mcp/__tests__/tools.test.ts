@@ -219,6 +219,14 @@ describe('TOOLS', () => {
     await expect(tool('mendelu_schedule').run({}, ctx)).rejects.toThrow(
       /did not return your timetable/
     );
+    vi.mocked(fetchDualLanguageStudyPlan).mockResolvedValue(null);
+    await expect(tool('mendelu_study_plan').run({}, ctx)).rejects.toThrow(
+      /did not return your study plan/
+    );
+    vi.mocked(fetchOdevzdavarny).mockResolvedValue(null as never);
+    await expect(tool('mendelu_assignments').run({}, ctx)).rejects.toThrow(
+      /did not return your submission boxes/
+    );
   });
 
   it('returns an empty timetable window as an empty list', async () => {
