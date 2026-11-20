@@ -7,6 +7,7 @@ vi.mock('../../../mobile/appUpdate', () => ({ openAppUpdate: (s?: string) => ope
 import { CriticalUpdateDialog } from '../CriticalUpdateDialog';
 import { CriticalUpdateHint } from '../CriticalUpdateHint';
 import { useAppStore } from '../../../store/useAppStore';
+import { useEscapeLayer, hasOpenEscapeLayer } from '../../../hooks/ui/useEscapeLayer';
 
 /**
  * The critical-version pop-up and its empty-screen hint (agreed 2026-11-20):
@@ -86,6 +87,33 @@ describe('CriticalUpdateDialog', () => {
     rerender(<CriticalUpdateDialog />);
     expect(document.activeElement).toBe(before);
     before.remove();
+  });
+
+  it('Escape closes only the pop-up when it opens over another window', () => {
+    const under = vi.fn();
+    function Underneath() {
+      useEscapeLayer(true, under);
+      return null;
+    }
+    reset({ criticalPopupOpen: false });
+    const { rerender } = render(
+      <>
+        <Underneath />
+        <CriticalUpdateDialog />
+      </>
+    );
+    // Opens later, on resume, over what is already there.
+    useAppStore.getState().openCriticalPopup();
+    rerender(
+      <>
+        <Underneath />
+        <CriticalUpdateDialog />
+      </>
+    );
+    expect(hasOpenEscapeLayer()).toBe(true);
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(useAppStore.getState().criticalPopupOpen).toBe(false);
+    expect(under).not.toHaveBeenCalled();
   });
 
   it('shows nothing on a working install', () => {
