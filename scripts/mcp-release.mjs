@@ -19,7 +19,10 @@ const fail = (msg) => {
   process.exit(1);
 };
 const run = (cmd, args) => {
-  const r = spawnSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32' && cmd.endsWith('.cmd') });
+  const r = spawnSync(cmd, args, {
+    stdio: 'inherit',
+    shell: process.platform === 'win32' && cmd.endsWith('.cmd'),
+  });
   if (r.status !== 0) fail(`${cmd} ${args.join(' ')} failed.`);
 };
 
