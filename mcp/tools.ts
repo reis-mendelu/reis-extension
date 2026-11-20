@@ -4,6 +4,7 @@ import { fetchFullSemesterSchedule } from '../src/injector/dataFetchers';
 import { fetchDualLanguageExams } from '../src/api/exams';
 import { fetchDualLanguageSubjects } from '../src/api/subjects';
 import { fetchDualLanguageStudyPlan } from '../src/api/studyPlan';
+import { fetchSubjectZaznamnik } from '../src/api/zaznamnik';
 import { fetchSyllabus, SYLLABUS_FETCH_FAILED } from '../src/api/syllabus';
 import { fetchSubjectSuccessRates } from '../src/api/successRate';
 import { fetchGradeHistory } from '../src/api/gradeHistory';
@@ -52,7 +53,9 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD.');
 async function study(): Promise<{ studium: string; obdobi: string }> {
   const p = await getUserParams();
   if (!p?.studium || !p.obdobi)
-    throw new Error('Could not find an active study on this IS account.');
+    throw new Error(
+      'IS Mendelu did not return your active study. The sign-in may have failed or IS is busy: try again in a minute.'
+    );
   return { studium: p.studium, obdobi: p.obdobi };
 }
 
@@ -182,6 +185,24 @@ export const TOOLS: ToolDef[] = [
       codes: z.array(z.string().min(2)).min(1).max(50).describe('Subject codes, e.g. ["EBC-PS"].'),
     },
     run: (a) => fetchSubjectSuccessRates(a.codes as string[]),
+  },
+  {
+    name: 'mendelu_points',
+    title: 'My points in a subject',
+    description:
+      "Your points so far in one enrolled subject, from its IS Záznamník: the teacher's continuous-assessment tables (průběžné hodnocení: tests, homework, attendance columns with your row of values) and your graded online tests with score, max score and date. Use it to work out what the student still needs to pass; take the pass rules from mendelu_syllabus. Read-only.",
+    input: { code: z.string().min(2).describe('Subject code, e.g. "EBC-PS".') },
+    run: async (a) => {
+      const subjectId = (await subjectsData())[String(a.code)]?.subjectId;
+      if (typeof subjectId !== 'string') {
+        throw new Error(`${String(a.code)} is not enrolled this semester.`);
+      }
+      const { studium, obdobi } = await study();
+      const z = await fetchSubjectZaznamnik(studium, obdobi, subjectId);
+      // null is a failed fetch: never let it read as "no points yet".
+      if (!z) throw new Error('IS Mendelu did not return your points for this subject. Try again.');
+      return { continuousAssessment: z.ph.sections, tests: z.vt.tests };
+    },
   },
   {
     name: 'mendelu_grades',
