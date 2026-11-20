@@ -159,6 +159,18 @@ describe('readDokServerFile', () => {
     expect(r.note).toMatch(/No text extractor/);
   });
 
+  it('names an old binary Office format instead of a generic note', async () => {
+    const f = vi.fn().mockResolvedValue(
+      fileResponse(new Uint8Array([1, 2]), {
+        'content-type': 'application/vnd.ms-powerpoint',
+        'content-disposition': 'attachment; filename="prednaska.ppt"',
+      })
+    );
+    const r = await readDokServerFile(DL, asFetch(f));
+    expect(r.text).toBe('');
+    expect(r.note).toMatch(/This format \(\.ppt\) can't be read as text/);
+  });
+
   it('refuses a non-dok_server URL before fetching anything', async () => {
     const f = vi.fn();
     await expect(

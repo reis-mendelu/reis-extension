@@ -32,7 +32,7 @@ Then ask Claude things like "what's due this week?" or "explain lecture 7 of PoÄ
 ## What it never does
 
 - It never registers you for anything, never submits anything, and never opens online tests.
-- It never sends anything to reIS. It talks to `is.mendelu.cz` (over HTTPS only) and to the public reIS statistics on `cdn.jsdelivr.net`, nothing else.
+- It never sends anything to reIS. It talks to `is.mendelu.cz` (over HTTPS only), to the public reIS statistics on `cdn.jsdelivr.net`, and once per start to `api.github.com` to ask whether a newer release of the `.mcpb` exists (an anonymous GET, nothing about you in it; the Claude Code plugin does not ask). Nothing else.
 - Your password is stored in your system keychain by Claude Desktop and is sent only to `is.mendelu.cz` to sign in.
 - A wrong password is not retried while the extension runs, and any failed sign-in waits a minute before the next one. Restarting Claude Desktop starts a fresh attempt.
 
