@@ -510,7 +510,13 @@
   },
   "appUpdate": {
     "title": "New reIS version",
-    "body": "Tap to update"
+    "body": "Tap to update",
+    "critical": {
+      "popupTitle": "A fixed version of reIS is out",
+      "update": "Update",
+      "later": "Not now",
+      "hint": "Your version of reIS may not be able to load this after the change."
+    }
   },
   "reisForClaude": {
     "text": "reIS in Claude: ask about your timetable, Záznamník points or what you still need for the zápočet. For Claude Desktop →",
@@ -1313,6 +1319,8 @@
       "signalAppUpdateOpened": "Click on “New reIS version”",
       "signalStudyAidsClickMendeluApp": "Click on Study aids (mendelu.app)",
       "signalReisForClaudeGuideOpened": "Click on “reIS in Claude”",
+      "signalCriticalUpdateShown": "“A fixed version of reIS is out” shown",
+      "signalCriticalUpdateOpened": "Update tapped for the fixed version",
       "signalShare": "{pct}% of daily installs",
       "signalShareHint": "An average day over 30 days: of the installs that opened reIS that day, how many also opened this. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalInstalls": "installs",
