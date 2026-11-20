@@ -1,9 +1,11 @@
+import { useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowDownToLine } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { openAppUpdate } from '../../mobile/appUpdate';
 import { desktopDialogMotion } from '../Feedback/feedbackModalMotion';
+import { useDialogFocus } from './useDialogFocus';
 
 /**
  * "A fixed version of reIS is out": the pop-up for an install below the
@@ -22,6 +24,9 @@ export function CriticalUpdateDialog() {
   const critical = useAppStore((s) => s.criticalUpdate);
   const open = useAppStore((s) => s.criticalPopupOpen);
   const close = useAppStore((s) => s.closeCriticalPopup);
+  const updateRef = useRef<HTMLButtonElement>(null);
+  const laterRef = useRef<HTMLButtonElement>(null);
+  useDialogFocus(open && !!critical, close, updateRef, laterRef);
 
   return (
     <AnimatePresence>
@@ -53,6 +58,7 @@ export function CriticalUpdateDialog() {
             </h3>
             <p className="text-sm text-base-content/75">{critical.reason[language]}</p>
             <button
+              ref={updateRef}
               type="button"
               className="btn btn-primary mt-2 w-full"
               onClick={() => {
@@ -62,7 +68,12 @@ export function CriticalUpdateDialog() {
             >
               {t('appUpdate.critical.update')}
             </button>
-            <button type="button" className="btn btn-ghost btn-sm w-full" onClick={close}>
+            <button
+              ref={laterRef}
+              type="button"
+              className="btn btn-ghost btn-sm w-full"
+              onClick={close}
+            >
               {t('appUpdate.critical.later')}
             </button>
           </motion.div>

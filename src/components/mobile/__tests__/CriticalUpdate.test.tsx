@@ -66,6 +66,28 @@ describe('CriticalUpdateDialog', () => {
     expect(useAppStore.getState().criticalPopupOpen).toBe(false);
   });
 
+  it('works from a keyboard: focus starts on Update, Tab stays inside, Escape closes', () => {
+    const before = document.createElement('button');
+    document.body.appendChild(before);
+    before.focus();
+    const { rerender } = render(<CriticalUpdateDialog />);
+    const update = screen.getByRole('button', { name: 'Aktualizovat' });
+    const later = screen.getByRole('button', { name: 'Teď ne' });
+    expect(document.activeElement).toBe(update);
+
+    later.focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(update);
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(later);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(useAppStore.getState().criticalPopupOpen).toBe(false);
+    rerender(<CriticalUpdateDialog />);
+    expect(document.activeElement).toBe(before);
+    before.remove();
+  });
+
   it('shows nothing on a working install', () => {
     reset({ criticalUpdate: null });
     render(<CriticalUpdateDialog />);
