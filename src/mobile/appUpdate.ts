@@ -56,7 +56,7 @@ export async function checkAppUpdate(): Promise<void> {
     const offer = appUpdateOffer(info as StoreUpdateInfo, os, new Date(), iosVersion());
     useAppStore.getState().setAppUpdate(offer);
     // Not behind the 3-day grace: a build reIS marked broken is told at once.
-    await applyCriticalUpdate(info as StoreUpdateInfo, os);
+    await applyCriticalUpdate(info as StoreUpdateInfo, os, iosVersion());
   } catch (e) {
     // Offline, or a build Play did not install (sideloaded): keep what we had.
     logError('Mobile.appUpdate.check', e);

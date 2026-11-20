@@ -61,7 +61,9 @@ export function criticalUpdateApplies(
   critical: CriticalVersion | null,
   info: StoreUpdateInfo,
   platform: 'ios' | 'android',
-  now: Date
+  now: Date,
+  /** iOS version of this device ("18.1"), or null when unknown. */
+  osVersion: string | null = null
 ): boolean {
   if (!critical || installed === '0.0.0') return false;
   if (compareVersions(installed, critical.minVersion) >= 0) return false;
@@ -79,6 +81,9 @@ export function criticalUpdateApplies(
     // Apple's lookup can name a version hours before the App Store serves it.
     const released = Date.parse(info.availableVersionReleaseDate ?? '');
     if (Number.isNaN(released) || now.getTime() - released < DAY_MS) return false;
+    // A version this iPhone cannot install would be a button with no way out.
+    if (osVersion && info.minimumOsVersion && compareVersions(info.minimumOsVersion, osVersion) > 0)
+      return false;
   }
   return true;
 }

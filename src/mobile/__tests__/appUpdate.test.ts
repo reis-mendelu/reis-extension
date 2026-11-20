@@ -68,7 +68,7 @@ describe('checkAppUpdate', () => {
     };
     plugin.getAppUpdateInfo.mockResolvedValue(info);
     await checkAppUpdate();
-    expect(applyCritical).toHaveBeenCalledWith(info, 'ios');
+    expect(applyCritical).toHaveBeenCalledWith(info, 'ios', null);
   });
 
   it('clears the offer once the app is current', async () => {

@@ -1,6 +1,6 @@
 import { fetchCriticalVersion } from '../api/criticalVersion';
 import { trackFeatureSignal } from '../api/featureUsage';
-import { IndexedDBService } from '../services/storage/IndexedDBService';
+import { CRITICAL_POPUP_KEY, IndexedDBService } from '../services/storage/IndexedDBService';
 import { useAppStore } from '../store/useAppStore';
 import { getAppVersion } from '../utils/appIdentity';
 import type { StoreUpdateInfo } from '../utils/appUpdateOffer';
@@ -13,9 +13,6 @@ import {
 } from '../utils/criticalUpdate';
 import { logError } from '../utils/reportError';
 
-/** The `meta` key holding how often the pop-up appeared (utils/criticalUpdate). */
-export const CRITICAL_POPUP_KEY = 'critical_update_popup';
-
 /**
  * The phone's half of the critical-version pop-up. Called by
  * mobile/appUpdate's check (boot and resume) with what the store said; the
@@ -25,10 +22,11 @@ export const CRITICAL_POPUP_KEY = 'critical_update_popup';
 export async function applyCriticalUpdate(
   info: StoreUpdateInfo,
   os: 'ios' | 'android',
+  osVersion: string | null = null,
   now: Date = new Date()
 ): Promise<void> {
   const critical = await fetchCriticalVersion();
-  const applies = criticalUpdateApplies(getAppVersion(), critical, info, os, now);
+  const applies = criticalUpdateApplies(getAppVersion(), critical, info, os, now, osVersion);
   const store = useAppStore.getState();
   store.setCriticalUpdate(applies ? critical : null);
   if (!applies || !critical) return;

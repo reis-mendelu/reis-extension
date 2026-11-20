@@ -10,6 +10,7 @@ vi.mock('../../utils/appIdentity', () => ({ getAppVersion: () => version.v }));
 
 const meta = new Map<string, unknown>();
 vi.mock('../../services/storage/IndexedDBService', () => ({
+  CRITICAL_POPUP_KEY: 'critical_update_popup',
   IndexedDBService: {
     get: vi.fn(async (_store: string, key: string) => meta.get(key)),
     set: vi.fn(async (_store: string, key: string, value: unknown) => void meta.set(key, value)),
@@ -22,7 +23,9 @@ const state = {
 };
 vi.mock('../../store/useAppStore', () => ({ useAppStore: { getState: () => state } }));
 
-import { applyCriticalUpdate, CRITICAL_POPUP_KEY } from '../criticalUpdate';
+import { applyCriticalUpdate } from '../criticalUpdate';
+
+const CRITICAL_POPUP_KEY = 'critical_update_popup';
 
 const critical = { minVersion: '5.7.0', reason: { cz: 'IS změnil vzhled.', en: 'IS changed.' } };
 const play = { updateAvailability: 2, availableVersionCode: '50800' };
@@ -40,7 +43,7 @@ describe('applyCriticalUpdate', () => {
   });
 
   it('keeps the reason and opens the pop-up on a broken install', async () => {
-    await applyCriticalUpdate(play, 'android', day1);
+    await applyCriticalUpdate(play, 'android', null, day1);
     expect(state.setCriticalUpdate).toHaveBeenCalledWith(critical);
     expect(state.openCriticalPopup).toHaveBeenCalledTimes(1);
     expect(track).toHaveBeenCalledWith('critical_update_shown');
@@ -52,10 +55,10 @@ describe('applyCriticalUpdate', () => {
   });
 
   it('shows the pop-up at most twice, on two different days', async () => {
-    await applyCriticalUpdate(play, 'android', day1);
-    await applyCriticalUpdate(play, 'android', day1Later);
-    await applyCriticalUpdate(play, 'android', day2);
-    await applyCriticalUpdate(play, 'android', day3);
+    await applyCriticalUpdate(play, 'android', null, day1);
+    await applyCriticalUpdate(play, 'android', null, day1Later);
+    await applyCriticalUpdate(play, 'android', null, day2);
+    await applyCriticalUpdate(play, 'android', null, day3);
     expect(state.openCriticalPopup).toHaveBeenCalledTimes(2);
     // The empty-screen hint stays for as long as the install is broken.
     expect(state.setCriticalUpdate).toHaveBeenLastCalledWith(critical);
@@ -63,7 +66,7 @@ describe('applyCriticalUpdate', () => {
 
   it('clears everything on a working install', async () => {
     version.v = '5.8.0';
-    await applyCriticalUpdate(play, 'android', day1);
+    await applyCriticalUpdate(play, 'android', null, day1);
     expect(state.setCriticalUpdate).toHaveBeenCalledWith(null);
     expect(state.openCriticalPopup).not.toHaveBeenCalled();
     expect(track).not.toHaveBeenCalled();
@@ -71,13 +74,13 @@ describe('applyCriticalUpdate', () => {
 
   it('says nothing when there is no critical version', async () => {
     fetchCritical.mockResolvedValue(null);
-    await applyCriticalUpdate(play, 'android', day1);
+    await applyCriticalUpdate(play, 'android', null, day1);
     expect(state.setCriticalUpdate).toHaveBeenCalledWith(null);
     expect(state.openCriticalPopup).not.toHaveBeenCalled();
   });
 
   it('says nothing while the store has no fix to hand over', async () => {
-    await applyCriticalUpdate({ updateAvailability: 1 }, 'android', day1);
+    await applyCriticalUpdate({ updateAvailability: 1 }, 'android', null, day1);
     expect(state.setCriticalUpdate).toHaveBeenCalledWith(null);
     expect(state.openCriticalPopup).not.toHaveBeenCalled();
   });

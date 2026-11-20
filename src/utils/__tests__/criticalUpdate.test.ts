@@ -71,6 +71,14 @@ describe('criticalUpdateApplies', () => {
     ).toBe(false);
   });
 
+  it('on iOS, stays quiet when this iPhone cannot install the offered version', () => {
+    const needs18 = { ...iosOffers('5.8.0'), minimumOsVersion: '18.0' };
+    expect(criticalUpdateApplies('5.6.0', critical, needs18, 'ios', now, '17.4')).toBe(false);
+    expect(criticalUpdateApplies('5.6.0', critical, needs18, 'ios', now, '18.1')).toBe(true);
+    // Unknown iOS version: no way to tell, so the store's answer stands.
+    expect(criticalUpdateApplies('5.6.0', critical, needs18, 'ios', now, null)).toBe(true);
+  });
+
   it('on Android, reads the version from the Play version code', () => {
     const play = (code: string) => ({ updateAvailability: 2, availableVersionCode: code });
     expect(criticalUpdateApplies('5.6.0', critical, play('50800'), 'android', now)).toBe(true);
