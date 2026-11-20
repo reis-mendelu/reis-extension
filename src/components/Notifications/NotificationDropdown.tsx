@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { NotificationRow } from './NotificationRow';
 import { AlertSections, SectionLabel } from './AlertSections';
 import { QuestionList } from '../Questions/QuestionList';
+import { ReisForClaudeRow } from './ReisForClaudeRow';
+import { useReisForClaude } from '../../hooks/useReisForClaude';
 import { useQuestions } from '../../hooks/useQuestions';
 import { useOpenNotification } from '../../hooks/useOpenNotification';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -41,8 +43,12 @@ export function NotificationDropdown({
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const questions = useQuestions();
+  const reisForClaude = useReisForClaude();
   const hasContent =
-    notifications.length > 0 || deadlineAlerts.length > 0 || questions.visible.length > 0;
+    notifications.length > 0 ||
+    deadlineAlerts.length > 0 ||
+    questions.visible.length > 0 ||
+    reisForClaude.visible;
   // The phone's Novinky sheet runs this same hook. A row without a link used to
   // be a disabled button here while the phone opened it on the map.
   const { opensSomewhere, openNotification } = useOpenNotification({
@@ -58,6 +64,8 @@ export function NotificationDropdown({
       {/* First: the dropdown is 320px tall, and only the top fits unscrolled.
           The phone's Novinky sheet mounts it too (questionsOnBothTrees.test.ts). */}
       <QuestionList />
+      {/* Extension only (phoneHasNoReisForClaude.test.ts). */}
+      <ReisForClaudeRow />
       <AlertSections
         alerts={deadlineAlerts}
         onOpenExams={

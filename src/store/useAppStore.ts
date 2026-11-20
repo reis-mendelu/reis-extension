@@ -5,6 +5,7 @@ import { createScheduleSlice } from './slices/createScheduleSlice';
 import { createExamSlice } from './slices/createExamSlice';
 import { createNewExamTermsSlice } from './slices/createNewExamTermsSlice';
 import { createAppUpdateSlice } from './slices/createAppUpdateSlice';
+import { createReisForClaudeSlice } from './slices/createReisForClaudeSlice';
 import { createSyllabusSlice } from './slices/createSyllabusSlice';
 import { createZaznamnikSlice } from './slices/createZaznamnikSlice';
 import { createFilesSlice } from './slices/createFilesSlice';
@@ -77,6 +78,7 @@ export const useAppStore = create<AppState>()(
     ...createExamSlice(...a),
     ...createNewExamTermsSlice(...a),
     ...createAppUpdateSlice(...a),
+    ...createReisForClaudeSlice(...a),
     ...createSyllabusSlice(...a),
     ...createZaznamnikSlice(...a),
     ...createFilesSlice(...a),
@@ -175,6 +177,7 @@ export const initializeStore = async () => {
   if (currentSchool.has('novinky')) {
     s.loadQuestions();
     void s.loadStudyAids();
+    void s.loadReisForClaude();
     s.fetchNotifications();
   }
   s.fetchSchedule();

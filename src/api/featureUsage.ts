@@ -78,6 +78,8 @@ export const FEATURE_SIGNALS = [
    * programme from the admin console (2026-11-18).
    */
   'study_aids_click_mendelu_app',
+  /** The "reIS v Claude" row in the extension's Novinky opened its guide: how many installs went to set it up. */
+  'reis_for_claude_guide_opened',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */

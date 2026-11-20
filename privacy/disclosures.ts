@@ -218,6 +218,11 @@ export const FLOWS: Flow[] = [
         'you tap the "Studijní opory" link under Předměty (shown only to students of the faculties and programmes reIS has chosen; today it leads to mendelu.app), once per app session; stored as one row per install per day',
         "the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`). We count how many installs tapped, which the site's author is told as a number; we never tell them who, and we cannot see what you do on the website",
       ],
+      [
+        'reIS in Claude guide opened',
+        'you open the guide from the "reIS v Claude" row in Novinky (browser extension, shown only to students of the programmes it launches to), once per app session; stored as one row per install per day',
+        'the random install identifier, the school and the fixed `reis_for_claude_guide_opened` label. We cannot see whether you go on to install it, or anything you ask Claude',
+      ],
     ],
     stores: {
       // Which screens an install opened is "how the user interacts with the
