@@ -514,8 +514,7 @@
     "critical": {
       "popupTitle": "Je tu opravená verze reISu",
       "update": "Aktualizovat",
-      "later": "Teď ne",
-      "hint": "Tvoje verze reISu tohle po změně nemusí umět načíst."
+      "later": "Teď ne"
     }
   },
   "reisForClaude": {

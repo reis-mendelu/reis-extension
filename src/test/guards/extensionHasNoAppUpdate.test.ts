@@ -51,6 +51,13 @@ describe('app update prompt placement', () => {
     ]) {
       expect(read(file), file).not.toMatch(/CriticalUpdate|criticalUpdate/);
     }
+    // Phone-tree components, both of them:
+    for (const file of [
+      'components/mobile/CriticalUpdateDialog.tsx',
+      'components/mobile/CriticalUpdateHint.tsx',
+    ]) {
+      expect(read(file), file).toContain('criticalUpdate');
+    }
     // Only the phone's store check ever sets it.
     expect(read('mobile/criticalUpdate.ts')).toContain('setCriticalUpdate');
   });

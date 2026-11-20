@@ -16,9 +16,7 @@ export function CriticalUpdateHint() {
   if (!critical) return null;
   return (
     <div data-testid="critical-update-hint" className="flex max-w-64 flex-col items-center gap-2">
-      <p className="text-xs text-base-content/75">
-        {t('appUpdate.critical.hint')} {critical.reason[language]}
-      </p>
+      <p className="text-xs text-base-content/75">{critical.reason[language]}</p>
       <button
         type="button"
         className="btn btn-primary btn-sm min-h-11 h-auto gap-2"

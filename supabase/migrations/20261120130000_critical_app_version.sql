@@ -6,6 +6,11 @@
 -- with the reason, at most twice, and the same reason on an empty Předměty or
 -- Zkoušky (src/utils/criticalUpdate.ts). Ordinary releases never use this.
 --
+-- The reason is shown as written, in the pop-up and on an empty Předměty or
+-- Zkoušky alike, so it names the cause and the fix, not one screen: "IS Mendelu
+-- změnil vzhled a starší verze reISu z něj některé údaje nenačtou. Nová verze
+-- to opravuje."
+--
 -- One row or none. It happens about once in five years, so there is no admin
 -- form: reIS sets the row with SQL as the database owner, e.g.
 --   insert into public.critical_app_version (min_version, reason_cz, reason_en)
