@@ -32,7 +32,7 @@ Rozvrh na 14 dní dopředu, zkouškové termíny, předměty a studijní plán, 
 
 ## Aktualizace
 
-Dokud reIS for Claude není v adresáři Claude, aktualizuje se ručně: stáhni nový `.mcpb` a otevři ho znovu. Plugin pro Claude Code aktualizuješ dvěma kroky: `/plugin marketplace update reis` obnoví seznam a `claude plugin update reis@reis` (v terminálu) aktualizuje samotný plugin; poté restartuj Claude Code.
+Dokud reIS for Claude není v adresáři Claude, aktualizuje se ručně: stáhni nový `.mcpb` a otevři ho znovu. Když vyjde nová verze, reIS ti to napíše pod odpověď; zjišťuje to jednou při startu anonymním dotazem na `api.github.com` (nic o tobě v něm není). Plugin pro Claude Code aktualizuješ dvěma kroky: `/plugin marketplace update reis` obnoví seznam a `claude plugin update reis@reis` (v terminálu) aktualizuje samotný plugin; poté restartuj Claude Code.
 
 ## Když něco nejde
 
@@ -57,4 +57,4 @@ Claude reads your IS Mendelu timetable, exams, grades, deadlines and subject fil
 
 **Claude Code:** with Node.js 20+ installed, run `/plugin marketplace add reis-mendelu/reis-for-claude`, then `/plugin install reis@reis`, and enter your IS login when asked.
 
-Updates are manual for the `.mcpb` (download and open the new file); the plugin takes two steps: `/plugin marketplace update reis` refreshes the listing, then `claude plugin update reis@reis` (in a terminal) updates the plugin itself; restart Claude Code afterwards. Two-factor IS accounts are not supported yet.
+Updates are manual for the `.mcpb` (download and open the new file; once per start it asks `api.github.com` anonymously whether a newer release exists, and says so under its answers); the plugin takes two steps: `/plugin marketplace update reis` refreshes the listing, then `claude plugin update reis@reis` (in a terminal) updates the plugin itself; restart Claude Code afterwards. Two-factor IS accounts are not supported yet.

@@ -34,6 +34,8 @@ export type ToolCtx = {
   fetch: typeof fetch;
   /** Set while the server cannot reach IS at all (no login): every tool answers this. */
   unavailable?: string;
+  /** A line every result carries while a newer release exists (updateCheck.ts). */
+  updateNotice?: () => string | null;
 };
 export type ToolDef = {
   name: string;

@@ -96,6 +96,10 @@ To exercise a changed fetcher against real IS, name its tool:
 `npm run mcp:smoke -- --live mendelu_grades` (it always adds `mendelu_exams`).
 
 Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
+`npm run mcp:release` publishes the manifest's version as a release of
+`reis-mendelu/reis-for-claude`, whose latest-release download is the students'
+one-click link; the `.mcpb` asks that repo once per start whether it is outdated
+(`mcp/updateCheck.ts`).
 `npm run mcp:plugin` builds the same server as a Claude Code plugin for Claude's
 directory: `mendelu_read_file` hands the file over whole instead of extracting its text
 (`mcp/documentHandover.ts` replaces `documentText.ts`), so officeparser stays out and

@@ -98,4 +98,19 @@ describe('reIS for Claude stays read-only and local', () => {
     // No other URL in the file the credentials could be posted to.
     expect(login.match(/https?:\/\/[^'"`\s]+/g)).toEqual(['https://is.mendelu.cz/system/login.pl']);
   });
+
+  // Decided with Dominik 2026-11-20: a .mcpb from GitHub never updates itself.
+  // The one non-IS request mcp/ makes on its own: an anonymous GET, no student data.
+  it('asks GitHub only for the latest release, anonymously, and the plugin never asks', () => {
+    const check = sources.find((s) => s.f === 'updateCheck.ts')?.src ?? '';
+    expect(check.match(/https?:\/\/[^'"`\s]+/g)).toEqual([
+      'https://api.github.com/repos/reis-mendelu/reis-for-claude/releases/latest',
+      'https://reisapp.cz/navody/reis-v-claude',
+    ]);
+    expect(check).toContain("method: 'GET'");
+    expect(check).toContain("credentials: 'omit'");
+    expect(check).not.toMatch(/MENDELU_USER|MENDELU_PASS|sessionFetch/);
+    const plugin = readFileSync(join(root, 'vite.mcp.plugin.config.ts'), 'utf8');
+    expect(plugin).toContain("replacement: resolve(__dirname, 'mcp/updateCheckOff.ts')");
+  });
 });
