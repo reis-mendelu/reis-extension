@@ -10,6 +10,10 @@ export interface BackPressState {
    */
   tab?: MobileTab;
   goToCalendar?(): void;
+  /** The critical-update pop-up (components/mobile/CriticalUpdateDialog) sits
+   *  above every sheet and tab, outside the stack, so back closes it first. */
+  criticalPopupOpen?: boolean;
+  closeCriticalPopup?(): void;
 }
 
 export type BackPressResult = 'popped' | 'exit';
@@ -31,7 +35,13 @@ export function handleBackPress({
   popSheet,
   tab,
   goToCalendar,
+  criticalPopupOpen,
+  closeCriticalPopup,
 }: BackPressState): BackPressResult {
+  if (criticalPopupOpen && closeCriticalPopup) {
+    closeCriticalPopup();
+    return 'popped';
+  }
   // The vývěska used to need a branch of its own here, because it was a portal
   // outside the sheet stack. It is a sheet now — see sheets/BulletinSheet — so
   // the stack covers it, which is the point of having a stack.

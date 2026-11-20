@@ -15,6 +15,7 @@ import { AverageAccordion } from './subjects/AverageAccordion';
 import { NavRow } from '../primitives/NavRow';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
+import { CriticalUpdateHint } from '../CriticalUpdateHint';
 import { SubmissionBoxesSummary } from '../../SubmissionBoxes/SubmissionBoxesSummary';
 import { useScreenSignal } from '../../../hooks/useScreenSignal';
 
@@ -41,6 +42,7 @@ function EmptyState() {
       </div>
       <div className="font-display text-lg font-bold">{t('mobile.subjects.emptyTitle')}</div>
       <div className="max-w-56 text-xs text-base-content/60">{t('mobile.subjects.emptyBody')}</div>
+      <CriticalUpdateHint />
       <ReportMissingLink prefill="subjectsEmpty" />
     </div>
   );

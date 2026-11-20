@@ -29,6 +29,45 @@ describe('app update prompt placement', () => {
     expect(read('components/mobile/screens/HeaderActions.tsx')).toContain('appUpdateSeenId');
   });
 
+  /*
+   * The critical-version pop-up (agreed 2026-11-20) follows the same split, for
+   * the same reason. It is also the one phone message that is NOT a Novinky
+   * row (one-place-per-message): it says the app itself is broken by a change
+   * in IS, which a row in a list the student may never open cannot. Nothing
+   * else may borrow that exception, and it is never a block: always closable,
+   * at most twice (utils/criticalUpdate).
+   */
+  it('the critical-version pop-up and hint are on the phone tree only', () => {
+    expect(read('components/mobile/MobileApp.tsx')).toContain('<CriticalUpdateDialog />');
+    expect(read('components/mobile/screens/SubjectsScreen.tsx')).toContain(
+      '<CriticalUpdateHint />'
+    );
+    expect(read('components/mobile/screens/ExamsScreen.tsx')).toContain('<CriticalUpdateHint />');
+    for (const file of [
+      'components/SubjectsPanel/index.tsx',
+      'components/ExamPanel/EmptyExamsState.tsx',
+      'components/Feedback/ReportMissingLink.tsx',
+      'components/AppOverlays.tsx',
+    ]) {
+      expect(read(file), file).not.toMatch(/CriticalUpdate|criticalUpdate/);
+    }
+    // Phone-tree components, both of them:
+    for (const file of [
+      'components/mobile/CriticalUpdateDialog.tsx',
+      'components/mobile/CriticalUpdateHint.tsx',
+    ]) {
+      expect(read(file), file).toContain('criticalUpdate');
+    }
+    // Only the phone's store check ever sets it.
+    expect(read('mobile/criticalUpdate.ts')).toContain('setCriticalUpdate');
+  });
+
+  it('the pop-up can always be closed and never blocks reIS', () => {
+    const dialog = read('components/mobile/CriticalUpdateDialog.tsx');
+    expect(dialog).toContain("t('appUpdate.critical.later')");
+    expect(dialog).toMatch(/data-testid="critical-update-backdrop"[\s\S]*?onClick=\{close\}/);
+  });
+
   it('only the phone tree and the Capacitor boot import the store plugin wrapper', () => {
     expect(read('components/mobile/sheets/AppUpdateRow.tsx')).toContain('mobile/appUpdate');
     // Dynamic import inside, so @capawesome never enters the extension's graph.

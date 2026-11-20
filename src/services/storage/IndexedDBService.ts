@@ -144,8 +144,15 @@ export const INSTALL_ID_KEY = 'install_id';
  */
 export const STORE_REVIEW_KEY = 'store_review';
 
+/**
+ * The `meta` key holding how often the critical-update pop-up appeared (see
+ * `mobile/criticalUpdate.ts`). Per install, nothing about the student, and
+ * spared by `clearAll`: a sign-out must not buy two more pop-ups.
+ */
+export const CRITICAL_POPUP_KEY = 'critical_update_popup';
+
 /** The `meta` keys that outlive a sign-out. */
-const PER_INSTALL_META_KEYS = [INSTALL_ID_KEY, STORE_REVIEW_KEY];
+const PER_INSTALL_META_KEYS = [INSTALL_ID_KEY, STORE_REVIEW_KEY, CRITICAL_POPUP_KEY];
 
 // True for the "database connection is closing" / InvalidStateError family that
 // a stale handle throws after the underlying connection was closed.

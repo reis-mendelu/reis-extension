@@ -93,6 +93,8 @@ void CapApp.addListener('backButton', () => {
     closeBulletin: () => void s.setBulletinExpanded(false),
     tab: s.mobileTab,
     goToCalendar: () => s.setMobileTab('calendar'),
+    criticalPopupOpen: s.criticalPopupOpen,
+    closeCriticalPopup: s.closeCriticalPopup,
   });
   if (result === 'exit') {
     void CapApp.exitApp();

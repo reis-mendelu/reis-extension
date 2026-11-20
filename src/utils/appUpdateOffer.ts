@@ -13,7 +13,7 @@
 export const UPDATE_GRACE_DAYS = 3;
 
 /** The plugin's AppUpdateAvailability.UPDATE_AVAILABLE. */
-const UPDATE_AVAILABLE = 2;
+export const UPDATE_AVAILABLE = 2;
 
 /** The fields of the plugin's AppUpdateInfo this decision reads. */
 export interface StoreUpdateInfo {
@@ -37,10 +37,10 @@ export interface AppUpdateOffer {
   version: string | null;
 }
 
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
 
 /** Numeric dotted-version compare: 17.0 vs 16.7 → positive. */
-function compareVersions(a: string, b: string): number {
+export function compareVersions(a: string, b: string): number {
   const pa = a.split('.').map(Number);
   const pb = b.split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {

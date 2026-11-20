@@ -14,6 +14,35 @@ describe('handleBackPress', () => {
     expect(popSheet).toHaveBeenCalledOnce();
   });
 
+  it('closes the critical-update pop-up before anything under it', () => {
+    const popSheet = vi.fn();
+    const closeCriticalPopup = vi.fn();
+    const goToCalendar = vi.fn();
+    expect(
+      handleBackPress({
+        sheetCount: 2,
+        popSheet,
+        tab: 'exams',
+        goToCalendar,
+        criticalPopupOpen: true,
+        closeCriticalPopup,
+      })
+    ).toBe('popped');
+    expect(closeCriticalPopup).toHaveBeenCalledOnce();
+    expect(popSheet).not.toHaveBeenCalled();
+    expect(goToCalendar).not.toHaveBeenCalled();
+    // On the calendar with nothing else open it closes, not exits.
+    expect(
+      handleBackPress({
+        sheetCount: 0,
+        popSheet,
+        tab: 'calendar',
+        criticalPopupOpen: true,
+        closeCriticalPopup,
+      })
+    ).toBe('popped');
+  });
+
   it('signals exit when no sheet is open', () => {
     const popSheet = vi.fn();
     expect(handleBackPress({ sheetCount: 0, popSheet })).toBe('exit');

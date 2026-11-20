@@ -30,6 +30,7 @@ import { SignupGroup } from './exams/SignupGroup';
 import { RefreshButton } from '../primitives/RefreshButton';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
+import { CriticalUpdateHint } from '../CriticalUpdateHint';
 import { useMarkExamTermsSeen } from '../../../hooks/ui/useMarkExamTermsSeen';
 
 function ExamsSkeleton() {
@@ -242,6 +243,7 @@ export function ExamsScreen() {
           </div>
           <div className="font-display text-lg font-bold">{t('mobile.exams.emptyTitle')}</div>
           <div className="max-w-56 text-sm text-base-content/60">{t('mobile.exams.emptyBody')}</div>
+          <CriticalUpdateHint />
           <ReportMissingLink prefill="examsEmpty" />
         </ExamsPullArea>
       ) : (
