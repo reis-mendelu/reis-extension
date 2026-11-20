@@ -11,10 +11,7 @@ import { join } from 'path';
  * reported" for a commit it had passed. So the gate asks GitHub for that one
  * check by name, latest run only, instead of scanning a page.
  */
-const gate = readFileSync(
-  join(__dirname, '../../../.github/workflows/release-gate.yml'),
-  'utf8'
-);
+const gate = readFileSync(join(__dirname, '../../../.github/workflows/release-gate.yml'), 'utf8');
 
 describe('Release gate finds Build web preview however many checks the commit has', () => {
   it('filters the check-runs request by name on the server', () => {
