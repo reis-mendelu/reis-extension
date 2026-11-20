@@ -1,17 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-// Straight from the implementation files, not the barrel beside them: the Iron
-// Rule in CLAUDE.md forbids adding to a re-export, and `services/spolky/index`
-// is one.
-import { dropPastEvents, dropBeyondNovinkyWindow } from '../services/spolky/spolkyService';
-import type { SpolekNotification } from '../services/spolky/types';
 import { localTodayIso } from '../components/CampusMap/eventWindow';
-import { canSee, isReisOwn } from '../utils/eventAudience';
 import { useViewer } from './useViewer';
 import { useAppStore } from '../store/useAppStore';
-import { isNoticeRows, pragueMinuteIso } from '../utils/isNoticeRows';
-
-/** reIS's own rows are for everyone, exchange students included. */
-const isReisRow = (n: SpolekNotification) => isReisOwn(n.associationId);
+import { STUDY_AIDS_REFRESH_GAP_MS } from '../store/slices/createStudyAidsSlice';
+import { pragueMinuteIso } from '../utils/isNoticeRows';
+import { buildFeed } from '../utils/novinky/buildFeed';
 
 export function useNotificationFeed() {
   const [isOpen, setIsOpen] = useState(false);
@@ -31,6 +24,7 @@ export function useNotificationFeed() {
   const isNotices = useAppStore((s) => s.isNotices);
   const isNoticeMutes = useAppStore((s) => s.isNoticeMutes);
   const loadIsNoticesIfStale = useAppStore((s) => s.loadIsNoticesIfStale);
+  const loadStudyAidsIfStale = useAppStore((s) => s.loadStudyAidsIfStale);
   const viewer = useViewer();
 
   // A string, so it is stable across renders within a day and the memo below
@@ -55,33 +49,30 @@ export function useNotificationFeed() {
   // trees read this list, so the badge, the rows and the view counter follow it.
   const notifications = useMemo(
     () =>
-      dropBeyondNovinkyWindow(
-        dropPastEvents(
-          [
-            // The student's own IS notices lead, under MENDELU. They skip the
-            // audience rule: IS already decided they are for this student.
-            ...isNoticeRows(isNotices[language] ?? [], isNoticeMutes, todayIso, nowMinute),
-            ...allNotifications.filter(
-              (n) =>
-                isReisRow(n) ||
-                canSee(
-                  { societyId: n.associationId ?? '', subscribersOnly: n.subscribersOnly },
-                  societies,
-                  viewer
-                )
-            ),
-          ],
-          todayIso
-        ),
-        todayIso
-      ),
+      buildFeed({
+        allNotifications,
+        societies,
+        viewer,
+        todayIso,
+        nowMinute,
+        isNotices,
+        isNoticeMutes,
+        language,
+      }),
     [allNotifications, societies, viewer, todayIso, nowMinute, isNotices, isNoticeMutes, language]
   );
 
-  // Novinky's questions refresh with the feed they sit in.
+  // Novinky's questions refresh with the feed they sit in, and so does who the
+  // study-aids link is shown to: both are public content a phone left running for
+  // days would otherwise never see change.
   const load = useCallback(async () => {
-    await Promise.all([fetchNotifications(), refreshQuestions(), loadIsNoticesIfStale()]);
-  }, [fetchNotifications, refreshQuestions, loadIsNoticesIfStale]);
+    await Promise.all([
+      fetchNotifications(),
+      refreshQuestions(),
+      loadIsNoticesIfStale(),
+      loadStudyAidsIfStale(STUDY_AIDS_REFRESH_GAP_MS),
+    ]);
+  }, [fetchNotifications, refreshQuestions, loadIsNoticesIfStale, loadStudyAidsIfStale]);
 
   useEffect(() => {
     const id = setInterval(load, 300000);

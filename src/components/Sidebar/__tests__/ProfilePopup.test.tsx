@@ -52,6 +52,11 @@ describe('ProfilePopup — report a problem', () => {
     expect(useAppStore.getState().reportPrefill).toBeNull();
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('offers no e-mail link at MENDELU, where the form is', () => {
+    render(<ProfilePopup isOpen />);
+    expect(document.querySelector('a[href^="mailto:"]')).toBeNull();
+  });
 });
 
 describe('ProfilePopup — view as a student', () => {

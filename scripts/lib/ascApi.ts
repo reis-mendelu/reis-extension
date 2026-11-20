@@ -10,6 +10,7 @@ import { createSign } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
+import type { AscHttp } from './ascJson';
 import { ascJwtClaims } from './iosRelease';
 
 export interface AscCredentials {
@@ -133,4 +134,25 @@ export async function listBuildVersions(appId: string, creds: AscCredentials): P
     next = body.links?.next;
   }
   return versions;
+}
+
+/** The App Store Connect REST client the release scripts inject (ios-submit, preflight). */
+export function ascHttp(creds: AscCredentials): AscHttp {
+  return async (method, path, body) => {
+    const res = await fetch(`https://api.appstoreconnect.apple.com${path}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${signAscToken(creds)}`,
+        'Content-Type': 'application/json',
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(
+        `ASC ${method} ${path.split('?')[0]} -> ${res.status}: ${text.slice(0, 400)}`
+      );
+    }
+    return { status: res.status, data: text ? JSON.parse(text) : null };
+  };
 }

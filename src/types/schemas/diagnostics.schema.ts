@@ -46,6 +46,11 @@ export const DiagnosticsPayloadSchema = z.object({
     zaznamnikCount: z.number().optional(),
     zaznamnikFailed: z.number().optional(),
     zaznamnikEmpty: z.number().optional(),
+    // Added after 5.7.2: the study plan Předměty draws from (suggestion 46).
+    studyPlan: z.string().optional(),
+    planBlocks: z.number().optional(),
+    planSubjects: z.number().optional(),
+    planEnrolledNow: z.number().optional(),
   }),
 }) satisfies z.ZodType<DiagnosticsPayload>;
 

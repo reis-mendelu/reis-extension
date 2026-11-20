@@ -542,7 +542,13 @@ export type MobileSheet =
   | { kind: 'internships' }
   // A held lesson in Týden or Den: hide it, or all of its kind (#43).
   | { kind: 'hideLesson'; lesson: BlockLesson }
-  | { kind: 'confirm'; confirmId: string };
+  | { kind: 'confirm'; confirmId: string }
+  // Library study rooms (phone): confirm a stretch of hours (`to` exclusive), or
+  // cancel a booking from its calendar block. The iPad confirms in its side panel.
+  | { kind: 'libraryBook'; featureId: number; day: string; from: number; to: number }
+  | { kind: 'libraryCancel'; eventId: string }
+  // A library booking's own drawer (from its calendar block or "Máš rezervováno").
+  | { kind: 'libraryBooking'; eventId: string };
 
 export type MobileCalendarView = 'day' | 'week';
 
@@ -615,6 +621,9 @@ export interface MapSlice {
   activeBuildingId: number | null;
   activeFloorId: number | null;
   mapSelection: MapSelection | null;
+  /** Rooms of the open floor drawn in a colour and named, by room id. Empty unless a screen sets it. */
+  mapRoomTints: Record<number, import('../types/campusMap').RoomTint>;
+  setMapRoomTints: (tints: Record<number, import('../types/campusMap').RoomTint>) => void;
   roomsByBuilding: Record<number, RoomsCollection>;
   mapLoadingBuilding: number | null;
   mapSearchQuery: string;
@@ -626,6 +635,8 @@ export interface MapSlice {
   clearMapSelection: () => void;
   setMapFloor: (floorId: number) => void;
   selectMapRoom: (room: RoomProperties) => void;
+  /** The library's card (phone and iPad): its list, or one of its rooms. */
+  selectMapLibrary: (featureId?: number) => void;
   selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;
   /** Open one of the botanical garden's places. Keeps the garden drilled in. */
   selectGardenPlace: (place: GardenPlace) => void;
@@ -735,6 +746,8 @@ export interface DemoSlice {
 
 export type AppState = ScheduleSlice &
   ExamSlice &
+  import('./slices/createNewExamTermsSlice').NewExamTermsSlice &
+  import('./slices/createAppUpdateSlice').AppUpdateSlice &
   SyllabusSlice &
   ZaznamnikSlice &
   FilesSlice &
@@ -762,6 +775,8 @@ export type AppState = ScheduleSlice &
   NotificationSlice &
   import('./slices/createSystemNotificationsSlice').SystemNotificationsSlice &
   import('./slices/createQuestionsSlice').QuestionsSlice &
+  import('./slices/createStudyAidsSlice').StudyAidsSlice &
+  import('./slices/createAdminStudyAidsSlice').AdminStudyAidsSlice &
   import('./slices/createSocietyPinsSlice').SocietyPinsSlice &
   import('./slices/createSportPlacesSlice').SportPlacesSlice &
   import('./slices/createSklubMenuSlice').SklubMenuSlice &

@@ -1,25 +1,46 @@
-import { BookOpen, ClipboardList, Clock, ExternalLink, FilePlus } from 'lucide-react';
+import {
+  CalendarCheck,
+  CalendarPlus,
+  ClipboardList,
+  Clock,
+  ExternalLink,
+  FilePlus,
+} from 'lucide-react';
 import type { DeadlineAlert } from '../../hooks/useDeadlineAlerts';
 import { useTranslation } from '../../hooks/useTranslation';
-import { useBoxLabels } from '../SubmissionBoxes/useBoxLabels';
+import { daysUntil, useBoxLabels } from '../SubmissionBoxes/useBoxLabels';
+import { useAppStore } from '../../store/useAppStore';
+
+/** When the student's own exam is: "Zítra 11:00", "Dnes 8:00", "so 21. 11. 8:00". */
+function examWhen(at: Date, now: number, language: string, t: (key: string) => string): string {
+  const locale = language === 'cz' ? 'cs' : 'en';
+  const clock = at.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+  const days = daysUntil(at, now);
+  if (days <= 0) return `${t('deadlines.today')} ${clock}`;
+  if (days === 1) return `${t('deadlines.tomorrow')} ${clock}`;
+  const day = at.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'numeric' });
+  return `${day} ${clock}`;
+}
 
 const TYPE_KEY: Record<DeadlineAlert['type'], string> = {
+  'exam-new-term': 'deadlines.examNewTerm',
+  'exam-registered': 'deadlines.examRegistered',
   'exam-reg-opens': 'deadlines.examRegOpens',
   'exam-reg': 'deadlines.examReg',
   assignment: 'deadlines.assignment',
   'assignment-new': 'newBox.kind',
-  'cvicny-test': 'deadlines.cvicnyTest',
   'zaznamnik-points': 'zaznamnik.newPoints',
 };
 
-/** The slot's tint IS the urgency — green for a test that can be taken
- *  whenever, amber for a clock that is running out. */
+/** The slot's tint IS the urgency — amber for a clock that is running out,
+ *  blue for the student's own exam, green for news that already happened. */
 const TINT: Record<DeadlineAlert['type'], string> = {
+  'exam-new-term': 'bg-info/10 text-info',
+  'exam-registered': 'bg-primary/10 text-primary',
   'exam-reg-opens': 'bg-warning/10 text-warning',
   'exam-reg': 'bg-warning/10 text-warning',
   assignment: 'bg-warning/10 text-warning',
   'assignment-new': 'bg-info/10 text-info',
-  'cvicny-test': 'bg-success/10 text-success',
   'zaznamnik-points': 'bg-success/10 text-success',
 };
 
@@ -53,20 +74,23 @@ export function DeadlineAlertItem({
   onOpenSubject?: (alert: DeadlineAlert) => void;
 }) {
   const { t } = useTranslation();
-  const { shortDate } = useBoxLabels();
+  const { shortDate, language } = useBoxLabels();
+  const now = useAppStore((st) => st.now);
 
   const h = alert.hoursUntil !== undefined ? Math.floor(alert.hoursUntil) : null;
   // A new box is weeks away as often as not: its date, not a count of hours.
+  const isMine = alert.type === 'exam-registered';
   const timeLabel =
-    h !== null
-      ? h < 1
-        ? t('deadlines.lessThanHour')
-        : t('deadlines.hoursLeft', { h })
-      : alert.type === 'assignment-new' && alert.deadline
-        ? t('odevzdavarny.until', { date: shortDate(alert.deadline) })
-        : null;
+    isMine && alert.deadline
+      ? examWhen(alert.deadline, now.getTime(), language, t)
+      : h !== null
+        ? h < 1
+          ? t('deadlines.lessThanHour')
+          : t('deadlines.hoursLeft', { h })
+        : alert.type === 'assignment-new' && alert.deadline
+          ? t('odevzdavarny.until', { date: shortDate(alert.deadline) })
+          : null;
   const kind = t(TYPE_KEY[alert.type]);
-  const isCvicny = alert.type === 'cvicny-test';
   const isNewBox = alert.type === 'assignment-new';
   // "Nová odevzdávárna · " left a 320px phone no room for the box's own name,
   // the one thing the row is about. The icon and the section say the rest.
@@ -85,8 +109,10 @@ export function DeadlineAlertItem({
           <ClipboardList size={16} />
         ) : isNewBox ? (
           <FilePlus size={16} />
-        ) : isCvicny ? (
-          <BookOpen size={16} />
+        ) : isMine ? (
+          <CalendarCheck size={16} />
+        ) : alert.type === 'exam-new-term' ? (
+          <CalendarPlus size={16} />
         ) : (
           <Clock size={16} />
         )}
@@ -94,15 +120,20 @@ export function DeadlineAlertItem({
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="truncate text-md font-bold text-base-content">{alert.title}</span>
         <span className="truncate text-2sm text-base-content/60">
-          {/* Only when the meta column is showing a time instead. A practice
-              test has no clock, so its kind IS its meta, and prefixing the
-              subtitle with it too printed "Cvičný test" three times in one
-              row — the label, the subtitle and the test's own name. */}
+          {/* The kind leads the subtitle only when the meta column shows a
+              time; a row with no clock (new points) has its kind there
+              instead, and naming it twice reads as noise. */}
           {isNewBox ? (
             // Read as "Nová odevzdávárna: <box>", not "Nová" twice.
             <>
               <span className="sr-only">{kind}: </span>
               <span aria-hidden>{lead} · </span>
+              {alert.body}
+            </>
+          ) : isMine ? (
+            // "zkouška · Q05 (ČP)": the icon and the time already say it is theirs.
+            <>
+              <span className="sr-only">{kind}: </span>
               {alert.body}
             </>
           ) : timeLabel ? (

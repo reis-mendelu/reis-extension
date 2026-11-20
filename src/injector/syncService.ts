@@ -21,6 +21,7 @@ import {
   askedWith,
   traceExamsAnswer,
   traceOnce,
+  traceStudyPlanAnswer,
   traceSubjectsAnswer,
 } from '../utils/diagnostics/syncTrace';
 import { enrichExamsWithDurations } from '../services/sync/examDurations';
@@ -165,6 +166,7 @@ export async function syncAllData() {
           return fetchDualLanguageStudyPlan(studium);
         }).then((plan) => {
           if (plan) {
+            traceStudyPlanAnswer(plan.cz, userParams);
             if (live()) cachedData = { ...cachedData, studyPlan: plan };
             // Data only, no arrival flag: see SyncDomain. A null here is
             // ambiguous (fresh / absent / not fetched), and the screen must not

@@ -11,6 +11,7 @@ import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 import {
   STUDY_DOCUMENTS,
   buildDocumentUrl,
@@ -65,6 +66,7 @@ function StatusIcon({ status }: { status: DownloadStatus }) {
  * row layout is phone-specific.
  */
 export function DocsSheet({ onClose }: DocsSheetProps) {
+  useScreenSignal('screen_documents');
   const { t } = useTranslation();
   const language = useAppStore((s) => s.language);
   const sid = useAppStore((s) => s.studiumId) ?? '';

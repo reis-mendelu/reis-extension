@@ -84,3 +84,26 @@ export async function enableNotifications(): Promise<void> {
   }
   await openNotificationSettings();
 }
+
+/**
+ * The one system dialog, asked when it means something (agreed 2026-11-17):
+ * once the student is registered for an exam, which reIS will remind them of.
+ * At first launch there is nothing to remind, and a "no" then is for good.
+ * Until then the banner in Novinky and the row in Nastavení offer it.
+ */
+export function askAfterFirstRegistration(): () => void {
+  let asked = false;
+  const check = () => {
+    if (asked) return;
+    const registered = useAppStore
+      .getState()
+      .exams.data.some((s) => s.sections.some((sec) => sec.status === 'registered'));
+    if (!registered) return;
+    asked = true;
+    unsubscribe();
+    void askNotificationsIfNeverAsked();
+  };
+  const unsubscribe = useAppStore.subscribe(check);
+  check();
+  return unsubscribe;
+}

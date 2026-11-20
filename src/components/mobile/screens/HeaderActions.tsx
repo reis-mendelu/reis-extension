@@ -40,6 +40,8 @@ export function HeaderActions({ leading }: { leading?: ReactNode }) {
   const questions = useQuestions();
   const refreshQuestions = useAppStore((s) => s.refreshQuestions);
   const hasInternships = usePartnerInternships().length > 0;
+  // "Nová verze reISu" (phone only): one until Novinky is opened with it in.
+  const appUpdateUnseen = useAppStore((s) => !!s.appUpdate && s.appUpdate.id !== s.appUpdateSeenId);
 
   // Deadlines count too, exactly as they do on desktop's NotificationFeed. The
   // calendar used to carry them in a strip above the day chips; that strip is
@@ -48,7 +50,10 @@ export function HeaderActions({ leading }: { leading?: ReactNode }) {
   // no signal anywhere in the app.
   // So does an unanswered console question, until Novinky is opened with it in.
   const unreadCount =
-    notifications.filter((n) => !readIds.has(n.id)).length + unseenCount + questions.badge;
+    notifications.filter((n) => !readIds.has(n.id)).length +
+    unseenCount +
+    questions.badge +
+    (appUpdateUnseen ? 1 : 0);
 
   const openBulletin = () => {
     // pushSheet, not the old `bulletinExpanded` flag: that flag was only read

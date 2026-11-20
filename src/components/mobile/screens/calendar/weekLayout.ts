@@ -34,7 +34,7 @@ export function minutesOf(hhmm: string): number {
  *
  * A lesson counts only with BOTH times (a start-only record stretched the
  * range to midnight while never being drawn), and to its DRAWN end: a short
- * exam is drawn for its 90-minute floor, which was clipped at the range's end.
+ * block is drawn for its floor, which was clipped at the range's end.
  */
 export function weekHourRange(lessons: BlockLesson[]): HourRange {
   const spans = lessons
@@ -42,7 +42,7 @@ export function weekHourRange(lessons: BlockLesson[]): HourRange {
       const start = minutesOf(l.startTime);
       const end = minutesOf(l.endTime);
       if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-      return { start, end: start + renderedBlockMinutes(l.startTime, l.endTime, l.isExam) };
+      return { start, end: start + renderedBlockMinutes(l.startTime, l.endTime) };
     })
     .filter((x): x is { start: number; end: number } => x !== null);
   const starts = spans.map((x) => x.start);

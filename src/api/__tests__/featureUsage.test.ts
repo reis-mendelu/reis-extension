@@ -26,6 +26,18 @@ vi.mock('../../utils/firefoxDataConsent', () => ({
 vi.mock('../../utils/harnessEnabled', () => ({
   isHarnessEnabled: (...a: unknown[]) => isHarnessEnabled(...a),
 }));
+// The school this build is for. MENDELU unless a test says otherwise.
+const school = vi.hoisted(() => {
+  const s = { id: 'mendelu' as string, counts: true };
+  const currentSchool = {
+    get id() {
+      return s.id;
+    },
+    has: (f: string) => (f === 'usageCounts' ? s.counts : true),
+  };
+  return { currentSchool, s };
+});
+vi.mock('../../utils/school', () => school);
 
 import {
   __resetCountedOpensForTests,
@@ -43,6 +55,20 @@ describe('featureUsage', () => {
     await __resetCountedOpensForTests();
     isHarnessEnabled.mockReturnValue(false);
     hasDataConsent.mockResolvedValue(true);
+    school.s.id = 'mendelu';
+    school.s.counts = true;
+  });
+
+  it("sends the build's school with the signal", async () => {
+    school.s.id = 'vse';
+
+    await trackFeatureSignal('map_dwell_3s');
+
+    expect(rpc).toHaveBeenCalledWith('track_feature_usage_v2', {
+      p_install_id: 'install-1',
+      p_feature: 'map_dwell_3s',
+      p_school: 'vse',
+    });
   });
 
   afterEach(() => {
@@ -50,13 +76,23 @@ describe('featureUsage', () => {
     useAppStore.setState({ demoMode: false });
   });
 
+  // VŠE at launch: the school sends reIS nothing, a screen signal included.
+  it('sends nothing for a school without usage counts', async () => {
+    school.s.counts = false;
+
+    await expect(trackFeatureSignal('screen_calendar')).resolves.toBe(true);
+
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it('sends the install id and the signal label, and nothing else', async () => {
     await trackFeatureSignal('map_dwell_3s');
 
     expect(rpc).toHaveBeenCalledTimes(1);
-    expect(rpc).toHaveBeenCalledWith('track_feature_usage', {
+    expect(rpc).toHaveBeenCalledWith('track_feature_usage_v2', {
       p_install_id: 'install-1',
       p_feature: 'map_dwell_3s',
+      p_school: 'mendelu',
     });
   });
 

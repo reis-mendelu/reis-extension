@@ -27,13 +27,16 @@ const grep = (pattern: string, paths: string) => {
 };
 
 describe('záznamník new points: system notification on the phone only', () => {
-  it('src/mobile/zaznamnikNotifications.ts is reached from the Capacitor entry only', () => {
+  // The phone posts Novinky's rows, new points among them, from one module.
+  it('src/mobile/novinkyNotifications.ts is reached from the Capacitor entry only', () => {
+    // Imports only, static or dynamic: comments name the module too.
     const importers = grep(
-      'mobile/zaznamnikNotifications',
+      "(from |import\\()'[^']*novinkyNotifications'",
       'src capacitor ":!*__tests__*" ":!src/test/guards"'
     )
       .split('\n')
       .filter(Boolean);
+    // startApp installs it; main.capacitor registers its sign-out cleanup.
     // startApp installs it; main.capacitor registers its sign-out cleanup.
     expect(importers.sort()).toEqual(['capacitor/main.capacitor.tsx', 'capacitor/startApp.ts']);
   });
@@ -44,7 +47,7 @@ describe('záznamník new points: system notification on the phone only', () => 
   });
 
   it('both trees list the new points in Novinky, and a row opens the subject', () => {
-    expect(read('src/hooks/useDeadlineAlerts.ts')).toContain('newPointsAlerts(');
+    expect(read('src/utils/novinky/buildDeadlineAlerts.ts')).toContain('newPointsAlerts(');
     // desktop: the bell dropdown, fed from the header that can open a drawer
     expect(read('src/components/AppHeader.tsx')).toContain(
       "onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')"

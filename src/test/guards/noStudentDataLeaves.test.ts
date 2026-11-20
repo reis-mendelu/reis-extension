@@ -71,7 +71,9 @@ const SUPABASE_CALLERS = new Set([
   'src/api/suggestions.ts',
   // Random install id only, since the privacy refactor. Since September 2026
   // the daily-usage event also carries two GROUP labels (faculty, platform) —
-  // counts over thousands of installs, not per-student data. Disclosed in
+  // counts over thousands of installs, not per-student data. Since November
+  // 2026 (track_daily_usage_v2) also the school the BUILD is for, the same on
+  // every install of it. Disclosed in
   // PRIVACY.md ("Daily Usage") and docs/privacy-policy-app.md. The NPS rating
   // that also lived here was retired in October 2026 for the questions below.
   'src/api/feedback.ts',
@@ -99,7 +101,7 @@ const SUPABASE_CALLERS = new Set([
   // Two feature counters, added September 2026, both disclosed in PRIVACY.md
   // section 2 and docs/privacy-policy-app.md BEFORE this entry was added.
   //
-  // `track_feature_usage` sends the random per-install UUID and one label from
+  // `track_feature_usage_v2` sends the random per-install UUID, the build's school and one label from
   // a whitelist enforced in the database ('map_dwell_3s',
   // 'eduroam_wifi_configured', 'eduroam_profile_delivered';
   // featureSignalWhitelist.test.ts pins the list). Same identifier
@@ -120,6 +122,10 @@ const SUPABASE_CALLERS = new Set([
   // own IS shows them; those are read from IS and never leave the device
   // (test/guards/isNoticesStayOnDevice.test.tsx).
   'src/api/isNoticeMutes.ts',
+  // Who is shown the study-aids link under Předměty (November 2026): an
+  // anonymous select of the active `study_aids` rows, matched on the device
+  // against the student's own faculty and programme. Nothing goes up.
+  'src/api/studyAids.ts',
 ]);
 
 /**
@@ -133,6 +139,8 @@ const SUPABASE_CALLERS = new Set([
  */
 const ADMIN_CALLERS = new Set([
   'src/api/adminQuestions.ts',
+  // Changes one study-aids link's audience or switch. reis_admin only, by RLS.
+  'src/api/adminStudyAids.ts',
   'src/api/featureStats.ts',
   // Mutes an IS notice for everyone: the notice's key and title as the
   // ADMIN's own IS shows them. reis_admin only, by RLS.
@@ -219,6 +227,10 @@ const ALLOWED_HOSTS = [
   'webiskam.mendelu.cz', // phone/iPad only: the ISIC Hlavní konto balance and the GoPay
   // top-up start, signed in as the student via alibaba.mendelu.cz (also mendelu.cz).
   // Already covered by the mendelu.cz suffix; listed so the disclosure is explicit.
+  'bookings.cloud.microsoft', // phone/iPad only: the library's study-room booking sends the
+  // student's name, MENDELU e-mail, student number and faculty code to the library's own
+  // Microsoft Bookings (MENDELU's tenant), straight from the device, only when they book.
+  // Removed with the first booking feature (#275), back with this one. src/mobile/library/ only.
 
   // --- deep links the STUDENT opens; no background request is made ---
   'google.com', // maps links, Play Store, Chrome Web Store, a society's Apps Script
@@ -231,7 +243,11 @@ const ALLOWED_HOSTS = [
   'gate.gopay.com', // the GoPay payment page for an ISIC top-up, opened in the system browser view
   'checkout.gopay.com', // the same page, at the host WebISKAM has sent since Nov 2026
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
+  'mendelu.app', // study aids (data/studyAids.ts), linked under Předměty for the programmes
+  // the admin console picks. A plain link: nothing about the student rides along.
   'addons.mozilla.org', // the Firefox extension's "Ohodnotit reIS" link (utils/extensionReviewUrl.ts)
+  'reisapp.cz', // reIS's own how-to guides (utils/guideUrl.ts), opened from Nápověda.
+  // Only `z=app` rides along, nothing about the student.
 
   // --- not destinations ---
   'localhost.that.never.exists', // CORS sentinel in capacitorTransport
@@ -247,6 +263,13 @@ const NOT_REQUESTED: Array<{ file: string; url: string }> = [
   // The contact URL INSIDE the OSM tile User-Agent. OSM's tile policy asks
   // apps to name themselves that way; nothing ever fetches it.
   { file: 'src/utils/osmTileIdentity.ts', url: 'https://github.com/reis-mendelu/reis-extension' },
+  // reIS pro VŠE's privacy policy, the URL its Chrome Web Store listing points
+  // to. Read only by the build's store-zip check (scripts/assertStoreReady.ts):
+  // never fetched, and never shown in the app, so it is no link a student opens.
+  {
+    file: 'src/utils/schoolProfiles.ts',
+    url: 'https://gist.github.com/ElijaahInverted/d9d8e5cc17b7ce3f724831d8189ffe15',
+  },
 ];
 
 describe('no student data leaves the device', () => {
@@ -395,14 +418,14 @@ describe('no student data leaves the device', () => {
 
   // The one sanctioned exception to "nothing about a failure leaves": the
   // student attaches it to a report themselves. These two tests keep it the
-  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v3 (v2 for older builds) and
+  // ONLY path. Diagnostics may reach Supabase through submit_suggestion_v4 (v2/v3 for older builds) and
   // nowhere else, and no file that talks to Supabase may read the log itself —
   // so it can only ever arrive as what the report form was handed.
   it('sends diagnostics only through the report form, as the student chose', () => {
     const offenders: string[] = [];
     for (const f of files) {
       if (f.path === 'src/api/suggestions.ts') continue;
-      if (/submit_suggestion_v[23]|p_diagnostics|p_screenshot/.test(f.text)) {
+      if (/submit_suggestion_v[234]|p_diagnostics|p_screenshot/.test(f.text)) {
         offenders.push(`${f.path} → names the attachment RPC`);
       }
     }
@@ -416,7 +439,7 @@ describe('no student data leaves the device', () => {
       offenders,
       `Diagnostics are leaving by a path the student did not choose. The only ` +
         `sanctioned route is FeedbackModal → submitSuggestion(draft, attachments) ` +
-        `→ submit_suggestion_v3, and only after the student ticks the box:\n` +
+        `→ submit_suggestion_v4, and only after the student ticks the box:\n` +
         offenders.join('\n')
     ).toEqual([]);
   });

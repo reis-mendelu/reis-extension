@@ -5,6 +5,7 @@ import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { logError } from '../utils/reportError';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
 import { claimFirstOpen, confirmOpen, releaseOpen } from '../services/spolky/countedOpens';
+import { currentSchool } from '../utils/school';
 
 /**
  * The counters reIS keeps about its own features, and the per-event map view
@@ -50,6 +51,33 @@ export const FEATURE_SIGNALS = [
   'screen_bulletin',
   /** Novinky: the feed behind the bell. */
   'screen_notifications',
+  /** Zkoušky: the phone's tab, the extension's `exams` view. */
+  'screen_exams',
+  /** Studijní plán: one page, hosted by both trees. */
+  'screen_study_plan',
+  /** Doklady: the phone's sheet, the extension's drawer. */
+  'screen_documents',
+  /** ISIC balance sheet. Phone/iPad only, by decision (desktopHasNoIskam.test.ts). */
+  'screen_isic',
+  /** The library study-rooms card on the phone map. Phone/iPad only (desktopHasNoLibraryBooking.test.ts). */
+  'screen_library',
+  /** Stáže opened: the denominator for the click count below. Seen only by students a partner is shown to. */
+  'screen_internships',
+  /**
+   * A click on a partner programme's card in Stáže, one label per programme
+   * because the count is handed to that partner (2026-11-17: EY's "Cesta s EY").
+   * A partner's label is added with its programme, never shared: a migration
+   * widens the whitelist, so each is a deliberate step.
+   */
+  'internship_click_ey',
+  /** "Nová verze reISu" tapped in Novinky (phone/iPad): how many outdated installs went to update. */
+  'app_update_opened',
+  /**
+   * The "Studijní opory" link under Předměty (both trees) tapped. One label per
+   * partner, since the count is handed to that partner: mendelu.app's, shown by
+   * programme from the admin console (2026-11-18).
+   */
+  'study_aids_click_mendelu_app',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */
@@ -66,6 +94,8 @@ export type FeatureSignal = (typeof FEATURE_SIGNALS)[number];
  * than a student.
  */
 function writesAllowed(): boolean {
+  // A school without the counters (VŠE at launch) sends reIS nothing at all.
+  if (!currentSchool.has('usageCounts')) return false;
   return !isDemoMode() && !isHarnessEnabled(import.meta.env);
 }
 
@@ -109,9 +139,10 @@ export async function trackFeatureSignal(signal: FeatureSignal): Promise<boolean
     return true;
   }
   try {
-    const { error } = await supabase.rpc('track_feature_usage', {
+    const { error } = await supabase.rpc('track_feature_usage_v2', {
       p_install_id: await getInstallId(),
       p_feature: signal,
+      p_school: currentSchool.id,
     });
     if (error) {
       sentSignals.delete(signal);

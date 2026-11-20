@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { QuestionForm } from './QuestionForm';
 import { QuestionResultsCard } from './QuestionResultsCard';
 import { IsNoticesPanel } from './IsNoticesPanel';
+import { StudyAidsPanel } from './StudyAidsPanel';
 
 /**
  * "Otázky" (reis_admin only, on both console layouts): write a question for
@@ -45,6 +46,10 @@ export function AdminQuestionsPanel() {
           sixth tab; one component, so both console layouts have it. */}
       <div className="mt-4 border-t border-base-300 pt-4">
         <IsNoticesPanel />
+      </div>
+      {/* Also something students are shown, set the same way, in the same tab. */}
+      <div className="mt-4 border-t border-base-300 pt-4">
+        <StudyAidsPanel />
       </div>
     </div>
   );

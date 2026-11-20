@@ -17,6 +17,8 @@ import { User, Mail, Hash } from 'lucide-react';
 import { logout } from '../../api/proxyClient';
 import { HiddenItemsSection } from './Profile/HiddenItemsSection';
 import { RateReisLink } from './Profile/RateReisLink';
+import { HelpLink } from './Profile/HelpLink';
+import { ContactLink } from './Profile/ContactLink';
 import { PartnersBlock } from '../Partners/PartnersBlock';
 import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { useLongPress } from '../../hooks/ui/useLongPress';
@@ -183,6 +185,8 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
 
         {/* Support Section */}
         <div className="py-1">
+          {currentSchool.has('guides') && <HelpLink />}
+          {!currentSchool.has('reports') && <ContactLink />}
           {currentSchool.has('reports') && (
             <button
               onClick={() => {

@@ -10,11 +10,13 @@ import type { TimelineExam } from '../Exams/Timeline/ExamTimeline';
 import { useAutoRegistration } from './useAutoRegistration';
 import { Zap, ExternalLink } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useScreenSignal } from '../../hooks/useScreenSignal';
 import { useUserParams } from '../../hooks/useUserParams';
 import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
 import { LoadFailed } from '../LoadFailed';
 import { SignupGroup } from './SignupGroup';
+import { useMarkExamTermsSeen } from '../../hooks/ui/useMarkExamTermsSeen';
 
 interface RegisteredExam extends TimelineExam {
   subject: ExamSubject;
@@ -40,8 +42,11 @@ function PanelTopBar({ href }: { href: string }) {
 }
 
 export function ExamPanel() {
+  useScreenSignal('screen_exams');
   const { t, language } = useTranslation();
   const { params } = useUserParams();
+  // Mounted only as the extension's Zkoušky view: on screen = Novinky's new terms seen.
+  useMarkExamTermsSeen(true);
   const { exams, showSkeleton, showFailed, sections, signupSections } = useExamsData();
   const studium = params?.studium || '';
   const obdobi = params?.obdobi || '';

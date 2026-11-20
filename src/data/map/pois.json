@@ -290,21 +290,6 @@
       "type": "Feature",
       "geometry": {
         "type": "Point",
-        "coordinates": [16.588779, 49.214859]
-      },
-      "properties": {
-        "id": 1615,
-        "name": "Výdejna jídel Tauferovy koleje",
-        "type": "cafeteria",
-        "url": "http://skm.mendelu.cz/stravovani/stravovaci-zarizeni/28000-vydejna-jidel-tk",
-        "phone": "+420 541 422 061",
-        "email": "skm.menza@mendelu.cz"
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
         "coordinates": [16.617154, 49.211493]
       },
       "properties": {

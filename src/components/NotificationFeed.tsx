@@ -10,9 +10,11 @@ export function NotificationFeed({
   className = '',
   onShowMap,
   onOpenSubject,
+  onShowExams,
 }: {
   className?: string;
   onShowMap: () => void;
+  onShowExams?: () => void;
   onOpenSubject?: (alert: DeadlineAlert) => void;
 }) {
   const { isOpen, setIsOpen, notifications, loading, readIds, toggle, markVisible } =
@@ -70,6 +72,7 @@ export function NotificationFeed({
           onShowMap={onShowMap}
           deadlineAlerts={deadlineAlerts}
           onOpenSubject={onOpenSubject}
+          onShowExams={onShowExams}
         />
       )}
     </div>

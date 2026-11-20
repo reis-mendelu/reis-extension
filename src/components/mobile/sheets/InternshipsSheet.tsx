@@ -1,4 +1,5 @@
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 import { usePartnerInternships } from '../../../hooks/usePartnerInternships';
 import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
@@ -8,6 +9,7 @@ import { InternshipList } from '../../Internships/InternshipList';
 export function InternshipsSheet({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
   const items = usePartnerInternships();
+  useScreenSignal('screen_internships');
 
   return (
     <Sheet size="full" onClose={onClose}>

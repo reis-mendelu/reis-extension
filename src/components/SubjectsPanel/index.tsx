@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SubjectsPanelHeader } from './SubjectsPanelHeader';
 import { SubjectsPanelSkeleton } from './SubjectsPanelSkeleton';
+import { StudyAidsLink } from './StudyAidsLink';
 import { EnrolledNowSection } from './EnrolledNowSection';
 import { StudyAveragesSection } from './StudyAveragesSection';
 import { useSubjectsData } from './useSubjectsData';
@@ -104,6 +105,8 @@ export function SubjectsPanel({
             onOpenSubject={onOpenSubject}
             onSearchSubject={onSearchSubject}
           />
+          {/* The phone shows the link whatever the plan; so does this branch. */}
+          <StudyAidsLink className="mt-3" />
           {boxesSummary('mt-3 max-w-xl mx-auto')}
         </div>
       </div>
@@ -132,6 +135,7 @@ export function SubjectsPanel({
           onOpenSubject={onOpenSubject}
           onSearchSubject={onSearchSubject}
         />
+        <StudyAidsLink className="mt-3" />
         {/* An open box spans the width, like Aktuálně zapsáno above it; the
             average and the plan split the row under it into equal halves.
             Beside the average, the box left three cards of three heights and

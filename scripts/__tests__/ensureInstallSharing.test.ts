@@ -76,10 +76,10 @@ describe('a shared (linked) install', () => {
 // The hook's copy takes ~20 s. An agent that runs `npm run check` meanwhile
 // must not start a second copy over the first.
 describe('two calls for the same checkout', () => {
-  const lockDir = (dir: string) => join(dir, 'node_modules.lock');
+  const lockDir = (dir: string) => join(dir, 'node_modules.install.lock');
   const heldBy = (dir: string, pid: number) => {
     mkdirSync(lockDir(dir));
-    writeFileSync(join(lockDir(dir), 'pid'), String(pid));
+    writeFileSync(join(lockDir(dir), `owner-${pid}`), '');
   };
 
   it('does not touch the install while another live call holds the lock', () => {
@@ -112,7 +112,9 @@ describe('two calls for the same checkout', () => {
     const dir = checkout('wt', '5.0.1', '3.2.7');
     heldBy(dir, 999_999_999);
     ensureInstall(dir, { candidates: [], clone: copy, waitMs: 0 });
-    expect(readdirSync(dir).filter((name) => name.startsWith('node_modules.lock'))).toEqual([]);
+    expect(readdirSync(dir).filter((name) => name.startsWith('node_modules.install.lock'))).toEqual(
+      []
+    );
   });
 
   // Taken over while this call was still working: that lock is someone else's.

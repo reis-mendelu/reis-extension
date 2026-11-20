@@ -6,6 +6,8 @@ name: Ship
 #   Android    signed AAB -> Google Play, production unless PLAY_TRACK says otherwise
 #   iOS        archive -> upload -> attach to the version -> submit for review
 #   Extension  Chrome Web Store + Firefox Add-ons (publish.yml)
+#   VŠE        reIS pro VŠE, its own Chrome Web Store item (publish-vse.yml), once
+#              CWS_VSE_ITEM_ID is set
 #   Summary    one table, red if any store failed
 #
 # The three are independent jobs: one store failing never stops the others, and
@@ -267,9 +269,24 @@ jobs:
       dry_run: ${{ inputs.dry_run }}
     secrets: inherit
 
+  # reIS pro VŠE: its own Chrome Web Store item (publish-vse.yml). Off until the
+  # repo VARIABLE CWS_VSE_ITEM_ID holds the item's id (a job's `if:` cannot read
+  # secrets, and the id is public anyway: it is in the store URL). The item and
+  # its first version are made by hand; see docs/release-pipeline.md.
+  extension-vse:
+    name: Chrome (VŠE)
+    needs: database
+    if: (inputs.stores == 'all' || inputs.stores == 'extension') && vars.CWS_VSE_ITEM_ID != ''
+    uses: ./.github/workflows/publish-vse.yml
+    with:
+      tag: ${{ inputs.tag }}
+      dry_run: ${{ inputs.dry_run }}
+      item_id: ${{ vars.CWS_VSE_ITEM_ID }}
+    secrets: inherit
+
   summary:
     name: Release summary
-    needs: [database, android, ios, extension]
+    needs: [database, android, ios, extension, extension-vse]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -280,9 +297,13 @@ jobs:
           ANDROID: ${{ needs.android.result }}
           IOS: ${{ needs.ios.result }}
           EXTENSION: ${{ needs.extension.result }}
+          EXTENSION_VSE: ${{ needs.extension-vse.result }}
+          VSE_ITEM: ${{ vars.CWS_VSE_ITEM_ID }}
           STORES: ${{ inputs.stores }}
           DATABASE: ${{ needs.database.result }}
         run: |
+          vse_note=''
+          [ -n "$VSE_ITEM" ] || vse_note=' (off: CWS_VSE_ITEM_ID is not set)'
           {
             echo "## $TAG: $MODE"
             echo
@@ -292,6 +313,7 @@ jobs:
             echo "| Google Play | $ANDROID |"
             echo "| App Store, submit for review | $IOS |"
             echo "| Chrome + Firefox | $EXTENSION |"
+            echo "| Chrome (reIS pro VŠE) | $EXTENSION_VSE$vse_note |"
           } >> "$GITHUB_STEP_SUMMARY"
           # A store the `stores` input selected must have succeeded; one it did not select
           # must have been skipped. Anything else (a selected store skipped, a typo that
@@ -310,4 +332,12 @@ jobs:
           check android "$ANDROID"
           check ios "$IOS"
           check extension "$EXTENSION"
+          # VŠE rides on `extension`, and only once its store item exists: until
+          # CWS_VSE_ITEM_ID is set it must be skipped, after that the same rule.
+          if [ -n "$VSE_ITEM" ]; then
+            if [ "$STORES" = all ] || [ "$STORES" = extension ]; then want=success; else want=skipped; fi
+            [ "$EXTENSION_VSE" = "$want" ] || { echo "::error::Chrome (VŠE) was $EXTENSION_VSE, expected $want. See the table above."; bad=1; }
+          else
+            [ "$EXTENSION_VSE" = skipped ] || { echo "::error::Chrome (VŠE) was $EXTENSION_VSE with CWS_VSE_ITEM_ID unset, expected skipped."; bad=1; }
+          fi
           [ "$bad" -eq 0 ] || exit 1

@@ -23,9 +23,16 @@ export interface Flow {
   what: string;
   when: 'background' | 'student-action';
   identifier: 'install_id' | 'none' | 'contact';
-  /** Files under src/ that make this flow's Supabase calls. */
+  /**
+   * `direct`: the device sends it straight to a third party (the library's
+   * Microsoft Bookings), never through reIS's Supabase. Its `files` and `calls`
+   * then name that code and endpoint, and are not held to the Supabase checks;
+   * its store declarations and policy rows are.
+   */
+  transport?: 'supabase' | 'direct';
+  /** Files under src/ that make this flow's Supabase calls (or, `direct`, its requests). */
   files: string[];
-  /** RPC or table names this flow uses. */
+  /** RPC or table names this flow uses (or, `direct`, the endpoints). */
   calls: string[];
   /** Rows of the "What we do send" table in docs/privacy-policy-app.md: [what, when, carries]. */
   policyRows: Array<[string, string, string]>;
@@ -48,16 +55,16 @@ const INSTALL_ID_APPLE: AppleType = {
 export const FLOWS: Flow[] = [
   {
     id: 'daily_count',
-    what: 'One row per install per day: random install id, faculty, base study-programme code, platform and app version labels.',
+    what: 'One row per install per day: random install id, school, faculty, base study-programme code, platform and app version labels.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/feedback.ts'],
-    calls: ['track_daily_usage'],
+    calls: ['track_daily_usage_v2'],
     policyRows: [
       [
         'Daily count',
         'once a day',
-        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not.',
+        'a random install identifier — a UUID that stays the same on this installation and is not derived from you; your name, student number or IS account are never sent with it. Counts **installs, not people**, plus school (e.g. MENDELU), faculty, study programme (e.g. B-OI), platform and app version (e.g. 5.4.1) as group labels. The feature counters below carry the same identifier, so in our database all of these records, on any day, can be matched to one another and to these labels per installation. Novinky questions do not.',
       ],
     ],
     stores: {
@@ -69,16 +76,16 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'report',
-    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport, and the platform and OS version it was sent from (no device model).',
+    what: 'A report the student writes: type, title, message, optional contact, screen, app version, browser, viewport, the platform and OS version it was sent from (no device model), and the school whose IS it was sent from.',
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v3'],
+    calls: ['submit_suggestion_v4'],
     policyRows: [
       [
         'Feedback',
         'you press send',
-        'your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model)',
+        'your message, any contact detail you type, the screen name, app version, browser, window size, platform and OS version (no device model), and the school whose IS you sent it from (e.g. MENDELU)',
       ],
     ],
     stores: {
@@ -97,7 +104,7 @@ export const FLOWS: Flow[] = [
     when: 'student-action',
     identifier: 'contact',
     files: ['src/api/suggestions.ts'],
-    calls: ['submit_suggestion_v3'],
+    calls: ['submit_suggestion_v4'],
     policyRows: [
       [
         'Report attachments',
@@ -165,36 +172,51 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Ten feature counters on the random install id, one whitelisted label each: four feature uses and six screens opened.',
+    what: 'Nineteen feature counters on the random install id and the school label, one whitelisted label each: seven feature uses (one a tap on a partner programme card in Stáže, one a tap on the new-version row in Novinky, one a tap on the study-aids link under Předměty) and twelve screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
-    calls: ['track_feature_usage'],
+    calls: ['track_feature_usage_v2'],
     policyRows: [
       [
         'Map used for 3 seconds',
         'at most once a day, after three seconds on the map',
-        'the random install identifier and the fixed `map_dwell_3s` label',
+        'the random install identifier, the school and the fixed `map_dwell_3s` label',
       ],
       [
         'eduroam network configured',
         'the app itself saves the eduroam network (phone)',
-        'the random install identifier and the fixed `eduroam_wifi_configured` label',
+        'the random install identifier, the school and the fixed `eduroam_wifi_configured` label',
       ],
       [
         'eduroam profile handed over',
         'a profile is prepared for you to install (Mac, Windows)',
-        'the random install identifier and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
+        'the random install identifier, the school and the fixed `eduroam_profile_delivered` label. We cannot see whether you go on to install it',
       ],
       [
         'Week view used',
         'when the calendar shows the week (phone, iPad), once per app session; stored as one row per install per day',
-        'the random install identifier and the fixed `calendar_week_view` label',
+        'the random install identifier, the school and the fixed `calendar_week_view` label',
       ],
       [
         'Screen opened',
-        'when the calendar, Předměty, Jídelníček, search, Vývěska or Novinky is shown, once per app session (again only if a send fails); stored as one row per install per day',
-        'the random install identifier and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`) — nothing about what was on it, what you searched for or how long you stayed',
+        'when the calendar, Zkoušky, Předměty, Studijní plán, Jídelníček, search, Vývěska, Novinky, Doklady, ISIC, the library card on the map or Stáže is shown, once per app session (again only if a send fails); stored as one row per install, per screen, per day',
+        'the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`, `screen_exams`, `screen_study_plan`, `screen_documents`, `screen_isic`, `screen_library`) — nothing about what was on it, what you searched for or how long you stayed',
+      ],
+      [
+        'Partner programme opened',
+        'you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day',
+        'the random install identifier, the school and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website',
+      ],
+      [
+        'New version opened',
+        'you tap "Nová verze reISu" in Novinky (mobile app), once per app session; stored as one row per install per day',
+        'the random install identifier, the school and the fixed `app_update_opened` label. We cannot see whether you go on to update',
+      ],
+      [
+        'Study aids opened',
+        'you tap the "Studijní opory" link under Předměty (shown only to students of the faculties and programmes reIS has chosen; today it leads to mendelu.app), once per app session; stored as one row per install per day',
+        "the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`). We count how many installs tapped, which the site's author is told as a number; we never tell them who, and we cannot see what you do on the website",
       ],
     ],
     stores: {
@@ -209,6 +231,49 @@ export const FLOWS: Flow[] = [
       firefox: ['technicalAndInteraction'],
       cws: ['User activity'],
     },
+  },
+  {
+    id: 'library_booking',
+    what: "A library study-room booking (phone and iPad only): the student's name, MENDELU e-mail, student number and faculty code, and a \"reIS\" note, sent from the device straight to the library's Microsoft Bookings (MENDELU's tenant) when the student books or cancels. Looking at free hours sends only rooms and dates.",
+    when: 'student-action',
+    identifier: 'contact',
+    transport: 'direct',
+    files: ['src/mobile/library/createBooking.ts', 'src/mobile/library/cancelBooking.ts'],
+    calls: ['bookings.cloud.microsoft/appointments'],
+    policyRows: [
+      [
+        'Library study-room booking (mobile app only)',
+        'you book or cancel a study room',
+        "your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS",
+      ],
+    ],
+    stores: {
+      apple: [
+        { type: 'Name', purpose: 'App Functionality', linked: true, tracking: false },
+        { type: 'Email Address', purpose: 'App Functionality', linked: true, tracking: false },
+        { type: 'User ID', purpose: 'App Functionality', linked: true, tracking: false },
+      ],
+      play: ['PSL_NAME', 'PSL_EMAIL', 'PSL_USER_ACCOUNT'],
+      firefox: [],
+      cws: [],
+    },
+  },
+  {
+    id: 'store_version_check',
+    what: "Whether a newer reIS is in the store (phone and iPad only), at start and on return to the app. iOS: a request to Apple's public App Store lookup with the app's bundle id and the Czech store. Android: asked of the Play Store app on the phone. Nothing about the student.",
+    when: 'background',
+    identifier: 'none',
+    transport: 'direct',
+    files: ['src/mobile/appUpdate.ts'],
+    calls: ['itunes.apple.com/lookup'],
+    policyRows: [
+      [
+        'Checking for a newer version (mobile app only)',
+        'the app starts or you return to it',
+        "iPhone and iPad: reIS's app id, to Apple's public App Store lookup. Android: the Play Store app on your phone is asked. Nothing about you; the store sees your device's IP address, as it does for any app",
+      ],
+    ],
+    stores: { apple: [], play: [], firefox: [], cws: [] },
   },
 ];
 
@@ -247,6 +312,11 @@ export const EXEMPT: Exempt[] = [
     call: 'reis_questions',
     files: ['src/api/questions.ts', 'src/api/adminQuestions.ts'],
     why: 'Public read of the live Novinky questions; writes are by a signed-in reis_admin, never a student.',
+  },
+  {
+    call: 'study_aids',
+    files: ['src/api/studyAids.ts', 'src/api/adminStudyAids.ts'],
+    why: 'Public read of which faculties and programmes the study-aids link is shown to, matched on the device: the lookup does not send the student’s faculty or programme. Writes are by a signed-in reis_admin, never a student.',
   },
   {
     call: 'question_results',
@@ -295,6 +365,19 @@ export const EXEMPT: Exempt[] = [
   },
 ];
 
+/**
+ * Schools with a store listing of their own (`listing` in
+ * src/utils/schoolProfiles.ts) and a policy of their own: which of the FLOWS
+ * above each one sends. An empty list is a promise that the build sends
+ * nothing anywhere but the school's IS, so the school may have no feature on
+ * (privacyDisclosures.test.ts). Turning one on means writing its flows here,
+ * rewriting its policy and redoing its store's privacy form, in the same PR.
+ */
+export const SCHOOL_LISTING_FLOWS: Record<string, string[]> = {
+  // docs/privacy-policy-vse.md: "neposílá nic nikam jinam než do InSIS".
+  vse: [],
+};
+
 export const PLATFORM_PERMISSIONS = {
   /** Info.plist NS*UsageDescription keys. */
   ios: ['NSCameraUsageDescription'],
@@ -304,9 +387,15 @@ export const PLATFORM_PERMISSIONS = {
    * RECEIVE_BOOT_COMPLETED and WAKE_LOCK come from @capacitor/local-notifications,
    * which stays for the exam-opening reminders (spec 2026-10-20): scheduled on
    * the phone from its own exam list, nothing sent anywhere.
+   * ACCESS_NETWORK_STATE is the Android background check's (BackgroundCheckService):
+   * JobScheduler needs it to run the job only when the phone is online. That
+   * job asks IS Mendelu, with the sign-in the student already gave the app, for
+   * new exam terms, odevzdávárny and záznamník points while reIS is closed, and
+   * shows them as notifications; nothing it reads goes anywhere else.
    */
   android: [
     'INTERNET',
+    'ACCESS_NETWORK_STATE',
     'POST_NOTIFICATIONS',
     'ACCESS_WIFI_STATE',
     'CHANGE_WIFI_STATE',

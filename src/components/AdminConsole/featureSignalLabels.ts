@@ -13,4 +13,13 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   screen_search: 'signalScreenSearch',
   screen_bulletin: 'signalScreenBulletin',
   screen_notifications: 'signalScreenNotifications',
+  screen_exams: 'signalScreenExams',
+  screen_study_plan: 'signalScreenStudyPlan',
+  screen_documents: 'signalScreenDocuments',
+  screen_isic: 'signalScreenIsic',
+  screen_library: 'signalScreenLibrary',
+  screen_internships: 'signalScreenInternships',
+  internship_click_ey: 'signalInternshipClickEy',
+  app_update_opened: 'signalAppUpdateOpened',
+  study_aids_click_mendelu_app: 'signalStudyAidsClickMendeluApp',
 };

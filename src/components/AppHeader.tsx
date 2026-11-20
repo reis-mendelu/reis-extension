@@ -27,6 +27,8 @@ interface AppHeaderProps {
   ) => void;
   searchPrefillRef?: React.MutableRefObject<((query: string) => void) | null>;
   onShowMap: () => void;
+  /** A "Nový termín" row in the bell opens Zkoušky. */
+  onShowExams?: () => void;
 }
 
 export function AppHeader({
@@ -39,6 +41,7 @@ export function AppHeader({
   onOpenSubject,
   searchPrefillRef,
   onShowMap,
+  onShowExams,
 }: AppHeaderProps) {
   const { t } = useTranslation();
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
@@ -158,6 +161,7 @@ export function AppHeader({
               {currentSchool.has('novinky') && (
                 <NotificationFeed
                   onShowMap={onShowMap}
+                  onShowExams={onShowExams}
                   onOpenSubject={(a) =>
                     a.courseCode &&
                     onOpenSubject?.(a.courseCode, a.title, a.courseId, undefined, 'zaznamnik')

@@ -37,14 +37,21 @@ describe('school profiles in the build', () => {
       'impersonation',
     ],
     'components/Sidebar/BottomActions.tsx': ['teamsOutlook'],
+    // 'reports' twice: the report form for MENDELU, and an e-mail to reIS
+    // where a school has no reports (components/Sidebar/Profile/ContactLink.tsx).
+    // Extension only, like every gate here: the phone app is MENDELU's alone.
     'components/Sidebar/ProfilePopup.tsx': [
       'adminConsole',
       'adminConsole',
       'eduroam',
       'partners',
       'reports',
+      'reports',
       'storeRating',
+      'guides',
     ],
+    // The phone's Nápověda row gates itself.
+    'components/mobile/screens/profile/HelpRow.tsx': ['guides'],
     'components/SubjectFileDrawer/Header/CourseMeta.tsx': ['campusMap'],
     'components/SubjectFileDrawer/Header/HeaderTabs.tsx': ['successRates'],
     'components/Feedback/ReportMissingLink.tsx': ['reports'],
@@ -52,7 +59,13 @@ describe('school profiles in the build', () => {
     'store/slices/createMenuSlice.ts': ['canteenMenu'],
     'store/slices/createSuccessRateSlice.ts': ['successRates', 'successRates'],
     'store/slices/createSimilarSubjectsSlice.ts': ['similarSubjects'],
-    'store/useAppStore.ts': ['novinky'],
+    // Novinky and questions; the IS notices and their mute list; society
+    // events, pins and venues (novinky or campusMap, one helper).
+    'store/useAppStore.ts': ['novinky', 'novinky', 'novinky', 'campusMap'],
+    // Nothing is sent to reIS at all without the counts: the daily count and
+    // every feature counter (VŠE at launch, docs/privacy-policy-vse.md).
+    'api/feedback.ts': ['usageCounts'],
+    'api/featureUsage.ts': ['usageCounts'],
     'components/SearchBar/useSearch.ts': ['facultySearchScope'],
     'components/SubjectFileDrawer/useSubjectFileDrawerState.ts': ['successRates', 'successRates'],
     'components/Feedback/reportPrefill.ts': ['reports'],

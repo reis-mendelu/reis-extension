@@ -63,4 +63,21 @@ describe('system notifications row and banner', () => {
     expect(screen.getByText('Phone notifications')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Turn on' })).toBeInTheDocument();
   });
+
+  // Agreed 2026-11-17: society events and MENDELU notices are phone
+  // notifications too, on by default, with one switch to turn them off.
+  it('offers the societies switch while notifications are on, and it flips the setting', () => {
+    useAppStore.setState({ systemNotifications: 'granted', notifySocieties: true } as never);
+    render(<SystemNotificationsRow />);
+    const toggle = screen.getByRole('checkbox', { name: /Od spolků a MENDELU/ });
+    expect(toggle).toBeChecked();
+    fireEvent.click(toggle);
+    expect(useAppStore.getState().notifySocieties).toBe(false);
+  });
+
+  it('has no societies switch while notifications are off: it would do nothing', () => {
+    useAppStore.setState({ systemNotifications: 'denied' } as never);
+    render(<SystemNotificationsRow />);
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  });
 });

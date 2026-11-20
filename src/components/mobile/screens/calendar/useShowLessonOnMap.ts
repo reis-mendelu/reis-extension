@@ -3,6 +3,8 @@ import { useAppStore } from '../../../../store/useAppStore';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { routeSuggestionFor } from '../../../../utils/mobile/lessonActions';
 import { CAMPUS_NAVIGATION_ENABLED } from '../../../../utils/routing/navigationEnabled';
+import { libraryRoomOfBlock } from '../../../../mobile/library/libraryBlock';
+import { openLibrary } from '../map/library/openLibrary';
 
 /**
  * What "show on map" does for a calendar row: the agenda's pin and the up-next
@@ -16,6 +18,13 @@ export function useShowLessonOnMap(): (lesson: BlockLesson) => void {
 
   return (lesson) => {
     setMobileTab('map');
+    // A library booking's room has no IS code to look up: its pin opens the
+    // library card on that room instead.
+    const libraryRoom = libraryRoomOfBlock(lesson);
+    if (libraryRoom !== null) {
+      openLibrary(libraryRoom);
+      return;
+    }
     // The room exactly as IS printed it, campus and all: "ZFAC1 (Led)" is how
     // a room with no floor plan finds its campus (lookupRoomPlace); the room
     // lookup strips the bracket itself.

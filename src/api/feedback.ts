@@ -8,6 +8,7 @@ import { isHarnessEnabled } from '../utils/harnessEnabled';
 import { hasDataConsent } from '../utils/firefoxDataConsent';
 import { baseProgramme } from '../utils/partnerAudience';
 import { getAppVersion } from '../utils/appIdentity';
+import { currentSchool } from '../utils/school';
 
 /**
  * The daily install count. It identifies the DEVICE, never the student.
@@ -82,6 +83,9 @@ function pragueDay(): string {
  */
 export function trackDailyUsage(): Promise<void> {
   if (isDemoMode()) return Promise.resolve();
+  // A school without the count (VŠE at launch) sends reIS nothing at all, so
+  // nothing is attempted, not even against the build's cut-off Supabase host.
+  if (!currentSchool.has('usageCounts')) return Promise.resolve();
 
   // A dev server and the deployed preview are not installs, and counting them
   // is not a rounding error. `npm run dev:web` has no demo-mode guard — only
@@ -143,8 +147,11 @@ async function writeDailyUsage(): Promise<boolean> {
   // getAppVersion's fallback for "unknown", not a release.
   const version = getAppVersion();
 
-  const { error } = await supabase.rpc('track_daily_usage', {
+  // The school this build is for: one more group label, the same on every
+  // install of the build. Faculty and programme are stored for MENDELU only.
+  const { error } = await supabase.rpc('track_daily_usage_v2', {
     p_student_id: await getInstallId(),
+    p_school: currentSchool.id,
     p_faculty: faculty,
     p_platform: platform,
     p_programme: programme,
@@ -153,6 +160,6 @@ async function writeDailyUsage(): Promise<boolean> {
   // Thrown, not swallowed: the caller above clears the memo on a rejection so
   // a later call can still count this device. Nothing about the failure is
   // reported anywhere — see the Error Reporting section of CLAUDE.md.
-  if (error) throw new Error('track_daily_usage failed');
+  if (error) throw new Error('track_daily_usage_v2 failed');
   return true;
 }

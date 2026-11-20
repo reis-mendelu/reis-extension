@@ -45,10 +45,27 @@ vi.mock('@capacitor/core', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@capacitor/core')>()),
   Capacitor: { getPlatform: () => 'ios' },
 }));
+// The school this build is for. MENDELU unless a test says otherwise.
+const school = vi.hoisted(() => ({ currentSchool: { id: 'mendelu' as string } }));
+vi.mock('@/utils/school', () => school);
 
 describe('submitSuggestion', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    school.currentSchool.id = 'mendelu';
+  });
+
+  // Which school's IS a report is about: the same reIS screen names exist at
+  // every school, so without it triage would be guesswork.
+  it("sends the build's school", async () => {
+    school.currentSchool.id = 'vse';
+    vi.mocked(supabase.rpc).mockResolvedValue({ data: 'ok', error: null } as never);
+
+    await submitSuggestion({ type: 'bug', title: 'T', body: 'B' });
+
+    const [fn, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
+    expect(fn).toBe('submit_suggestion_v4');
+    expect(args).toMatchObject({ p_school: 'vse' });
   });
 
   // No credential is stubbed and none is needed. The old edge function gated on
@@ -64,8 +81,9 @@ describe('submitSuggestion', () => {
 
     expect(r).toEqual({ ok: true });
     const [fn, args] = vi.mocked(supabase.rpc).mock.calls[0]!;
-    expect(fn).toBe('submit_suggestion_v3');
+    expect(fn).toBe('submit_suggestion_v4');
     expect(args).toMatchObject({
+      p_school: 'mendelu',
       p_type: 'bug',
       p_title: 'T',
       p_body: 'B',

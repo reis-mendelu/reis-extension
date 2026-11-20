@@ -5,6 +5,7 @@ import { useAppStore } from '../../../store/useAppStore';
 import { ScreenSkeleton } from '../primitives/ScreenSkeleton';
 import { ScreenError } from '../primitives/ScreenError';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useScreenSignal } from '../../../hooks/useScreenSignal';
 import { useExams } from '../../../hooks/data/useExams';
 import { useExamActions } from '../../ExamPanel/useExamActions';
 import {
@@ -29,6 +30,7 @@ import { SignupGroup } from './exams/SignupGroup';
 import { RefreshButton } from '../primitives/RefreshButton';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
+import { useMarkExamTermsSeen } from '../../../hooks/ui/useMarkExamTermsSeen';
 
 function ExamsSkeleton() {
   const { t } = useTranslation();
@@ -54,10 +56,13 @@ function ExamsSkeleton() {
  * list by date would bury that distinction.
  */
 export function ExamsScreen() {
+  useScreenSignal('screen_exams');
   const { t, language } = useTranslation();
   const { exams } = useExams();
   const now = useAppStore((s) => s.now);
   const userSemester = useAppStore((s) => s.userSemester);
+  // In front = its tab, with no sheet (a subject, settings) covering it.
+  const examsInFront = useAppStore((s) => s.mobileTab === 'exams' && s.mobileSheets.length === 0);
   const handshakeDone = useAppStore((s) => s.syncStatus.handshakeDone);
   const handshakeTimedOut = useAppStore((s) => s.syncStatus.handshakeTimedOut);
   const isSyncing = useAppStore((s) => s.syncStatus.isSyncing);
@@ -207,16 +212,21 @@ export function ExamsScreen() {
     </div>
   );
 
-  if (
+  const loading =
     (!handshakeDone && !handshakeTimedOut) ||
-    (isSyncing && !syncLoaded.exams && exams.length === 0)
-  ) {
+    (isSyncing && !syncLoaded.exams && exams.length === 0);
+  // Same rule as the calendar: a settled sync that never delivered exams, with
+  // nothing cached, is a failure and not an answer.
+  const failed = firstSyncSettled && !syncLoaded.exams && exams.length === 0;
+  // Novinky's "Nový termín" rows go once the list itself is on screen: not
+  // behind the skeleton, the error, or a sheet.
+  useMarkExamTermsSeen(examsInFront && !loading && !failed);
+
+  if (loading) {
     return shell(<ExamsSkeleton />);
   }
 
-  // Same rule as the calendar: a settled sync that never delivered exams, with
-  // nothing cached, is a failure and not an answer.
-  if (firstSyncSettled && !syncLoaded.exams && exams.length === 0) {
+  if (failed) {
     return shell(<ScreenError testId="exams-error" />);
   }
 

@@ -169,7 +169,10 @@ your change.
 `scripts/__tests__/worktreeBootstrap.test.ts` pins each:
 
 - **The branch starts from `test`.** A session worktree is cut from `main`. A
-  branch with no commits of its own and a clean tree is moved to `origin/test`.
+  branch with no commits of its own, not pushed, with a clean tree is moved to
+  `origin/test`. The same check runs again at the first prompt
+  (`UserPromptSubmit`, `--first-prompt`: no fetch, once per branch), which
+  catches a branch the app checks out after SessionStart ran.
   To read released code, check out detached: `git checkout --detach origin/main`.
 - **`node_modules` matches the lockfile.** `scripts/ensure-install.mjs` leaves a
   matching install alone and otherwise copies a matching one from another
@@ -188,6 +191,14 @@ your change.
 
 The dev snapshot and `.env` are still symlinks, deliberately: they are read and
 never rewritten, so a fresh scrape in the main checkout reaches every worktree.
+
+**A project hook runs from the main checkout, not the session's worktree.**
+Claude desktop starts sessions with `--project-config-root <main checkout>`, so
+every hook in `.claude/settings.json` gets the main checkout as its cwd *and* as
+`$CLAUDE_PROJECT_DIR`. Only the `cwd` field of the hook's JSON input names the
+session's checkout. A hook that asks git or `pwd` instead inspects the main
+checkout and quietly does nothing: until November 2026 the bootstrap returned
+silently in every worktree session, which left branches on `main`.
 
 ### Secrets
 
@@ -322,6 +333,17 @@ file in the same PR** (the `disclosure-drift` Stop hook asks if you forget), the
 `npm run privacy:generate` for the policy table. At release, Claude runs
 `npm run privacy:publish` and does the store forms itself — see `/release`.
 
+## Count what you ship
+
+**When you add something a student can open or click, ask whether anyone will
+later need to know how many did.** A number nobody counted at launch cannot be
+recovered (the Stáže card for EY shipped in #651 with no counter). Ask it
+especially for anything a **partner** is shown or linked to: that count is what
+reIS hands the partner. The mechanism is the existing install-level feature
+counter, one label per partner programme; the steps, the migration and the
+disclosure are in `docs/feature-counters.md`. If a new feature needs no
+counter, say so in the PR in one line.
+
 ## Error Reporting & Privacy
 
 **reIS transmits nothing about a failure on its own.** No error type, message,
@@ -355,26 +377,29 @@ the start of a semester.
 Only these, all disclosed in `docs/privacy-policy-app.md`:
 
 1. **Daily install count** — a random per-install UUID (`services/identity/installId.ts`),
-   plus faculty, base programme code, platform and app version as labels; nothing else derived
+   plus school, faculty, base programme code, platform and app version as labels; nothing else derived
    from the student. Deliberately counts installs, not people. The UUID is stable, so daily rows link
    across days, and the same UUID is on the survey and the feature counters (4), so those rows
-   join per install to faculty, platform, programme and app version. The policy says so; none of it carries
-   a name, student number or IS account.
+   join per install to school, faculty, platform, programme and app version. The policy says so; none of it carries
+   a name, student number or IS account. The school (`mendelu`/`vse`/`czu`, November 2026) is a
+   column with default `'mendelu'`, so released builds' v1 calls land as MENDELU;
+   `track_daily_usage_v2` takes it explicitly and stores faculty and programme for MENDELU only.
+   Every admin/stats function counts `school = 'mendelu'` only.
 2. **Feedback the student typed** — via the `submit_suggestion` RPC (`src/api/suggestions.ts`),
-   with screen name, app version, browser and viewport.
+   with screen name, app version, browser, viewport and the school (`submit_suggestion_v4`).
 3. **Society event view/click counters** — a post row id and nothing else. Views are
    counted once per device (`viewedIds`); clicks too, since PR #566: the device remembers
    in IndexedDB which ids it already counted (`services/spolky/countedOpens.ts`) and
    nothing about that is sent.
-4. **Feature counters** (`src/api/featureUsage.ts`) — the same random install UUID plus
-   one label from `FEATURE_SIGNALS`, a database-enforced whitelist pinned by
+4. **Feature counters** (`src/api/featureUsage.ts`) — the same random install UUID, the
+   school (`track_feature_usage_v2`) and one label from `FEATURE_SIGNALS`, a database-enforced whitelist pinned by
    `featureSignalWhitelist.test.ts`. Counts installs, not people.
 5. **Map views per event** (same file) — a society event's row id and *no* identifier at all,
    rolled up per event per day in `event_map_views`, kept clear of the Novinky `view_count`.
    Also once per device per event ever (same `countedOpens.ts`), so it reads as devices, not taps.
    The server stamps the date; the request carries only the event id.
 
-6. **Report attachments** (`submit_suggestion_v3`; v2 for older builds, September 2026) — only what the student
+6. **Report attachments** (`submit_suggestion_v4`, November 2026; v2/v3 for older builds) — only what the student
    adds to a report: a screenshot they pick (re-encoded to JPEG on device, no EXIF/GPS) and,
    only if they choose it, the cleaned diagnostic log (collected at Send, not listed in the
    form — the cleaning is what makes it safe to send unread). On a Chyba the choice is two

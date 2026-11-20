@@ -1,5 +1,6 @@
 import type { StudyPlan, SemesterBlock, SubjectGroup } from '../../types/studyPlan';
 import { txt } from './text';
+import { boldSpans } from '../studyPlanHeading';
 
 export interface CatalogRow {
   code: string;
@@ -44,6 +45,17 @@ function parseMinimum(name: string): Pick<CatalogGroup, 'minCredits' | 'minCount
  * a bold `colspan=4` row, a group with a bold `colspan=3` row, and subject rows
  * carry class `predmety_vse` with code/name/completion/credits cells.
  */
+/**
+ * A semester row's heading cell: `<b><font size="+1">` before the UIS redesign,
+ * a bold `<span style="font-size: 1.125rem; font-weight: bold;">` after it
+ * (is.mendelu.cz, 2026-11-15). The old markup is checked first and unchanged.
+ */
+function isSemesterHeading(tr: Element): boolean {
+  if (tr.querySelector('td[colspan="4"] b')) return true;
+  const cell = tr.querySelector('td[colspan="4"]');
+  return !!cell && boldSpans(cell).length > 0;
+}
+
 export function parseCatalogPlan(doc: Document): CatalogSemester[] {
   const out: CatalogSemester[] = [];
   let sem: CatalogSemester | null = null;
@@ -54,7 +66,7 @@ export function parseCatalogPlan(doc: Document): CatalogSemester[] {
     if (!cls.includes('predmety_vse')) {
       const t = txt(tr);
       const m = SEMESTER_RE.exec(t);
-      if (m && tr.querySelector('td[colspan="4"] b')) {
+      if (m && isSemesterHeading(tr)) {
         sem = { number: Number(m[1]), title: t, groups: [] };
         out.push(sem);
         group = null;

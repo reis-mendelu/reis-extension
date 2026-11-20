@@ -47,6 +47,7 @@
     "title": "Settings",
     "reportBug": "Report Bug / Idea",
     "rateReis": "Rate reIS",
+    "contactUs": "Report a bug / write to us",
     "darkMode": "Dark Mode",
     "language": "Language",
     "czech": "Čeština",
@@ -507,6 +508,10 @@
     "winterSemester": "WS",
     "summerSemester": "SS"
   },
+  "appUpdate": {
+    "title": "New reIS version",
+    "body": "Tap to update"
+  },
   "notifications": {
     "title": "News",
     "loading": "Loading...",
@@ -520,7 +525,7 @@
     "systemOn": "On",
     "systemOff": "Off",
     "systemEnable": "Turn on",
-    "systemBanner": "Notifications are off, so you won't get new points or exam reminders.",
+    "systemBanner": "Notifications are off, so you won't get new points, submission boxes, exam dates or exam reminders.",
     "openInIs": "Open in IS",
     "openLink": "Open link"
   },
@@ -529,8 +534,33 @@
     "body": "{subject} – {section} · registration opens at {time}",
     "channel": "Exam openings"
   },
+  "novinkyPush": {
+    "channelTerms": "New exam dates",
+    "channelPoints": "New points",
+    "channelBoxes": "New submission boxes (in the background)",
+    "channelSocieties": "From societies and MENDELU",
+    "termsOne": "New exam date: {subject}",
+    "termsMany": "New exam dates",
+    "pointsOne": "New points: {subject}",
+    "pointsMany": "New points",
+    "boxesOne": "New submission box: {subject}",
+    "boxesMany": "New submission boxes",
+    "societiesMany": "News from societies",
+    "societiesSwitch": "From societies and MENDELU",
+    "societiesSwitchHint": "Society events and school notices"
+  },
+  "deadlineReminders": {
+    "channel": "Exams and deadlines",
+    "examTitle": "Tomorrow: {subject}",
+    "closingTitle": "{subject}: registration closes",
+    "closingBody": "{section} · last chance tomorrow until {time}",
+    "boxTitle": "{subject}: due tomorrow",
+    "boxBody": "{box} · until {time}"
+  },
   "deadlines": {
     "title": "Upcoming deadlines",
+    "examNewTerm": "New date",
+    "examRegistered": "Your exam",
     "examRegOpens": "Registration opens",
     "examReg": "Registration closes",
     "assignment": "Assignment due",
@@ -564,6 +594,8 @@
     "credits": "credits",
     "creditsShort": "cr.",
     "studyPlan": "Study Plan",
+    "studyAids": "Study aids",
+    "studyAidsHint": "mendelu.app",
     "noData": "No study plan data",
     "loading": "Loading...",
     "fulfilled": "Fulfilled",
@@ -1267,6 +1299,15 @@
       "signalScreenSearch": "Search opened",
       "signalScreenBulletin": "Bulletin Board (Vývěska) opened",
       "signalScreenNotifications": "News (Novinky) opened",
+      "signalScreenExams": "Exams opened",
+      "signalScreenStudyPlan": "Study plan opened",
+      "signalScreenDocuments": "Documents opened",
+      "signalScreenIsic": "ISIC opened (mobile app only)",
+      "signalScreenLibrary": "Library card opened (mobile app only)",
+      "signalScreenInternships": "Internships (Stáže) opened",
+      "signalInternshipClickEy": "Click on “Cesta s EY”",
+      "signalAppUpdateOpened": "Click on “New reIS version”",
+      "signalStudyAidsClickMendeluApp": "Click on Study aids (mendelu.app)",
       "signalShare": "{pct}% of daily installs",
       "signalShareHint": "An average day over 30 days: of the installs that opened reIS that day, how many also opened this. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalInstalls": "installs",
@@ -1400,6 +1441,20 @@
       "hidden": "Hidden",
       "notInYourIs": "No longer in your IS",
       "error": "Could not save. Try again."
+    },
+    "studyAids": {
+      "title": "Study aids",
+      "note": "The link to mendelu.app under Subjects. Shown only to students of the chosen faculties and programmes, and only once switched on.",
+      "audience": "Who sees the link",
+      "active": "Show to students",
+      "save": "Save",
+      "saved": "Saved.",
+      "error": "Could not save. Try again.",
+      "invalid": "Pick at least one faculty and check the programme codes.",
+      "loading": "Loading…",
+      "loadError": "Could not load the current state, the values shown may be out of date.",
+      "retry": "Try again",
+      "empty": "No link is set up yet."
     }
   },
   "mobile": {
@@ -1623,7 +1678,59 @@
       "deleteTape": "Delete tape",
       "tapeHint": "Tape over an answer and try to recall it. Tap the tape to peek; hold it to delete or move it."
     },
-    "openingLink": "Opening…"
+    "openingLink": "Opening…",
+    "library": {
+      "pinLabel": "Study rooms",
+      "title": "Library",
+      "place": "Building A, floor −1",
+      "today": "Today",
+      "seats": "{n} seats",
+      "seatsOne": "1 seat",
+      "offline": "Could not load the bookings. Check your connection.",
+      "loading": "Loading free hours from the library…",
+      "pickHour": "Pick hours",
+      "lessonTag": "class",
+      "capReached": "You already have {cap} h that day, the library allows no more.",
+      "confirmTitle": "Book this study room?",
+      "confirmBody": "The library receives your name, e-mail, student number and faculty. You will get a confirmation by e-mail.",
+      "confirm": "Book",
+      "sending": "Booking…",
+      "slow": "The library answers slowly; this can take a minute.",
+      "booked": "Booked: {room}, {time}",
+      "partial": "Only {time} was booked. The rest did not go through.",
+      "taken": "One of the hours was taken meanwhile. Nothing was booked.",
+      "cap": "At most {cap} h a day.",
+      "checkFailed": "Could not check the slot. Try again.",
+      "unknown": "The library did not answer. The booking may exist: check your e-mail before trying again.",
+      "failed": "The booking failed.",
+      "blockTitle": "Library study room",
+      "mine": "Your bookings",
+      "cancelTitle": "Cancel the library booking?",
+      "cancelBody": "This cancels the real booking and frees the room. The library will e-mail you about it.",
+      "cancelAction": "Cancel the library booking",
+      "cancelling": "Cancelling…",
+      "keep": "Keep",
+      "cancelled": "Booking cancelled.",
+      "cancelUnknown": "The library did not answer. Check your e-mail to see whether the booking is gone.",
+      "cancelFailed": "Could not cancel the booking.",
+      "searchRow": "Library – study rooms to book",
+      "freeAt": "Free {time}",
+      "holiday": "{name}: the library is closed.",
+      "unconfirmed": "The library did not answer in time, but the booking most likely exists. It is in your calendar; the confirmation comes by e-mail.",
+      "cancelUnconfirmed": "reIS cannot cancel this booking: it has no key for it from the library. Cancel it through the library; here you can remove it from your calendar.",
+      "removeFromCalendar": "Remove from calendar",
+      "onMap": "On the map",
+      "kindTeam": "team study room",
+      "kindIndividual": "individual study room",
+      "confirmed": "Confirmed",
+      "noKey": "reIS cannot cancel it",
+      "extend": "Extend until {time}",
+      "extended": "Extended until {time}",
+      "otherTime": "Another time or room",
+      "busy": "Wait, the previous booking is still being processed.",
+      "someUnknown": "Some rooms could not be loaded; their hours are missing here.",
+      "unsaved": "The booking was made, but the phone could not save it. After the app restarts it will be gone from your calendar and can only be cancelled through the library (the confirmation is in your e-mail)."
+    }
   },
   "session": {
     "expired": "Your IS session has expired.",
@@ -1713,5 +1820,13 @@
   "newBox": {
     "kind": "New submission box",
     "badge": "New"
+  },
+  "backgroundCheck": {
+    "channelExams": "New exam dates (in the background)",
+    "channelBoxes": "New submission boxes",
+    "channelPoints": "New points in Záznamník (in the background)"
+  },
+  "guides": {
+    "help": "Help"
   }
 }
