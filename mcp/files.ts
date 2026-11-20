@@ -26,6 +26,8 @@ export type FileText = {
 export type DocumentMeta = { filename?: string; mediaType: string; ext: string };
 
 const DOC_EXTENSIONS = ['.pdf', '.docx', '.pptx', '.xlsx', '.odt'];
+/** Pre-2007 binary Office files: officeparser reads none of them. */
+const OLD_OFFICE = ['.doc', '.ppt', '.xls'];
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv'];
 
 export const clean = (t: string) => t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
@@ -126,7 +128,9 @@ export async function readDokServerFile(
       ...named,
       kind: type || 'unknown',
       text: '',
-      note: 'No text extractor for this file type. Open it in IS directly.',
+      note: OLD_OFFICE.includes(ext)
+        ? `This format (${ext}) can't be read as text. Open it in IS directly, or ask the teacher for the ${ext}x version.`
+        : 'No text extractor for this file type. Open it in IS directly.',
     };
   }
   const bytes = await readCapped(res, isDocument ? MAX_DOCUMENT_BYTES : MAX_FILE_BYTES);

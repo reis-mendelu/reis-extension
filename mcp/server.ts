@@ -5,6 +5,9 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createIsSession, noLoginFetch, NO_LOGIN_MESSAGE } from './session';
 import { registerTools } from './register';
+import { startUpdateCheck } from './updateCheck';
+// The one version: the .mcpb manifest's (mcp-plugin.mjs stamps it on the plugin too).
+import { version } from './manifest.json';
 
 const user = process.env.MENDELU_USER?.trim();
 const pass = process.env.MENDELU_PASS;
@@ -14,9 +17,11 @@ const sessionFetch =
 if (sessionFetch === noLoginFetch) process.stderr.write(`reIS for Claude: ${NO_LOGIN_MESSAGE}\n`);
 setSessionFetch(sessionFetch);
 
-const server = new McpServer({ name: 'reis-mendelu', version: '0.1.3' });
+const server = new McpServer({ name: 'reis-mendelu', version });
 registerTools(server, {
   fetch: sessionFetch,
+  // nativeFetch: the GitHub check must never go through the IS session.
+  updateNotice: startUpdateCheck(version, nativeFetch),
   ...(sessionFetch === noLoginFetch ? { unavailable: NO_LOGIN_MESSAGE } : {}),
 });
 // No top-level await, so the entry also loads through require(). Claude
