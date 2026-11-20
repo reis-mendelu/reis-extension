@@ -46,14 +46,16 @@ describe('ReisForClaudeRow', () => {
     expect(render(<ReisForClaudeRow />).container.innerHTML).toBe('');
   });
 
-  it('opening counts the install and hides it for good', () => {
+  it('opening counts the install and hides it for good', async () => {
     setUp('B-OI');
     const { container } = render(<ReisForClaudeRow />);
     fireEvent.click(screen.getByRole('link'));
     expect(trackFeatureSignal).toHaveBeenCalledWith('reis_for_claude_guide_opened');
     expect(useAppStore.getState().reisForClaude).toBe('done');
-    expect(IndexedDBService.set).toHaveBeenCalledWith('meta', REIS_FOR_CLAUDE_KEY, 'done');
     expect(container.innerHTML).toBe('');
+    await vi.waitFor(() =>
+      expect(IndexedDBService.set).toHaveBeenCalledWith('meta', REIS_FOR_CLAUDE_KEY, 'done')
+    );
   });
 
   it('the cross hides it for good without counting', () => {
@@ -64,14 +66,25 @@ describe('ReisForClaudeRow', () => {
     expect(useAppStore.getState().reisForClaude).toBe('done');
   });
 
-  it('counts on the bell until Novinky has shown it', () => {
+  it('counts on the bell until Novinky has shown it', async () => {
     setUp('B-OI');
     const { rerender } = render(<Badge />);
     expect(screen.getByTestId('badge').textContent).toBe('1');
     useAppStore.getState().markReisForClaudeSeen();
     rerender(<Badge />);
     expect(screen.getByTestId('badge').textContent).toBe('0');
-    expect(IndexedDBService.set).toHaveBeenCalledWith('meta', REIS_FOR_CLAUDE_KEY, 'seen');
+    await vi.waitFor(() =>
+      expect(IndexedDBService.set).toHaveBeenCalledWith('meta', REIS_FOR_CLAUDE_KEY, 'seen')
+    );
+  });
+
+  it("a stale tab's 'seen' does not undo another tab's dismissal", async () => {
+    setUp('B-OI');
+    vi.mocked(IndexedDBService.get).mockResolvedValueOnce('done');
+    useAppStore.getState().markReisForClaudeSeen();
+    await vi.waitFor(() => expect(IndexedDBService.get).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(IndexedDBService.set).not.toHaveBeenCalled();
   });
 
   it('boot restores what the device saved', async () => {

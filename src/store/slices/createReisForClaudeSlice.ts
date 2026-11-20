@@ -27,9 +27,14 @@ export interface ReisForClaudeSlice {
 export const createReisForClaudeSlice: AppSlice<ReisForClaudeSlice> = (set, get) => {
   const persist = (state: 'seen' | 'done') => {
     set({ reisForClaude: state });
-    IndexedDBService.set('meta', REIS_FOR_CLAUDE_KEY, state).catch((err) =>
-      logError('ReisForClaudeSlice.persist', err)
-    );
+    // Only forward: another extension tab may have saved `done` since this one
+    // loaded, and its stale `seen` must not bring the row back after a restart.
+    const write = async () => {
+      if (state === 'seen' && (await IndexedDBService.get('meta', REIS_FOR_CLAUDE_KEY)) === 'done')
+        return;
+      await IndexedDBService.set('meta', REIS_FOR_CLAUDE_KEY, state);
+    };
+    write().catch((err) => logError('ReisForClaudeSlice.persist', err));
   };
   return {
     reisForClaude: 'loading',
