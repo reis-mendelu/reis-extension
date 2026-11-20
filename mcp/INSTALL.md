@@ -9,7 +9,7 @@ Potřebuješ účet Claude ([claude.ai](https://claude.ai)) a počítač (macOS 
 > **Poznámka:** soubor `.mcpb` zatím nemá zveřejněnou verzi na stránce verzí. Dokud ji nezveřejníme, použij variantu B.
 
 1. Nainstaluj si [Claude Desktop](https://claude.ai/download) a přihlas se.
-2. Otevři [stránku s verzemi](https://github.com/reis-mendelu/reis-extension/releases) a v nejnovější verzi nazvané **reIS for Claude** (štítek `mcp-v…`) stáhni soubor `reis-for-claude.mcpb`.
+2. Stáhni [`reis-for-claude.mcpb`](https://github.com/reis-mendelu/reis-for-claude/releases/latest/download/reis-for-claude.mcpb) (návod s obrázky: [reisapp.cz/navody/reis-v-claude](https://reisapp.cz/navody/reis-v-claude)).
 3. Dvakrát na něj klikni (nebo ho přetáhni do okna Claude Desktop) a potvrď **Install**.
 4. Zadej své přihlašovací jméno do IS (např. `xnovak`) a heslo. Heslo se uloží do klíčenky systému a odesílá se **jen** na `is.mendelu.cz`.
 5. Založ nový chat a zeptej se: „Jaké zkoušky mě ještě čekají?“
@@ -32,7 +32,7 @@ Rozvrh na 14 dní dopředu, zkouškové termíny, předměty a studijní plán, 
 
 ## Aktualizace
 
-Dokud reIS for Claude není v adresáři Claude, aktualizuje se ručně: stáhni nový `.mcpb` a otevři ho znovu. Když vyjde nová verze, reIS ti to napíše pod odpověď; zjišťuje to jednou při startu anonymním dotazem na `api.github.com` (nic o tobě v něm není). Plugin pro Claude Code aktualizuješ dvěma kroky: `/plugin marketplace update reis` obnoví seznam a `claude plugin update reis@reis` (v terminálu) aktualizuje samotný plugin; poté restartuj Claude Code.
+Dokud reIS for Claude není v adresáři Claude, aktualizuje se ručně: stáhni nový `.mcpb` a otevři ho znovu. Když vyjde nová verze, reIS ti to napíše pod odpověď; zjišťuje to jednou při startu dotazem na `api.github.com` bez přihlášení a bez dat z IS (GitHub vidí jen tvou IP adresu, jako každý web). Plugin pro Claude Code aktualizuješ dvěma kroky: `/plugin marketplace update reis` obnoví seznam a `claude plugin update reis@reis` (v terminálu) aktualizuje samotný plugin; poté restartuj Claude Code.
 
 ## Když něco nejde
 
@@ -53,8 +53,8 @@ Claude reads your IS Mendelu timetable, exams, grades, deadlines and subject fil
 
 *Note: no `.mcpb` release has been published on the releases page yet; until one is, use the Claude Code route.*
 
-**Claude Desktop (recommended):** install [Claude Desktop](https://claude.ai/download), download `reis-for-claude.mcpb` from the latest `mcp-v*` [release](https://github.com/reis-mendelu/reis-extension/releases), double-click it (or drag it into Claude Desktop), enter your IS username and password, then ask "what exams do I have left?".
+**Claude Desktop (recommended):** install [Claude Desktop](https://claude.ai/download), download `reis-for-claude.mcpb` from the [latest release](https://github.com/reis-mendelu/reis-for-claude/releases/latest/download/reis-for-claude.mcpb), double-click it (or drag it into Claude Desktop), enter your IS username and password, then ask "what exams do I have left?".
 
 **Claude Code:** with Node.js 20+ installed, run `/plugin marketplace add reis-mendelu/reis-for-claude`, then `/plugin install reis@reis`, and enter your IS login when asked.
 
-Updates are manual for the `.mcpb` (download and open the new file; once per start it asks `api.github.com` anonymously whether a newer release exists, and says so under its answers); the plugin takes two steps: `/plugin marketplace update reis` refreshes the listing, then `claude plugin update reis@reis` (in a terminal) updates the plugin itself; restart Claude Code afterwards. Two-factor IS accounts are not supported yet.
+Updates are manual for the `.mcpb` (download and open the new file; once per start it asks `api.github.com`, with no login or IS data (GitHub sees your IP address), whether a newer release exists, and says so under its answers); the plugin takes two steps: `/plugin marketplace update reis` refreshes the listing, then `claude plugin update reis@reis` (in a terminal) updates the plugin itself; restart Claude Code afterwards. Two-factor IS accounts are not supported yet.
