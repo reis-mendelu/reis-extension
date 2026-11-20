@@ -84,7 +84,7 @@ capability" is a valid answer that ends the turn.
 ### A fourth product, headless: reIS for Claude (`mcp/`)
 
 A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
-their laptop and exposes ten read-only tools over the same `src/api` fetchers.
+their laptop and exposes eleven read-only tools over the same `src/api` fetchers.
 It has no UI tree, so the parity rule does not apply to it. It is also the only
 reIS code that handles a password: it comes from the keychain and is sent only
 to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
