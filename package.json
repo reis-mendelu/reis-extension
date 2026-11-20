@@ -152,7 +152,7 @@
     "fake-indexeddb": "^6.2.8",
     "globals": "^17.14.0",
     "happy-dom": "^21.0.4",
-    "jsdom": "^30.1.3",
+    "jsdom": "^31.0.0",
     "officeparser": "^8.7.1",
     "postcss": "^8.5.32",
     "prettier": "^3.10.1",
