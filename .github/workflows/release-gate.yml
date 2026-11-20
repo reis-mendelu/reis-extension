@@ -80,9 +80,12 @@ jobs:
           # scrape reaching the output.
           CHECK_NAME='Build web preview'
 
-          conclusion="$(gh api "repos/$GH_REPO/commits/$HEAD_SHA/check-runs" \
-            --jq ".check_runs[] | select(.name == \"$CHECK_NAME\") | .conclusion" \
-            | head -1)"
+          # Asked by name, latest run only: the unfiltered list is paged at 30,
+          # and every edit of the release PR body adds three runs (5.8.0 lost
+          # the build run off page one at 36).
+          conclusion="$(gh api -X GET "repos/$GH_REPO/commits/$HEAD_SHA/check-runs?filter=latest" \
+            -f check_name="$CHECK_NAME" \
+            --jq '.check_runs[0].conclusion // ""')"
 
           if [ "$conclusion" = "success" ]; then
             echo "✓ '$CHECK_NAME' passed for $HEAD_SHA"
