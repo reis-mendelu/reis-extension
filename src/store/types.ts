@@ -748,6 +748,7 @@ export type AppState = ScheduleSlice &
   ExamSlice &
   import('./slices/createNewExamTermsSlice').NewExamTermsSlice &
   import('./slices/createAppUpdateSlice').AppUpdateSlice &
+  import('./slices/createReisForClaudeSlice').ReisForClaudeSlice &
   SyllabusSlice &
   ZaznamnikSlice &
   FilesSlice &
