@@ -14,7 +14,7 @@ const sessionFetch =
 if (sessionFetch === noLoginFetch) process.stderr.write(`reIS for Claude: ${NO_LOGIN_MESSAGE}\n`);
 setSessionFetch(sessionFetch);
 
-const server = new McpServer({ name: 'reis-mendelu', version: '0.1.4' });
+const server = new McpServer({ name: 'reis-mendelu', version: '0.1.5' });
 registerTools(server, {
   fetch: sessionFetch,
   ...(sessionFetch === noLoginFetch ? { unavailable: NO_LOGIN_MESSAGE } : {}),
