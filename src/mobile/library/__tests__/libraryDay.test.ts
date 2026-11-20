@@ -15,7 +15,9 @@ import { libraryRoomOf } from '../ownBooking';
 // Monday 16 November 2026; Tuesday 17 November is a public holiday.
 const MON = '2026-11-16';
 const WED = '2026-11-18';
-const at = (h: number, m = 0) => new Date(2026, 10, 16, h, m);
+// Prague instants: the library's hours are Prague's, and CI runs in UTC.
+const pad2 = (n: number) => String(n).padStart(2, '0');
+const at = (h: number, m = 0) => new Date(`2026-11-16T${pad2(h)}:${pad2(m)}:00+01:00`);
 const free = (day: string, from: number, to: number): Block => ({
   status: 'free',
   start: `${day}T${String(from).padStart(2, '0')}:00`,
@@ -30,7 +32,7 @@ describe('shownDay', () => {
   });
   it('moves past the evening, the weekend and a public holiday', () => {
     expect(shownDay(at(19, 30))).toBe(WED);
-    expect(shownDay(new Date(2026, 10, 20, 18))).toBe('2026-11-23');
+    expect(shownDay(new Date('2026-11-20T18:00:00+01:00'))).toBe('2026-11-23');
   });
 });
 

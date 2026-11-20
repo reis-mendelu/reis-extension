@@ -326,6 +326,41 @@ class IndexedDBServiceImpl {
     await this.run((db) => putAcross(db as any, validated));
   }
 
+  /**
+   * Puts and deletes in one store, in ONE readwrite transaction: all of it
+   * lands or none of it does. Unlike setMany, an invalid value is not skipped:
+   * the deletes beside it may only be right because it lands, so the whole
+   * batch is refused.
+   */
+  async replaceMany<K extends StoreName>(
+    storeName: K,
+    puts: Array<readonly [string, ReisDB[K]['value']]>,
+    deletes: string[]
+  ): Promise<void> {
+    const validated = puts.map(([key, value]) => {
+      const v = this.validate(storeName, value);
+      if (v === undefined) throw new Error(`replaceMany: invalid ${String(storeName)} '${key}'`);
+      return [key, v] as const;
+    });
+    if (validated.length === 0 && deletes.length === 0) return;
+    await this.run(async (db) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tx = db.transaction(storeName as any, 'readwrite');
+      const ops: Promise<unknown>[] = [];
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const [key, value] of validated) ops.push(tx.store.put(value as any, key));
+        for (const key of deletes) ops.push(tx.store.delete(key));
+      } catch (err) {
+        // A throwing put does not abort on its own (see putAcross).
+        for (const p of [...ops, tx.done]) p.catch(() => {});
+        tx.abort();
+        throw err;
+      }
+      await Promise.all([...ops, tx.done]);
+    });
+  }
+
   async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.run((db) => db.delete(storeName as any, key));

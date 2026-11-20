@@ -415,6 +415,8 @@ export interface CalendarCustomEventsSlice {
   addCalendarCustomEvent: (event: CalendarCustomEvent) => Promise<void>;
   updateCalendarCustomEvent: (id: string, patch: Partial<CalendarCustomEvent>) => Promise<void>;
   removeCalendarCustomEvent: (id: string) => Promise<void>;
+  /** Puts these blocks and removes those ids, stored in one transaction: all or nothing. */
+  replaceCalendarCustomEvents: (put: CalendarCustomEvent[], drop: string[]) => Promise<void>;
 }
 
 export interface PulseSlice {
