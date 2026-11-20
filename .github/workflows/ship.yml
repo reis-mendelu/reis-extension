@@ -195,6 +195,25 @@ jobs:
           major="$(xcodebuild -version | head -1 | sed -E 's/Xcode ([0-9]+).*/\1/')"
           [ "$major" -ge 26 ] || { echo "::error::Xcode $major is too old for the current iOS SDK requirement."; exit 1; }
       - run: npm ci
+      - name: Which App Store version
+        # A release submits its tag. A dry run checks the version the PR would
+        # release (package.json at the ref it built): its tag input is the LATEST
+        # EXISTING tag, and asking about that one finds the next version's own
+        # draft as a blocker. A different version in review still blocks.
+        id: version
+        env:
+          TAG: ${{ inputs.tag }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then
+            v="$(node -p "require('./package.json').version")"
+          else
+            v="${TAG#v}"
+          fi
+          printf '%s' "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::'$v' is not an x.y.z version."; exit 1; }
+          echo "App Store version: $v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
       - name: Install the App Store Connect key
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -237,8 +256,8 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          TAG: ${{ inputs.tag }}
-        run: npx tsx scripts/release/ios-submit.ts --version "${TAG#v}" --check
+          VERSION: ${{ steps.version.outputs.version }}
+        run: npx tsx scripts/release/ios-submit.ts --version "$VERSION" --check
       - name: Archive, sign, verify (and upload unless a dry run)
         if: steps.done.outputs.done != 'true' || inputs.dry_run
         env:
@@ -253,10 +272,10 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          TAG: ${{ inputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: >
           npx tsx scripts/release/ios-submit.ts
-          --version "${TAG#v}"
+          --version "$VERSION"
           ${{ inputs.dry_run && '--dry-run' || '' }}
 
   extension:

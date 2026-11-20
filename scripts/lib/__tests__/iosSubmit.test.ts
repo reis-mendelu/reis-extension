@@ -1,37 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { AscBody, AscHttp } from '../ascJson';
 import { submitIosVersion, submittedVersionState } from '../iosSubmit';
-
-type Call = { method: string; path: string; body?: unknown };
-
-/** A tiny App Store Connect: routes by "METHOD path-prefix", records every call. */
-function fakeAsc(routes: Record<string, unknown | ((c: Call) => unknown)>) {
-  const calls: Call[] = [];
-  const asc: AscHttp = async (method, path, body) => {
-    const call = { method, path, body };
-    calls.push(call);
-    const key = Object.keys(routes).find((k) => `${method} ${path}`.startsWith(k));
-    if (!key) throw new Error(`unexpected ${method} ${path}`);
-    const r = routes[key];
-    const data = typeof r === 'function' ? (r as (c: Call) => unknown)(call) : r;
-    return { status: 200, data: data as AscBody };
-  };
-  return { asc, calls };
-}
-
-const build = { data: [{ id: 'B1', attributes: { version: '50401', processingState: 'VALID' } }] };
-const versions = (rows: Array<[string, string, string]>) => ({
-  data: rows.map(([id, versionString, appStoreState]) => ({
-    id,
-    attributes: { versionString, appStoreState },
-  })),
-});
-const base = {
-  appId: 'APP',
-  version: '5.4.1',
-  notes: 'Rozvrh je znovu jen po dnech.',
-  sleep: async () => {},
-};
+import { base, build, fakeAsc, versions } from './iosSubmitFakes';
 
 describe('submitIosVersion', () => {
   it('creates the version, files the notes, attaches the build, reads it back, submits', async () => {
@@ -78,16 +47,6 @@ describe('submitIosVersion', () => {
     expect(calls.every((c) => c.method === 'GET')).toBe(true);
   });
 
-  it('a dry run reads and validates but never writes', async () => {
-    const { asc, calls } = fakeAsc({
-      'GET /v1/builds': build,
-      'GET /v1/apps/APP/appStoreVersions': versions([['V0', '5.4.0', 'READY_FOR_SALE']]),
-    });
-    const out = await submitIosVersion({ ...base, asc, dryRun: true });
-    expect(out.status).toBe('dry-run-ok');
-    expect(calls.every((c) => c.method === 'GET')).toBe(true);
-  });
-
   it('fails when the build never becomes VALID', async () => {
     const { asc } = fakeAsc({
       'GET /v1/builds': {
@@ -104,13 +63,6 @@ describe('submitIosVersion', () => {
     await expect(submitIosVersion({ ...base, asc, dryRun: false, maxPolls: 1 })).rejects.toThrow(
       /No build/
     );
-  });
-
-  it('a dry run with no build yet is fine: PR dry-runs happen before any upload', async () => {
-    const { asc, calls } = fakeAsc({ 'GET /v1/builds': { data: [] } });
-    const out = await submitIosVersion({ ...base, asc, dryRun: true });
-    expect(out.status).toBe('dry-run-ok');
-    expect(calls.every((c) => c.method === 'GET')).toBe(true);
   });
 
   it('refuses when the attached build is not the one just uploaded', async () => {
