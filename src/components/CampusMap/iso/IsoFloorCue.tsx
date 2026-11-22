@@ -54,15 +54,20 @@ export function IsoFloorCue({
   // Room for the label to the corner's left (about 8px a character, plus its padding), else it goes to the right, under the plate.
   const width = text.length * 8 + 20;
   const left = at.x - 20 - width >= 6;
+  // With the corner scrolled out of view the label stays on screen, pinned to the edge: it still says which floor is open.
+  const [w, h] = [viewer.container.clientWidth, viewer.container.clientHeight];
+  const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), Math.max(lo, hi));
+  const y = clamp(at.y + (left ? 0 : 12), 20, h - 20);
+  const x = left ? clamp(at.x - 20, width + 6, w - 6) : clamp(at.x + 20, 6, w - width - 6);
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
       <div
         data-testid="iso-floor-cue"
         data-side={left ? 'left' : 'right'}
         style={{
           transform: left
-            ? `translate(${at.x - 20}px, ${at.y}px) translate(-100%, -50%)`
-            : `translate(${at.x + 20}px, ${at.y + 12}px) translate(0, -50%)`,
+            ? `translate(${x}px, ${y}px) translate(-100%, -50%)`
+            : `translate(${x}px, ${y}px) translate(0, -50%)`,
         }}
         className="absolute left-0 top-0 whitespace-nowrap rounded-lg border border-primary bg-base-100 px-2 py-1 text-xs leading-tight shadow-sm"
       >

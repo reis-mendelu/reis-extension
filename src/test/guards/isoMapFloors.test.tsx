@@ -128,6 +128,29 @@ describe('floors in the isometric map', () => {
     expect(screen.getByTestId('iso-floor-cue').getAttribute('data-side')).toBe('left');
   });
 
+  it('keeps the label inside the screen when its corner is scrolled out of view', async () => {
+    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
+    const edgeOf = () =>
+      Number(
+        /translate\((-?[\d.]+)px/.exec(
+          (screen.getByTestId('iso-floor-cue') as HTMLElement).style.transform
+        )![1]
+      );
+    pixelAt = { x: -200, y: 200 };
+    await open();
+    expect(edgeOf()).toBeGreaterThanOrEqual(6); // its left edge, on the right-hand variant
+    cleanup();
+    pixelAt = { x: 5000, y: 200 };
+    await open();
+    expect(edgeOf()).toBeLessThanOrEqual(390 - 6); // its right edge, on the left-hand variant
+  });
+
+  it('exposes the floor name to assistive technology', async () => {
+    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
+    await open();
+    expect(screen.getByTestId('iso-floor-cue').closest('[aria-hidden="true"]')).toBeNull();
+  });
+
   it('on the ground floor there is only the name', async () => {
     const ground = Q.floors.find((f) => f.level === 0)!;
     useAppStore.setState({ activeBuildingId: 0, activeFloorId: ground.id, roomsByBuilding: {} });
