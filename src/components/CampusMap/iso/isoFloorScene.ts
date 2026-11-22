@@ -39,7 +39,8 @@ export function buildFloorScene(
     level: floor.level,
     z,
     plate,
-    ghost: svgPath(volumeAbove(ring, Math.max(z, groundM), roofM)),
+    // One path per face: joined into a single path, faces of opposite winding cancel where they overlap.
+    ghost: volumeAbove(ring, Math.max(z, groundM), roofM).map((face) => svgPath([face])),
     legs:
       z > groundM
         ? svgPath(

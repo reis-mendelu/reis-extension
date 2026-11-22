@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 const handlers = new Map<string, (e: unknown) => void>();
 const addTiledImage = vi.fn();
@@ -38,44 +38,12 @@ import { IsoMapView } from '../../components/CampusMap/iso/IsoMapView';
 import { useAppStore } from '../../store/useAppStore';
 import { floorHeights, isoRing } from '../../data/map/isoFloors';
 import { IMG } from '../../data/map/isoView';
-import buildingsJson from '../../data/map/buildings.json';
-import type { BuildingsMeta, RoomFeature, RoomsCollection } from '../../types/campusMap';
+import { Q, fourth, room, rooms } from '../fixtures/isoQFloor';
 
 /**
  * The floor the 2D map has open is drawn in the isometric picture, lifted to its height, and
  * the picture can be tapped to pick a room, open a building's floors or leave them.
  */
-const Q = (buildingsJson as BuildingsMeta).buildings.find((b) => b.name === 'Q')!;
-const fourth = Q.floors.find((f) => f.level === 4)!;
-const [x0, y0] = Q.outline.coordinates[0]![0]!;
-// A small room just inside the footprint's first corner.
-const ring = [
-  [x0!, y0!],
-  [x0! + 0.00004, y0!],
-  [x0! + 0.00004, y0! + 0.00003],
-  [x0!, y0! + 0.00003],
-  [x0!, y0!],
-];
-const room = {
-  type: 'Feature',
-  geometry: { type: 'Polygon', coordinates: [ring] },
-  properties: {
-    id: 4101,
-    buildingId: 0,
-    floorId: fourth.id,
-    floorLevel: 4,
-    name: 'Q4.01',
-    type: 'classroom',
-    category: 'teaching',
-    label: 'Q4.01',
-    passportNumber: null,
-    seats: 20,
-    hasProjector: false,
-    hasWhiteboard: false,
-    code: null,
-  },
-} as unknown as RoomFeature;
-const rooms = { type: 'FeatureCollection', features: [room] } as RoomsCollection;
 
 const open = async () => {
   vi.stubEnv('VITE_ISO_MAP_URL', 'http://localhost:8793/tiles');
@@ -130,6 +98,15 @@ describe('floors in the isometric map', () => {
     expect(screen.getByText('-2')).toBeTruthy(); // the same FloorStack as the 2D map
   });
 
+  it('frosts the building above the floor as one path per face, so no two faces cancel each other out', async () => {
+    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
+    await open();
+    // A wall per edge plus the roof: faces that overlap with opposite winding would leave holes in one path.
+    const faces = screen.getByTestId('iso-ghost').querySelectorAll('path');
+    expect(faces.length).toBe(Q.outline.coordinates[0]!.length);
+    faces.forEach((f) => expect((f.getAttribute('d')!.match(/M/g) ?? []).length).toBe(1));
+  });
+
   it('a tap on a room selects it; on bare ground it leaves the building', async () => {
     useAppStore.setState({
       activeBuildingId: 0,
@@ -155,78 +132,5 @@ describe('floors in the isometric map', () => {
     tapAt = { x: 0.01, y: 0.01 };
     act(() => handlers.get('canvas-click')!({ quick: false, position: { x: 1, y: 1 } }));
     expect(useAppStore.getState().activeBuildingId).toBe(0);
-  });
-
-  describe('a building that ends at the floor', () => {
-    const openFloor = async (level: number) => {
-      useAppStore.setState({
-        activeBuildingId: 0,
-        activeFloorId: Q.floors.find((f) => f.level === level)!.id,
-        roomsByBuilding: { 0: rooms },
-      });
-      await open();
-    };
-    const requested = () => addTiledImage.mock.calls.at(-1)![0] as Record<string, unknown>;
-
-    it('asks for the re-rendered patch of that floor, placed in the picture, and drops the frosting once it is drawn', async () => {
-      await openFloor(2);
-      expect(addTiledImage).toHaveBeenCalledTimes(1);
-      expect(requested()).toMatchObject({
-        tileSource: { type: 'image', url: 'http://localhost:8793/tiles/summer/cutaway/b0-2.webp' },
-        x: 5512 / IMG.w,
-        y: 5207 / IMG.w,
-        width: 584 / IMG.w,
-      });
-      expect(screen.getByTestId('iso-ghost')).toBeTruthy(); // still loading: frosted meanwhile
-      const item = {};
-      act(() => (requested().success as (e: { item: object }) => void)({ item }));
-      expect(screen.queryByTestId('iso-ghost')).toBeNull();
-      act(() => useAppStore.setState({ activeBuildingId: null }));
-      expect(removeItem).toHaveBeenCalledWith(item); // leaving the building puts the real one back
-    });
-
-    it('uses the building-removed patch for every floor below ground', async () => {
-      await openFloor(-1);
-      expect(String((requested().tileSource as { url: string }).url)).toMatch(/b0-g\.webp$/);
-    });
-
-    it('keeps the frosting when the patch never arrives', async () => {
-      await openFloor(3);
-      expect(screen.getByTestId('iso-ghost')).toBeTruthy();
-    });
-
-    it('puts back a patch that arrives after its floor was left', async () => {
-      await openFloor(3);
-      const success = requested().success as (e: { item: object }) => void;
-      act(() => useAppStore.setState({ activeBuildingId: null }));
-      const late = {};
-      act(() => success({ item: late }));
-      expect(removeItem).toHaveBeenCalledWith(late);
-    });
-  });
-
-  it('counts the floors on the building: a ruler up its corner, the open floor standing out', async () => {
-    useAppStore.setState({
-      activeBuildingId: 0,
-      activeFloorId: fourth.id,
-      roomsByBuilding: { 0: rooms },
-    });
-    await open();
-    const ruler = await screen.findByTestId('iso-ruler');
-    await waitFor(() => expect(ruler.querySelectorAll('span').length).toBe(5)); // levels 0..4
-    expect(ruler.querySelector('[data-active="true"]')?.textContent).toBe('4');
-  });
-
-  it('shortens the ruler when a lower floor is chosen, without a frame in between', async () => {
-    useAppStore.setState({
-      activeBuildingId: 0,
-      activeFloorId: fourth.id,
-      roomsByBuilding: { 0: rooms },
-    });
-    await open();
-    const ruler = await screen.findByTestId('iso-ruler');
-    await waitFor(() => expect(ruler.querySelectorAll('span').length).toBe(5));
-    act(() => useAppStore.setState({ activeFloorId: Q.floors.find((f) => f.level === 2)!.id }));
-    expect(screen.getByTestId('iso-ruler').querySelectorAll('span').length).toBeLessThanOrEqual(4);
   });
 });

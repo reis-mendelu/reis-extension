@@ -129,7 +129,9 @@ export function IsoFloorLayer({
     >
       {!cut && (
         <g opacity="0.55" data-testid="iso-ghost">
-          <path d={scene.ghost} fill="#f8fafc" stroke="#f8fafc" strokeWidth="2" {...nonScaling} />
+          {scene.ghost.map((d, i) => (
+            <path key={i} d={d} fill="#f8fafc" stroke="#f8fafc" strokeWidth="2" {...nonScaling} />
+          ))}
         </g>
       )}
       {scene.legs && !cut && (
