@@ -1,25 +1,23 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type OpenSeadragon from 'openseadragon';
 import buildingsJson from '../../../data/map/buildings.json';
-import type { BuildingsMeta, RoomFeature } from '../../../types/campusMap';
+import type { BuildingsMeta } from '../../../types/campusMap';
 import { useAppStore } from '../../../store/useAppStore';
 import { IMG } from '../../../data/map/isoView';
 import {
   floorHeights,
   frameBuilding,
   inRing,
-  isoRing,
   onBuilding,
   svgPath,
-  volumeAbove,
 } from '../../../data/map/isoFloors';
-import { categoryStyle, polygonCentroid, roomLabel } from '../mapHelpers';
+import { roomLabel } from '../mapHelpers';
+import { RoomShape } from './RoomShape';
+import { buildFloorScene } from './isoFloorScene';
+import { placeLabels } from './isoFloorLabels';
 import { selectedRoomId } from '../roomTints';
 
 const META = buildingsJson as BuildingsMeta;
-const LABEL_PX = 11;
-/** Room names are placed biggest room first, and a name that would land on one already placed is left out. */
-const LABEL_PX_PER_LETTER = 6;
 
 /**
  * One floor of a building, drawn where it really is in the picture: the floor plan lifted to
@@ -47,41 +45,10 @@ export function IsoFloorLayer({
   const svg = useRef<SVGSVGElement>(null);
   const labels = useRef<SVGGElement>(null);
 
-  const scene = useMemo(() => {
-    const b = META.buildings.find((x) => x.id === buildingId);
-    const floor = b?.floors.find((f) => f.id === floorId);
-    if (!b || !floor) return null;
-    const { floorM, roofM } = floorHeights(b);
-    const z = floor.level * floorM;
-    const ring = b.outline.coordinates[0]!;
-    const plate = isoRing(ring, z);
-    const feats = (rooms?.features ?? []).filter((f) => f.properties.floorId === floorId);
-    const placed = feats.map((f) => {
-      const r = isoRing(f.geometry.coordinates[0]!, z);
-      const [cx, cy] = polygonCentroid(r);
-      const xs = r.map((p) => p[0]);
-      const ys = r.map((p) => p[1]);
-      return {
-        f,
-        ring: r,
-        at: [cx, cy] as [number, number],
-        area: (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)),
-      };
-    });
-    return {
-      z,
-      plate,
-      ghost: svgPath(volumeAbove(ring, Math.max(z, 0), roofM)),
-      legs:
-        z > 0
-          ? svgPath(isoRing(ring, 0).map((p, i) => [p, plate[i]!] as [number, number][])).replace(
-              /Z/g,
-              ''
-            )
-          : '',
-      placed,
-    };
-  }, [buildingId, floorId, rooms]);
+  const scene = useMemo(
+    () => buildFloorScene(buildingId, floorId, rooms),
+    [buildingId, floorId, rooms]
+  );
 
   // The viewBox is the viewer's own view, in picture pixels; text keeps a constant size on screen.
   useEffect(() => {
@@ -94,32 +61,7 @@ export function IsoFloorLayer({
       const s = viewer.container.clientWidth / w;
       const g = labels.current;
       if (g) {
-        g.style.fontSize = `${LABEL_PX / s}px`;
-        g.setAttribute('stroke-width', String(3 / s));
-        const taken: { x: number; y: number; w: number; h: number }[] = [];
-        const names = Array.from(g.children) as SVGTextElement[];
-        // The selected room first (always named), then by room size (DOM order is largest first).
-        const order = [
-          ...names.filter((t) => t.dataset.sel),
-          ...names.filter((t) => !t.dataset.sel),
-        ];
-        for (const t of order) {
-          const w = Number(t.dataset.n) * LABEL_PX_PER_LETTER + 4;
-          const h = LABEL_PX + 3;
-          const x = (Number(t.dataset.x) - b.x * IMG.w) * s;
-          const y = (Number(t.dataset.y) - b.y * IMG.w) * s;
-          const seen =
-            x > -w &&
-            y > -h &&
-            x < viewer.container.clientWidth + w &&
-            y < viewer.container.clientHeight + h;
-          const clear = !taken.some(
-            (r) => Math.abs(r.x - x) < (r.w + w) / 2 && Math.abs(r.y - y) < (r.h + h) / 2
-          );
-          const show = !!t.dataset.sel || (seen && clear);
-          t.style.display = show ? '' : 'none';
-          if (show) taken.push({ x, y, w, h });
-        }
+        placeLabels(g, b, s, viewer.container.clientWidth, viewer.container.clientHeight);
       }
     };
     sync();
@@ -239,28 +181,5 @@ export function IsoFloorLayer({
           })}
       </g>
     </svg>
-  );
-}
-
-function RoomShape({
-  f,
-  ring,
-  selected,
-}: {
-  f: RoomFeature;
-  ring: [number, number][];
-  selected: boolean;
-}) {
-  const struct = f.properties.category === 'structure';
-  const st = categoryStyle(f.properties.category, f.properties.type);
-  return (
-    <path
-      d={svgPath([ring])}
-      fill={selected ? '#fb923c' : struct ? '#e3e6ea' : st.fill}
-      fillOpacity={selected ? 0.95 : struct ? 0.5 : 0.75}
-      stroke={selected ? '#ea580c' : struct ? '#c2c8d0' : st.stroke}
-      strokeWidth={selected ? 3 : 1}
-      vectorEffect="non-scaling-stroke"
-    />
   );
 }

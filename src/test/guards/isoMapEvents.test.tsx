@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 vi.mock('openseadragon', () => ({
   default: {
@@ -69,14 +69,17 @@ describe('events on the isometric map', () => {
       event('prague', [14.4378, 50.0755]),
       event('nowhere', null),
     ]);
+    // Pins are placed a frame after the viewer exists.
+    await waitFor(() =>
+      expect(screen.getByTestId('iso-pins').querySelectorAll('button')).toHaveLength(1)
+    );
     const pins = screen.getByTestId('iso-pins').querySelectorAll('button');
-    expect(pins).toHaveLength(1);
     expect(pins[0]!.getAttribute('title')).toBe('Akce campus');
   });
 
   it('a tap opens the event card over the picture, which stays open', async () => {
     await open([event('campus', [16.614247, 49.209592])]);
-    fireEvent.click(screen.getByTitle('Akce campus'));
+    fireEvent.click(await screen.findByTitle('Akce campus'));
     expect(screen.getByTestId('iso-event-card')).toBeTruthy();
     expect(useAppStore.getState().isoMapOpen).toBe(true);
     expect(trackMapEventView).toHaveBeenCalledWith('campus');
@@ -88,7 +91,7 @@ describe('events on the isometric map', () => {
 
   it('"Show on map" hands the event to the 2D map, which closes the picture', async () => {
     await open([event('campus', [16.614247, 49.209592])]);
-    fireEvent.click(screen.getByTitle('Akce campus'));
+    fireEvent.click(await screen.findByTitle('Akce campus'));
     fireEvent.click(screen.getByText(cs.map.isoShowOnMap));
     expect(useAppStore.getState().isoMapOpen).toBe(false);
     expect(useAppStore.getState().mapSelection?.kind).toBe('event');
