@@ -16,7 +16,6 @@ import { IsoEventPins } from './IsoEventPins';
 import { IsoEventCard } from './IsoEventCard';
 import { IsoFloorLayer } from './IsoFloorLayer';
 import { IsoFloorRuler } from './IsoFloorRuler';
-import { IsoFloorCue } from './IsoFloorCue';
 import { useModalFocus } from './useModalFocus';
 import { FloorStack } from '../FloorStack';
 
@@ -146,7 +145,6 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
       <div ref={host} className="absolute inset-0" />
       {engine && <IsoFloorLayer viewer={engine.viewer} osd={engine.osd} />}
       {engine && inBuilding && <IsoFloorRuler viewer={engine.viewer} osd={engine.osd} />}
-      {engine && inBuilding && <IsoFloorCue viewer={engine.viewer} osd={engine.osd} />}
       {inBuilding && (
         <div className="absolute right-3 top-1/2 z-[1] -translate-y-1/2">
           <FloorStack size="sm" />

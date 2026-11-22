@@ -39,7 +39,8 @@ import { IsoMapView } from '../../components/CampusMap/iso/IsoMapView';
 import { useAppStore } from '../../store/useAppStore';
 import { floorHeights, isoRing } from '../../data/map/isoFloors';
 import { IMG } from '../../data/map/isoView';
-import { Q, fourth, room, rooms, stairRooms } from '../fixtures/isoQFloor';
+import { Q, fourth, room, rooms, stairRooms, stairs } from '../fixtures/isoQFloor';
+import type { RoomFeature } from '../../types/campusMap';
 
 /**
  * The floor the 2D map has open is drawn in the isometric picture, lifted to its height, and
@@ -109,56 +110,6 @@ describe('floors in the isometric map', () => {
     faces.forEach((f) => expect((f.getAttribute('d')!.match(/M/g) ?? []).length).toBe(1));
   });
 
-  it('names the open floor, and says nothing about up or down', async () => {
-    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
-    await open();
-    const cue = screen.getByTestId('iso-floor-cue');
-    expect(cue.textContent).toContain('4. patro');
-    expect(cue.textContent).toBe('4. patro');
-  });
-
-  it("keeps the label on screen: on the corner's left when there is room, on its right when not", async () => {
-    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
-    pixelAt = { x: 60, y: 200 };
-    await open();
-    expect(screen.getByTestId('iso-floor-cue').getAttribute('data-side')).toBe('right');
-    cleanup();
-    pixelAt = { x: 300, y: 200 };
-    await open();
-    expect(screen.getByTestId('iso-floor-cue').getAttribute('data-side')).toBe('left');
-  });
-
-  it('keeps the label inside the screen when its corner is scrolled out of view', async () => {
-    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
-    const edgeOf = () =>
-      Number(
-        /translate\((-?[\d.]+)px/.exec(
-          (screen.getByTestId('iso-floor-cue') as HTMLElement).style.transform
-        )![1]
-      );
-    pixelAt = { x: -200, y: 200 };
-    await open();
-    expect(edgeOf()).toBeGreaterThanOrEqual(6); // its left edge, on the right-hand variant
-    cleanup();
-    pixelAt = { x: 5000, y: 200 };
-    await open();
-    expect(edgeOf()).toBeLessThanOrEqual(390 - 6); // its right edge, on the left-hand variant
-  });
-
-  it('exposes the floor name to assistive technology', async () => {
-    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
-    await open();
-    expect(screen.getByTestId('iso-floor-cue').closest('[aria-hidden="true"]')).toBeNull();
-  });
-
-  it('on the ground floor there is only the name', async () => {
-    const ground = Q.floors.find((f) => f.level === 0)!;
-    useAppStore.setState({ activeBuildingId: 0, activeFloorId: ground.id, roomsByBuilding: {} });
-    await open();
-    const cue = screen.getByTestId('iso-floor-cue');
-    expect(cue.textContent).toBe('přízemí');
-  });
-
   it('draws a stairwell as steps, with no arrow, and a classroom as a plain room', async () => {
     useAppStore.setState({
       activeBuildingId: 0,
@@ -169,6 +120,42 @@ describe('floors in the isometric map', () => {
     const treads = screen.getAllByTestId('iso-treads');
     expect(treads).toHaveLength(1);
     expect((treads[0]!.getAttribute('d')!.match(/M/g) ?? []).length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('pulses the stairs nearest a picked room, but not the stairs of a plain floor', async () => {
+    useAppStore.setState({
+      activeBuildingId: 0,
+      activeFloorId: fourth.id,
+      roomsByBuilding: { 0: stairRooms },
+    });
+    await open();
+    expect(screen.getByTestId('iso-treads').getAttribute('data-guide')).toBeNull();
+    cleanup();
+    useAppStore.setState({ mapSelection: { kind: 'room', room: room.properties } });
+    await open();
+    const guide = screen.getByTestId('iso-treads');
+    expect(guide.getAttribute('data-guide')).toBe('true');
+    const steps = guide.querySelectorAll('path');
+    expect(steps.length).toBeGreaterThanOrEqual(4);
+    // A wave, not one blink: each step starts a little after the last.
+    const delays = Array.from(steps).map((p) => (p as SVGElement).style.animationDelay);
+    expect(new Set(delays).size).toBe(steps.length);
+  });
+
+  it('keeps still when the picked room is on the ground floor', async () => {
+    const ground = Q.floors.find((f) => f.level === 0)!;
+    const onGround = (f: RoomFeature) =>
+      ({ ...f, properties: { ...f.properties, floorId: ground.id, floorLevel: 0 } }) as RoomFeature;
+    useAppStore.setState({
+      activeBuildingId: 0,
+      activeFloorId: ground.id,
+      roomsByBuilding: {
+        0: { type: 'FeatureCollection', features: [onGround(room), onGround(stairs)] },
+      },
+      mapSelection: { kind: 'room', room: room.properties },
+    });
+    await open();
+    expect(screen.getByTestId('iso-treads').getAttribute('data-guide')).toBeNull();
   });
 
   it('a tap on a room selects it; on bare ground it leaves the building', async () => {

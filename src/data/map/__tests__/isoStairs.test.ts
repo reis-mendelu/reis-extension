@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isoPixel } from '../isoView';
-import { isStairs, stairTreads } from '../isoStairs';
+import { guideStairs, isStairs, stairTreads } from '../isoStairs';
 
 // A stairwell 2.5 m wide and 6 m long, long side north-south, somewhere on the campus.
 const [LNG, LAT] = [16.6135, 49.2095];
@@ -71,5 +71,41 @@ describe('stairTreads', () => {
       number,
     ][];
     expect(stairTreads(tiny, 10)).toBe('');
+  });
+});
+
+/**
+ * Pick a room on another floor and the stairs nearest it light up and move, so a student sees where
+ * to climb. Nobody knows which floor they start from, so which way it points is not said.
+ */
+describe('guideStairs', () => {
+  const rooms = [
+    { id: 1, type: 'classroom_and_laboratory', at: [100, 100] as [number, number] },
+    { id: 2, type: 'stairs', at: [400, 100] as [number, number] },
+    { id: 3, type: 'stairs', at: [150, 100] as [number, number] },
+    { id: 4, type: 'emergency_stairs', at: [110, 100] as [number, number] },
+    { id: 5, type: 'elevator', at: [101, 100] as [number, number] },
+  ];
+
+  it('picks the stairs nearest the room, emergency stairs included', () => {
+    expect(guideStairs(rooms, 1, false)).toBe(4);
+    expect(
+      guideStairs(
+        rooms.filter((r) => r.id !== 4),
+        1,
+        false
+      )
+    ).toBe(3);
+  });
+
+  it('says nothing on the lowest floor, with nothing picked, or when the pick is the stairs', () => {
+    expect(guideStairs(rooms, 1, true)).toBeNull();
+    expect(guideStairs(rooms, null, false)).toBeNull();
+    expect(guideStairs(rooms, 3, false)).toBeNull();
+    expect(guideStairs(rooms, 99, false)).toBeNull();
+  });
+
+  it('says nothing when the floor has no stairs', () => {
+    expect(guideStairs([rooms[0]!, rooms[4]!], 1, false)).toBeNull();
   });
 });

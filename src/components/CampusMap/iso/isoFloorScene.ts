@@ -45,6 +45,8 @@ export function buildFloorScene(
   });
   return {
     level: floor.level,
+    // The lowest floor above ground: a room there is reached from the street, not by stairs.
+    onLowest: floor.level === lowest,
     z,
     plate,
     deck,

@@ -68,3 +68,25 @@ export function stairTreads(ring: number[][], heightM: number): string {
     return `M${at(r, width[0] + inset)}L${at(r, width[1] - inset)}`;
   }).join('');
 }
+
+/**
+ * The stairs to light up for the room a student picked: the nearest ones on the open floor, emergency stairs
+ * included (in these buildings they are ordinary staircases, often the nearest). Nothing on the lowest floor above ground (a room there is
+ * reached from the street), with nothing picked, or when the pick is itself the stairs. `at` is the room's
+ * middle in picture pixels. Returns the stairs' room id.
+ */
+export function guideStairs(
+  rooms: { id: number; type: string; at: [number, number] }[],
+  selectedId: number | null,
+  onLowestFloor: boolean
+): number | null {
+  const picked = rooms.find((r) => r.id === selectedId);
+  if (onLowestFloor || !picked || isStairs(picked.type)) return null;
+  const pool = rooms.filter((r) => isStairs(r.type));
+  const dist = (r: { at: [number, number] }) =>
+    Math.hypot(r.at[0] - picked.at[0], r.at[1] - picked.at[1]);
+  return (
+    pool.reduce<(typeof pool)[number] | null>((a, r) => (!a || dist(r) < dist(a) ? r : a), null)
+      ?.id ?? null
+  );
+}
