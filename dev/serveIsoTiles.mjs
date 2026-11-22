@@ -5,24 +5,25 @@
 import { createServer } from 'node:http';
 import { createReadStream, statSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { join, resolve } from 'node:path';
 
 const arg = process.argv[2] ?? join(homedir(), 'izomapa-brno', 'site', 'tiles');
 const root = resolve(arg.startsWith('~') ? join(homedir(), arg.slice(1)) : arg);
 const port = Number(process.env.ISO_TILES_PORT ?? 8793);
-const types = { '.webp': 'image/webp', '.png': 'image/png', '.json': 'application/json' };
+// Only the exact shape of a tile URL is served, and the file path is built from the
+// captured parts, never from the raw request: /<season>/<level>/<col>_<row>.webp
+const TILE = /^\/(summer|autumn|winter|spring|lights)\/(\d{1,2})\/(\d{1,3})_(\d{1,3})\.webp$/;
 
 createServer((req, res) => {
-  const path = normalize(decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/'));
-  const file = join(root, path);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  if (file !== root && !file.startsWith(root + sep)) return void res.writeHead(403).end();
+  const m = TILE.exec((req.url ?? '').split('?')[0] ?? '');
+  if (!m) return void res.writeHead(404).end();
+  const file = join(root, m[1], m[2], `${m[3]}_${m[4]}.webp`);
   try {
-    const st = statSync(file);
-    if (!st.isFile()) throw new Error('not a file');
+    const size = statSync(file).size;
     res.writeHead(200, {
-      'Content-Type': types[extname(file)] ?? 'application/octet-stream',
-      'Content-Length': st.size,
+      'Content-Type': 'image/webp',
+      'Content-Length': size,
       'Cache-Control': 'public, max-age=3600',
     });
     createReadStream(file).pipe(res);
