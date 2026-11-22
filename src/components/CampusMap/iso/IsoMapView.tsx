@@ -3,6 +3,9 @@ import type OpenSeadragon from 'openseadragon';
 import { X } from 'lucide-react';
 import { isoDzi, isoMapBase, isoSeason } from '../../../data/map/isoMap';
 import { isoMinZoom, isoOpeningView } from '../../../data/map/isoView';
+import { frameBuilding } from '../../../data/map/isoFloors';
+import buildingsJson from '../../../data/map/buildings.json';
+import type { BuildingsMeta } from '../../../types/campusMap';
 import { getMapInstance } from '../mapInstance';
 import { logError } from '../../../utils/reportError';
 import { useAppStore } from '../../../store/useAppStore';
@@ -11,6 +14,8 @@ import { useEscapeLayer } from '../../../hooks/ui/useEscapeLayer';
 import { useVisibleMapEvents } from '../../../hooks/useVisibleMapEvents';
 import { IsoEventPins } from './IsoEventPins';
 import { IsoEventCard } from './IsoEventCard';
+import { IsoFloorLayer } from './IsoFloorLayer';
+import { FloorStack } from '../FloorStack';
 
 /**
  * The isometric campus map, full-bleed over the map screen: pan with a finger or
@@ -48,6 +53,7 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
     osd: typeof OpenSeadragon;
   } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const inBuilding = useAppStore((s) => s.activeBuildingId !== null);
   const events = useVisibleMapEvents();
   const selected = events.find((e) => e.id === selectedId) ?? null;
 
@@ -138,10 +144,15 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
           fitZoomFloor();
           const map = getMapInstance();
           const c = map?.getCenter();
-          const start = isoOpeningView(
-            map && c ? { lat: c.lat, lng: c.lng, zoom: map.getZoom() } : null,
-            v.container.clientWidth
-          );
+          // With a building's floors open in the 2D map, the whole building is the view.
+          const open = useAppStore.getState().activeBuildingId;
+          const building = (buildingsJson as BuildingsMeta).buildings.find((b) => b.id === open);
+          const start = building
+            ? frameBuilding(building, v.container.clientWidth / v.container.clientHeight)
+            : isoOpeningView(
+                map && c ? { lat: c.lat, lng: c.lng, zoom: map.getZoom() } : null,
+                v.container.clientWidth
+              );
           v.viewport.zoomTo(Math.max(start.zoom, v.viewport.getMinZoom()), undefined, true);
           v.viewport.panTo(new OpenSeadragon.Point(start.x, start.y), true);
           v.viewport.applyConstraints(true);
@@ -170,6 +181,12 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
       className="absolute inset-0 z-[1002] bg-base-300"
     >
       <div ref={host} className="absolute inset-0" />
+      {engine && <IsoFloorLayer viewer={engine.viewer} osd={engine.osd} />}
+      {inBuilding && (
+        <div className="absolute right-3 top-1/2 z-[1] -translate-y-1/2">
+          <FloorStack size="sm" />
+        </div>
+      )}
       {engine && (
         <IsoEventPins
           viewer={engine.viewer}

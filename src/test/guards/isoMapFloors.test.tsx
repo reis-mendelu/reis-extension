@@ -1,0 +1,153 @@
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, render, screen } from '@testing-library/react';
+
+const handlers = new Map<string, (e: unknown) => void>();
+let tapAt = { x: 0, y: 0 };
+vi.mock('openseadragon', () => ({
+  default: {
+    Point: vi.fn().mockImplementation(function (this: { x: number; y: number }, x, y) {
+      this.x = x;
+      this.y = y;
+    }),
+    Viewer: vi.fn().mockImplementation(function () {
+      return {
+        destroy: vi.fn(),
+        addHandler: (n: string, fn: (e: unknown) => void) => handlers.set(n, fn),
+        removeHandler: vi.fn(),
+        world: { getItemCount: () => 1 },
+        container: { clientWidth: 390, clientHeight: 844 },
+        viewport: {
+          zoomTo: vi.fn(),
+          panTo: vi.fn(),
+          applyConstraints: vi.fn(),
+          getMinZoom: () => 1,
+          getZoom: () => 3,
+          getBounds: () => ({ x: 0.3, y: 0.3, width: 0.1, height: 0.2 }),
+          pointFromPixel: () => tapAt,
+          pixelFromPoint: () => ({ x: 120, y: 200 }),
+        },
+      };
+    }),
+  },
+}));
+
+import { IsoMapView } from '../../components/CampusMap/iso/IsoMapView';
+import { useAppStore } from '../../store/useAppStore';
+import { floorHeights, isoRing } from '../../data/map/isoFloors';
+import { IMG } from '../../data/map/isoView';
+import buildingsJson from '../../data/map/buildings.json';
+import type { BuildingsMeta, RoomFeature, RoomsCollection } from '../../types/campusMap';
+
+/**
+ * The floor the 2D map has open is drawn in the isometric picture, lifted to its height, and
+ * the picture can be tapped to pick a room, open a building's floors or leave them.
+ */
+const Q = (buildingsJson as BuildingsMeta).buildings.find((b) => b.name === 'Q')!;
+const fourth = Q.floors.find((f) => f.level === 4)!;
+const [x0, y0] = Q.outline.coordinates[0]![0]!;
+// A small room just inside the footprint's first corner.
+const ring = [
+  [x0!, y0!],
+  [x0! + 0.00004, y0!],
+  [x0! + 0.00004, y0! + 0.00003],
+  [x0!, y0! + 0.00003],
+  [x0!, y0!],
+];
+const room = {
+  type: 'Feature',
+  geometry: { type: 'Polygon', coordinates: [ring] },
+  properties: {
+    id: 4101,
+    buildingId: 0,
+    floorId: fourth.id,
+    floorLevel: 4,
+    name: 'Q4.01',
+    type: 'classroom',
+    category: 'teaching',
+    label: 'Q4.01',
+    passportNumber: null,
+    seats: 20,
+    hasProjector: false,
+    hasWhiteboard: false,
+    code: null,
+  },
+} as unknown as RoomFeature;
+const rooms = { type: 'FeatureCollection', features: [room] } as RoomsCollection;
+
+const open = async () => {
+  vi.stubEnv('VITE_ISO_MAP_URL', 'http://localhost:8793/tiles');
+  await act(async () => {
+    useAppStore.setState({ isoMapOpen: true });
+    render(<IsoMapView />);
+  });
+};
+const tapRoom = () => {
+  const pts = isoRing(room.geometry.coordinates[0]!, 4 * floorHeights(Q).floorM);
+  const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+  const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  tapAt = { x: cx / IMG.w, y: cy / IMG.w };
+};
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  handlers.clear();
+  useAppStore.setState({
+    isoMapOpen: false,
+    activeBuildingId: null,
+    activeFloorId: null,
+    roomsByBuilding: {},
+    mapSelection: null,
+  });
+});
+
+describe('floors in the isometric map', () => {
+  it('draws nothing, and shows no floor column, while no building is open', async () => {
+    await open();
+    expect(screen.queryByTestId('iso-floor')).toBeNull();
+    expect(screen.queryByText('-2')).toBeNull();
+  });
+
+  it('draws the open floor: the building above it frosted, the plate, its rooms; with the floor column', async () => {
+    useAppStore.setState({
+      activeBuildingId: 0,
+      activeFloorId: fourth.id,
+      roomsByBuilding: { 0: rooms },
+    });
+    await open();
+    const svg = screen.getByTestId('iso-floor');
+    // ghost + plate + one room, and the viewBox follows the viewer (picture pixels).
+    expect(svg.querySelectorAll('path').length).toBeGreaterThanOrEqual(3);
+    expect(svg.getAttribute('viewBox')).toBe(
+      `${0.3 * IMG.w} ${0.3 * IMG.w} ${0.1 * IMG.w} ${0.2 * IMG.w}`
+    );
+    expect(svg.textContent).toContain('Q4.01');
+    expect(screen.getByText('-2')).toBeTruthy(); // the same FloorStack as the 2D map
+  });
+
+  it('a tap on a room selects it; on bare ground it leaves the building', async () => {
+    useAppStore.setState({
+      activeBuildingId: 0,
+      activeFloorId: fourth.id,
+      roomsByBuilding: { 0: rooms },
+    });
+    await open();
+    tapRoom();
+    act(() => handlers.get('canvas-click')!({ quick: true, position: { x: 1, y: 1 } }));
+    expect(useAppStore.getState().mapSelection).toMatchObject({ kind: 'room' });
+    tapAt = { x: 0.01, y: 0.01 }; // nowhere near a building
+    act(() => handlers.get('canvas-click')!({ quick: true, position: { x: 1, y: 1 } }));
+    expect(useAppStore.getState().activeBuildingId).toBeNull();
+  });
+
+  it('a tap that is a drag does nothing', async () => {
+    useAppStore.setState({
+      activeBuildingId: 0,
+      activeFloorId: fourth.id,
+      roomsByBuilding: { 0: rooms },
+    });
+    await open();
+    tapAt = { x: 0.01, y: 0.01 };
+    act(() => handlers.get('canvas-click')!({ quick: false, position: { x: 1, y: 1 } }));
+    expect(useAppStore.getState().activeBuildingId).toBe(0);
+  });
+});

@@ -9,7 +9,7 @@ import { ISO_START } from './isoMap';
  * are the render's own (its centre, its top-left corner in metres), checked
  * against building Q in isoView.test.ts.
  */
-const IMG = { w: 11535, h: 8517 };
+export const IMG = { w: 11535, h: 8517 };
 const GEO = {
   lon0: 16.6141,
   lat0: 49.21265,
@@ -21,12 +21,22 @@ const GEO = {
   ground: 17,
 };
 
-/** A place in OpenSeadragon viewport units (the picture is 1 wide, so y is pixels / 11535), or null off the picture. */
-export function isoPointFromLatLng(lat: number, lng: number): { x: number; y: number } | null {
+/**
+ * A place in the picture's own pixels (not clamped to it), `heightM` metres above the ground:
+ * height pushes a place up the page exactly as far north does, by cos 45°.
+ */
+export function isoPixel(lat: number, lng: number, heightM = 0): { px: number; py: number } {
   const east = (lng - GEO.lon0) * Math.cos((GEO.lat0 * Math.PI) / 180) * 111320;
   const north = (lat - GEO.lat0) * 110574;
-  const px = (east - GEO.x0) / GEO.mpp;
-  const py = (GEO.y1 - Math.SQRT1_2 * (north + GEO.ground)) / GEO.mpp;
+  return {
+    px: (east - GEO.x0) / GEO.mpp,
+    py: (GEO.y1 - Math.SQRT1_2 * (north + GEO.ground + heightM)) / GEO.mpp,
+  };
+}
+
+/** A place in OpenSeadragon viewport units (the picture is 1 wide, so y is pixels / 11535), or null off the picture. */
+export function isoPointFromLatLng(lat: number, lng: number): { x: number; y: number } | null {
+  const { px, py } = isoPixel(lat, lng);
   if (px < 0 || px > IMG.w || py < 0 || py > IMG.h) return null;
   return { x: px / IMG.w, y: py / IMG.w };
 }
