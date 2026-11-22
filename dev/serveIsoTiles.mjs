@@ -13,12 +13,18 @@ const port = Number(process.env.ISO_TILES_PORT ?? 8793);
 // Only the exact shape of a tile URL is served, and the file path is built from the
 // captured parts, never from the raw request: /<season>/<level>/<col>_<row>.webp
 const TILE = /^\/(summer|autumn|winter|spring|lights)\/(\d{1,2})\/(\d{1,3})_(\d{1,3})\.webp$/;
+// ...and a building's cut-off patch of the picture: /summer/cutaway/b<building>-<floor or g>.webp
+const CUTAWAY = /^\/summer\/cutaway\/(b\d{1,3}-(?:g|\d))\.webp$/;
 
 createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  const m = TILE.exec((req.url ?? '').split('?')[0] ?? '');
-  if (!m) return void res.writeHead(404).end();
-  const file = join(root, m[1], m[2], `${m[3]}_${m[4]}.webp`);
+  const url = (req.url ?? '').split('?')[0] ?? '';
+  const m = TILE.exec(url);
+  const c = CUTAWAY.exec(url);
+  if (!m && !c) return void res.writeHead(404).end();
+  const file = m
+    ? join(root, m[1], m[2], `${m[3]}_${m[4]}.webp`)
+    : join(root, 'summer', 'cutaway', `${c[1]}.webp`);
   try {
     const size = statSync(file).size;
     res.writeHead(200, {

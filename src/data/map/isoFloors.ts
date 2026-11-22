@@ -5,12 +5,13 @@ import { IMG, isoPixel } from './isoView';
  * Where a building's floors stand in the picture. A floor is a plate at its height above the
  * ground; the rest of the building above it is what a student must "see through".
  *
- * Q's numbers are measured from the render's own model (ground 17.34 m, eaves 35.14 m: 17.8 m
- * over six storeys). Other buildings get a typical storey and are drawn the same way; their
- * real heights can replace the guess one building at a time.
+ * Q's numbers are the render's own model (heights above the terrain): the entrance level sits
+ * on a 3.3 m plinth, storeys are 3.55 m, and the south wing's roof is 24.7 m. Other buildings
+ * get a typical storey standing on the ground and are drawn the same way; their real heights
+ * can replace the guess one building at a time.
  */
-const MEASURED: Readonly<Record<number, { floorM: number; roofM: number }>> = {
-  0: { floorM: 2.97, roofM: 17.8 },
+const MEASURED: Readonly<Record<number, { baseM: number; floorM: number; roofM: number }>> = {
+  0: { baseM: 3.3, floorM: 3.55, roofM: 24.7 },
 };
 const TYPICAL_FLOOR_M = 3.2;
 
@@ -18,7 +19,7 @@ export function floorHeights(b: Pick<Building, 'id' | 'floors'>) {
   const known = MEASURED[b.id];
   if (known) return known;
   const top = Math.max(0, ...b.floors.map((f) => f.level));
-  return { floorM: TYPICAL_FLOOR_M, roofM: (top + 1) * TYPICAL_FLOOR_M };
+  return { baseM: 0, floorM: TYPICAL_FLOOR_M, roofM: (top + 1) * TYPICAL_FLOOR_M };
 }
 
 /** A ring of [lng, lat] as picture pixels, lifted `heightM` above the ground. */

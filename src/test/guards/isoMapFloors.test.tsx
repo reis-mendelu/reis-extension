@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 
 const handlers = new Map<string, (e: unknown) => void>();
+const addTiledImage = vi.fn();
+const removeItem = vi.fn();
 let tapAt = { x: 0, y: 0 };
 vi.mock('openseadragon', () => ({
   default: {
@@ -14,7 +16,8 @@ vi.mock('openseadragon', () => ({
         destroy: vi.fn(),
         addHandler: (n: string, fn: (e: unknown) => void) => handlers.set(n, fn),
         removeHandler: vi.fn(),
-        world: { getItemCount: () => 1 },
+        world: { getItemCount: () => 1, removeItem },
+        addTiledImage,
         container: { clientWidth: 390, clientHeight: 844 },
         viewport: {
           zoomTo: vi.fn(),
@@ -82,7 +85,8 @@ const open = async () => {
   });
 };
 const tapRoom = () => {
-  const pts = isoRing(room.geometry.coordinates[0]!, 4 * floorHeights(Q).floorM);
+  const { baseM, floorM } = floorHeights(Q);
+  const pts = isoRing(room.geometry.coordinates[0]!, baseM + 4 * floorM);
   const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
   const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
   tapAt = { x: cx / IMG.w, y: cy / IMG.w };
@@ -91,6 +95,8 @@ const tapRoom = () => {
 afterEach(() => {
   vi.unstubAllEnvs();
   handlers.clear();
+  addTiledImage.mockClear();
+  removeItem.mockClear();
   useAppStore.setState({
     isoMapOpen: false,
     activeBuildingId: null,
@@ -149,5 +155,53 @@ describe('floors in the isometric map', () => {
     tapAt = { x: 0.01, y: 0.01 };
     act(() => handlers.get('canvas-click')!({ quick: false, position: { x: 1, y: 1 } }));
     expect(useAppStore.getState().activeBuildingId).toBe(0);
+  });
+
+  describe('a building that ends at the floor', () => {
+    const openFloor = async (level: number) => {
+      useAppStore.setState({
+        activeBuildingId: 0,
+        activeFloorId: Q.floors.find((f) => f.level === level)!.id,
+        roomsByBuilding: { 0: rooms },
+      });
+      await open();
+    };
+    const requested = () => addTiledImage.mock.calls.at(-1)![0] as Record<string, unknown>;
+
+    it('asks for the re-rendered patch of that floor, placed in the picture, and drops the frosting once it is drawn', async () => {
+      await openFloor(2);
+      expect(addTiledImage).toHaveBeenCalledTimes(1);
+      expect(requested()).toMatchObject({
+        tileSource: { type: 'image', url: 'http://localhost:8793/tiles/summer/cutaway/b0-2.webp' },
+        x: 5512 / IMG.w,
+        y: 5207 / IMG.w,
+        width: 584 / IMG.w,
+      });
+      expect(screen.getByTestId('iso-ghost')).toBeTruthy(); // still loading: frosted meanwhile
+      const item = {};
+      act(() => (requested().success as (e: { item: object }) => void)({ item }));
+      expect(screen.queryByTestId('iso-ghost')).toBeNull();
+      act(() => useAppStore.setState({ activeBuildingId: null }));
+      expect(removeItem).toHaveBeenCalledWith(item); // leaving the building puts the real one back
+    });
+
+    it('uses the building-removed patch for every floor below ground', async () => {
+      await openFloor(-1);
+      expect(String((requested().tileSource as { url: string }).url)).toMatch(/b0-g\.webp$/);
+    });
+
+    it('keeps the frosting when the patch never arrives', async () => {
+      await openFloor(3);
+      expect(screen.getByTestId('iso-ghost')).toBeTruthy();
+    });
+
+    it('puts back a patch that arrives after its floor was left', async () => {
+      await openFloor(3);
+      const success = requested().success as (e: { item: object }) => void;
+      act(() => useAppStore.setState({ activeBuildingId: null }));
+      const late = {};
+      act(() => success({ item: late }));
+      expect(removeItem).toHaveBeenCalledWith(late);
+    });
   });
 });

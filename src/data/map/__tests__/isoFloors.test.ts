@@ -16,10 +16,11 @@ const IMG_W = 11535;
 const ring = Q.outline.coordinates[0]!;
 
 describe('floors in the isometric picture', () => {
-  it('Q is measured: six storeys under 17.8 m, other buildings get a typical storey', () => {
-    expect(floorHeights(Q)).toEqual({ floorM: 2.97, roofM: 17.8 });
+  it('Q is measured (a 3.3 m plinth, 3.55 m storeys, a 24.7 m roof), other buildings get a typical storey on the ground', () => {
+    expect(floorHeights(Q)).toEqual({ baseM: 3.3, floorM: 3.55, roofM: 24.7 });
     const other = floorHeights({ id: 99, floors: [{ id: 1, level: 3, name: '3', roomCount: 1 }] });
     expect(other.roofM).toBeCloseTo(4 * 3.2);
+    expect(other.baseM).toBe(0);
   });
 
   it('a higher floor sits higher on the page, by height × cos 45° / 0.2 m per pixel', () => {

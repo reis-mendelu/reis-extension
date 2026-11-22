@@ -16,13 +16,15 @@ import { RoomShape } from './RoomShape';
 import { buildFloorScene } from './isoFloorScene';
 import { placeLabels } from './isoFloorLabels';
 import { selectedRoomId } from '../roomTints';
+import { useCutaway } from './useCutaway';
 
 const META = buildingsJson as BuildingsMeta;
 
 /**
  * One floor of a building, drawn where it really is in the picture: the floor plan lifted to
- * its height above the ground, with the building above it frosted over so the plate reads as
- * a slice through the building. The floor is the one the 2D map has open (the same store
+ * its height above the ground, on a building that ends there (a re-rendered patch of the picture,
+ * see isoCutaway.ts) or, where there is no patch, with the building above it frosted over so the
+ * plate still reads as a slice through it. The floor is the one the 2D map has open (the same store
  * state and the same floor column), so a student arrives from the 2D floor view at the same
  * room and floor, and a tap on a building here opens its floors there.
  *
@@ -111,6 +113,7 @@ export function IsoFloorLayer({
     };
   }, [viewer, scene]);
 
+  const cut = useCutaway(viewer, scene ? buildingId : null, scene?.level ?? null);
   if (!scene) return null;
   const nonScaling = { vectorEffect: 'non-scaling-stroke' } as const;
   return (
@@ -121,10 +124,12 @@ export function IsoFloorLayer({
       preserveAspectRatio="none"
       className="pointer-events-none absolute inset-0 h-full w-full"
     >
-      <g opacity="0.55">
-        <path d={scene.ghost} fill="#f8fafc" stroke="#f8fafc" strokeWidth="2" {...nonScaling} />
-      </g>
-      {scene.legs && (
+      {!cut && (
+        <g opacity="0.55" data-testid="iso-ghost">
+          <path d={scene.ghost} fill="#f8fafc" stroke="#f8fafc" strokeWidth="2" {...nonScaling} />
+        </g>
+      )}
+      {scene.legs && !cut && (
         <path
           d={scene.legs}
           fill="none"
