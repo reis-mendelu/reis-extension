@@ -70,6 +70,11 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
       const last = items[items.length - 1];
       if (!first || !last) return;
       const at = document.activeElement;
+      // A dialog opened over the map (the critical-update pop-up after a resume) owns Tab while
+      // focus is in it; pulling focus back here would lock a keyboard user out of its buttons.
+      const other =
+        at instanceof Element ? at.closest('[role="dialog"], [role="alertdialog"]') : null;
+      if (other && other !== el) return;
       if (!el.contains(at) || (e.shiftKey && at === first) || (!e.shiftKey && at === last)) {
         e.preventDefault();
         (e.shiftKey && el.contains(at) ? last : first).focus();
