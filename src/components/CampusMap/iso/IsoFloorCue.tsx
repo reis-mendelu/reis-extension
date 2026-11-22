@@ -1,0 +1,74 @@
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type OpenSeadragon from 'openseadragon';
+import buildingsJson from '../../../data/map/buildings.json';
+import type { BuildingsMeta } from '../../../types/campusMap';
+import { useAppStore } from '../../../store/useAppStore';
+import { useTranslation } from '../../../hooks/useTranslation';
+import { IMG } from '../../../data/map/isoView';
+import { cueText, floorCue } from '../../../data/map/isoFloorCue';
+
+const META = buildingsJson as BuildingsMeta;
+type Pt = { x: number; y: number };
+
+/**
+ * "You are on the 4th floor, four floors up", said on the building itself: a label at the open
+ * floor's nearest corner, in the words a student uses. Placed from OpenSeadragon's own viewport on
+ * every frame, like the ruler and the event pins, so it keeps its size at any zoom.
+ */
+export function IsoFloorCue({
+  viewer,
+  osd,
+}: {
+  viewer: OpenSeadragon.Viewer;
+  osd: typeof OpenSeadragon;
+}) {
+  const { language } = useTranslation();
+  const buildingId = useAppStore((s) => s.activeBuildingId);
+  const floorId = useAppStore((s) => s.activeFloorId);
+  const cue = useMemo(() => {
+    const b = META.buildings.find((x) => x.id === buildingId);
+    const level = b?.floors.find((f) => f.id === floorId)?.level;
+    return b && level !== undefined ? floorCue(b, level) : null;
+  }, [buildingId, floorId]);
+  const [at, setAt] = useState<Pt | null>(null);
+
+  const place = useCallback(() => {
+    if (!cue) return setAt(null);
+    const c = cue.corner;
+    setAt(viewer.viewport.pixelFromPoint(new osd.Point(c.px / IMG.w, c.py / IMG.w), true));
+  }, [viewer, osd, cue]);
+
+  useEffect(() => {
+    // Placed a frame later, not in the effect body: the viewer's own events do the rest.
+    const first = requestAnimationFrame(place);
+    const events = ['animation', 'animation-finish', 'update-viewport', 'open', 'resize'] as const;
+    events.forEach((e) => viewer.addHandler(e, place));
+    return () => {
+      cancelAnimationFrame(first);
+      events.forEach((e) => viewer.removeHandler(e, place));
+    };
+  }, [viewer, place]);
+
+  if (!cue || !at) return null;
+  const text = cueText(cue.up, language);
+  // Room for the label to the corner's left (about 8px a character, plus its padding), else it goes to the right, under the plate.
+  const width = Math.max(text.title.length, text.action?.length ?? 0) * 8 + 20;
+  const left = at.x - 20 - width >= 6;
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+      <div
+        data-testid="iso-floor-cue"
+        data-side={left ? 'left' : 'right'}
+        style={{
+          transform: left
+            ? `translate(${at.x - 20}px, ${at.y}px) translate(-100%, -50%)`
+            : `translate(${at.x + 20}px, ${at.y + 12}px) translate(0, -50%)`,
+        }}
+        className="absolute left-0 top-0 whitespace-nowrap rounded-lg border border-primary bg-base-100 px-2 py-1 text-xs leading-tight shadow-sm"
+      >
+        <span className="block text-sm font-semibold first-letter:uppercase">{text.title}</span>
+        {text.action && <span className="block font-medium text-primary">{text.action}</span>}
+      </div>
+    </div>
+  );
+}

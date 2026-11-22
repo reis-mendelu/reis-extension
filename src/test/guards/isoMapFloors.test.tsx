@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 
 const handlers = new Map<string, (e: unknown) => void>();
 const addTiledImage = vi.fn();
 const removeItem = vi.fn();
 let tapAt = { x: 0, y: 0 };
+let pixelAt = { x: 120, y: 200 };
 vi.mock('openseadragon', () => ({
   default: {
     Point: vi.fn().mockImplementation(function (this: { x: number; y: number }, x, y) {
@@ -27,7 +28,7 @@ vi.mock('openseadragon', () => ({
           getZoom: () => 3,
           getBounds: () => ({ x: 0.3, y: 0.3, width: 0.1, height: 0.2 }),
           pointFromPixel: () => tapAt,
-          pixelFromPoint: () => ({ x: 120, y: 200 }),
+          pixelFromPoint: () => pixelAt,
         },
       };
     }),
@@ -62,6 +63,7 @@ const tapRoom = () => {
 
 afterEach(() => {
   vi.unstubAllEnvs();
+  pixelAt = { x: 120, y: 200 };
   handlers.clear();
   addTiledImage.mockClear();
   removeItem.mockClear();
@@ -105,6 +107,32 @@ describe('floors in the isometric map', () => {
     const faces = screen.getByTestId('iso-ghost').querySelectorAll('path');
     expect(faces.length).toBe(Q.outline.coordinates[0]!.length);
     faces.forEach((f) => expect((f.getAttribute('d')!.match(/M/g) ?? []).length).toBe(1));
+  });
+
+  it('says which floor is open and how far up it is', async () => {
+    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
+    await open();
+    const cue = screen.getByTestId('iso-floor-cue');
+    expect(cue.textContent).toContain('4. patro');
+    expect(cue.textContent).toContain('4 patra nahoru');
+  });
+
+  it("keeps the label on screen: on the corner's left when there is room, on its right when not", async () => {
+    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
+    await open();
+    expect(screen.getByTestId('iso-floor-cue').getAttribute('data-side')).toBe('right');
+    cleanup();
+    pixelAt = { x: 300, y: 200 };
+    await open();
+    expect(screen.getByTestId('iso-floor-cue').getAttribute('data-side')).toBe('left');
+  });
+
+  it('on the ground floor there is only the name', async () => {
+    const ground = Q.floors.find((f) => f.level === 0)!;
+    useAppStore.setState({ activeBuildingId: 0, activeFloorId: ground.id, roomsByBuilding: {} });
+    await open();
+    const cue = screen.getByTestId('iso-floor-cue');
+    expect(cue.textContent).toBe('přízemí');
   });
 
   it('a tap on a room selects it; on bare ground it leaves the building', async () => {

@@ -85,6 +85,12 @@ export function frameBuilding(b: Pick<Building, 'id' | 'floors' | 'outline'>, as
   return { x: (x0 + x1) / 2 / IMG.w, y: (y0 + y1) / 2 / IMG.w, zoom: IMG.w / visible };
 }
 
+/** The corner nearest the camera, [lng, lat]: lowest on the page. */
+export function nearestCorner(ring: number[][]): [number, number] {
+  const [lng, lat] = ring.reduce((a, p) => (p[1]! < a[1]! ? p : a));
+  return [lng!, lat!];
+}
+
 /**
  * A ruler up the building's nearest corner: where each floor's slab meets it, from the lowest
  * floor at or above the ground up to `upTo`. Read like the markings on a doorframe, it says
@@ -92,15 +98,13 @@ export function frameBuilding(b: Pick<Building, 'id' | 'floors' | 'outline'>, as
  */
 export function floorTicks(b: Pick<Building, 'id' | 'floors' | 'outline'>, upTo: number) {
   const { baseM, floorM, lowest } = floorHeights(b);
-  const ring = b.outline.coordinates[0]!;
-  // The corner nearest the camera: lowest on the page.
-  const [lng, lat] = ring.reduce((a, p) => (p[1]! < a[1]! ? p : a));
+  const [lng, lat] = nearestCorner(b.outline.coordinates[0]!);
   return b.floors
     .filter((f) => f.level >= lowest && f.level <= upTo)
     .sort((a, c) => a.level - c.level)
     .map((f) => ({
       level: f.level,
       name: f.name,
-      ...isoPixel(lat!, lng!, baseM + (f.level - lowest) * floorM),
+      ...isoPixel(lat, lng, baseM + (f.level - lowest) * floorM),
     }));
 }
