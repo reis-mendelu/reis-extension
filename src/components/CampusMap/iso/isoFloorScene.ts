@@ -18,8 +18,8 @@ export function buildFloorScene(
   const b = META.buildings.find((x) => x.id === buildingId);
   const floor = b?.floors.find((f) => f.id === floorId);
   if (!b || !floor) return null;
-  const { baseM, floorM, roofM } = floorHeights(b);
-  const z = baseM + floor.level * floorM;
+  const { groundM, baseM, floorM, roofM, lowest } = floorHeights(b);
+  const z = baseM + (floor.level - lowest) * floorM;
   const ring = b.outline.coordinates[0]!;
   const plate = isoRing(ring, z);
   const feats = (rooms?.features ?? []).filter((f) => f.properties.floorId === floorId);
@@ -39,13 +39,12 @@ export function buildFloorScene(
     level: floor.level,
     z,
     plate,
-    ghost: svgPath(volumeAbove(ring, Math.max(z, 0), roofM)),
+    ghost: svgPath(volumeAbove(ring, Math.max(z, groundM), roofM)),
     legs:
-      z > 0
-        ? svgPath(isoRing(ring, 0).map((p, i) => [p, plate[i]!] as [number, number][])).replace(
-            /Z/g,
-            ''
-          )
+      z > groundM
+        ? svgPath(
+            isoRing(ring, groundM).map((p, i) => [p, plate[i]!] as [number, number][])
+          ).replace(/Z/g, '')
         : '',
     placed,
   };

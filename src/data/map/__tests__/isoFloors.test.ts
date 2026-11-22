@@ -16,11 +16,23 @@ const IMG_W = 11535;
 const ring = Q.outline.coordinates[0]!;
 
 describe('floors in the isometric picture', () => {
-  it('Q is measured (a 3.3 m plinth, 3.55 m storeys, a 24.7 m roof), other buildings get a typical storey on the ground', () => {
-    expect(floorHeights(Q)).toEqual({ baseM: 3.3, floorM: 3.55, roofM: 24.7 });
+  it('Q is measured (a 3.3 m plinth, 3.55 m storeys, a 24.7 m roof); a building we know nothing of gets a typical storey on the ground', () => {
+    expect(floorHeights(Q)).toMatchObject({ baseM: 3.64, floorM: 3.55, roofM: 25.04, lowest: 0 });
     const other = floorHeights({ id: 99, floors: [{ id: 1, level: 3, name: '3', roomCount: 1 }] });
-    expect(other.roofM).toBeCloseTo(4 * 3.2);
-    expect(other.baseM).toBe(0);
+    expect(other).toMatchObject({ groundM: 0, baseM: 0, floorM: 3.2, lowest: 3, top: 3 });
+    expect(other.roofM).toBeCloseTo(3.2);
+  });
+
+  it('every building has its own numbers, and its floors stack upward from its lowest above-ground level', () => {
+    for (const b of (buildingsJson as BuildingsMeta).buildings) {
+      const h = floorHeights(b);
+      expect(h.roofM, b.name).toBeGreaterThan(h.baseM);
+      expect(h.top, b.name).toBe(Math.max(...b.floors.map((f) => f.level)));
+      expect(
+        b.floors.some((f) => f.level === h.lowest),
+        b.name
+      ).toBe(true);
+    }
   });
 
   it('a higher floor sits higher on the page, by height × cos 45° / 0.2 m per pixel', () => {

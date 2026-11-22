@@ -14,7 +14,7 @@ const port = Number(process.env.ISO_TILES_PORT ?? 8793);
 // captured parts, never from the raw request: /<season>/<level>/<col>_<row>.webp
 const TILE = /^\/(summer|autumn|winter|spring|lights)\/(\d{1,2})\/(\d{1,3})_(\d{1,3})\.webp$/;
 // ...and a building's cut-off patch of the picture: /summer/cutaway/b<building>-<floor or g>.webp
-const CUTAWAY = /^\/summer\/cutaway\/(b\d{1,3}-(?:g|\d))\.webp$/;
+const CUTAWAY = /^\/summer\/cutaway\/(b\d{1,8}-(?:g|\d))\.webp$/;
 
 createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

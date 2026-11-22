@@ -101,7 +101,10 @@ export function IsoFloorLayer({
       if (room) return s.selectMapRoom(room.f.properties);
       // The building in front wins where two overlap: the southernmost, nearest the camera.
       const hit = META.buildings
-        .filter((b) => onBuilding(x, y, b.outline.coordinates[0]!, floorHeights(b).roofM))
+        .filter((b) => {
+          const { groundM, roofM } = floorHeights(b);
+          return onBuilding(x, y, b.outline.coordinates[0]!, roofM, groundM);
+        })
         .sort((a, b) => a.center[0] - b.center[0])[0];
       if (hit) {
         if (hit.id !== s.activeBuildingId) s.setMapBuilding(hit.id);

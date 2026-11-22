@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 
 const handlers = new Map<string, (e: unknown) => void>();
 const addTiledImage = vi.fn();
@@ -203,5 +203,17 @@ describe('floors in the isometric map', () => {
       act(() => success({ item: late }));
       expect(removeItem).toHaveBeenCalledWith(late);
     });
+  });
+
+  it('counts the floors on the building: a ruler up its corner, the open floor standing out', async () => {
+    useAppStore.setState({
+      activeBuildingId: 0,
+      activeFloorId: fourth.id,
+      roomsByBuilding: { 0: rooms },
+    });
+    await open();
+    const ruler = await screen.findByTestId('iso-ruler');
+    await waitFor(() => expect(ruler.querySelectorAll('span').length).toBe(5)); // levels 0..4
+    expect(ruler.querySelector('[data-active="true"]')?.textContent).toBe('4');
   });
 });

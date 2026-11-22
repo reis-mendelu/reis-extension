@@ -1,25 +1,28 @@
 import type { Building } from '../../types/campusMap';
 import { IMG, isoPixel } from './isoView';
+import { ISO_BUILDINGS } from './isoBuildings';
 
 /**
  * Where a building's floors stand in the picture. A floor is a plate at its height above the
- * ground; the rest of the building above it is what a student must "see through".
- *
- * Q's numbers are the render's own model (heights above the terrain): the entrance level sits
- * on a 3.3 m plinth, storeys are 3.55 m, and the south wing's roof is 24.7 m. Other buildings
- * get a typical storey standing on the ground and are drawn the same way; their real heights
- * can replace the guess one building at a time.
+ * ground; the rest of the building above it is what a student must "see through". The numbers
+ * are in isoBuildings.ts; a building without any stands on the 17 m ground with a typical storey.
  */
-const MEASURED: Readonly<Record<number, { baseM: number; floorM: number; roofM: number }>> = {
-  0: { baseM: 3.3, floorM: 3.55, roofM: 24.7 },
-};
 const TYPICAL_FLOOR_M = 3.2;
 
 export function floorHeights(b: Pick<Building, 'id' | 'floors'>) {
-  const known = MEASURED[b.id];
+  const known = ISO_BUILDINGS[b.id];
   if (known) return known;
-  const top = Math.max(0, ...b.floors.map((f) => f.level));
-  return { baseM: 0, floorM: TYPICAL_FLOOR_M, roofM: (top + 1) * TYPICAL_FLOOR_M };
+  const levels = b.floors.map((f) => f.level);
+  const top = Math.max(0, ...levels);
+  const lowest = Math.min(...levels.filter((l) => l >= 0), top);
+  return {
+    groundM: 0,
+    baseM: 0,
+    floorM: TYPICAL_FLOOR_M,
+    roofM: (top - lowest + 1) * TYPICAL_FLOOR_M,
+    lowest,
+    top,
+  };
 }
 
 /** A ring of [lng, lat] as picture pixels, lifted `heightM` above the ground. */
@@ -56,8 +59,14 @@ export function inRing(x: number, y: number, ring: [number, number][]): boolean 
 }
 
 /** Is this picture pixel on the building (its footprint, its roof, or a wall between)? */
-export function onBuilding(x: number, y: number, ring: number[][], roofM: number): boolean {
-  return volumeAbove(ring, 0, roofM).some((face) => inRing(x, y, face));
+export function onBuilding(
+  x: number,
+  y: number,
+  ring: number[][],
+  roofM: number,
+  groundM = 0
+): boolean {
+  return volumeAbove(ring, groundM, roofM).some((face) => inRing(x, y, face));
 }
 
 /**
@@ -66,11 +75,32 @@ export function onBuilding(x: number, y: number, ring: number[][], roofM: number
  */
 export function frameBuilding(b: Pick<Building, 'id' | 'floors' | 'outline'>, aspect: number) {
   const ring = b.outline.coordinates[0]!;
-  const pts = [...isoRing(ring, 0), ...isoRing(ring, floorHeights(b).roofM)];
+  const { groundM, roofM } = floorHeights(b);
+  const pts = [...isoRing(ring, groundM), ...isoRing(ring, roofM)];
   const xs = pts.map((p) => p[0]);
   const ys = pts.map((p) => p[1]);
   const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
   const margin = 1.5;
   const visible = Math.max((x1 - x0) * margin, (y1 - y0) * margin * aspect);
   return { x: (x0 + x1) / 2 / IMG.w, y: (y0 + y1) / 2 / IMG.w, zoom: IMG.w / visible };
+}
+
+/**
+ * A ruler up the building's nearest corner: where each floor's slab meets it, from the lowest
+ * floor at or above the ground up to `upTo`. Read like the markings on a doorframe, it says
+ * "this is the 4th floor" by counting the storeys under it, with no need to know the numbering.
+ */
+export function floorTicks(b: Pick<Building, 'id' | 'floors' | 'outline'>, upTo: number) {
+  const { baseM, floorM, lowest } = floorHeights(b);
+  const ring = b.outline.coordinates[0]!;
+  // The corner nearest the camera: lowest on the page.
+  const [lng, lat] = ring.reduce((a, p) => (p[1]! < a[1]! ? p : a));
+  return b.floors
+    .filter((f) => f.level >= lowest && f.level <= upTo)
+    .sort((a, c) => a.level - c.level)
+    .map((f) => ({
+      level: f.level,
+      name: f.name,
+      ...isoPixel(lat!, lng!, baseM + (f.level - lowest) * floorM),
+    }));
 }
