@@ -132,6 +132,9 @@ describe('floors in the isometric map', () => {
     const ruler = await screen.findByTestId('iso-ruler');
     await waitFor(() => expect(ruler.querySelectorAll('span').length).toBe(5));
     act(() => useAppStore.setState({ activeFloorId: Q.floors.find((f) => f.level === 2)!.id }));
-    expect(screen.getByTestId('iso-ruler').querySelectorAll('span').length).toBeLessThanOrEqual(4);
+    const after = screen.getByTestId('iso-ruler');
+    // Levels 0, 1, 2 remain (the mocked viewport puts them on one point, so the two below are dots without a number).
+    expect(after.querySelectorAll('span')).toHaveLength(3);
+    expect(after.querySelector('[data-active="true"]')?.textContent).toBe('2');
   });
 });
