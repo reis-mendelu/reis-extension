@@ -25,9 +25,9 @@ const segments = (d: string) =>
  * No arrow: nobody can tell which floor a student starts from, so the picture never says up or down.
  */
 describe('isStairs', () => {
-  it('knows the stairs and the emergency stairs, and nothing else', () => {
+  it('knows the stairs, and not the emergency stairs, which in Q are not staircases a student can climb', () => {
     expect(isStairs('stairs')).toBe(true);
-    expect(isStairs('emergency_stairs')).toBe(true);
+    expect(isStairs('emergency_stairs')).toBe(false);
     expect(isStairs('elevator')).toBe(false);
     expect(isStairs('classroom_and_laboratory')).toBe(false);
   });
@@ -87,15 +87,8 @@ describe('guideStairs', () => {
     { id: 5, type: 'elevator', at: [101, 100] as [number, number] },
   ];
 
-  it('picks the stairs nearest the room, emergency stairs included', () => {
-    expect(guideStairs(rooms, 1, false)).toBe(4);
-    expect(
-      guideStairs(
-        rooms.filter((r) => r.id !== 4),
-        1,
-        false
-      )
-    ).toBe(3);
+  it('picks the stairs nearest the room, never the emergency stairs beside it', () => {
+    expect(guideStairs(rooms, 1, false)).toBe(3);
   });
 
   it('says nothing on the lowest floor, with nothing picked, or when the pick is the stairs', () => {

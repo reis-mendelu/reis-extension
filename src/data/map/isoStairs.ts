@@ -1,7 +1,10 @@
 import { isoPixel } from './isoView';
 
-/** Stairs, and the emergency stairs a student can just as well take. */
-export const isStairs = (type: string) => type === 'stairs' || type === 'emergency_stairs';
+/**
+ * Stairs a student can climb. Not `emergency_stairs`: Q's floor plan has them where there is no staircase
+ * (the topmost ones beside Q45 on floor 4), so drawing them would send a student to a wall.
+ */
+export const isStairs = (type: string) => type === 'stairs';
 
 const M_PER_DEG_LAT = 110540;
 const M_PER_DEG_LNG_AT_EQUATOR = 111320;
@@ -70,8 +73,7 @@ export function stairTreads(ring: number[][], heightM: number): string {
 }
 
 /**
- * The stairs to light up for the room a student picked: the nearest ones on the open floor, emergency stairs
- * included (in these buildings they are ordinary staircases, often the nearest). Nothing on the lowest floor above ground (a room there is
+ * The stairs to light up for the room a student picked: the nearest ones on the open floor. Nothing on the lowest floor above ground (a room there is
  * reached from the street), with nothing picked, or when the pick is itself the stairs. `at` is the room's
  * middle in picture pixels. Returns the stairs' room id.
  */
