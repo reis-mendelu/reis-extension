@@ -18,6 +18,8 @@ vi.mock('openseadragon', () => ({
 import { IsoMapButton } from '../../components/CampusMap/iso/IsoMapButton';
 import { IsoMapView } from '../../components/CampusMap/iso/IsoMapView';
 import { useAppStore } from '../../store/useAppStore';
+import { setMapInstance } from '../../components/CampusMap/mapInstance';
+import type L from 'leaflet';
 import { ISO_ATTRIBUTION } from '../../data/map/isoMap';
 import cs from '../../i18n/locales/cs.json';
 
@@ -89,6 +91,54 @@ describe('the isometric map when switched on', () => {
     fireEvent.click(screen.getByTestId('iso-map-close'));
     expect(useAppStore.getState().isoMapOpen).toBe(false);
     expect(destroy).toHaveBeenCalled();
+  });
+});
+
+describe('the cube only works where the picture is', () => {
+  const on = () => vi.stubEnv('VITE_ISO_MAP_URL', 'http://localhost:8793/tiles');
+  /** A stand-in for the Leaflet map: a centre, and the events the button listens to. */
+  const fakeMap = (lat: number, lng: number) => {
+    const handlers = new Set<() => void>();
+    const map = {
+      centre: { lat, lng },
+      getCenter() {
+        return this.centre;
+      },
+      getZoom: () => 17,
+      on: (_e: string, fn: () => void) => handlers.add(fn),
+      off: (_e: string, fn: () => void) => handlers.delete(fn),
+    };
+    return {
+      map,
+      move: (la: number, ln: number) => (
+        (map.centre = { lat: la, lng: ln }),
+        handlers.forEach((h) => h())
+      ),
+    };
+  };
+  afterEach(() => act(() => setMapInstance(null)));
+
+  it('is enabled on the campus and disabled once the 2D map is panned off the picture, and back', () => {
+    on();
+    const m = fakeMap(49.209592, 16.614247);
+    act(() => setMapInstance(m.map as unknown as L.Map));
+    render(<IsoMapButton />);
+    const btn = screen.getByTestId('iso-map-open') as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+    act(() => m.move(50.0755, 14.4378)); // Prague
+    expect(btn.disabled).toBe(true);
+    // Disabled for a reason the student can read, not silently.
+    expect(btn.getAttribute('aria-label')).toBe(cs.map.isoOffCampus);
+    fireEvent.click(btn);
+    expect(useAppStore.getState().isoMapOpen).toBe(false);
+    act(() => m.move(49.209592, 16.614247));
+    expect(btn.disabled).toBe(false);
+  });
+
+  it('is enabled when there is no 2D map to ask', () => {
+    on();
+    render(<IsoMapButton />);
+    expect((screen.getByTestId('iso-map-open') as HTMLButtonElement).disabled).toBe(false);
   });
 });
 

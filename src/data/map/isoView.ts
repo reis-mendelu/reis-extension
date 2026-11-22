@@ -31,13 +31,18 @@ export function isoPointFromLatLng(lat: number, lng: number): { x: number; y: nu
   return { x: px / IMG.w, y: py / IMG.w };
 }
 
+/** The widest stretch of ground you may see at once: about a kilometre, i.e. the campus and its neighbourhood. */
+const MAX_VISIBLE_PX = 6000;
+
 /**
- * The furthest out you may zoom: the picture still covers the whole screen, so
- * there is never empty space to get lost in. A landscape screen is limited by the
- * picture's width, a portrait phone by its height.
+ * The furthest out you may zoom. Two limits, the tighter wins: the picture must
+ * still cover the whole screen (no empty space to get lost in; on a portrait phone
+ * its height decides), and no more than about a kilometre of ground is shown, so
+ * this stays a close look at the campus rather than a small map of the city.
  */
 export function isoMinZoom(width: number, height: number): number {
-  return Math.max(1, height / width / (IMG.h / IMG.w));
+  const cover = Math.max(1, height / width / (IMG.h / IMG.w));
+  return Math.max(cover, IMG.w / MAX_VISIBLE_PX);
 }
 
 /** The 2D map's camera, as Leaflet reports it. */
@@ -49,6 +54,11 @@ export interface MapView {
 
 // Capped at the campus-wide scale: a sharper opening zoom asks for several times the tiles (a phone's
 // first view went from 0.7 to 2.6 MB), and the first open is what has to be quick.
+/** Whether the picture has anything to show for where the 2D map is looking (no 2D map: yes, it opens on the campus). */
+export function isoCoversView(map: MapView | null): boolean {
+  return !map || isoPointFromLatLng(map.lat, map.lng) !== null;
+}
+
 const OPEN_ZOOM = { min: 3, max: ISO_START.zoom };
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ISO_START } from '../isoMap';
-import { isoMinZoom, isoOpeningView, isoPointFromLatLng } from '../isoView';
+import { isoCoversView, isoMinZoom, isoOpeningView, isoPointFromLatLng } from '../isoView';
 
 // Building Q's centre in the campus data (src/data/map/buildings.json).
 const Q = { lat: 49.209592, lng: 16.614247 };
@@ -27,13 +27,25 @@ describe('where a place is on the isometric image', () => {
 
 describe('how far out you may zoom', () => {
   it('never shows empty space: the picture always covers the screen', () => {
-    // Landscape: the picture's width is the limit.
-    expect(isoMinZoom(1440, 900)).toBe(1);
+    // Landscape: not the whole 2.3 km, only about a kilometre round the campus.
+    expect(isoMinZoom(1440, 900)).toBeCloseTo(11535 / 6000, 3);
     // Portrait phone: its height is, so the limit is much closer in.
     const phone = isoMinZoom(390, 844);
     expect(phone).toBeGreaterThan(2.5);
     // At that zoom the visible height equals the picture's height (8517 / 11535 wide).
     expect(844 / 390 / phone).toBeCloseTo(8517 / 11535, 3);
+  });
+});
+
+describe('whether the isometric map has anything to show', () => {
+  it('has, when there is no 2D map to ask or it looks at the campus', () => {
+    expect(isoCoversView(null)).toBe(true);
+    expect(isoCoversView({ lat: Q.lat, lng: Q.lng, zoom: 17 })).toBe(true);
+  });
+
+  it('has not, when the 2D map looks somewhere the picture does not reach', () => {
+    expect(isoCoversView({ lat: 50.0755, lng: 14.4378, zoom: 17 })).toBe(false);
+    expect(isoCoversView({ lat: 49.1951, lng: 16.6068, zoom: 14 })).toBe(false); // central Brno
   });
 });
 
