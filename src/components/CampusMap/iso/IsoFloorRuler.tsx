@@ -28,13 +28,17 @@ export function IsoFloorRuler({
     const level = b?.floors.find((f) => f.id === floorId)?.level;
     return b && level !== undefined ? floorTicks(b, level) : [];
   }, [buildingId, floorId]);
-  const [placed, setPlaced] = useState<{ x: number; y: number }[]>([]);
+  // Each marker carries its own floor with its position, so a shorter ruler (another floor chosen)
+  // never meets positions left over from the longer one.
+  const [placed, setPlaced] = useState<
+    { level: number; name: string | null; x: number; y: number }[]
+  >([]);
 
   const place = useCallback(() => {
     setPlaced(
       ticks.map((t) => {
         const p = viewer.viewport.pixelFromPoint(new osd.Point(t.px / IMG.w, t.py / IMG.w), true);
-        return { x: p.x, y: p.y };
+        return { level: t.level, name: t.name, x: p.x, y: p.y };
       })
     );
   }, [viewer, osd, ticks]);
@@ -50,9 +54,10 @@ export function IsoFloorRuler({
     };
   }, [viewer, place]);
 
-  const last = ticks.length - 1;
+  const shown = placed.filter((p) => ticks.some((t) => t.level === p.level));
+  const last = shown.length - 1;
   // Storeys that sit closer than a numeral is tall (zoomed out, or a low storey) are dots, so they never overlap.
-  const spacing = placed.length > 1 ? Math.abs(placed[1]!.y - placed[0]!.y) : Infinity;
+  const spacing = shown.length > 1 ? Math.abs(shown[1]!.y - shown[0]!.y) : Infinity;
   const dots = spacing < 16;
   return (
     <div
@@ -60,11 +65,11 @@ export function IsoFloorRuler({
       data-testid="iso-ruler"
       className="pointer-events-none absolute inset-0 overflow-hidden"
     >
-      {placed.map((p, i) => {
+      {shown.map((p, i) => {
         const open = i === last;
         return (
           <span
-            key={ticks[i]!.level}
+            key={p.level}
             data-active={open ? 'true' : undefined}
             style={{ transform: `translate(${p.x}px, ${p.y}px) translate(-50%, -50%)` }}
             className={`absolute left-0 top-0 flex items-center justify-center rounded-full border font-semibold shadow-sm ${
@@ -75,7 +80,7 @@ export function IsoFloorRuler({
                   : 'h-4 min-w-4 border-base-content/30 bg-base-100 px-1 text-[10px] leading-none text-base-content'
             }`}
           >
-            {open || !dots ? ticks[i]!.name : null}
+            {open || !dots ? p.name : null}
           </span>
         );
       })}

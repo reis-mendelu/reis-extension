@@ -216,4 +216,17 @@ describe('floors in the isometric map', () => {
     await waitFor(() => expect(ruler.querySelectorAll('span').length).toBe(5)); // levels 0..4
     expect(ruler.querySelector('[data-active="true"]')?.textContent).toBe('4');
   });
+
+  it('shortens the ruler when a lower floor is chosen, without a frame in between', async () => {
+    useAppStore.setState({
+      activeBuildingId: 0,
+      activeFloorId: fourth.id,
+      roomsByBuilding: { 0: rooms },
+    });
+    await open();
+    const ruler = await screen.findByTestId('iso-ruler');
+    await waitFor(() => expect(ruler.querySelectorAll('span').length).toBe(5));
+    act(() => useAppStore.setState({ activeFloorId: Q.floors.find((f) => f.level === 2)!.id }));
+    expect(screen.getByTestId('iso-ruler').querySelectorAll('span').length).toBeLessThanOrEqual(4);
+  });
 });
