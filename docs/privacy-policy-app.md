@@ -49,6 +49,7 @@ yourself — see *Report attachments* below.
 | Fixed version explained | reIS marked your version as broken by a change in IS and the mobile app shows the window explaining it (at most twice), or you tap its Update button or the one on an empty Předměty or Zkoušky, once per app session; stored as one row per install per day | the random install identifier, the school and one fixed label (`critical_update_shown`, `critical_update_opened`). We cannot see whether you go on to update |
 | Library study-room booking (mobile app only) | you book or cancel a study room | your name, MENDELU e-mail, student number and faculty code, sent from your device straight to the library's Microsoft Bookings (MENDELU's tenant), never through reIS |
 | Checking for a newer version (mobile app only) | the app starts or you return to it | iPhone and iPad: reIS's app id, to Apple's public App Store lookup. Android: the Play Store app on your phone is asked. Nothing about you; the store sees your device's IP address, as it does for any app |
+| Isometric campus map tiles (only when that view is switched on) | you open the isometric map | which picture tile you are looking at, requested as a static image file; nothing about you. The host sees your device's IP address, as any web server does |
 <!-- END generated:flows -->
 
 Which partner company you are shown, if any, is decided on your device from your

@@ -19,6 +19,8 @@ import { MapSheet } from './map/MapSheet';
 import { MapRail } from './map/MapRail';
 import { useWideViewport } from '../../../hooks/ui/useWideViewport';
 import { useMapDwell } from '../../../hooks/useMapDwell';
+import { IsoMapButton } from '../../CampusMap/iso/IsoMapButton';
+import { IsoMapView } from '../../CampusMap/iso/IsoMapView';
 
 function resultLabel(m: MapSelection): string {
   if (m.kind === 'poi') return m.poi.name;
@@ -176,6 +178,9 @@ export function MapScreen() {
           it survives being turned on its side; a rail is open or closed and
           sets its own width. They share `MapPanelBody` and nothing else. */}
       {isRail ? <MapRail /> : <MapSheet />}
+      {/* Prototype, off unless VITE_ISO_MAP_URL is set: the isometric map. */}
+      <IsoMapButton className="absolute right-4 top-[calc(4.75rem_+_var(--safe-top,0px))] z-[1000]" />
+      <IsoMapView clearNav />
     </div>
   );
 }
