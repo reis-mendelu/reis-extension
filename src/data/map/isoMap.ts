@@ -16,10 +16,11 @@ export type IsoSeason = 'summer' | 'autumn' | 'winter' | 'spring' | 'lights';
 /** What the data licences ask to be credited on the map itself. */
 export const ISO_ATTRIBUTION = '© přispěvatelé OpenStreetMap, © ČÚZK';
 
-// The pyramid `dzi.py` wrote: 0,2 m per pixel, WebP tiles of 2048 px, no overlap.
+// The pyramid `nastroje/dzi_small.py` wrote: 0,2 m per pixel, lossy WebP tiles of 512 px, no overlap.
+// (dzi.py's 2048 px lossless tiles were ~1-1.5 MB each: 3 MB for a phone's first view.)
 // OpenSeadragon's types take the DZI attributes as strings, as they are in the XML.
 const SIZE = { Width: '12501', Height: '9559' };
-const TILE_SIZE = '2048';
+const TILE_SIZE = '512';
 
 /** Where the view opens: building Q, in OpenSeadragon viewport units (the image is 1 wide, so y is pixels / 12501). */
 export const ISO_START = { x: 6308 / 12501, y: 6080 / 12501, zoom: 4 } as const;

@@ -26,7 +26,7 @@ describe('isometric map config', () => {
     const dzi = isoDzi('http://localhost:8793/tiles', 'summer');
     expect(dzi.Image.Url).toBe('http://localhost:8793/tiles/summer/');
     expect(dzi.Image.Format).toBe('webp');
-    expect(dzi.Image.TileSize).toBe('2048');
+    expect(dzi.Image.TileSize).toBe('512');
     expect(dzi.Image.Overlap).toBe('0');
     expect(dzi.Image.Size).toEqual({ Width: '12501', Height: '9559' });
   });
