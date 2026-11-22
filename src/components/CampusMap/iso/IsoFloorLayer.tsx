@@ -146,7 +146,7 @@ export function IsoFloorLayer({
         />
       )}
       <path
-        d={svgPath([scene.plate])}
+        d={svgPath(scene.deck)}
         fill="#f1f5f9"
         fillOpacity="0.92"
         stroke="#334155"

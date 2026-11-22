@@ -1,9 +1,11 @@
 import buildingsJson from '../../../data/map/buildings.json';
+import plates from '../../../data/map/isoPlates.json';
 import type { BuildingsMeta, RoomsCollection } from '../../../types/campusMap';
 import { floorHeights, isoRing, svgPath, volumeAbove } from '../../../data/map/isoFloors';
 import { polygonCentroid } from '../mapHelpers';
 
 const META = buildingsJson as BuildingsMeta;
+const FOOTPRINTS = plates as unknown as Record<string, [number, number][][]>;
 
 /**
  * Everything drawn for one floor, in picture pixels: the building above it (frosted), the plate,
@@ -22,6 +24,9 @@ export function buildFloorScene(
   const z = baseM + (floor.level - lowest) * floorM;
   const ring = b.outline.coordinates[0]!;
   const plate = isoRing(ring, z);
+  // What is drawn is the building's real footprint (no courtyard, no lower wing), where the picture is cut
+  // from one; the outline still pairs the plate with the ground for the legs.
+  const deck = (FOOTPRINTS[b.id] ?? [ring]).map((r) => isoRing(r, z));
   const feats = (rooms?.features ?? []).filter((f) => f.properties.floorId === floorId);
   const placed = feats.map((f) => {
     const r = isoRing(f.geometry.coordinates[0]!, z);
@@ -39,6 +44,7 @@ export function buildFloorScene(
     level: floor.level,
     z,
     plate,
+    deck,
     // One path per face: joined into a single path, faces of opposite winding cancel where they overlap.
     ghost: volumeAbove(ring, Math.max(z, groundM), roofM).map((face) => svgPath([face])),
     legs:
