@@ -28,7 +28,7 @@ describe('isometric map config', () => {
     expect(dzi.Image.Format).toBe('webp');
     expect(dzi.Image.TileSize).toBe('512');
     expect(dzi.Image.Overlap).toBe('0');
-    expect(dzi.Image.Size).toEqual({ Width: '12501', Height: '9559' });
+    expect(dzi.Image.Size).toEqual({ Width: '11535', Height: '8517' });
   });
 
   it('carries the credit the data licences ask for', () => {

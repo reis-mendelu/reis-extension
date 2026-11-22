@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import { ISO_START, isoDzi, isoMapBase, isoSeason } from '../../../data/map/isoMap';
+import { isoDzi, isoMapBase, isoSeason } from '../../../data/map/isoMap';
+import { isoMinZoom, isoOpeningView } from '../../../data/map/isoView';
+import { getMapInstance } from '../mapInstance';
 import { logError } from '../../../utils/reportError';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
@@ -74,18 +76,39 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
           // A click is not a zoom: a tap that ends a pan or lands on a building would jump a level.
           gestureSettingsMouse: { clickToZoom: false },
           gestureSettingsTouch: { pinchToZoom: true, flickEnabled: true },
-          visibilityRatio: 0.6,
-          minZoomImageRatio: 0.9,
-          maxZoomPixelRatio: 3,
+          // The picture always covers the screen: no empty space to zoom out into or pan off to.
+          // (The zoom-out floor itself depends on the screen's shape; it is set on open and on resize.)
+          visibilityRatio: 1,
+          constrainDuringPan: true,
+          // Past 2 CSS px per image pixel there is nothing more to see, only blur.
+          maxZoomPixelRatio: 2,
           animationTime: 0.6,
           immediateRender: false,
         });
         viewer = v;
-        // Open on the campus (building Q) rather than the whole city; pan and zoom from there.
+        const fitZoomFloor = () => {
+          // A live setting on the viewport (getMinZoom reads it) that the typings leave out.
+          (v.viewport as unknown as { minZoomLevel: number }).minZoomLevel = isoMinZoom(
+            v.container.clientWidth,
+            v.container.clientHeight
+          );
+          v.viewport.applyConstraints(true);
+        };
+        // Open where the 2D map was looking, at about its scale, so the student's place is kept;
+        // on the campus when that is off the picture. Then pan and zoom from there.
         v.addHandler('open', () => {
-          v.viewport.zoomTo(ISO_START.zoom, undefined, true);
-          v.viewport.panTo(new OpenSeadragon.Point(ISO_START.x, ISO_START.y), true);
+          fitZoomFloor();
+          const map = getMapInstance();
+          const c = map?.getCenter();
+          const start = isoOpeningView(
+            map && c ? { lat: c.lat, lng: c.lng, zoom: map.getZoom() } : null,
+            v.container.clientWidth
+          );
+          v.viewport.zoomTo(Math.max(start.zoom, v.viewport.getMinZoom()), undefined, true);
+          v.viewport.panTo(new OpenSeadragon.Point(start.x, start.y), true);
+          v.viewport.applyConstraints(true);
         });
+        v.addHandler('resize', fitZoomFloor);
       })
       .catch((err: unknown) => logError('IsoMapView.load', err));
     return () => {
