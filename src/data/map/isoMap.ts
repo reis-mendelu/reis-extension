@@ -3,7 +3,7 @@
  * per season, written by izomapa outside this repo) shown in OpenSeadragon.
  *
  * It is a prototype and OFF unless a build or dev server names where the tiles
- * live with `VITE_ISO_MAP_URL` (e.g. `http://localhost:8793/tiles`). Nothing is
+ * live with `VITE_ISO_MAP_URL` (e.g. `http://localhost:8793`, the root the dev tile server serves; a host may add a path prefix). Nothing is
  * hosted anywhere yet, so that variable is the only way in.
  * src/test/guards/isoMapIsDormantAndOnBothTrees.test.ts holds that.
  * No feature counter yet, on purpose: counter labels are a database-enforced whitelist

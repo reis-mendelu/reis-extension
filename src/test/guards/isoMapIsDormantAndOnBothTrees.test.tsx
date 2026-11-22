@@ -22,6 +22,8 @@ import { setMapInstance } from '../../components/CampusMap/mapInstance';
 import type L from 'leaflet';
 import { ISO_ATTRIBUTION } from '../../data/map/isoMap';
 import cs from '../../i18n/locales/cs.json';
+import { MOCK_MAP_EVENTS } from '../../components/CampusMap/__tests__/fixtures/mockMapEvents';
+import { localTodayIso } from '../../components/CampusMap/eventWindow';
 
 /**
  * The isometric campus map is a prototype: merged but OFF, on both trees.
@@ -143,6 +145,53 @@ describe('the cube only works where the picture is', () => {
 });
 
 describe('the isometric map closes itself, and is a proper modal', () => {
+  it('closes when an event is shown, even one with no place to fly to', () => {
+    on();
+    useAppStore.setState({
+      isoMapOpen: true,
+      mapEvents: [
+        { ...MOCK_MAP_EVENTS[0]!, id: 'ev1', coord: null, date: localTodayIso(), endDate: null },
+      ],
+    } as never);
+    useAppStore.getState().focusEventById('ev1', { fly: true });
+    expect(useAppStore.getState().isoMapOpen).toBe(false);
+  });
+
+  it('closes, rather than sit empty, when the viewer cannot start', async () => {
+    const osd = (await import('openseadragon')).default as unknown as {
+      Viewer: ReturnType<typeof vi.fn>;
+    };
+    osd.Viewer.mockImplementationOnce(function () {
+      throw new Error('chunk failed');
+    });
+    await open();
+    expect(useAppStore.getState().isoMapOpen).toBe(false);
+  });
+
+  it('keeps Tab inside the dialog, wrapping at both ends and pulling stray focus back in', async () => {
+    on();
+    useAppStore.setState({ isoMapOpen: true });
+    await act(async () => {
+      render(
+        <div>
+          <button data-testid="outside">outside</button>
+          <IsoMapView />
+        </div>
+      );
+    });
+    const close = screen.getByTestId('iso-map-close');
+    const link = screen.getByRole('link');
+    expect(document.activeElement).toBe(close);
+    link.focus();
+    fireEvent.keyDown(link, { key: 'Tab' });
+    expect(document.activeElement).toBe(close); // last -> first
+    fireEvent.keyDown(close, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(link); // first -> last
+    screen.getByTestId('outside').focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(close); // stray focus comes back
+  });
+
   const on = () => vi.stubEnv('VITE_ISO_MAP_URL', 'http://localhost:8793/tiles');
   const open = async (ui = <IsoMapView />) => {
     on();

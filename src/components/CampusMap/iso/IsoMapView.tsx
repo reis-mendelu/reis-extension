@@ -57,7 +57,27 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
     const wasInert = siblings.map((c) => c.inert);
     siblings.forEach((c) => (c.inert = true));
     closeButton.current?.focus();
+    // Tab stays in the dialog: it wraps at both ends, and focus that has strayed out (a click on the
+    // nav, which stays reachable by pointer so a student can leave the map) is pulled back in.
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !el) return;
+      const items = Array.from(
+        el.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (!first || !last) return;
+      const at = document.activeElement;
+      if (!el.contains(at) || (e.shiftKey && at === first) || (!e.shiftKey && at === last)) {
+        e.preventDefault();
+        (e.shiftKey && el.contains(at) ? last : first).focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
     return () => {
+      document.removeEventListener('keydown', onKeyDown);
       siblings.forEach((c, i) => (c.inert = wasInert[i] ?? false));
       if (opener?.isConnected) opener.focus();
     };
@@ -110,12 +130,16 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
         });
         v.addHandler('resize', fitZoomFloor);
       })
-      .catch((err: unknown) => logError('IsoMapView.load', err));
+      .catch((err: unknown) => {
+        logError('IsoMapView.load', err);
+        // An opaque dialog over an empty host is worse than no dialog: give the working map back.
+        if (!cancelled) setOpen(false);
+      });
     return () => {
       cancelled = true;
       viewer?.destroy();
     };
-  }, [base]);
+  }, [base, setOpen]);
 
   return (
     <div
