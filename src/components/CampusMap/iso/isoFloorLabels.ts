@@ -30,7 +30,7 @@ export function placeLabels(
       (r) => Math.abs(r.x - x) < (r.w + w) / 2 && Math.abs(r.y - y) < (r.h + h) / 2
     );
     const show = !!t.dataset.sel || (seen && clear);
-    t.style.display = show ? '' : 'none';
+    t.classList.toggle('hidden', !show);
     if (show) taken.push({ x, y, w, h });
   }
 }
