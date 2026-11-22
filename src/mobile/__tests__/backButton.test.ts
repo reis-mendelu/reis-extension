@@ -43,6 +43,25 @@ describe('handleBackPress', () => {
     ).toBe('popped');
   });
 
+  it('closes the isometric map before a sheet or the tab, one press', () => {
+    const popSheet = vi.fn();
+    const closeIsoMap = vi.fn();
+    const goToCalendar = vi.fn();
+    expect(
+      handleBackPress({
+        sheetCount: 1,
+        popSheet,
+        tab: 'map',
+        goToCalendar,
+        isoMapOpen: true,
+        closeIsoMap,
+      })
+    ).toBe('popped');
+    expect(closeIsoMap).toHaveBeenCalledOnce();
+    expect(popSheet).not.toHaveBeenCalled();
+    expect(goToCalendar).not.toHaveBeenCalled();
+  });
+
   it('signals exit when no sheet is open', () => {
     const popSheet = vi.fn();
     expect(handleBackPress({ sheetCount: 0, popSheet })).toBe('exit');

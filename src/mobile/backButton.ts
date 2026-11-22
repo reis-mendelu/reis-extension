@@ -14,6 +14,10 @@ export interface BackPressState {
    *  above every sheet and tab, outside the stack, so back closes it first. */
   criticalPopupOpen?: boolean;
   closeCriticalPopup?(): void;
+  /** The isometric campus map is a full-bleed overlay on the map screen, outside
+   *  the sheet stack, so back closes it before it touches a sheet or the tab. */
+  isoMapOpen?: boolean;
+  closeIsoMap?(): void;
 }
 
 export type BackPressResult = 'popped' | 'exit';
@@ -37,9 +41,15 @@ export function handleBackPress({
   goToCalendar,
   criticalPopupOpen,
   closeCriticalPopup,
+  isoMapOpen,
+  closeIsoMap,
 }: BackPressState): BackPressResult {
   if (criticalPopupOpen && closeCriticalPopup) {
     closeCriticalPopup();
+    return 'popped';
+  }
+  if (isoMapOpen && closeIsoMap) {
+    closeIsoMap();
     return 'popped';
   }
   // The vývěska used to need a branch of its own here, because it was a portal

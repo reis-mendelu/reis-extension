@@ -1,25 +1,28 @@
 import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
-import {
-  ISO_ATTRIBUTION,
-  ISO_START,
-  isoDzi,
-  isoMapBase,
-  isoSeason,
-} from '../../../data/map/isoMap';
+import { ISO_START, isoDzi, isoMapBase, isoSeason } from '../../../data/map/isoMap';
 import { logError } from '../../../utils/reportError';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
+import { useEscapeLayer } from '../../../hooks/ui/useEscapeLayer';
 
 /**
  * The isometric campus map, full-bleed over the map screen: pan with a finger or
  * the mouse, pinch or wheel to zoom. OpenSeadragon is imported when this opens,
  * so a build with the prototype off never loads it (and the content script never
  * sees it). The tiles come from `isoMapBase()`; nothing here knows where they live.
+ *
+ * It is an overlay, not a route, so it closes itself on everything that would
+ * otherwise leave it stranded: Escape, Android's back (`mobile/backButton.ts`),
+ * the map screen unmounting (the open flag lives in the store and would outlive
+ * it), and a "show on map" request, whose target would otherwise land underneath.
  */
 /** `clearNav`: the phone's floating bottom nav sits over the map, so the credit line rides above it. */
 export function IsoMapView({ clearNav = false }: { clearNav?: boolean }) {
   const open = useAppStore((s) => s.isoMapOpen);
+  const setOpen = useAppStore((s) => s.setIsoMapOpen);
+  // The flag is global; whichever screen hosted the overlay going away must not leave it set.
+  useEffect(() => () => setOpen(false), [setOpen]);
   const base = isoMapBase();
   if (!open || base === null) return null;
   return <Viewer base={base} clearNav={clearNav} />;
@@ -28,7 +31,35 @@ export function IsoMapView({ clearNav = false }: { clearNav?: boolean }) {
 function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
   const { t } = useTranslation();
   const setOpen = useAppStore((s) => s.setIsoMapOpen);
+  const focusRequest = useAppStore((s) => s.mapFocusRequest);
+  const firstFocusRequest = useRef(focusRequest);
+  const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
+
+  useEscapeLayer(true, () => setOpen(false));
+
+  // A "show on map" (a lesson's room, an event) moves the map under us: step aside so it is seen.
+  useEffect(() => {
+    if (focusRequest !== firstFocusRequest.current) setOpen(false);
+  }, [focusRequest, setOpen]);
+
+  // Modal: what is behind is out of reach of Tab and of screen readers; focus goes to Close and,
+  // on close, back to whatever opened us.
+  useEffect(() => {
+    const el = root.current;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const siblings = el?.parentElement
+      ? Array.from(el.parentElement.children).filter((c): c is HTMLElement => c !== el)
+      : [];
+    const wasInert = siblings.map((c) => c.inert);
+    siblings.forEach((c) => (c.inert = true));
+    closeButton.current?.focus();
+    return () => {
+      siblings.forEach((c, i) => (c.inert = wasInert[i] ?? false));
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
 
   useEffect(() => {
     let viewer: { destroy: () => void } | null = null;
@@ -40,6 +71,8 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
           element: host.current,
           tileSources: isoDzi(base, isoSeason()),
           showNavigationControl: false,
+          // A click is not a zoom: a tap that ends a pan or lands on a building would jump a level.
+          gestureSettingsMouse: { clickToZoom: false },
           gestureSettingsTouch: { pinchToZoom: true, flickEnabled: true },
           visibilityRatio: 0.6,
           minZoomImageRatio: 0.9,
@@ -62,9 +95,17 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
   }, [base]);
 
   return (
-    <div data-testid="iso-map" className="absolute inset-0 z-[1002] bg-base-300">
-      <div ref={host} className="absolute inset-0" role="img" aria-label={t('map.isoTitle')} />
+    <div
+      ref={root}
+      data-testid="iso-map"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('map.isoTitle')}
+      className="absolute inset-0 z-[1002] bg-base-300"
+    >
+      <div ref={host} className="absolute inset-0" />
       <button
+        ref={closeButton}
         type="button"
         data-testid="iso-map-close"
         aria-label={t('map.isoClose')}
@@ -74,9 +115,16 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
         <X size={16} aria-hidden="true" />
       </button>
       <p
-        className={`pointer-events-none absolute left-3 rounded bg-base-100/80 px-2 py-0.5 text-[11px] ${clearNav ? 'bottom-[calc(5.5rem_+_var(--safe-bottom,0px))]' : 'bottom-2'}`}
+        className={`absolute left-3 rounded bg-base-100/80 px-2 py-1 text-xs ${clearNav ? 'bottom-[calc(5.5rem_+_var(--safe-bottom,0px))]' : 'bottom-2'}`}
       >
-        {ISO_ATTRIBUTION}
+        <a
+          href="https://www.openstreetmap.org/copyright"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link-hover link"
+        >
+          {t('map.isoCredit')}
+        </a>
       </p>
     </div>
   );

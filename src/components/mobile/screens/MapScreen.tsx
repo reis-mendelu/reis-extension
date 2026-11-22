@@ -179,7 +179,10 @@ export function MapScreen() {
           sets its own width. They share `MapPanelBody` and nothing else. */}
       {isRail ? <MapRail /> : <MapSheet />}
       {/* Prototype, off unless VITE_ISO_MAP_URL is set: the isometric map. */}
-      <IsoMapButton className="absolute right-4 top-[calc(4.75rem_+_var(--safe-top,0px))] z-[1000]" />
+      {/* The tablet rail owns the right edge under the search bar, so the button takes the left. */}
+      <IsoMapButton
+        className={`absolute top-[calc(4.75rem_+_var(--safe-top,0px))] z-[1000] ${isRail ? 'left-4' : 'right-4'}`}
+      />
       <IsoMapView clearNav />
     </div>
   );

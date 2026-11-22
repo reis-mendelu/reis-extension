@@ -1015,6 +1015,7 @@
     "isoTitle": "Isometric map",
     "isoOpen": "Open the isometric map",
     "isoClose": "Close the isometric map",
+    "isoCredit": "© OpenStreetMap contributors, © ČÚZK",
     "searchPlaceholder": "Search a room or place…",
     "noFloorPlan": "No floor plan available.",
     "noFloorPlanShort": "no floor plan",
