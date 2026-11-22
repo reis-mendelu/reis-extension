@@ -39,7 +39,7 @@ import { IsoMapView } from '../../components/CampusMap/iso/IsoMapView';
 import { useAppStore } from '../../store/useAppStore';
 import { floorHeights, isoRing } from '../../data/map/isoFloors';
 import { IMG } from '../../data/map/isoView';
-import { Q, fourth, room, rooms } from '../fixtures/isoQFloor';
+import { Q, fourth, room, rooms, stairRooms } from '../fixtures/isoQFloor';
 
 /**
  * The floor the 2D map has open is drawn in the isometric picture, lifted to its height, and
@@ -109,16 +109,17 @@ describe('floors in the isometric map', () => {
     faces.forEach((f) => expect((f.getAttribute('d')!.match(/M/g) ?? []).length).toBe(1));
   });
 
-  it('says which floor is open and how far up it is', async () => {
+  it('names the open floor, and says nothing about up or down', async () => {
     useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
     await open();
     const cue = screen.getByTestId('iso-floor-cue');
     expect(cue.textContent).toContain('4. patro');
-    expect(cue.textContent).toContain('4 patra nahoru');
+    expect(cue.textContent).toBe('4. patro');
   });
 
   it("keeps the label on screen: on the corner's left when there is room, on its right when not", async () => {
     useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
+    pixelAt = { x: 60, y: 200 };
     await open();
     expect(screen.getByTestId('iso-floor-cue').getAttribute('data-side')).toBe('right');
     cleanup();
@@ -133,6 +134,18 @@ describe('floors in the isometric map', () => {
     await open();
     const cue = screen.getByTestId('iso-floor-cue');
     expect(cue.textContent).toBe('přízemí');
+  });
+
+  it('draws a stairwell as steps, with no arrow, and a classroom as a plain room', async () => {
+    useAppStore.setState({
+      activeBuildingId: 0,
+      activeFloorId: fourth.id,
+      roomsByBuilding: { 0: stairRooms },
+    });
+    await open();
+    const treads = screen.getAllByTestId('iso-treads');
+    expect(treads).toHaveLength(1);
+    expect((treads[0]!.getAttribute('d')!.match(/M/g) ?? []).length).toBeGreaterThanOrEqual(4);
   });
 
   it('a tap on a room selects it; on bare ground it leaves the building', async () => {

@@ -33,3 +33,33 @@ export const room = {
   },
 } as unknown as RoomFeature;
 export const rooms = { type: 'FeatureCollection', features: [room] } as RoomsCollection;
+
+// A stairwell on the same floor: 2.5 m by 6 m, so it is drawn as steps.
+const [sx, sy] = [x0! + 0.00008, y0! + 0.00002];
+export const stairs = {
+  type: 'Feature',
+  geometry: {
+    type: 'Polygon',
+    coordinates: [
+      [
+        [sx, sy],
+        [sx + 0.000034, sy],
+        [sx + 0.000034, sy + 0.000054],
+        [sx, sy + 0.000054],
+        [sx, sy],
+      ],
+    ],
+  },
+  properties: {
+    ...room.properties,
+    id: 4102,
+    name: 'Q4.S1',
+    type: 'stairs',
+    category: 'circulation',
+    label: 'Q4.S1',
+  },
+} as unknown as RoomFeature;
+export const stairRooms = {
+  type: 'FeatureCollection',
+  features: [room, stairs],
+} as RoomsCollection;

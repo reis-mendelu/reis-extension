@@ -31,22 +31,10 @@ describe('floorCue', () => {
 });
 
 describe('cueText', () => {
-  it('names the floor as a student says it, and what to do', () => {
-    expect(cueText(4, 'cz')).toEqual({ title: '4. patro', action: '4 patra nahoru' });
-    expect(cueText(0, 'cz')).toEqual({ title: 'přízemí', action: null });
-  });
-
-  it('uses the right Czech plural', () => {
-    expect(cueText(1, 'cz').action).toBe('1 patro nahoru');
-    expect(cueText(2, 'cz').action).toBe('2 patra nahoru');
-    expect(cueText(5, 'cz').action).toBe('5 pater nahoru');
-    expect(cueText(-1, 'cz').action).toBe('1 patro dolů');
-    expect(cueText(-2, 'cz').action).toBe('2 patra dolů');
-  });
-
-  it('speaks English too', () => {
-    expect(cueText(1, 'en').action).toBe('1 floor up');
-    expect(cueText(3, 'en').action).toBe('3 floors up');
-    expect(cueText(-1, 'en').action).toBe('1 floor down');
+  it('names the floor as a student says it, and says nothing about up or down', () => {
+    expect(cueText(4, 'cz')).toBe('4. patro');
+    expect(cueText(0, 'cz')).toBe('přízemí');
+    expect(cueText(-1, 'cz')).toBe('1. podzemní podlaží');
+    expect(cueText(2, 'en')).toBe('floor 2');
   });
 });

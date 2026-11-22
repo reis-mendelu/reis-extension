@@ -153,8 +153,14 @@ export function IsoFloorLayer({
         strokeWidth="2"
         {...nonScaling}
       />
-      {scene.placed.map(({ f, ring }) => (
-        <RoomShape key={f.properties.id} f={f} ring={ring} selected={f.properties.id === selId} />
+      {scene.placed.map(({ f, ring, treads }) => (
+        <RoomShape
+          key={f.properties.id}
+          f={f}
+          ring={ring}
+          treads={treads}
+          selected={f.properties.id === selId}
+        />
       ))}
       <g
         ref={labels}

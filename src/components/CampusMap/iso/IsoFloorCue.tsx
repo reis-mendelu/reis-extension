@@ -11,7 +11,7 @@ const META = buildingsJson as BuildingsMeta;
 type Pt = { x: number; y: number };
 
 /**
- * "You are on the 4th floor, four floors up", said on the building itself: a label at the open
+ * "4. patro", said on the building itself: a label at the open
  * floor's nearest corner, in the words a student uses. Placed from OpenSeadragon's own viewport on
  * every frame, like the ruler and the event pins, so it keeps its size at any zoom.
  */
@@ -52,7 +52,7 @@ export function IsoFloorCue({
   if (!cue || !at) return null;
   const text = cueText(cue.up, language);
   // Room for the label to the corner's left (about 8px a character, plus its padding), else it goes to the right, under the plate.
-  const width = Math.max(text.title.length, text.action?.length ?? 0) * 8 + 20;
+  const width = text.length * 8 + 20;
   const left = at.x - 20 - width >= 6;
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -66,8 +66,7 @@ export function IsoFloorCue({
         }}
         className="absolute left-0 top-0 whitespace-nowrap rounded-lg border border-primary bg-base-100 px-2 py-1 text-xs leading-tight shadow-sm"
       >
-        <span className="block text-sm font-semibold first-letter:uppercase">{text.title}</span>
-        {text.action && <span className="block font-medium text-primary">{text.action}</span>}
+        <span className="block text-sm font-semibold first-letter:uppercase">{text}</span>
       </div>
     </div>
   );

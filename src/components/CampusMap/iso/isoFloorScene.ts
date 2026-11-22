@@ -2,6 +2,7 @@ import buildingsJson from '../../../data/map/buildings.json';
 import plates from '../../../data/map/isoPlates.json';
 import type { BuildingsMeta, RoomsCollection } from '../../../types/campusMap';
 import { floorHeights, isoRing, svgPath, volumeAbove } from '../../../data/map/isoFloors';
+import { isStairs, stairTreads } from '../../../data/map/isoStairs';
 import { polygonCentroid } from '../mapHelpers';
 
 const META = buildingsJson as BuildingsMeta;
@@ -36,6 +37,8 @@ export function buildFloorScene(
     return {
       f,
       ring: r,
+      // Stairs are drawn as steps (see isoStairs.ts); every other room has none.
+      treads: isStairs(f.properties.type) ? stairTreads(f.geometry.coordinates[0]!, z) : '',
       at: [cx, cy] as [number, number],
       area: (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys)),
     };
