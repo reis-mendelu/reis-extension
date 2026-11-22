@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type OpenSeadragon from 'openseadragon';
 import { X } from 'lucide-react';
 import { isoDzi, isoMapBase, isoSeason } from '../../../data/map/isoMap';
 import { isoMinZoom, isoOpeningView } from '../../../data/map/isoView';
@@ -7,6 +8,9 @@ import { logError } from '../../../utils/reportError';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useEscapeLayer } from '../../../hooks/ui/useEscapeLayer';
+import { useVisibleMapEvents } from '../../../hooks/useVisibleMapEvents';
+import { IsoEventPins } from './IsoEventPins';
+import { IsoEventCard } from './IsoEventCard';
 
 /**
  * The isometric campus map, full-bleed over the map screen: pan with a finger or
@@ -38,6 +42,14 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  // The viewer, once it exists, for the layers drawn over it (event pins).
+  const [engine, setEngine] = useState<{
+    viewer: OpenSeadragon.Viewer;
+    osd: typeof OpenSeadragon;
+  } | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const events = useVisibleMapEvents();
+  const selected = events.find((e) => e.id === selectedId) ?? null;
 
   useEscapeLayer(true, () => setOpen(false));
 
@@ -111,6 +123,7 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
           immediateRender: false,
         });
         viewer = v;
+        setEngine({ viewer: v, osd: OpenSeadragon });
         const fitZoomFloor = () => {
           // A live setting on the viewport (getMinZoom reads it) that the typings leave out.
           (v.viewport as unknown as { minZoomLevel: number }).minZoomLevel = isoMinZoom(
@@ -143,6 +156,7 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
     return () => {
       cancelled = true;
       viewer?.destroy();
+      setEngine(null);
     };
   }, [base, setOpen]);
 
@@ -156,6 +170,17 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
       className="absolute inset-0 z-[1002] bg-base-300"
     >
       <div ref={host} className="absolute inset-0" />
+      {engine && (
+        <IsoEventPins
+          viewer={engine.viewer}
+          osd={engine.osd}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
+      )}
+      {selected && (
+        <IsoEventCard event={selected} clearNav={clearNav} onClose={() => setSelectedId(null)} />
+      )}
       <button
         ref={closeButton}
         type="button"

@@ -7,10 +7,26 @@ const viewerCtor = vi.fn();
 const destroy = vi.fn();
 vi.mock('openseadragon', () => ({
   default: {
-    Point: vi.fn(),
+    Point: vi.fn().mockImplementation(function (this: { x: number; y: number }, x, y) {
+      this.x = x;
+      this.y = y;
+    }),
     Viewer: vi.fn().mockImplementation(function (opts: unknown) {
       viewerCtor(opts);
-      return { destroy, addHandler: vi.fn(), viewport: { zoomTo: vi.fn(), panTo: vi.fn() } };
+      return {
+        destroy,
+        addHandler: vi.fn(),
+        removeHandler: vi.fn(),
+        container: { clientWidth: 390, clientHeight: 844 },
+        viewport: {
+          zoomTo: vi.fn(),
+          panTo: vi.fn(),
+          applyConstraints: vi.fn(),
+          getZoom: () => 3,
+          // Every place lands at the same spot on screen: enough to know a pin was drawn.
+          pixelFromPoint: () => ({ x: 120, y: 200 }),
+        },
+      };
     }),
   },
 }));
