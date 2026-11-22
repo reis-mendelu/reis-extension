@@ -54,7 +54,7 @@ export function CampusMapView() {
         </div>
       )}
       {/* Prototype, off unless VITE_ISO_MAP_URL is set: the isometric map. */}
-      <IsoMapButton className="absolute bottom-3 right-3 z-[1000]" />
+      <IsoMapButton className="absolute bottom-36 right-3 z-[1000]" />
       <IsoMapView />
       {placing && (
         <div className="absolute bottom-6 left-1/2 z-[1001] flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary px-4 py-2 text-primary-content shadow-popover-heavy">
