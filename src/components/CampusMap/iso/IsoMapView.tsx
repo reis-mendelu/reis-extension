@@ -171,9 +171,8 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
       >
         <X size={16} aria-hidden="true" />
       </button>
-      <p
-        className={`absolute left-3 rounded bg-base-100/80 px-2 py-1 text-xs ${clearNav ? 'bottom-[calc(5.5rem_+_var(--safe-bottom,0px))]' : 'bottom-2'}`}
-      >
+      {/* Top left, level with the close button: the bottom is the nav bar's and the event pins', and this sat on the map. */}
+      <p className="absolute left-3 top-[calc(0.75rem_+_var(--safe-top,0px))] flex h-8 items-center rounded bg-base-100/80 px-2 text-xs">
         <a
           href="https://www.openstreetmap.org/copyright"
           target="_blank"
