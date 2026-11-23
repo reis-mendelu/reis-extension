@@ -45,6 +45,7 @@
     "dev:web:clash": "REIS_FIXTURE=weekClash vite --config vite.web.config.ts",
     "dev:web:short-exam": "REIS_FIXTURE=shortExam vite --config vite.web.config.ts",
     "build:web": "node scripts/assert-web-build-env.mjs && VITE_DEV_SOCIETY=reis VITE_PREVIEW_BUILD=true vite build --config vite.web.build.config.ts",
+    "build:iso-demo": "node scripts/build-iso-demo.mjs",
     "build:web:real": "test -f public/preview-data.json || (echo 'Missing public/preview-data.json — run npm run sanitise:snapshot first' && exit 1) && VITE_PREVIEW_DATA=real npm run build:web",
     "build:capacitor": "vite build --config vite.capacitor.config.ts",
     "cap:sync": "npm run check:native && npm run build:capacitor && npx cap sync && npm run ios:version",
