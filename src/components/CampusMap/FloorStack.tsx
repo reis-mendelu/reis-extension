@@ -28,6 +28,7 @@ export function FloorStack({ size = 'xs' }: { size?: 'xs' | 'sm' }) {
         <button
           key={f.id}
           className={`btn ${size === 'sm' ? 'btn-sm' : 'btn-xs'} ${activeFloorId === f.id ? 'btn-primary' : 'btn-ghost'}`}
+          aria-current={activeFloorId === f.id ? 'true' : undefined}
           onClick={() => setMapFloor(f.id)}
           disabled={leaving}
         >

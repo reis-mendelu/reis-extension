@@ -101,6 +101,13 @@ describe('floors in the isometric map', () => {
     expect(screen.getByText('-2')).toBeTruthy(); // the same FloorStack as the 2D map
   });
 
+  it('tells assistive technology which floor is open, not only by colour', async () => {
+    useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
+    await open();
+    expect(screen.getByRole('button', { name: '4' }).getAttribute('aria-current')).toBe('true');
+    expect(screen.getByRole('button', { name: '-2' }).getAttribute('aria-current')).toBeNull();
+  });
+
   it('frosts the building above the floor as one path per face, so no two faces cancel each other out', async () => {
     useAppStore.setState({ activeBuildingId: 0, activeFloorId: fourth.id, roomsByBuilding: {} });
     await open();
