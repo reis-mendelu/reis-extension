@@ -1016,6 +1016,8 @@
     "isoOpen": "Open the isometric map",
     "isoClose": "Close the isometric map",
     "isoCredit": "© OpenStreetMap contributors, © ČÚZK",
+    "isoDoor": "Entrance",
+    "isoRoute": "Route from the entrance",
     "isoOffCampus": "The isometric map covers only the campus and its surroundings – move the map back",
     "isoShowOnMap": "Show on map",
     "searchPlaceholder": "Search a room or place…",

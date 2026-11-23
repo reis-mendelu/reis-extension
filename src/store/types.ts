@@ -632,6 +632,12 @@ export interface MapSlice {
   /** The isometric campus map (prototype, off unless VITE_ISO_MAP_URL is set) is open over the map. */
   isoMapOpen: boolean;
   setIsoMapOpen: (open: boolean) => void;
+  /**
+   * The room the student asked the way to, from the entrance, in the isometric map. Kept apart from the
+   * selection because changing floor clears that, and the way is the thing a student walks floor by floor.
+   */
+  isoRouteTo: import('../types/campusMap').RoomProperties | null;
+  setIsoRouteTo: (room: import('../types/campusMap').RoomProperties | null) => void;
   mapSearchResults: MapSelection[];
   mapFocusRequest: number;
   setMapBuilding: (id: number) => void;

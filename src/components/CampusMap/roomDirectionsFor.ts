@@ -21,7 +21,17 @@ export function directionsFor(
   sel: MapSelection | null,
   roomsByBuilding: Record<number, RoomsCollection>
 ): RoomDirectionsView | null {
-  if (!map3dEnabled()) return null;
+  return map3dEnabled() ? roomDirectionsView(sel, roomsByBuilding) : null;
+}
+
+/**
+ * The same directions without the 3D switch, for the isometric map: it has its own switch
+ * (the tiles' address), and its route is asked for, so it never changes what a shell shows unasked.
+ */
+export function roomDirectionsView(
+  sel: MapSelection | null,
+  roomsByBuilding: Record<number, RoomsCollection>
+): RoomDirectionsView | null {
   const ref =
     sel?.kind === 'room'
       ? {

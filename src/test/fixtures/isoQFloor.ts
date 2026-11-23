@@ -63,3 +63,21 @@ export const stairRooms = {
   type: 'FeatureCollection',
   features: [room, stairs],
 } as RoomsCollection;
+
+// The same stairwell on the ground floor, right under it: a staircase serves every floor it stacks through.
+const ground = Q.floors.find((f) => f.level === 0)!;
+export const groundStairs = {
+  ...stairs,
+  properties: {
+    ...stairs.properties,
+    id: 4002,
+    floorId: ground.id,
+    floorLevel: 0,
+    name: 'Q0.S1',
+    label: 'Q0.S1',
+  },
+} as unknown as RoomFeature;
+export const wayRooms = {
+  type: 'FeatureCollection',
+  features: [room, stairs, groundStairs],
+} as RoomsCollection;

@@ -15,9 +15,11 @@ import { roomLabel } from '../mapHelpers';
 import { RoomShape } from './RoomShape';
 import { buildFloorScene } from './isoFloorScene';
 import { placeLabels } from './isoFloorLabels';
-import { guideStairs } from '../../../data/map/isoStairs';
+import { guideStairs, nearestStairs } from '../../../data/map/isoStairs';
+import { isoPixel } from '../../../data/map/isoView';
 import { selectedRoomId } from '../roomTints';
 import { useCutaway } from './useCutaway';
+import { useEntranceRoute } from './useEntranceRoute';
 
 const META = buildingsJson as BuildingsMeta;
 
@@ -53,22 +55,28 @@ export function IsoFloorLayer({
     [buildingId, floorId, rooms]
   );
 
-  // The stairs to climb for the picked room: lit, and moving, so they are found at a glance.
-  const guide = useMemo(
-    () =>
-      scene
-        ? guideStairs(
-            scene.placed.map((p) => ({
-              id: p.f.properties.id,
-              type: p.f.properties.type,
-              at: p.at,
-            })),
-            selId,
-            scene.onLowest
-          )
-        : null,
-    [scene, selId]
-  );
+  const way = useEntranceRoute().way;
+  const routeTo = useAppStore((s) => s.isoRouteTo?.id ?? null);
+  // The room asked for stays marked when a change of floor has cleared the selection.
+  const hi = selId ?? routeTo;
+
+  // The stairs to climb for the picked room: lit, and moving, so they are found at a glance. On the
+  // floor the street opens onto, they are lit only once the way from the entrance was asked for: the
+  // same staircase the route names, found by where it stands, since the room is on another floor.
+  const guide = useMemo(() => {
+    if (!scene) return null;
+    const pool = scene.placed.map((p) => ({
+      id: p.f.properties.id,
+      type: p.f.properties.type,
+      at: p.at,
+    }));
+    const own = guideStairs(pool, hi, scene.onLowest);
+    const enter = way?.steps[0];
+    const core = way?.steps.find((st) => st.kind === 'core');
+    if (own !== null || !way || core?.kind !== 'core' || enter?.level !== scene.level) return own;
+    const p = isoPixel(core.at[1], core.at[0], scene.z);
+    return nearestStairs(pool, [p.px, p.py]);
+  }, [scene, hi, way]);
 
   // The viewBox is the viewer's own view, in picture pixels; text keeps a constant size on screen.
   useEffect(() => {
@@ -88,7 +96,7 @@ export function IsoFloorLayer({
     const events = ['animation', 'animation-finish', 'update-viewport', 'open', 'resize'] as const;
     events.forEach((e) => viewer.addHandler(e, sync));
     return () => events.forEach((e) => viewer.removeHandler(e, sync));
-  }, [viewer, scene, selId]);
+  }, [viewer, scene, hi]);
 
   // Opening another building's floors (a tap here, or the floor column) brings it into view.
   // The first opening, with the picture still loading, is framed by the viewer's own 'open'.
@@ -178,7 +186,7 @@ export function IsoFloorLayer({
           ring={ring}
           treads={treads}
           guide={f.properties.id === guide}
-          selected={f.properties.id === selId}
+          selected={f.properties.id === hi}
         />
       ))}
       <g
@@ -204,11 +212,11 @@ export function IsoFloorLayer({
                 key={f.properties.id}
                 x={at[0]}
                 y={at[1]}
-                data-sel={f.properties.id === selId ? 'true' : undefined}
+                data-sel={f.properties.id === hi ? 'true' : undefined}
                 data-x={at[0]}
                 data-y={at[1]}
                 data-n={label.length}
-                fontWeight={f.properties.id === selId ? 700 : 400}
+                fontWeight={f.properties.id === hi ? 700 : 400}
               >
                 {label}
               </text>

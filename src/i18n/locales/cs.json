@@ -1016,6 +1016,8 @@
     "isoOpen": "Otevřít izometrickou mapu",
     "isoClose": "Zavřít izometrickou mapu",
     "isoCredit": "© přispěvatelé OpenStreetMap, © ČÚZK",
+    "isoDoor": "Vchod",
+    "isoRoute": "Cesta od vchodu",
     "isoOffCampus": "Izometrická mapa pokrývá jen kampus a okolí – přesuň mapu zpět",
     "isoShowOnMap": "Ukázat na mapě",
     "searchPlaceholder": "Hledat místnost nebo místo…",

@@ -78,7 +78,9 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   mapLoadingBuilding: null,
   mapSearchQuery: '',
   isoMapOpen: false,
-  setIsoMapOpen: (open) => set({ isoMapOpen: open }),
+  setIsoMapOpen: (open) => set({ isoMapOpen: open, ...(open ? {} : { isoRouteTo: null }) }),
+  isoRouteTo: null,
+  setIsoRouteTo: (room) => set({ isoRouteTo: room }),
   mapSearchResults: [],
   mapFocusRequest: 0,
   mapEvents: [],
@@ -103,6 +105,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       activeBuildingId: id,
       activeFloorId: b.defaultFloorId ?? b.floors[0]?.id ?? null,
       mapSelection: null,
+      isoRouteTo: null,
     });
     void get().loadMapBuilding(id);
   },
@@ -112,6 +115,7 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
       activeBuildingId: null,
       activeFloorId: null,
       mapSelection: null,
+      isoRouteTo: null,
     }),
 
   clearMapSelection: () => set({ mapSelection: null }),
@@ -123,7 +127,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   // followed the selection onto whatever room they tapped next and still
   // routed to the lecture's building — an offer about one room, sitting on
   // another.
-  selectMapRoom: (room) => set({ mapSelection: { kind: 'room', room }, routeSuggestion: null }),
+  selectMapRoom: (room) =>
+    set({ mapSelection: { kind: 'room', room }, routeSuggestion: null, isoRouteTo: null }),
   selectMapLibrary: (featureId) =>
     set({
       mapSelection: featureId === undefined ? { kind: 'library' } : { kind: 'library', featureId },
