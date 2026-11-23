@@ -15,7 +15,6 @@ import { roomLabel } from '../mapHelpers';
 import { RoomShape } from './RoomShape';
 import { buildFloorScene } from './isoFloorScene';
 import { placeLabels } from './isoFloorLabels';
-import { guideStairs } from '../../../data/map/isoStairs';
 import { selectedRoomId } from '../roomTints';
 import { useCutaway } from './useCutaway';
 
@@ -51,23 +50,6 @@ export function IsoFloorLayer({
   const scene = useMemo(
     () => buildFloorScene(buildingId, floorId, rooms),
     [buildingId, floorId, rooms]
-  );
-
-  // The stairs to climb for the picked room: lit, and moving, so they are found at a glance.
-  const guide = useMemo(
-    () =>
-      scene
-        ? guideStairs(
-            scene.placed.map((p) => ({
-              id: p.f.properties.id,
-              type: p.f.properties.type,
-              at: p.at,
-            })),
-            selId,
-            scene.onLowest
-          )
-        : null,
-    [scene, selId]
   );
 
   // The viewBox is the viewer's own view, in picture pixels; text keeps a constant size on screen.
@@ -177,7 +159,6 @@ export function IsoFloorLayer({
           f={f}
           ring={ring}
           treads={treads}
-          guide={f.properties.id === guide}
           selected={f.properties.id === selId}
         />
       ))}

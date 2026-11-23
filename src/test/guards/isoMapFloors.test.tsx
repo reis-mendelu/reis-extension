@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 const handlers = new Map<string, (e: unknown) => void>();
 const addTiledImage = vi.fn();
@@ -39,8 +39,7 @@ import { IsoMapView } from '../../components/CampusMap/iso/IsoMapView';
 import { useAppStore } from '../../store/useAppStore';
 import { floorHeights, isoRing } from '../../data/map/isoFloors';
 import { IMG } from '../../data/map/isoView';
-import { Q, fourth, room, rooms, stairRooms, stairs } from '../fixtures/isoQFloor';
-import type { RoomFeature } from '../../types/campusMap';
+import { Q, fourth, room, rooms, stairRooms } from '../fixtures/isoQFloor';
 
 /**
  * The floor the 2D map has open is drawn in the isometric picture, lifted to its height, and
@@ -129,40 +128,17 @@ describe('floors in the isometric map', () => {
     expect((treads[0]!.getAttribute('d')!.match(/M/g) ?? []).length).toBeGreaterThanOrEqual(4);
   });
 
-  it('pulses the stairs nearest a picked room, but not the stairs of a plain floor', async () => {
+  it('does not light up any stairs for a picked room', async () => {
     useAppStore.setState({
       activeBuildingId: 0,
       activeFloorId: fourth.id,
       roomsByBuilding: { 0: stairRooms },
-    });
-    await open();
-    expect(screen.getByTestId('iso-treads').getAttribute('data-guide')).toBeNull();
-    cleanup();
-    useAppStore.setState({ mapSelection: { kind: 'room', room: room.properties } });
-    await open();
-    const guide = screen.getByTestId('iso-treads');
-    expect(guide.getAttribute('data-guide')).toBe('true');
-    const steps = guide.querySelectorAll('path');
-    expect(steps.length).toBeGreaterThanOrEqual(4);
-    // A wave, not one blink: each step starts a little after the last.
-    const delays = Array.from(steps).map((p) => (p as SVGElement).style.animationDelay);
-    expect(new Set(delays).size).toBe(steps.length);
-  });
-
-  it('keeps still when the picked room is on the ground floor', async () => {
-    const ground = Q.floors.find((f) => f.level === 0)!;
-    const onGround = (f: RoomFeature) =>
-      ({ ...f, properties: { ...f.properties, floorId: ground.id, floorLevel: 0 } }) as RoomFeature;
-    useAppStore.setState({
-      activeBuildingId: 0,
-      activeFloorId: ground.id,
-      roomsByBuilding: {
-        0: { type: 'FeatureCollection', features: [onGround(room), onGround(stairs)] },
-      },
       mapSelection: { kind: 'room', room: room.properties },
     });
     await open();
-    expect(screen.getByTestId('iso-treads').getAttribute('data-guide')).toBeNull();
+    const treads = screen.getByTestId('iso-treads');
+    expect(treads.getAttribute('data-guide')).toBeNull();
+    expect(treads.className).not.toContain('animate-pulse');
   });
 
   it('a tap on a room selects it; on bare ground it leaves the building', async () => {
