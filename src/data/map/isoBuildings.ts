@@ -38,7 +38,7 @@ export const ISO_BUILDINGS: Readonly<Record<number, IsoBuilding>> = {
     roofM: 44.25,
     lowest: 0,
     top: 4,
-    cut: { x: 6028, y: 4896, w: 767, h: 483 },
+    cut: { x: 6028, y: 4896, w: 771, h: 483 },
   },
   // B
   510096: {
@@ -48,7 +48,7 @@ export const ISO_BUILDINGS: Readonly<Record<number, IsoBuilding>> = {
     roofM: 40.31,
     lowest: 1,
     top: 6,
-    cut: { x: 6793, y: 4631, w: 451, h: 463 },
+    cut: { x: 6753, y: 4584, w: 504, h: 512 },
   },
   // C
   489829: {
@@ -58,7 +58,7 @@ export const ISO_BUILDINGS: Readonly<Record<number, IsoBuilding>> = {
     roofM: 35.78,
     lowest: 0,
     top: 6,
-    cut: { x: 6497, y: 4346, w: 380, h: 486 },
+    cut: { x: 6497, y: 4346, w: 380, h: 487 },
   },
   // E
   1279313: {
@@ -68,7 +68,7 @@ export const ISO_BUILDINGS: Readonly<Record<number, IsoBuilding>> = {
     roofM: 33.61,
     lowest: 1,
     top: 4,
-    cut: { x: 7324, y: 4741, w: 245, h: 206 },
+    cut: { x: 7319, y: 4741, w: 250, h: 206 },
   },
   // M
   582134: {
