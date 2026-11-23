@@ -28,6 +28,26 @@ const initialSocieties = useAppStore.getState().societies;
 describe('EventDetailCard', () => {
   // The category word was wrong as often as the picture, and the title already
   // says what the event is (spec 2026-10-08-event-emoji-design).
+  it("says when and where before the society's own words", () => {
+    render(
+      <EventDetailCard
+        event={{ ...ev, location: 'Aula', description: 'Bring a gift.', time: '10:00' }}
+      />
+    );
+    const when = screen.getByText(/10:00/);
+    const words = screen.getByText('Bring a gift.');
+    expect(when.compareDocumentPosition(words) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('carries its own close button when it is given one, next to the title', () => {
+    const onClose = vi.fn();
+    render(<EventDetailCard event={ev} onClose={onClose} closeLabel="Close" />);
+    screen.getByRole('button', { name: 'Close' }).click();
+    expect(onClose).toHaveBeenCalledTimes(1);
+    render(<EventDetailCard event={ev} />);
+    expect(screen.getAllByRole('button', { name: 'Close' })).toHaveLength(1);
+  });
+
   it('does not name a category', () => {
     render(<EventDetailCard event={{ ...ev, category: 'party' }} />);
     expect(screen.queryByText('Párty')).toBeNull();
@@ -217,7 +237,10 @@ describe('EventDetailCard', () => {
 
   it('shows a single date for a one-day event', () => {
     render(<EventDetailCard event={{ ...ev, date: '2026-11-23', endDate: null, time: '18:00' }} />);
-    expect(screen.getByText(/November 23/).textContent).toBe('Mon, November 23 · 18:00');
+    // The date is bold and the time muted, so they sit in two spans of one line.
+    expect(screen.getByText(/November 23/).parentElement!.textContent).toBe(
+      'Mon, November 23 · 18:00'
+    );
   });
 
   it('treats an end date equal to the start as a one-day event', () => {

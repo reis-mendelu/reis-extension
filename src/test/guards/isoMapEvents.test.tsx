@@ -89,11 +89,11 @@ describe('events on the isometric map', () => {
     expect(useAppStore.getState().isoMapOpen).toBe(true);
   });
 
-  it('"Show on map" hands the event to the 2D map, which closes the picture', async () => {
+  it('an event seen in the picture has no "Show on map" button: it is already on the map', async () => {
     await open([event('campus', [16.614247, 49.209592])]);
     fireEvent.click(await screen.findByTitle('Akce campus'));
-    fireEvent.click(screen.getByText(cs.map.isoShowOnMap));
-    expect(useAppStore.getState().isoMapOpen).toBe(false);
-    expect(useAppStore.getState().mapSelection?.kind).toBe('event');
+    expect(screen.getByTestId('iso-event-card')).toBeTruthy();
+    expect(screen.queryByText(cs.map.isoShowOnMap)).toBeNull();
+    expect(useAppStore.getState().isoMapOpen).toBe(true);
   });
 });
