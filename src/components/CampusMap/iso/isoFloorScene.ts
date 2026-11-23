@@ -1,5 +1,6 @@
 import buildingsJson from '../../../data/map/buildings.json';
 import plates from '../../../data/map/isoPlates.json';
+import plateTiers from '../../../data/map/isoPlateTiers.json';
 import type { BuildingsMeta, RoomsCollection } from '../../../types/campusMap';
 import { floorHeights, isoRing, svgPath, volumeAbove } from '../../../data/map/isoFloors';
 import { isStairs, stairTreads } from '../../../data/map/isoStairs';
@@ -7,6 +8,26 @@ import { polygonCentroid } from '../mapHelpers';
 
 const META = buildingsJson as BuildingsMeta;
 const FOOTPRINTS = plates as unknown as Record<string, [number, number][][]>;
+const TIERS = plateTiers as unknown as Record<
+  string,
+  { top: number; rings: [number, number][][] }[]
+>;
+
+/**
+ * The rings a floor's plate is cut from. A building with a low wing, a rotunda or a terrace has parts
+ * that stop below its upper floors; a plate drawn over them would hang in the air. Each tier is the
+ * footprint of the parts still standing at its `top` (metres above ground); the floor takes the first
+ * one that clears it by a storey's margin, else the tallest.
+ */
+export function footprintAt(
+  buildingId: number,
+  heightAboveGroundM: number,
+  whole: [number, number][]
+) {
+  const tiers = TIERS[buildingId];
+  if (!tiers?.length) return FOOTPRINTS[buildingId] ?? [whole];
+  return (tiers.find((t) => t.top >= heightAboveGroundM + 0.8) ?? tiers[tiers.length - 1]!).rings;
+}
 
 /**
  * Everything drawn for one floor, in picture pixels: the building above it (frosted), the plate,
@@ -27,7 +48,7 @@ export function buildFloorScene(
   const plate = isoRing(ring, z);
   // What is drawn is the building's real footprint (no courtyard, no lower wing), where the picture is cut
   // from one; the outline still pairs the plate with the ground for the legs.
-  const deck = (FOOTPRINTS[b.id] ?? [ring]).map((r) => isoRing(r, z));
+  const deck = footprintAt(b.id, z - groundM, ring as [number, number][]).map((r) => isoRing(r, z));
   const feats = (rooms?.features ?? []).filter((f) => f.properties.floorId === floorId);
   const placed = feats.map((f) => {
     const r = isoRing(f.geometry.coordinates[0]!, z);

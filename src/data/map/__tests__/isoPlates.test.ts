@@ -21,6 +21,13 @@ const area = (r: [number, number][]) =>
   111_320 *
   Math.cos((49.2 * Math.PI) / 180);
 
+const shoelace = (r: [number, number][]) =>
+  r.reduce(
+    (s, p, i) =>
+      s + (r[i - 1] ?? r[r.length - 1]!)[0] * p[1] - p[0] * (r[i - 1] ?? r[r.length - 1]!)[1],
+    0
+  ) / 2;
+
 describe('the real footprint of each cut building', () => {
   it('exists for every building the picture cuts except Q, which is cut along its outline', () => {
     for (const id of Object.keys(ISO_BUILDINGS).map(Number)) {
@@ -51,5 +58,19 @@ describe('the real footprint of each cut building', () => {
     expect(plateE.deck[0]!.length).not.toBe(E.outline.coordinates[0]!.length);
     expect(plateQ.deck).toHaveLength(1);
     expect(plateQ.deck[0]).toHaveLength(Q.outline.coordinates[0]!.length);
+  });
+
+  // C's strip and rotunda and X's oval stop below their top floors: a plate there would hang in the air.
+  it('draws no plate over a low part that the floor is above', () => {
+    const deckArea = (name: string, level: number) => {
+      const b = buildings.find((x) => x.name === name)!;
+      const scene = buildFloorScene(b.id, b.floors.find((f) => f.level === level)!.id, undefined)!;
+      return scene.deck.reduce((s, r) => s + Math.abs(shoelace(r)), 0);
+    };
+    expect(deckArea('C', 6)).toBeLessThan(deckArea('C', 0) * 0.6);
+    expect(deckArea('C', 1)).toBeGreaterThan(deckArea('C', 6));
+    expect(deckArea('X', 3)).toBeLessThan(deckArea('X', 1) * 0.5);
+    // A building with one height keeps one footprint on every floor.
+    expect(deckArea('A', 4)).toBeCloseTo(deckArea('A', 0), 0);
   });
 });
