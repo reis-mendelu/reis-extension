@@ -1015,6 +1015,7 @@
     "isoTitle": "Izometrická mapa",
     "isoOpen": "Otevřít izometrickou mapu",
     "isoClose": "Zavřít izometrickou mapu",
+    "isoLoading": "Načítám mapu",
     "isoCredit": "© přispěvatelé OpenStreetMap, © ČÚZK",
     "isoOffCampus": "Izometrická mapa pokrývá jen kampus a okolí – přesuň mapu zpět",
     "isoShowOnMap": "Ukázat na mapě",

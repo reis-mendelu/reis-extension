@@ -179,9 +179,12 @@ export function MapScreen() {
           sets its own width. They share `MapPanelBody` and nothing else. */}
       {isRail ? <MapRail /> : <MapSheet />}
       {/* Prototype, off unless VITE_ISO_MAP_URL is set: the isometric map. */}
-      {/* The tablet rail owns the right edge under the search bar, so the button takes the left. */}
+      {/* Under the search bar, in the corner a map's own controls live in (Google Maps puts its layers
+          button top right). On a tablet the events rail owns the right edge below the search bar, and a
+          button wedged in the gap above it looked lost, so there it takes the left. z-[1001]: it stays
+          above the phone's events sheet when that is pulled up. */}
       <IsoMapButton
-        className={`absolute top-[calc(4.75rem_+_var(--safe-top,0px))] z-[1000] ${isRail ? 'left-4' : 'right-4'}`}
+        className={`absolute top-[calc(4.75rem_+_var(--safe-top,0px))] z-[1001] ${isRail ? 'left-4' : 'right-4'}`}
       />
       <IsoMapView clearNav />
     </div>

@@ -14,6 +14,7 @@ import { useEscapeLayer } from '../../../hooks/ui/useEscapeLayer';
 import { useVisibleMapEvents } from '../../../hooks/useVisibleMapEvents';
 import { IsoEventPins } from './IsoEventPins';
 import { IsoEventCard } from './IsoEventCard';
+import { IsoBuildingLabels } from './IsoBuildingLabels';
 import { IsoFloorLayer } from './IsoFloorLayer';
 import { IsoFloorRuler } from './IsoFloorRuler';
 import { useModalFocus } from './useModalFocus';
@@ -30,18 +31,36 @@ import { FloorStack } from '../FloorStack';
  * the map screen unmounting (the open flag lives in the store and would outlive
  * it), and a "show on map" request, whose target would otherwise land underneath.
  */
-/** `clearNav`: the phone's floating bottom nav sits over the map, so the credit line rides above it. */
-export function IsoMapView({ clearNav = false }: { clearNav?: boolean }) {
+/**
+ * `clearNav`: the phone's floating bottom nav sits over the map, so the credit line rides above it.
+ * `closable` is false only on the standalone demo page, where the picture is the whole page and
+ * there is no map underneath to go back to: no Close button, and Escape does nothing.
+ */
+export function IsoMapView({
+  clearNav = false,
+  closable = true,
+}: {
+  clearNav?: boolean;
+  closable?: boolean;
+}) {
   const open = useAppStore((s) => s.isoMapOpen);
   const setOpen = useAppStore((s) => s.setIsoMapOpen);
   // The flag is global; whichever screen hosted the overlay going away must not leave it set.
   useEffect(() => () => setOpen(false), [setOpen]);
   const base = isoMapBase();
   if (!open || base === null) return null;
-  return <Viewer base={base} clearNav={clearNav} />;
+  return <Viewer base={base} clearNav={clearNav} closable={closable} />;
 }
 
-function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
+function Viewer({
+  base,
+  clearNav,
+  closable,
+}: {
+  base: string;
+  clearNav: boolean;
+  closable: boolean;
+}) {
   const { t } = useTranslation();
   const setOpen = useAppStore((s) => s.setIsoMapOpen);
   const focusRequest = useAppStore((s) => s.mapFocusRequest);
@@ -55,16 +74,18 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
     osd: typeof OpenSeadragon;
   } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // False until the first tile has loaded: before that the host is an empty grey box.
+  const [drawn, setDrawn] = useState(false);
   const inBuilding = useAppStore((s) => s.activeBuildingId !== null);
   const events = useVisibleMapEvents();
   const selected = events.find((e) => e.id === selectedId) ?? null;
 
-  useEscapeLayer(true, () => setOpen(false));
+  useEscapeLayer(closable, () => setOpen(false));
 
   // A "show on map" (a lesson's room, an event) moves the map under us: step aside so it is seen.
   useEffect(() => {
-    if (focusRequest !== firstFocusRequest.current) setOpen(false);
-  }, [focusRequest, setOpen]);
+    if (closable && focusRequest !== firstFocusRequest.current) setOpen(false);
+  }, [closable, focusRequest, setOpen]);
 
   useModalFocus(root, closeButton);
 
@@ -92,6 +113,12 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
         });
         viewer = v;
         setEngine({ viewer: v, osd: OpenSeadragon });
+        const onDrawn = () => {
+          v.removeHandler('tile-loaded', onDrawn);
+          setDrawn(true);
+        };
+        // `tile-drawn` is raised for the canvas and HTML drawers only, not the WebGL one.
+        v.addHandler('tile-loaded', onDrawn);
         const fitZoomFloor = () => {
           // A live setting on the viewport (getMinZoom reads it) that the typings leave out.
           (v.viewport as unknown as { minZoomLevel: number }).minZoomLevel = isoMinZoom(
@@ -143,7 +170,19 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
       className="absolute inset-0 z-[1002] bg-base-300"
     >
       <div ref={host} className="absolute inset-0" />
+      {!drawn && (
+        <div
+          role="status"
+          className="pointer-events-none absolute inset-0 grid place-items-center text-base-content/70"
+        >
+          <span className="flex flex-col items-center gap-2 text-sm">
+            <span className="loading loading-spinner loading-lg text-primary" aria-hidden="true" />
+            {t('map.isoLoading')}
+          </span>
+        </div>
+      )}
       {engine && <IsoFloorLayer viewer={engine.viewer} osd={engine.osd} />}
+      {engine && <IsoBuildingLabels viewer={engine.viewer} osd={engine.osd} />}
       {engine && inBuilding && <IsoFloorRuler viewer={engine.viewer} osd={engine.osd} />}
       {inBuilding && (
         <div className="absolute right-3 top-1/2 z-[1] -translate-y-1/2">
@@ -161,16 +200,18 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
       {selected && (
         <IsoEventCard event={selected} clearNav={clearNav} onClose={() => setSelectedId(null)} />
       )}
-      <button
-        ref={closeButton}
-        type="button"
-        data-testid="iso-map-close"
-        aria-label={t('map.isoClose')}
-        onClick={() => setOpen(false)}
-        className="btn btn-circle btn-sm absolute right-3 top-[calc(0.75rem_+_var(--safe-top,0px))] bg-base-100 shadow-popover-heavy"
-      >
-        <X size={16} aria-hidden="true" />
-      </button>
+      {closable && (
+        <button
+          ref={closeButton}
+          type="button"
+          data-testid="iso-map-close"
+          aria-label={t('map.isoClose')}
+          onClick={() => setOpen(false)}
+          className="btn btn-circle btn-sm absolute right-3 top-[calc(0.75rem_+_var(--safe-top,0px))] bg-base-100 shadow-popover-heavy"
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+      )}
       {/* Top left, level with the close button: the bottom is the nav bar's and the event pins', and this sat on the map. */}
       <p className="absolute left-3 top-[calc(0.75rem_+_var(--safe-top,0px))] flex h-8 items-center rounded bg-base-100/80 px-2 text-xs">
         <a
