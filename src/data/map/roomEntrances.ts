@@ -1,6 +1,4 @@
 import campusPaths from './campusPaths.json';
-import buildingsJson from './buildings.json';
-import type { BuildingsMeta } from '../../types/campusMap';
 import type { Entrance } from '../../utils/indoor/roomDirections';
 
 const GRAPH = (
@@ -24,19 +22,9 @@ function door(letter: string, level: number): Entrance | null {
  * Q: its one mapped door, on the east side, opens onto floor 0 — the Vrátnice
  * is 9 m inside it on floor 0, where floor −1 has classrooms. Q sits on a
  * slope; the ground there is 1.7 m under floor 0, the steps up to the door.
- *
- * B: its mapped door (OSM node 7770644194) opens onto floor 1, the lowest floor above ground,
- * which B numbers from 1. A, C, E, M, X and Z are absent on purpose: their path node is only
- * the nearest one to the building, not a door.
  */
 const entrances: Record<number, Entrance> = {};
-for (const [letter, level] of [
-  ['Q', 0],
-  ['B', 1],
-] as const) {
-  const id = (buildingsJson as BuildingsMeta).buildings.find((x) => x.name === letter)?.id;
-  const at = door(letter, level);
-  if (id !== undefined && at) entrances[id] = at;
-}
+const q = door('Q', 0);
+if (q) entrances[0] = q;
 
 export const ROOM_ENTRANCES: Readonly<Record<number, Entrance>> = entrances;

@@ -16,8 +16,6 @@ import { IsoEventPins } from './IsoEventPins';
 import { IsoEventCard } from './IsoEventCard';
 import { IsoFloorLayer } from './IsoFloorLayer';
 import { IsoFloorRuler } from './IsoFloorRuler';
-import { IsoDoor } from './IsoDoor';
-import { IsoRouteCard } from './IsoRouteCard';
 import { useModalFocus } from './useModalFocus';
 import { FloorStack } from '../FloorStack';
 
@@ -147,7 +145,6 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
       <div ref={host} className="absolute inset-0" />
       {engine && <IsoFloorLayer viewer={engine.viewer} osd={engine.osd} />}
       {engine && inBuilding && <IsoFloorRuler viewer={engine.viewer} osd={engine.osd} />}
-      {engine && inBuilding && <IsoDoor viewer={engine.viewer} osd={engine.osd} />}
       {inBuilding && (
         <div className="absolute right-3 top-1/2 z-[1] -translate-y-1/2">
           <FloorStack size="sm" />
@@ -161,7 +158,6 @@ function Viewer({ base, clearNav }: { base: string; clearNav: boolean }) {
           onSelect={setSelectedId}
         />
       )}
-      {inBuilding && !selected && <IsoRouteCard clearNav={clearNav} />}
       {selected && (
         <IsoEventCard event={selected} clearNav={clearNav} onClose={() => setSelectedId(null)} />
       )}

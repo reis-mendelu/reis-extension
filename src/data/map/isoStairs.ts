@@ -72,19 +72,6 @@ export function stairTreads(ring: number[][], heightM: number): string {
   }).join('');
 }
 
-/** The stairs nearest a point (picture pixels) among a floor's rooms, as the stairs' room id. */
-export function nearestStairs(
-  rooms: { id: number; type: string; at: [number, number] }[],
-  to: readonly [number, number]
-): number | null {
-  const pool = rooms.filter((r) => isStairs(r.type));
-  const dist = (r: { at: [number, number] }) => Math.hypot(r.at[0] - to[0], r.at[1] - to[1]);
-  return (
-    pool.reduce<(typeof pool)[number] | null>((a, r) => (!a || dist(r) < dist(a) ? r : a), null)
-      ?.id ?? null
-  );
-}
-
 /**
  * The stairs to light up for the room a student picked: the nearest ones on the open floor. Nothing on the lowest floor above ground (a room there is
  * reached from the street), with nothing picked, or when the pick is itself the stairs. `at` is the room's
@@ -97,5 +84,11 @@ export function guideStairs(
 ): number | null {
   const picked = rooms.find((r) => r.id === selectedId);
   if (onLowestFloor || !picked || isStairs(picked.type)) return null;
-  return nearestStairs(rooms, picked.at);
+  const pool = rooms.filter((r) => isStairs(r.type));
+  const dist = (r: { at: [number, number] }) =>
+    Math.hypot(r.at[0] - picked.at[0], r.at[1] - picked.at[1]);
+  return (
+    pool.reduce<(typeof pool)[number] | null>((a, r) => (!a || dist(r) < dist(a) ? r : a), null)
+      ?.id ?? null
+  );
 }

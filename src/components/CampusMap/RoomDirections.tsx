@@ -2,7 +2,6 @@ import { ArrowDown, ArrowUp, DoorOpen, MapPin } from 'lucide-react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { directionLines, type DirectionLine } from './roomDirectionLines';
 import { useRoomDirections } from './useRoomDirections';
-import type { RoomDirectionsView } from './roomDirectionsFor';
 
 const ICON: Record<DirectionLine['kind'], typeof DoorOpen> = {
   enter: DoorOpen,
@@ -24,40 +23,32 @@ export function RoomDirections() {
   return (
     <section data-testid="room-directions" className="space-y-2">
       <h4 className="text-xs font-semibold text-base-content/70">{t('map.directions.title')}</h4>
-      <DirectionsList directions={directions} />
-    </section>
-  );
-}
-
-/** The steps themselves, for a card that brings its own heading (the isometric map's). */
-export function DirectionsList({ directions }: { directions: RoomDirectionsView }) {
-  const { t } = useTranslation();
-  return (
-    <ol className="space-y-2">
-      {directionLines(directions.steps, t).map((line, i) => {
-        const Icon = ICON[line.kind];
-        const change = line.kind === 'up' || line.kind === 'down';
-        return (
-          <li key={i} className="flex items-start gap-3">
-            <span
-              className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ${
-                change
-                  ? 'bg-[var(--color-route)] text-white'
-                  : 'bg-base-content/10 text-base-content/70'
-              }`}
-            >
-              <Icon size={14} aria-hidden="true" />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-sm font-semibold text-base-content">
-                {line.spoken && <span className="sr-only">{line.spoken}</span>}
-                <span aria-hidden={line.spoken ? true : undefined}>{line.primary}</span>
+      <ol className="space-y-2">
+        {directionLines(directions.steps, t).map((line, i) => {
+          const Icon = ICON[line.kind];
+          const change = line.kind === 'up' || line.kind === 'down';
+          return (
+            <li key={i} className="flex items-start gap-3">
+              <span
+                className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full ${
+                  change
+                    ? 'bg-[var(--color-route)] text-white'
+                    : 'bg-base-content/10 text-base-content/70'
+                }`}
+              >
+                <Icon size={14} aria-hidden="true" />
               </span>
-              <span className="block text-xs text-base-content/70">{line.secondary}</span>
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-base-content">
+                  {line.spoken && <span className="sr-only">{line.spoken}</span>}
+                  <span aria-hidden={line.spoken ? true : undefined}>{line.primary}</span>
+                </span>
+                <span className="block text-xs text-base-content/70">{line.secondary}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { isoPixel } from '../isoView';
-import { guideStairs, isStairs, nearestStairs, stairTreads } from '../isoStairs';
+import { guideStairs, isStairs, stairTreads } from '../isoStairs';
 
 // A stairwell 2.5 m wide and 6 m long, long side north-south, somewhere on the campus.
 const [LNG, LAT] = [16.6135, 49.2095];
@@ -100,24 +100,5 @@ describe('guideStairs', () => {
 
   it('says nothing when the floor has no stairs', () => {
     expect(guideStairs([rooms[0]!, rooms[4]!], 1, false)).toBeNull();
-  });
-});
-
-/** The stairs a route names are found on every floor it crosses, by where they are, not by which room was picked. */
-describe('nearestStairs', () => {
-  const pool = [
-    { id: 1, type: 'classroom_and_laboratory', at: [100, 100] as [number, number] },
-    { id: 2, type: 'stairs', at: [400, 100] as [number, number] },
-    { id: 3, type: 'stairs', at: [150, 100] as [number, number] },
-    { id: 4, type: 'emergency_stairs', at: [110, 100] as [number, number] },
-  ];
-
-  it('picks the stairs nearest a point, never the emergency stairs', () => {
-    expect(nearestStairs(pool, [100, 100])).toBe(3);
-    expect(nearestStairs(pool, [390, 100])).toBe(2);
-  });
-
-  it('says nothing when the floor has no stairs', () => {
-    expect(nearestStairs([pool[0]!], [100, 100])).toBeNull();
   });
 });
