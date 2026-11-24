@@ -40,7 +40,7 @@ Whatever Claude reads goes to Claude like anything else you share in a chat.
 
 ## Repeated questions
 
-Answers from IS stay in the extension's memory for a while, so Claude asking the same thing twice does not ask IS twice: a minute for assignments, exams, points and grades (what you or a teacher can change while you wait), 5 minutes for a subject's file list, 15 for the timetable, an hour for subjects, the study plan and a file's text, and a day for syllabi and pass rates. A file is read again as soon as its folder shows it was modified. Nothing is written to disk; it is all gone when Claude closes.
+Answers from IS stay in the extension's memory for a while, so Claude asking the same thing twice does not ask IS twice: a minute for assignments, exams, points and grades (what you or a teacher can change while you wait), 5 minutes for a subject's file list, 15 for the timetable, an hour for subjects, the study plan and a file's text, and a day for syllabi. Pass rates are not kept here: their own fetcher keeps them and asks again for any subject it could not get. A file is read again as soon as its folder shows a different date for it. Nothing is written to disk; it is all gone when Claude closes.
 
 ## Limits
 

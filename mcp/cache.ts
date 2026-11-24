@@ -6,31 +6,37 @@
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
+const READ = 'mendelu_read_file';
+const LIST = 'mendelu_subject_files';
 
 /**
- * How long each tool's answer stays good. Whatever a student can change by
- * acting in IS, or a teacher can change while they wait, stays a minute at
- * most: it only collapses a burst of identical calls.
+ * How long each tool's answer stays good; 0 is never kept here. Whatever a
+ * student can change by acting in IS, or a teacher can change while they wait,
+ * stays a minute at most: it only collapses a burst of identical calls.
  */
 export const TTL_MS: Record<string, number> = {
   mendelu_assignments: MIN,
   mendelu_exams: MIN,
   mendelu_points: MIN,
   mendelu_grades: MIN,
-  mendelu_subject_files: 5 * MIN,
+  [LIST]: 5 * MIN,
   mendelu_schedule: 15 * MIN,
-  // Also dropped early when its folder listing shows the file was modified.
-  mendelu_read_file: HOUR,
+  // Also dropped as soon as its folder listing shows another date for the file.
+  [READ]: HOUR,
   mendelu_subjects: HOUR,
   mendelu_study_plan: HOUR,
   mendelu_syllabus: 24 * HOUR,
-  mendelu_success_rates: 24 * HOUR,
+  // fetchSubjectSuccessRates keeps what it fetched itself and asks again for a
+  // subject whose request failed; an answer kept here would hide that retry.
+  mendelu_success_rates: 0,
 };
 
 /** The plugin build hands over files of up to 10 MB whole; a few of them fit. */
 const MAX_BYTES = 64 * 1024 * 1024;
 
-type Entry = { value: unknown; at: number; bytes: number };
+/** `stamp`: for a file read, the listing date known when the download started. */
+type Entry = { value: unknown; at: number; bytes: number; stamp?: string };
+type Pending = { promise: Promise<unknown>; stamp?: string };
 type Listed = { downloadUrl?: unknown; date?: unknown; modified?: unknown };
 
 function stable(v: unknown): unknown {
@@ -55,7 +61,7 @@ export type ToolCache = ReturnType<typeof createToolCache>;
 
 export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
   const entries = new Map<string, Entry>(); // insertion order = least recently used first
-  const inflight = new Map<string, Promise<unknown>>();
+  const inflight = new Map<string, Pending>();
   /** downloadUrl -> the Modifikace (or upload) date its folder last showed. */
   const fileStamps = new Map<string, string>();
   let total = 0;
@@ -67,11 +73,12 @@ export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
     entries.delete(key);
   };
 
-  const keep = (key: string, value: unknown) => {
-    const bytes = JSON.stringify(value)?.length ?? 0;
+  const keep = (key: string, value: unknown, stamp?: string) => {
+    // A JS string holds up to 2 bytes a character (Czech text does), key included.
+    const bytes = 2 * (key.length + (JSON.stringify(value)?.length ?? 0));
     if (bytes > maxBytes) return;
     drop(key);
-    entries.set(key, { value, at: now(), bytes });
+    entries.set(key, { value, at: now(), bytes, stamp });
     total += bytes;
     for (const oldest of entries.keys()) {
       if (total <= maxBytes) break;
@@ -79,17 +86,20 @@ export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
     }
   };
 
-  /** A replaced file keeps its download link; only the listing's date shows it. */
+  /**
+   * A replaced file keeps its download link; only the listing's date shows it.
+   * A read made against any other date (or before any listing) is dropped, and
+   * one still downloading is cut loose so it is neither joined nor kept.
+   */
   const noteListing = (files: unknown) => {
     if (!Array.isArray(files)) return;
     for (const f of files as Listed[]) {
       if (typeof f?.downloadUrl !== 'string') continue;
       const stamp = String(f.modified ?? f.date ?? '');
-      const seen = fileStamps.get(f.downloadUrl);
-      if (seen !== undefined && seen !== stamp) {
-        drop(keyOf('mendelu_read_file', { url: f.downloadUrl }));
-      }
       fileStamps.set(f.downloadUrl, stamp);
+      const key = keyOf(READ, { url: f.downloadUrl });
+      if (entries.has(key) && entries.get(key)!.stamp !== stamp) drop(key);
+      if (inflight.has(key) && inflight.get(key)!.stamp !== stamp) inflight.delete(key);
     }
   };
 
@@ -106,17 +116,22 @@ export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
       }
       drop(key);
       const pending = inflight.get(key);
-      if (pending) return pending;
-      const p = fetch().then((value) => {
-        if (tool === 'mendelu_subject_files') noteListing(value);
-        keep(key, value);
+      if (pending) return pending.promise;
+      const mine: Pending = {
+        promise: Promise.resolve(),
+        stamp: tool === READ ? fileStamps.get(String(args.url)) : undefined,
+      };
+      mine.promise = fetch().then((value) => {
+        if (tool === LIST) noteListing(value);
+        // Cut loose by a newer listing: hand it to its caller, keep nothing.
+        if (inflight.get(key) === mine) keep(key, value, mine.stamp);
         return value;
       });
-      inflight.set(key, p);
+      inflight.set(key, mine);
       try {
-        return await p;
+        return await mine.promise;
       } finally {
-        inflight.delete(key);
+        if (inflight.get(key) === mine) inflight.delete(key);
       }
     },
   };

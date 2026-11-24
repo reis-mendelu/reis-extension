@@ -102,8 +102,66 @@ describe('createToolCache', () => {
     expect(read).toHaveBeenCalledTimes(2);
   });
 
-  it('drops the oldest answers past the memory cap, and never keeps one bigger than it', async () => {
+  it('never keeps a read that was still downloading when the listing showed a new version', async () => {
+    const cache = createToolCache({ now: clock().now });
+    const url = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?download=1;id=2;z=1';
+    const row = { name: 'Brief', date: '01.10.2026', downloadUrl: url };
+    await cache.run('mendelu_subject_files', { code: 'X' }, async () => [row]);
+
+    let finishOld!: (v: string) => void;
+    const old = cache.run(
+      'mendelu_read_file',
+      { url },
+      () => new Promise<string>((r) => (finishOld = r))
+    );
+    // The teacher replaces the file while the old copy is still downloading.
+    await cache.run('mendelu_subject_files', { code: 'Y' }, async () => [
+      { ...row, modified: '20.11.2026' },
+    ]);
+    const fresh = vi.fn(async () => 'new brief');
+    // Does not join the old download…
+    await expect(cache.run('mendelu_read_file', { url }, fresh)).resolves.toBe('new brief');
+    finishOld('old brief');
+    await expect(old).resolves.toBe('old brief');
+    // …and the old download, finishing last, does not overwrite the new copy.
+    await expect(cache.run('mendelu_read_file', { url }, fresh)).resolves.toBe('new brief');
+    expect(fresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('rereads a file read before any listing once a listing is seen, then keeps it', async () => {
+    const cache = createToolCache({ now: clock().now });
+    const url = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?download=1;id=2;z=1';
+    const read = vi.fn(async () => 'text');
+    await cache.run('mendelu_read_file', { url }, read);
+    const listing = async () => [{ name: 'Brief', date: '01.10.2026', downloadUrl: url }];
+    await cache.run('mendelu_subject_files', { code: 'X' }, listing);
+    await cache.run('mendelu_read_file', { url }, read);
+    expect(read).toHaveBeenCalledTimes(2);
+    await cache.run('mendelu_subject_files', { code: 'Y' }, listing);
+    await cache.run('mendelu_read_file', { url }, read);
+    expect(read).toHaveBeenCalledTimes(2);
+  });
+
+  it('leaves pass rates to their fetcher, which retries a subject that failed', async () => {
+    // fetchSubjectSuccessRates swallows a failed CDN request and answers
+    // without that subject; keeping that answer would hide it for a day.
+    const cache = createToolCache({ now: clock().now });
+    const run = vi.fn(async () => ({ data: {} }));
+    await cache.run('mendelu_success_rates', { codes: ['EBC-PS'] }, run);
+    await cache.run('mendelu_success_rates', { codes: ['EBC-PS'] }, run);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('counts Czech text by the memory it takes, not by its length', async () => {
     const cache = createToolCache({ now: clock().now, maxBytes: 100 });
+    const run = vi.fn(async () => 'č'.repeat(30));
+    await cache.run('mendelu_syllabus', { predmet: '1' }, run);
+    await cache.run('mendelu_syllabus', { predmet: '1' }, run);
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('drops the oldest answers past the memory cap, and never keeps one bigger than it', async () => {
+    const cache = createToolCache({ now: clock().now, maxBytes: 300 });
     const big = 'x'.repeat(60);
     const run = vi.fn(async () => big);
     await cache.run('mendelu_syllabus', { predmet: '1' }, run);
