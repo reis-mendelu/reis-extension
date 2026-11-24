@@ -6,8 +6,6 @@ Potřebuješ účet Claude ([claude.ai](https://claude.ai)) a počítač (macOS 
 
 ## Varianta A: Claude Desktop (doporučeno)
 
-> **Poznámka:** soubor `.mcpb` zatím nemá zveřejněnou verzi na stránce verzí. Dokud ji nezveřejníme, použij variantu B.
-
 1. Nainstaluj si [Claude Desktop](https://claude.ai/download) a přihlas se.
 2. Stáhni [`reis-for-claude.mcpb`](https://github.com/reis-mendelu/reis-for-claude/releases/latest/download/reis-for-claude.mcpb) (návod s obrázky: [reisapp.cz/navody/reis-v-claude](https://reisapp.cz/navody/reis-v-claude)).
 3. Dvakrát na něj klikni (nebo ho přetáhni do okna Claude Desktop) a potvrď **Install**.
@@ -25,6 +23,7 @@ Potřebuješ účet Claude ([claude.ai](https://claude.ai)) a počítač (macOS 
    ```
 
 3. Pokud Claude Code nabídne výběr rozsahu instalace, zvol uživatelský (User), pak zadej přihlašovací jméno a heslo do IS.
+4. Zapni automatické aktualizace: spusť `/plugin`, vyber **Marketplaces**, pak **reis** a **Enable auto-update**. Claude Code pak při startu sám stáhne novou verzi.
 
 ## Co to umí
 
@@ -32,7 +31,10 @@ Rozvrh na 14 dní dopředu, zkouškové termíny, předměty a studijní plán, 
 
 ## Aktualizace
 
-Dokud reIS for Claude není v adresáři Claude, aktualizuje se ručně: stáhni nový `.mcpb` a otevři ho znovu. Když vyjde nová verze, reIS ti to napíše pod odpověď; zjišťuje to jednou při startu dotazem na `api.github.com` bez přihlášení a bez dat z IS (GitHub vidí jen tvou IP adresu, jako každý web). Plugin pro Claude Code aktualizuješ dvěma kroky: `/plugin marketplace update reis` obnoví seznam a `claude plugin update reis@reis` (v terminálu) aktualizuje samotný plugin; poté restartuj Claude Code.
+Nová verze vychází spolu s aplikací reIS, kdykoli se reIS pro Claude změnil.
+
+- **Claude Desktop** soubor `.mcpb` sám neaktualizuje. Když vyjde nová verze, reIS ti to napíše pod odpověď; stáhni nový `.mcpb` stejným odkazem a otevři ho znovu. Že je venku nová verze, zjišťuje jednou při startu dotazem na `api.github.com` bez přihlášení a bez dat z IS (GitHub vidí jen tvou IP adresu, jako každý web).
+- **Claude Code** se aktualizuje sám, pokud máš zapnuté automatické aktualizace (krok 4 výše). Ručně: `/plugin marketplace update reis` a pak `claude plugin update reis@reis` v terminálu; poté restartuj Claude Code.
 
 ## Když něco nejde
 
@@ -51,10 +53,8 @@ reIS o tobě nedostane nic. Co Claude přečte, jde do tvého chatu s Claude jak
 
 Claude reads your IS Mendelu timetable, exams, grades, deadlines and subject files, and answers questions about them. It runs on your own computer and is strictly read-only.
 
-*Note: no `.mcpb` release has been published on the releases page yet; until one is, use the Claude Code route.*
-
 **Claude Desktop (recommended):** install [Claude Desktop](https://claude.ai/download), download `reis-for-claude.mcpb` from the [latest release](https://github.com/reis-mendelu/reis-for-claude/releases/latest/download/reis-for-claude.mcpb), double-click it (or drag it into Claude Desktop), enter your IS username and password, then ask "what exams do I have left?".
 
-**Claude Code:** with Node.js 20+ installed, run `/plugin marketplace add reis-mendelu/reis-for-claude`, then `/plugin install reis@reis`, and enter your IS login when asked.
+**Claude Code:** with Node.js 20+ installed, run `/plugin marketplace add reis-mendelu/reis-for-claude`, then `/plugin install reis@reis`, and enter your IS login when asked. Then turn on auto-update: `/plugin` → **Marketplaces** → **reis** → **Enable auto-update**.
 
-Updates are manual for the `.mcpb` (download and open the new file; once per start it asks `api.github.com`, with no login or IS data (GitHub sees your IP address), whether a newer release exists, and says so under its answers); the plugin takes two steps: `/plugin marketplace update reis` refreshes the listing, then `claude plugin update reis@reis` (in a terminal) updates the plugin itself; restart Claude Code afterwards. Two-factor IS accounts are not supported yet.
+New versions come out with the reIS app whenever reIS for Claude changed. Claude Desktop does not update a `.mcpb` by itself: once per start it asks `api.github.com`, with no login or IS data (GitHub sees your IP address), whether a newer release exists and says so under its answers; download it from the same link and open it again. With auto-update on, Claude Code updates the plugin itself at startup (by hand: `/plugin marketplace update reis`, then `claude plugin update reis@reis` in a terminal, and restart). Two-factor IS accounts are not supported yet.

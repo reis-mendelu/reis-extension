@@ -95,11 +95,13 @@ shaping; `npm run mcp:smoke` only proves the server starts and lists its tools.
 To exercise a changed fetcher against real IS, name its tool:
 `npm run mcp:smoke -- --live mendelu_grades` (it always adds `mendelu_exams`).
 
-Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
-`npm run mcp:release` publishes the manifest's version as a release of
-`reis-mendelu/reis-for-claude`, whose latest-release download is the students'
-one-click link; the `.mcpb` asks that repo once per start whether it is outdated
-(`mcp/updateCheck.ts`).
+Build with `npm run mcp:pack`. It ships with the app: the release run's `mcp`
+job publishes it to `reis-mendelu/reis-for-claude` (release `mcp-vX.Y.Z` with
+the `.mcpb`, plus the plugin on that repo's `main`) whenever what it ships
+changed, with the app's version. Never bump `mcp/manifest.json` (it stays
+0.0.0) and never tag `mcp-v*` by hand; see `docs/release-pipeline.md`. The
+`.mcpb` asks that repo once per start whether it is outdated
+(`mcp/updateCheck.ts`); the plugin updates itself in Claude Code.
 `npm run mcp:plugin` builds the same server as a Claude Code plugin for Claude's
 directory: `mendelu_read_file` hands the file over whole instead of extracting its text
 (`mcp/documentHandover.ts` replaces `documentText.ts`), so officeparser stays out and

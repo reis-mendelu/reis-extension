@@ -14,6 +14,7 @@ release PR merged into main
        ├─ Extension     Chrome Web Store + Firefox Add-ons (publish.yml)
        ├─ VŠE           reIS pro VŠE → its own Chrome Web Store item (publish-vse.yml;
        │                off until set up)
+       ├─ Claude        reIS for Claude → reis-mendelu/reis-for-claude, only if it changed
        └─ Summary       one table; red if any store failed
 ```
 
@@ -63,6 +64,7 @@ are missing fails first and names the missing ones.
 | `ANDROID_KEYSTORE_PASSWORD` | its store password | `android/keystore.properties` (`storePassword`) |
 | `ANDROID_KEY_ALIAS` | `reis-upload` | `android/keystore.properties` (`keyAlias`) |
 | `ANDROID_KEY_PASSWORD` | only if different from the store password | `android/keystore.properties` (`keyPassword`) |
+| `REIS_FOR_CLAUDE_TOKEN` | fine-grained token: resource owner **reis-mendelu**, only the repository **reis-for-claude**, permission **Contents: Read and write**. It expires (a year at most): renew it before then | github.com → Settings → Developer settings → Fine-grained tokens |
 
 **iOS signing.** An App Manager API key cannot use Apple's cloud signing for the
 export (*Cloud signing permission error*), and each cloud-signed run also leaves a
@@ -103,6 +105,28 @@ repository **variable** `PLAY_TRACK` (e.g. `alpha`) or pass `--track`. A wrong
 name fails with the real track names listed. A newer production version also
 reaches the Alpha testers: Play gives everyone the highest versionCode they can
 see, so the closed track needs no upload of its own.
+
+## reIS for Claude
+
+The `mcp` job (`scripts/mcp-publish.mjs`) releases reIS for Claude with the
+app, so nobody bumps or releases it by hand. Its version is the app's.
+It publishes only when what it ships changed: it fingerprints the built `.mcpb`
+and plugin with the version left out (`scripts/lib/mcpFingerprint.mjs`) and
+compares with the `Fingerprint:` line in the last release's notes. Unchanged is
+a success that publishes nothing. Changed:
+
+1. pushes the plugin (`dist-plugin/reis`) to the root of `reis-for-claude`'s
+   `main`, which Claude Code students update from (and Claude's directory, if
+   the listing is live);
+2. creates the release `mcp-vX.Y.Z` there with the `.mcpb`: the students'
+   permanent download link, and what the `.mcpb`'s update notice compares against.
+
+Everything is built before `REIS_FOR_CLAUDE_TOKEN` is in reach; only the publish
+step holds it. A re-run is safe: an existing release means done, and an
+unchanged plugin is not pushed again. To ship it alone:
+`gh workflow run ship.yml -f tag=vX.Y.Z -f stores=mcp -f dry_run=false`.
+Between app releases, from a clean checkout: `npm run mcp:release` (with a
+`GH_TOKEN` that can write to the repository) publishes the same way.
 
 ## reIS pro VŠE (Chrome only)
 

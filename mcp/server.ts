@@ -6,8 +6,10 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { createIsSession, noLoginFetch, NO_LOGIN_MESSAGE } from './session';
 import { registerTools } from './register';
 import { startUpdateCheck } from './updateCheck';
-// The one version: the .mcpb manifest's (mcp-plugin.mjs stamps it on the plugin too).
-import { version } from './manifest.json';
+// The one version: the app's. reIS for Claude ships with every app release that
+// changes it (scripts/mcp-publish.mjs), and mcp-pack.mjs / mcp-plugin.mjs stamp
+// the same version on the .mcpb manifest and the plugin.
+import { version } from '../package.json';
 
 const user = process.env.MENDELU_USER?.trim();
 const pass = process.env.MENDELU_PASS;
