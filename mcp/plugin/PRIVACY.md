@@ -1,6 +1,6 @@
 # reIS for Claude Code: privacy policy
 
-Last updated: 26 October 2026.
+Last updated: 24 November 2026.
 
 reIS for Claude Code is a plugin that lets Claude read your own data in IS Mendelu, the
 information system of Mendel University in Brno. It is made by reIS, two MENDELU
@@ -31,7 +31,9 @@ counts nothing and stores nothing.
 ## What it stores
 
 Nothing. The IS session lives in the plugin's memory while Claude Code runs and is
-gone when Claude Code closes. When Claude reads a file from IS, Claude Code saves that
+gone when Claude Code closes. So do the answers IS gave, kept for between a minute and a
+day so that Claude asking the same thing twice does not ask IS twice; nothing of them is
+written to disk. When Claude reads a file from IS, Claude Code saves that
 copy on your computer, not the plugin.
 
 ## What it never does
