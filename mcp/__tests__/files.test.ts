@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
-vi.mock('../../src/api/documents/service', () => ({ fetchFilesFromFolder: vi.fn() }));
-import { fetchFilesFromFolder } from '../../src/api/documents/service';
+vi.mock('../../src/api/documents/service', () => ({ fetchFolderListing: vi.fn() }));
+import { fetchFolderListing } from '../../src/api/documents/service';
 import {
   listFolderFiles,
   assertDokServerUrl,
@@ -25,6 +25,8 @@ function fileResponse(body: Uint8Array | string, headers: Record<string, string>
   };
 }
 const asFetch = (f: unknown) => f as typeof fetch;
+type Listing = Awaited<ReturnType<typeof fetchFolderListing>>;
+const listing = (files: Listing['files'], complete = true): Listing => ({ files, complete });
 
 describe('listFolderFiles', () => {
   it('keeps one download link per file and drops entries without one', async () => {
@@ -36,14 +38,29 @@ describe('listFolderFiles', () => {
       date: '1. 10. 2026',
       files: link ? [{ name: 'x', type: 'pdf', link }] : [],
     });
-    vi.mocked(fetchFilesFromFolder).mockResolvedValue([
-      entry('L1.pdf', DL),
-      entry('dup', DL),
-      entry('no-link'),
-    ]);
+    vi.mocked(fetchFolderListing).mockResolvedValue(
+      listing([entry('L1.pdf', DL), entry('dup', DL), entry('no-link')])
+    );
     expect(await listFolderFiles('https://is.mendelu.cz/auth/dok_server/slozka.pl?id=1')).toEqual([
       { name: 'L1.pdf', author: 'A', date: '1. 10. 2026', downloadUrl: DL },
     ]);
+  });
+
+  it('fails when a page or subfolder did not load, instead of passing off part of the folder', async () => {
+    // A missing file would read as "the teacher has not uploaded it", and the
+    // tool cache would keep that partial list for 5 minutes.
+    const row = {
+      subfolder: '',
+      file_name: 'L1.pdf',
+      file_comment: '',
+      author: 'A',
+      date: '1. 10. 2026',
+      files: [{ name: 'x', type: 'pdf', link: DL }],
+    };
+    vi.mocked(fetchFolderListing).mockResolvedValue(listing([row], false));
+    await expect(
+      listFolderFiles('https://is.mendelu.cz/auth/dok_server/slozka.pl?id=1')
+    ).rejects.toThrow(/only part of this folder/);
   });
 });
 
@@ -51,30 +68,32 @@ describe('listFolderFiles — several files in one document', () => {
   it('lists each file under its own name, with the document title and folder beside it', async () => {
     const dl = (id: number) =>
       `https://is.mendelu.cz/auth/dok_server/slozka.pl?download=${id};id=1`;
-    vi.mocked(fetchFilesFromFolder).mockResolvedValue([
-      {
-        subfolder: 'Přednášky',
-        file_name: 'ig-03  ig-04',
-        title: 'ig-03 + ig-04',
-        file_comment: '',
-        author: 'A',
-        date: '07.10.2026',
-        modified: '15.10.2026',
-        files: [
-          { name: 'x', type: 'pdf', link: dl(1), filename: 'ig-03.pdf' },
-          { name: 'x', type: 'pdf', link: dl(2), filename: 'eth_frame.pdf' },
-        ],
-      },
-      {
-        subfolder: '',
-        file_name: 'Harmonogramorg',
-        title: 'Harmonogram+org',
-        file_comment: '',
-        author: 'B',
-        date: '17.09.2026',
-        files: [{ name: 'x', type: 'pdf', link: dl(3) }],
-      },
-    ]);
+    vi.mocked(fetchFolderListing).mockResolvedValue(
+      listing([
+        {
+          subfolder: 'Přednášky',
+          file_name: 'ig-03  ig-04',
+          title: 'ig-03 + ig-04',
+          file_comment: '',
+          author: 'A',
+          date: '07.10.2026',
+          modified: '15.10.2026',
+          files: [
+            { name: 'x', type: 'pdf', link: dl(1), filename: 'ig-03.pdf' },
+            { name: 'x', type: 'pdf', link: dl(2), filename: 'eth_frame.pdf' },
+          ],
+        },
+        {
+          subfolder: '',
+          file_name: 'Harmonogramorg',
+          title: 'Harmonogram+org',
+          file_comment: '',
+          author: 'B',
+          date: '17.09.2026',
+          files: [{ name: 'x', type: 'pdf', link: dl(3) }],
+        },
+      ])
+    );
     expect(await listFolderFiles('https://is.mendelu.cz/auth/dok_server/slozka.pl?id=1')).toEqual([
       {
         name: 'ig-03 + ig-04',
