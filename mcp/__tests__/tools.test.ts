@@ -16,6 +16,7 @@ vi.mock('../../src/api/syllabus', async (orig) => ({
 vi.mock('../../src/api/successRate', () => ({ fetchSubjectSuccessRates: vi.fn() }));
 vi.mock('../../src/api/gradeHistory', () => ({ fetchGradeHistory: vi.fn() }));
 vi.mock('../../src/api/odevzdavarny', () => ({ fetchOdevzdavarny: vi.fn() }));
+vi.mock('../../src/api/zaznamnik', () => ({ fetchSubjectZaznamnik: vi.fn() }));
 vi.mock('../files', () => ({ listFolderFiles: vi.fn(), readDokServerFile: vi.fn() }));
 
 import { TOOLS } from '../tools';
@@ -25,6 +26,7 @@ import { fetchGradeHistory } from '../../src/api/gradeHistory';
 import { fetchDualLanguageSubjects } from '../../src/api/subjects';
 import { fetchDualLanguageStudyPlan } from '../../src/api/studyPlan';
 import { listFolderFiles } from '../files';
+import { fetchSubjectZaznamnik } from '../../src/api/zaznamnik';
 import { fetchFullSemesterSchedule } from '../../src/injector/dataFetchers';
 import { fetchSyllabus, SYLLABUS_FETCH_FAILED } from '../../src/api/syllabus';
 
@@ -36,11 +38,12 @@ const tool = (name: string) => {
 };
 
 describe('TOOLS', () => {
-  it('has exactly the ten v1 tools and no generic page fetch', () => {
+  it('has exactly the eleven tools and no generic page fetch', () => {
     expect(TOOLS.map((t) => t.name).sort()).toEqual([
       'mendelu_assignments',
       'mendelu_exams',
       'mendelu_grades',
+      'mendelu_points',
       'mendelu_read_file',
       'mendelu_schedule',
       'mendelu_study_plan',
@@ -186,6 +189,26 @@ describe('TOOLS', () => {
     );
   });
 
+  it("reads one subject's Záznamník points by its subject id", async () => {
+    vi.mocked(fetchDualLanguageSubjects).mockResolvedValue({
+      subjects: { data: { 'EBC-PS': { subjectCode: 'EBC-PS', subjectId: '164074' } } },
+    } as never);
+    vi.mocked(fetchSubjectZaznamnik).mockResolvedValue({
+      ph: { sections: [{ label: 'Cvičení', arches: [] }], fetchedAt: 1 },
+      vt: { tests: [], fetchedAt: 1 },
+    });
+    expect(await tool('mendelu_points').run({ code: 'EBC-PS' }, ctx)).toEqual({
+      continuousAssessment: [{ label: 'Cvičení', arches: [] }],
+      tests: [],
+    });
+    expect(fetchSubjectZaznamnik).toHaveBeenCalledWith('S', 'O', '164074');
+    await expect(tool('mendelu_points').run({ code: 'NOPE' }, ctx)).rejects.toThrow(/not enrolled/);
+    vi.mocked(fetchSubjectZaznamnik).mockResolvedValue(null);
+    await expect(tool('mendelu_points').run({ code: 'EBC-PS' }, ctx)).rejects.toThrow(
+      /did not return your points/
+    );
+  });
+
   it('hides internal fields from the subject list', async () => {
     vi.mocked(fetchDualLanguageSubjects).mockResolvedValue({
       subjects: {
@@ -218,6 +241,14 @@ describe('TOOLS', () => {
     vi.mocked(fetchFullSemesterSchedule).mockResolvedValue(null as never);
     await expect(tool('mendelu_schedule').run({}, ctx)).rejects.toThrow(
       /did not return your timetable/
+    );
+    vi.mocked(fetchDualLanguageStudyPlan).mockResolvedValue(null);
+    await expect(tool('mendelu_study_plan').run({}, ctx)).rejects.toThrow(
+      /did not return your study plan/
+    );
+    vi.mocked(fetchOdevzdavarny).mockResolvedValue(null as never);
+    await expect(tool('mendelu_assignments').run({}, ctx)).rejects.toThrow(
+      /did not return your submission boxes/
     );
   });
 

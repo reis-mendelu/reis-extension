@@ -510,7 +510,16 @@
   },
   "appUpdate": {
     "title": "Nová verze reISu",
-    "body": "Klepni a aktualizuj"
+    "body": "Klepni a aktualizuj",
+    "critical": {
+      "popupTitle": "Je tu opravená verze reISu",
+      "update": "Aktualizovat",
+      "later": "Teď ne"
+    }
+  },
+  "reisForClaude": {
+    "text": "reIS v Claude: zeptej se na rozvrh, body ze Záznamníku nebo co ti chybí k zápočtu. Pro Claude Desktop →",
+    "dismiss": "Skrýt"
   },
   "notifications": {
     "title": "Novinky",
@@ -1311,6 +1320,9 @@
       "signalInternshipClickEy": "Klik na Cestu s EY",
       "signalAppUpdateOpened": "Klik na „Nová verze reISu“",
       "signalStudyAidsClickMendeluApp": "Klik na Studijní opory (mendelu.app)",
+      "signalReisForClaudeGuideOpened": "Klik na „reIS v Claude“",
+      "signalCriticalUpdateShown": "Okno „Je tu opravená verze reISu“ zobrazeno",
+      "signalCriticalUpdateOpened": "Klik na Aktualizovat u opravené verze",
       "signalShare": "{pct} % denních instalací",
       "signalShareHint": "Průměrný den za 30 dní: kolik z instalací, které ten den reIS otevřely, otevřelo i tohle. Kalendář je na telefonu úvodní obrazovka, takže tam je skoro vždy.",
       "signalInstalls": "instalací",

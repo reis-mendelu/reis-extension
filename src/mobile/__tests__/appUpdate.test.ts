@@ -20,6 +20,11 @@ vi.mock('../../store/useAppStore', () => ({
   useAppStore: { getState: () => state },
 }));
 
+const applyCritical = vi.fn(async (..._a: unknown[]) => {});
+vi.mock('../criticalUpdate', () => ({
+  applyCriticalUpdate: (...a: unknown[]) => applyCritical(...a),
+}));
+
 import { checkAppUpdate, openAppUpdate, APP_STORE_ID } from '../appUpdate';
 
 const old = new Date(Date.now() - 5 * 86_400_000).toISOString();
@@ -53,6 +58,17 @@ describe('checkAppUpdate', () => {
     await checkAppUpdate();
     expect(plugin.getAppUpdateInfo).toHaveBeenCalledWith({});
     expect(state.setAppUpdate).toHaveBeenCalledWith({ id: 'app-update:50800', version: null });
+  });
+
+  it('hands what the store said to the critical-version check, at once', async () => {
+    const info = {
+      updateAvailability: 2,
+      availableVersionName: '5.8.0',
+      availableVersionReleaseDate: old,
+    };
+    plugin.getAppUpdateInfo.mockResolvedValue(info);
+    await checkAppUpdate();
+    expect(applyCritical).toHaveBeenCalledWith(info, 'ios', null);
   });
 
   it('clears the offer once the app is current', async () => {
@@ -90,6 +106,13 @@ describe('openAppUpdate', () => {
     expect(plugin.openAppStore).toHaveBeenCalledWith({ appId: APP_STORE_ID });
     expect(APP_STORE_ID).toBe('6804832714');
     expect(track).toHaveBeenCalledWith('app_update_opened');
+  });
+
+  it('counts a tap from the critical-version pop-up under its own label', async () => {
+    env.os = 'ios';
+    await openAppUpdate('critical_update_opened');
+    expect(track).toHaveBeenCalledWith('critical_update_opened');
+    expect(track).not.toHaveBeenCalledWith('app_update_opened');
   });
 
   it("runs Play's own update screen on Android when Play allows it", async () => {

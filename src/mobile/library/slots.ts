@@ -1,4 +1,5 @@
 import type { Block } from './availability';
+import { pragueToInstant } from '../../utils/examOpeningReminders';
 
 /** Students book whole hours; Bookings itself allows 15-minute steps. */
 export const FIRST_HOUR = 7;
@@ -9,6 +10,16 @@ export const NOTICE_MS = 60 * 60 * 1000;
 export const DAILY_CAP = 4;
 
 export const overCap = (bookedToday: number): boolean => bookedToday >= DAILY_CAP;
+
+/**
+ * The moment the hour starts. Bookings' hours are Prague's; built in the
+ * phone's zone, a student abroad was offered hours already gone or refused
+ * ones still ahead.
+ */
+export const hourStartMs = (day: string, hour: number): number => {
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number];
+  return pragueToInstant(new Date(y, m - 1, d, hour)).getTime();
+};
 
 const at = (day: string, hour: number): string => `${day}T${String(hour).padStart(2, '0')}:00`;
 
@@ -29,8 +40,7 @@ export function freeHours(blocks: Block[], day: string, now: Date): number[] {
   const shut = blocks.filter((b) => b.status !== 'free');
   const out: number[] = [];
   for (let h = FIRST_HOUR; h <= LAST_HOUR; h++) {
-    const [y, m, d] = day.split('-').map(Number) as [number, number, number];
-    if (new Date(y, m - 1, d, h).getTime() < now.getTime() + NOTICE_MS) continue;
+    if (hourStartMs(day, h) < now.getTime() + NOTICE_MS) continue;
     const start = at(day, h);
     const end = at(day, h + 1);
     // Also not over a busy block: our own booking is overlaid on the free one until the next read.

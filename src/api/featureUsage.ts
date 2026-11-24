@@ -78,6 +78,12 @@ export const FEATURE_SIGNALS = [
    * programme from the admin console (2026-11-18).
    */
   'study_aids_click_mendelu_app',
+  /** The "reIS v Claude" row in the extension's Novinky opened its guide: how many installs went to set it up. */
+  'reis_for_claude_guide_opened',
+  /** The critical-version pop-up appeared (phone/iPad; at most twice per install, utils/criticalUpdate). */
+  'critical_update_shown',
+  /** Its Update button, or the one on an empty screen, tapped: did the explanation get students to update? */
+  'critical_update_opened',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */

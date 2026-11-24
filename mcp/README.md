@@ -8,7 +8,7 @@ Your IS Mendelu data in Claude Desktop: timetable, exams, grades, deadlines and 
 
 For a step-by-step guide in Czech and English, see [INSTALL.md](INSTALL.md).
 
-1. Download `reis-for-claude.mcpb` from the latest `mcp-v*` release on [GitHub](https://github.com/reis-mendelu/reis-extension/releases).
+1. Download `reis-for-claude.mcpb` from the [latest release](https://github.com/reis-mendelu/reis-for-claude/releases/latest/download/reis-for-claude.mcpb) (guide: [reisapp.cz/navody/reis-v-claude](https://reisapp.cz/navody/reis-v-claude)).
 2. Double-click it, or drag it into Claude Desktop.
 3. Enter your IS Mendelu username and password when Claude Desktop asks.
 
@@ -32,11 +32,15 @@ Then ask Claude things like "what's due this week?" or "explain lecture 7 of PoÄ
 ## What it never does
 
 - It never registers you for anything, never submits anything, and never opens online tests.
-- It never sends anything to reIS. It talks to `is.mendelu.cz` (over HTTPS only) and to the public reIS statistics on `cdn.jsdelivr.net`, nothing else.
+- It never sends anything to reIS. It talks to `is.mendelu.cz` (over HTTPS only), to the public reIS statistics on `cdn.jsdelivr.net`, and once per start to `api.github.com` to ask whether a newer release of the `.mcpb` exists (a GET with no login or IS data in it; GitHub sees your IP address, as any website does; the Claude Code plugin does not ask). Nothing else.
 - Your password is stored in your system keychain by Claude Desktop and is sent only to `is.mendelu.cz` to sign in.
 - A wrong password is not retried while the extension runs, and any failed sign-in waits a minute before the next one. Restarting Claude Desktop starts a fresh attempt.
 
 Whatever Claude reads goes to Claude like anything else you share in a chat.
+
+## Repeated questions
+
+Answers from IS stay in the extension's memory for a while, so Claude asking the same thing twice does not ask IS twice: a minute for assignments, exams, points and grades (what you or a teacher can change while you wait), 5 minutes for a subject's file list, 15 for the timetable, an hour for subjects, the study plan and a file's text, and a day for syllabi. Pass rates are not kept here: their own fetcher keeps them and asks again for any subject it could not get. A file is read again as soon as its folder shows a different date for it. Nothing is written to disk; it is all gone when Claude closes.
 
 ## Limits
 

@@ -1,5 +1,5 @@
 import { getCzechHoliday } from '../../utils/holidays';
-import { FIRST_HOUR, LAST_HOUR, NOTICE_MS, isWeekday } from './slots';
+import { FIRST_HOUR, LAST_HOUR, NOTICE_MS, hourStartMs, isWeekday } from './slots';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 export const isoDay = (d: Date): string =>
@@ -33,7 +33,7 @@ const openDay = (day: string) => isWeekday(day) && !holidayOf(day, 'cz');
 
 /** Whether the clock still leaves an hour of `day` to book (opening hours and notice). */
 const stillBookable = (day: string, now: Date): boolean =>
-  openDay(day) && dateOf(day, LAST_HOUR).getTime() >= now.getTime() + NOTICE_MS;
+  openDay(day) && hourStartMs(day, LAST_HOUR) >= now.getTime() + NOTICE_MS;
 
 /**
  * The day the card opens on: today while today can still be booked, otherwise
@@ -76,4 +76,4 @@ export function lessonHours(
 
 /** Whether an hour of `day` has gone (or sits inside the library's hour of notice). */
 export const hourGone = (day: string, hour: number, now: Date): boolean =>
-  dateOf(day, hour).getTime() < now.getTime() + NOTICE_MS;
+  hourStartMs(day, hour) < now.getTime() + NOTICE_MS;

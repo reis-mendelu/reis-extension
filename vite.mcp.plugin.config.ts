@@ -12,6 +12,8 @@ export default mergeConfig(
     resolve: {
       alias: [
         { find: './documentText', replacement: resolve(__dirname, 'mcp/documentHandover.ts') },
+        // The directory updates the plugin itself: no GitHub release check.
+        { find: /^\.\/updateCheck$/, replacement: resolve(__dirname, 'mcp/updateCheckOff.ts') },
       ],
     },
     build: { outDir: 'dist-plugin/reis/server' },

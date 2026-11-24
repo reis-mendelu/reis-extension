@@ -1,4 +1,4 @@
-import { fetchFilesFromFolder } from '../src/api/documents/service';
+import { fetchFolderListing } from '../src/api/documents/service';
 import { documentTitle } from '../src/utils/documentLabels';
 // The plugin build aliases this import to ./documentHandover (vite.mcp.plugin.config.ts).
 import { documentResult, MAX_DOCUMENT_BYTES } from './documentText';
@@ -26,6 +26,8 @@ export type FileText = {
 export type DocumentMeta = { filename?: string; mediaType: string; ext: string };
 
 const DOC_EXTENSIONS = ['.pdf', '.docx', '.pptx', '.xlsx', '.odt'];
+/** Pre-2007 binary Office files: officeparser reads none of them. */
+const OLD_OFFICE = ['.doc', '.ppt', '.xls'];
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv'];
 
 export const clean = (t: string) => t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
@@ -35,12 +37,20 @@ const extOf = (name?: string) => /\.[^./\\]+$/.exec(name ?? '')?.[0].toLowerCase
  * One entry per file that has a download link, deduplicated by that link.
  * Every file of a document is listed, not only the first: a lecture row in IS
  * can hold five PDFs, and Claude could only ever read one of them.
+ *
+ * All or nothing: when a page or subfolder failed to load, a file missing from
+ * the list would read as "not uploaded yet" (and the tool cache keeps a list).
  */
 export async function listFolderFiles(folderUrl: string): Promise<SubjectFile[]> {
-  const entries = await fetchFilesFromFolder(folderUrl);
+  const { files: entries, complete } = await fetchFolderListing(folderUrl);
+  if (!complete) {
+    throw new Error(
+      'IS sent only part of this folder: a page or subfolder did not load. Try again in a minute.'
+    );
+  }
   const seen = new Set<string>();
   const out: SubjectFile[] = [];
-  for (const e of entries ?? []) {
+  for (const e of entries) {
     for (const f of e.files ?? []) {
       if (!/download=/.test(f.link) || seen.has(f.link)) continue;
       seen.add(f.link);
@@ -126,7 +136,9 @@ export async function readDokServerFile(
       ...named,
       kind: type || 'unknown',
       text: '',
-      note: 'No text extractor for this file type. Open it in IS directly.',
+      note: OLD_OFFICE.includes(ext)
+        ? `This format (${ext}) can't be read as text. Open it in IS directly, or ask the teacher for the ${ext}x version.`
+        : 'No text extractor for this file type. Open it in IS directly.',
     };
   }
   const bytes = await readCapped(res, isDocument ? MAX_DOCUMENT_BYTES : MAX_FILE_BYTES);

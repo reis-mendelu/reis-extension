@@ -84,7 +84,7 @@ capability" is a valid answer that ends the turn.
 ### A fourth product, headless: reIS for Claude (`mcp/`)
 
 A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
-their laptop and exposes ten read-only tools over the same `src/api` fetchers.
+their laptop and exposes eleven read-only tools over the same `src/api` fetchers.
 It has no UI tree, so the parity rule does not apply to it. It is also the only
 reIS code that handles a password: it comes from the keychain and is sent only
 to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
@@ -96,6 +96,10 @@ To exercise a changed fetcher against real IS, name its tool:
 `npm run mcp:smoke -- --live mendelu_grades` (it always adds `mendelu_exams`).
 
 Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
+`npm run mcp:release` publishes the manifest's version as a release of
+`reis-mendelu/reis-for-claude`, whose latest-release download is the students'
+one-click link; the `.mcpb` asks that repo once per start whether it is outdated
+(`mcp/updateCheck.ts`).
 `npm run mcp:plugin` builds the same server as a Claude Code plugin for Claude's
 directory: `mendelu_read_file` hands the file over whole instead of extracting its text
 (`mcp/documentHandover.ts` replaces `documentText.ts`), so officeparser stays out and

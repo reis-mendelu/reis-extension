@@ -1,5 +1,6 @@
 import type { AppSlice } from '../types';
 import type { AppUpdateOffer } from '../../utils/appUpdateOffer';
+import type { CriticalVersion } from '../../utils/criticalUpdate';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { logError } from '../../utils/reportError';
 
@@ -21,11 +22,27 @@ export interface AppUpdateSlice {
   setAppUpdate: (offer: AppUpdateOffer | null) => void;
   loadAppUpdateSeen: () => Promise<void>;
   markAppUpdateSeen: () => void;
+  /** Set while this install is below the critical version and the store has
+   *  the fix (src/mobile/criticalUpdate). Feeds the pop-up and the hint on an
+   *  empty Předměty or Zkoušky. Never set in the extension. */
+  criticalUpdate: CriticalVersion | null;
+  criticalPopupOpen: boolean;
+  setCriticalUpdate: (critical: CriticalVersion | null) => void;
+  openCriticalPopup: () => void;
+  closeCriticalPopup: () => void;
 }
 
 export const createAppUpdateSlice: AppSlice<AppUpdateSlice> = (set, get) => ({
   appUpdate: null,
   appUpdateSeenId: null,
+  criticalUpdate: null,
+  criticalPopupOpen: false,
+  setCriticalUpdate: (critical) =>
+    set(
+      critical ? { criticalUpdate: critical } : { criticalUpdate: null, criticalPopupOpen: false }
+    ),
+  openCriticalPopup: () => set({ criticalPopupOpen: true }),
+  closeCriticalPopup: () => set({ criticalPopupOpen: false }),
   setAppUpdate: (offer) => set({ appUpdate: offer }),
   loadAppUpdateSeen: async () => {
     try {
