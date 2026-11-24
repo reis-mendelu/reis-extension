@@ -121,12 +121,20 @@ a success that publishes nothing. Changed:
 2. creates the release `mcp-vX.Y.Z` there with the `.mcpb`: the students'
    permanent download link, and what the `.mcpb`'s update notice compares against.
 
-Everything is built before `REIS_FOR_CLAUDE_TOKEN` is in reach; only the publish
-step holds it. A re-run is safe: an existing release means done, and an
-unchanged plugin is not pushed again. To ship it alone:
-`gh workflow run ship.yml -f tag=vX.Y.Z -f stores=mcp -f dry_run=false`.
-Between app releases, from a clean checkout: `npm run mcp:release` (with a
-`GH_TOKEN` that can write to the repository) publishes the same way.
+Job `mcp-build` runs `npm ci` and the build with no secret and hands over only
+the built files; job `mcp` runs the publish script from a fresh checkout with no
+`npm ci`, and is the only place `REIS_FOR_CLAUDE_TOKEN` exists. A re-run is safe:
+a finished release means done, a draft left by a stopped run is removed and
+published again, a release missing its `.mcpb` gets it uploaded, and an
+unchanged plugin is not pushed again. A version older than the latest release
+is refused, so re-running an old release never replaces newer code. To ship it
+alone: `gh workflow run ship.yml -f tag=vX.Y.Z -f stores=mcp -f dry_run=false`.
+
+Between app releases, from a clean checkout, `npm run mcp:release` (with a
+`GH_TOKEN` that can write to the repository) publishes the same way, but only
+while `mcp-v<package.json version>` does not exist yet. Once that version is
+released, changed contents are refused, not published: they ship with the next
+app version (bump `package.json`, normally through `/release`).
 
 ## reIS pro VŠE (Chrome only)
 

@@ -308,10 +308,12 @@ jobs:
   # reIS for Claude: the .mcpb release students download for Claude Desktop and
   # the plugin Claude Code updates itself from, both in reis-mendelu/reis-for-claude.
   # Released with the app only when what it ships changed; "unchanged" is a
-  # success. Needs no database. Everything is built BEFORE the token is in reach
-  # (npm ci and the build run dependency code); only the last step holds it.
-  mcp:
-    name: reIS for Claude
+  # success. Needs no database. Two jobs: mcp-build runs npm ci and the build
+  # (dependency code) with no secret at all and hands over only the built files;
+  # mcp runs the publish script from a fresh checkout, with no npm ci, and is the
+  # only place the token exists.
+  mcp-build:
+    name: reIS for Claude (build)
     if: inputs.stores == 'all' || inputs.stores == 'mcp'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -326,6 +328,37 @@ jobs:
         with:
           ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
           persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the .mcpb and the plugin
+        run: npm run mcp:pack && npm run mcp:plugin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reis-for-claude
+          # The plugin keeps its manifest in .claude-plugin/.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+          path: |
+            dist-mcp/manifest.json
+            dist-mcp/icon.png
+            dist-mcp/server/index.mjs
+            dist-mcp/reis-for-claude.mcpb
+            dist-plugin/reis/
+
+  mcp:
+    name: reIS for Claude
+    needs: mcp-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # One real publish at a time; dry runs never wait on each other.
+    concurrency:
+      group: reis-for-claude-${{ inputs.dry_run && github.run_id || 'publish' }}
+      cancel-in-progress: false
+    steps:
       - name: Check secrets
         env:
           REIS_FOR_CLAUDE_TOKEN: ${{ secrets.REIS_FOR_CLAUDE_TOKEN }}
@@ -334,13 +367,17 @@ jobs:
             echo "::error::Missing repository secret: REIS_FOR_CLAUDE_TOKEN. See docs/release-pipeline.md."
             exit 1
           }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
-      - name: Build the .mcpb and the plugin
-        run: npm run mcp:pack && npm run mcp:plugin
+      # Data only: the publish script hashes and copies these files, never runs them.
+      - uses: actions/download-artifact@v4
+        with:
+          name: reis-for-claude
       - name: Publish when changed
         env:
           GH_TOKEN: ${{ secrets.REIS_FOR_CLAUDE_TOKEN }}
@@ -356,7 +393,7 @@ jobs:
 
   summary:
     name: Release summary
-    needs: [database, android, ios, extension, extension-vse, mcp]
+    needs: [database, android, ios, extension, extension-vse, mcp-build, mcp]
     if: always()
     runs-on: ubuntu-latest
     steps:

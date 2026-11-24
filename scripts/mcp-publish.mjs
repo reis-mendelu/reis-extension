@@ -15,7 +15,8 @@
 //   node scripts/mcp-publish.mjs [--no-build] [--dry-run] [--expect-version X.Y.Z]
 //
 // --no-build uses dist-mcp/ and dist-plugin/reis as they are: CI builds them in
-// an earlier step, so no build script runs with the token in reach. Needs
+// another job and hands over only the files, so no dependency code runs where
+// the token is. Needs
 // GH_TOKEN that can write to reis-for-claude (contents), e.g. locally
 //   GH_TOKEN="$(gh auth token --user ElijaahInverted)" npm run mcp:release
 // Order: plugin push first, release last. The release is the marker of a
@@ -94,16 +95,32 @@ console.log(`mcp:publish: ${version}, fingerprint ${fp}`);
 const perm = gh(['api', `repos/${REPO}`, '--jq', '.permissions.push']);
 if (perm.stdout.trim() !== 'true') fail(`the token cannot write to ${REPO}.`);
 
-const same = gh(['release', 'view', tag, '--repo', REPO, '--json', 'body']);
+const same = gh(['release', 'view', tag, '--repo', REPO, '--json', 'body,isDraft,assets']);
 if (same.status === 0) {
+  const { body: sameBody, isDraft, assets } = JSON.parse(same.stdout);
   // A version is released once. Different contents under the same version
   // (a second local publish between app releases) must not pass silently.
-  if (readFingerprint(JSON.parse(same.stdout).body) !== fp)
+  if (readFingerprint(sameBody) !== fp)
     fail(
       `${tag} is already released with different contents. This version cannot be republished; it ships with the next app version.`
     );
-  say(`reIS for Claude: ${tag} is already released, nothing to do.`);
-  process.exit(0);
+  if (isDraft) {
+    // gh creates the release as a draft, uploads, then publishes: a draft is a
+    // run that stopped halfway. Drop it and publish again below.
+    run('gh', ['release', 'delete', tag, '--repo', REPO, '--yes']);
+    say(`reIS for Claude: removed the unfinished draft of ${tag}.`);
+  } else if (!assets.some((a) => a.name === 'reis-for-claude.mcpb')) {
+    if (dryRun) {
+      say(`reIS for Claude: ${tag} lacks its .mcpb; would upload it (dry run).`);
+    } else {
+      run('gh', ['release', 'upload', tag, MCPB, '--repo', REPO]);
+      say(`reIS for Claude: ${tag} was missing its .mcpb; uploaded.`);
+    }
+    process.exit(0);
+  } else {
+    say(`reIS for Claude: ${tag} is already released, nothing to do.`);
+    process.exit(0);
+  }
 }
 const latest = gh(['release', 'view', '--repo', REPO, '--json', 'tagName,body']);
 if (latest.status !== 0) fail(`cannot read the latest release of ${REPO}:\n${latest.stderr}`);
@@ -112,6 +129,19 @@ if (readFingerprint(body) === fp) {
   say(`reIS for Claude: unchanged since ${tagName}, nothing published.`);
   process.exit(0);
 }
+// A re-run of an older app release must not put older code over a newer one,
+// on main (what the plugin auto-updates from) or as the "latest" download.
+const parts = (v) => v.split('.').map(Number);
+const older = (a, b) => {
+  const [x, y] = [parts(a), parts(b)];
+  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
+  return false;
+};
+const latestVersion = /^mcp-v(\d+\.\d+\.\d+)$/.exec(tagName)?.[1];
+if (latestVersion && older(version, latestVersion))
+  fail(
+    `${tag} is older than the latest release ${tagName}; an older version is never published over a newer one.`
+  );
 
 if (dryRun) {
   say(
@@ -125,34 +155,33 @@ const from = `reis-mendelu/reis-extension@${commit}`;
 
 // 1. The plugin: the repository root is the plugin, so it mirrors dist-plugin/reis.
 const clone = mkdtempSync(join(tmpdir(), 'reis-for-claude-'));
-try {
-  const url = `https://x-access-token:${process.env.GH_TOKEN}@github.com/${REPO}.git`;
-  run('git', ['clone', '--quiet', '--depth', '1', url, clone]);
-  for (const name of readdirSync(clone)) {
-    if (name !== '.git') rmSync(join(clone, name), { recursive: true, force: true });
-  }
-  cpSync(PLUGIN, clone, { recursive: true });
-  const git = (...a) => run('git', ['-C', clone, ...a]);
-  git('add', '--all');
-  const staged = spawnSync('git', ['-C', clone, 'diff', '--cached', '--quiet']);
-  if (staged.status === 1) {
-    git(
-      '-c',
-      'user.name=reIS release',
-      '-c',
-      'user.email=reis.mendelu@gmail.com',
-      'commit',
-      '--quiet',
-      '-m',
-      `reIS for Claude ${version}\n\nFrom ${from}.`
-    );
-    git('push', '--quiet', 'origin', 'HEAD:main');
-    say(`reIS for Claude: plugin ${version} pushed to ${REPO}.`);
-  } else {
-    say('reIS for Claude: plugin files already up to date.');
-  }
-} finally {
-  rmSync(clone, { recursive: true, force: true });
+// The clone's .git/config holds the token in its remote URL. fail() exits the
+// process, which skips a finally block; an exit handler still runs.
+process.on('exit', () => rmSync(clone, { recursive: true, force: true }));
+const url = `https://x-access-token:${process.env.GH_TOKEN}@github.com/${REPO}.git`;
+run('git', ['clone', '--quiet', '--depth', '1', url, clone]);
+for (const name of readdirSync(clone)) {
+  if (name !== '.git') rmSync(join(clone, name), { recursive: true, force: true });
+}
+cpSync(PLUGIN, clone, { recursive: true });
+const git = (...a) => run('git', ['-C', clone, ...a]);
+git('add', '--all');
+const staged = spawnSync('git', ['-C', clone, 'diff', '--cached', '--quiet']);
+if (staged.status === 1) {
+  git(
+    '-c',
+    'user.name=reIS release',
+    '-c',
+    'user.email=reis.mendelu@gmail.com',
+    'commit',
+    '--quiet',
+    '-m',
+    `reIS for Claude ${version}\n\nFrom ${from}.`
+  );
+  git('push', '--quiet', 'origin', 'HEAD:main');
+  say(`reIS for Claude: plugin ${version} pushed to ${REPO}.`);
+} else {
+  say('reIS for Claude: plugin files already up to date.');
 }
 
 // 2. The release: the .mcpb students download, and the fingerprint for next time.
