@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { adminAuthClient } from '@/services/admin/authClient';
 import { logError } from '@/utils/reportError';
 import { DEV_SOCIETY, devSocietyStore } from '@/utils/mock/devSociety';
@@ -54,6 +55,9 @@ export interface SpolkyEventRow {
   view_count?: number;
   /** Taps on the Novinky row, every tap (useOpenNotification). */
   click_count?: number;
+  /** Not a column: every map open summed over all days, merged in by listMyPosts
+   *  from `society_event_map_views`. Absent until that migration is applied. */
+  map_views?: number;
 }
 
 // Pure camelCase → snake_case mapping, unit-testable without the network.
@@ -128,6 +132,26 @@ export async function deletePost(id: string): Promise<{ error?: string }> {
   return {};
 }
 
+const MapViewsRows = z.array(z.object({ id: z.string(), map_views: z.number() }));
+
+/**
+ * Map opens per event id for one society, or null when they cannot be had: the
+ * RPC is absent until its migration lands, and a figure is never worth failing
+ * the list for. Not a table read — `event_map_views` has no read policy.
+ */
+async function fetchMapViews(associationId: string): Promise<Map<string, number> | null> {
+  try {
+    const { data, error } = await adminAuthClient.rpc('society_event_map_views', {
+      p_association_id: associationId,
+    });
+    if (error) return null;
+    const parsed = MapViewsRows.safeParse(data);
+    return parsed.success ? new Map(parsed.data.map((r) => [r.id, r.map_views])) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The society's own events, or null when the read failed — not [], which
  *  would read as "this society has no events" and wipe the list on a blip. */
 export async function listMyPosts(associationId: string): Promise<SpolkyEventRow[] | null> {
@@ -141,5 +165,9 @@ export async function listMyPosts(associationId: string): Promise<SpolkyEventRow
     logError('Admin.listMyPosts', error);
     return null;
   }
-  return (data ?? []) as SpolkyEventRow[];
+  const rows = (data ?? []) as SpolkyEventRow[];
+  const mapViews = await fetchMapViews(associationId);
+  if (!mapViews) return rows;
+  // An event the RPC did not name (published since) gets no figure, not 0.
+  return rows.map((r) => (mapViews.has(r.id) ? { ...r, map_views: mapViews.get(r.id) } : r));
 }

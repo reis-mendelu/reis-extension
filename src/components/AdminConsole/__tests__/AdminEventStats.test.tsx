@@ -102,6 +102,60 @@ describe('AdminEventList — views and clicks per event', () => {
     expect(within(sched).getByText('2 clicks')).toBeInTheDocument();
   });
 
+  // Opened on the map is a third counter, in another table: an event 8 days out
+  // is on the map but not yet in Novinky, so it can have opens and no views.
+  describe('map opens', () => {
+    const withMap = (map_views: number | undefined, extra: Partial<SpolkyEventRow> = {}) =>
+      useAppStore.setState({
+        societyPosts: [{ ...row('live', iso(2), 0, 0), map_views, ...extra }],
+      });
+
+    it('shows the map opens beside views and clicks', () => {
+      withMap(83);
+      render(<AdminEventList />);
+      const live = rowOf('E-live');
+      expect(within(live).getByText('83 map opens')).toBeInTheDocument();
+      expect(within(live).getByText('0 views')).toBeInTheDocument();
+    });
+
+    it('says one map open in the singular', () => {
+      withMap(1);
+      render(<AdminEventList />);
+      expect(within(rowOf('E-live')).getByText('1 map open')).toBeInTheDocument();
+    });
+
+    it('shows 0 map opens as a number, not as nothing', () => {
+      withMap(0);
+      render(<AdminEventList />);
+      expect(within(rowOf('E-live')).getByText('0 map opens')).toBeInTheDocument();
+    });
+
+    it('shows no map figure when the row has none (database without the RPC yet)', () => {
+      withMap(undefined);
+      render(<AdminEventList />);
+      const live = rowOf('E-live');
+      expect(within(live).getByText('0 views')).toBeInTheDocument();
+      expect(within(live).queryByText(/map open/)).toBeNull();
+    });
+
+    // A notice is on no map, so a figure of 0 would only suggest nobody looked.
+    it('shows no map figure on a notice', () => {
+      withMap(0, { kind: 'notice' });
+      render(<AdminEventList />);
+      expect(within(rowOf('E-live')).queryByText(/map open/)).toBeNull();
+    });
+
+    it('says what a map open is, in devices, only when some row shows one', () => {
+      withMap(5);
+      const { unmount } = render(<AdminEventList />);
+      expect(screen.getByText(/devices opened it on the map/i)).toBeInTheDocument();
+      unmount();
+      withMap(undefined);
+      render(<AdminEventList />);
+      expect(screen.queryByText(/opened it on the map/i)).toBeNull();
+    });
+  });
+
   it('says one view is one device, not one person', () => {
     render(<AdminEventList />);
     expect(screen.getByText(/device/i)).toBeInTheDocument();

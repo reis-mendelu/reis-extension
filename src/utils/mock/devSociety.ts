@@ -42,6 +42,7 @@ function rowFrom(input: PostInput, associationId: string, createdBy: string): Sp
     kind: input.kind ?? 'event',
     view_count: 0,
     click_count: 0,
+    map_views: 0,
   };
 }
 
