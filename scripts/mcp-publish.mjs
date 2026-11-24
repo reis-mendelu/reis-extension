@@ -89,7 +89,19 @@ const fp = mcpFingerprint(
 );
 console.log(`mcp:publish: ${version}, fingerprint ${fp}`);
 
-if (gh(['release', 'view', tag, '--repo', REPO]).status === 0) {
+// The token must be able to push, or the real release fails halfway. Checked
+// first, so every dry run proves it, changed or not.
+const perm = gh(['api', `repos/${REPO}`, '--jq', '.permissions.push']);
+if (perm.stdout.trim() !== 'true') fail(`the token cannot write to ${REPO}.`);
+
+const same = gh(['release', 'view', tag, '--repo', REPO, '--json', 'body']);
+if (same.status === 0) {
+  // A version is released once. Different contents under the same version
+  // (a second local publish between app releases) must not pass silently.
+  if (readFingerprint(JSON.parse(same.stdout).body) !== fp)
+    fail(
+      `${tag} is already released with different contents. This version cannot be republished; it ships with the next app version.`
+    );
   say(`reIS for Claude: ${tag} is already released, nothing to do.`);
   process.exit(0);
 }
@@ -100,10 +112,6 @@ if (readFingerprint(body) === fp) {
   say(`reIS for Claude: unchanged since ${tagName}, nothing published.`);
   process.exit(0);
 }
-
-// The token must be able to push, or the real release fails halfway.
-const perm = gh(['api', `repos/${REPO}`, '--jq', '.permissions.push']);
-if (perm.stdout.trim() !== 'true') fail(`the token cannot write to ${REPO}.`);
 
 if (dryRun) {
   say(
