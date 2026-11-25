@@ -1,7 +1,7 @@
 // The ledger on disk (S5's shape): events survive a restart, forget removes them, the budget
 // never evicts them, and two adds at once both land.
 import { describe, it, expect } from 'vitest';
-import { readFile, readdir } from 'node:fs/promises';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createLedger } from '../storeLedger';
 import * as realFs from 'node:fs/promises';
@@ -82,6 +82,25 @@ describe('the ledger store', () => {
     expect((await l.list()).entries.map((e) => e.date)).toEqual(['2026-12-10', '2026-12-11']);
   });
 
+  it('keeps old events while there is room: only a full ledger drops them', async () => {
+    const l = ledgerOn(open(), 5);
+    await l.add(ev({ date: '2026-09-01' }), '2026-09-02');
+    await l.add(ev({ date: '2026-12-11' }), TODAY);
+    expect((await l.list()).entries.map((e) => e.date)).toEqual(['2026-09-01', '2026-12-11']);
+  });
+
+  it('finds every event even when index.json lost some: it reads the folder, not the index', async () => {
+    const l = ledgerOn(open());
+    const a = (await l.add(ev({ time: '08:00' }), TODAY)).entry;
+    const b = (await l.add(ev({ time: '09:00' }), TODAY)).entry;
+    // Two processes committing at once overwrite each other's index entry: simulate the loss.
+    await writeFile(join(h.dir, 'index.json'), JSON.stringify({ version: 1, entries: {} }));
+    const fresh = ledgerOn(open());
+    expect((await fresh.list()).entries.map((e) => e.id)).toEqual([a.id, b.id]);
+    // And the cap and the dedupe see them too: the same event is not added again.
+    expect((await fresh.add(ev({ time: '08:00' }), TODAY)).created).toBe(false);
+  });
+
   it('survives a restart: a second store on the same folder sees the events', async () => {
     const entry = (await ledgerOn(open()).add(ev(), TODAY)).entry;
     const restarted = ledgerOn(open());
@@ -120,7 +139,7 @@ describe('the ledger store', () => {
       ...realFs,
       open: async (p: Parameters<typeof realFs.open>[0], ...a: unknown[]) => {
         // The add's own file is being written: hold it right there.
-        if (String(p).includes('.tmp-')) {
+        if (String(p).includes('.tmp-') && !String(p).includes('.tmp-lock-')) {
           reached.release();
           await held.wait;
         }
@@ -139,6 +158,41 @@ describe('the ledger store', () => {
     expect(await outcome).toMatch(/was not saved/);
     expect(await leftovers()).toEqual([]);
     expect((await ledgerOn(open()).list()).entries).toEqual([]);
+  });
+
+  it('keeps both changes when two processes update different fields of one entry', async () => {
+    const a = ledgerOn(open());
+    const b = ledgerOn(open());
+    const { entry } = await a.add(ev(), TODAY);
+    const rounds = Array.from({ length: 6 }, (_, i) => i);
+    await Promise.all(
+      rounds.flatMap((i) => [
+        a.update(entry.id, { room: `Q0${i}` }),
+        b.update(entry.id, { points: `${i}` }),
+      ])
+    );
+    // Whichever change came last in each field is kept, and neither field was lost with a stale copy.
+    const got = (await ledgerOn(open()).list()).entries[0]!;
+    expect(got.room).toMatch(/^Q0\d$/);
+    expect(got.points).toMatch(/^\d$/);
+    await Promise.all([a.update(entry.id, { depends_on: 'A' }), b.update(entry.id, { rule: 'B' })]);
+    expect((await ledgerOn(open()).list()).entries[0]).toMatchObject({
+      dependsOn: 'A',
+      rule: 'B',
+    });
+  });
+
+  it('counts the cap across processes: two adds at the limit let one in', async () => {
+    const a = ledgerOn(open(), 3);
+    const b = ledgerOn(open(), 3);
+    await a.add(ev({ date: '2026-12-10' }), TODAY);
+    await a.add(ev({ date: '2026-12-11' }), TODAY);
+    const results = await Promise.allSettled([
+      a.add(ev({ date: '2026-12-12' }), TODAY),
+      b.add(ev({ date: '2026-12-13' }), TODAY),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
+    expect((await ledgerOn(open()).list()).entries).toHaveLength(3);
   });
 
   it('is never evicted by the size budget, only counted in it', async () => {

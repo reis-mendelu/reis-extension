@@ -99,21 +99,29 @@ async function list(
 ) {
   const { entries, unreadable } = await ledger.list();
   const listings = await storedListings(store);
+  const id = typeof args.id === 'string' ? args.id : '';
   const only = typeof args.subject === 'string' ? args.subject.trim().toUpperCase() : '';
-  const inScope = entries.filter((e) => !only || e.code === only);
+  // An id asks for that one entry, past or not; otherwise the subject narrows the list.
+  const inScope = entries.filter((e) => (id ? e.id === id : !only || e.code === only));
   const live = inScope.filter((e) => daysLeftOf(e, now).end >= 0);
-  const shown = args.include_past === true ? inScope : live;
-  const rows = shown.map((e) => shape(e, now, listings));
+  const matching = args.include_past === true || id ? inScope : live;
+  const from = Math.min(Math.max(0, Math.trunc(Number(args.offset) || 0)), matching.length);
+  const asked = Math.trunc(Number(args.limit) || 0);
+  const page = matching.slice(from, asked > 0 ? from + asked : undefined);
+  const rows = page.map((e) => shape(e, now, listings));
   // The whole answer goes into the student's chat and Claude's context: drop the last rows until it fits.
   let count = rows.length;
   while (count > 1 && JSON.stringify(rows.slice(0, count), null, 2).length > BUDGET) count--;
   const hidden = inScope.length - live.length;
+  const next = from + count;
   return {
-    count: shown.length,
-    ...(count < rows.length
-      ? { note: `${rows.length - count} more do not fit: pass subject to narrow the list.` }
+    count: matching.length,
+    ...(next < matching.length
+      ? {
+          note: `Showing ${from + 1}-${next} of ${matching.length}. Pass offset ${next} for the next ones (subject narrows the list, id gives one entry).`,
+        }
       : {}),
-    ...(args.include_past !== true && hidden > 0
+    ...(args.include_past !== true && !id && hidden > 0
       ? { pastHidden: `${hidden} past event(s) not shown: pass include_past to see them.` }
       : {}),
     ...(unreadable

@@ -6,7 +6,7 @@
 // those words out of the store files).
 import * as realFs from 'node:fs/promises';
 import path from 'node:path';
-import type { StoreFs } from './storeFs';
+import { withFileLock, type StoreFs } from './storeFs';
 import { forgetFolder } from './storeForget';
 import { FORGETTING, readGeneration } from './storeGen';
 import { scan, toEntries, toIndex, totalBytes } from './storeIndex';
@@ -138,6 +138,14 @@ export function createStore(opts: StoreOptions = {}) {
       });
     },
 
+    /**
+     * Runs `fn` holding a lock shared with every server process on this folder, for a change
+     * that reads several files and writes back. The store's own write and remove may be
+     * called inside it: they take only this process's lock, a different one.
+     */
+    exclusive: <T>(name: string, fn: () => Promise<T>): Promise<T> =>
+      withFileLock(fs, dir, name, fn),
+
     /** The folder's forget token now; hand it to write({ after }) to cancel the write if forget() runs first. */
     generation: () => readGeneration(fs, dir, now),
 
@@ -161,6 +169,9 @@ export function createStore(opts: StoreOptions = {}) {
     },
 
     list: reader.list,
+
+    /** The files directly in one folder, read from the folder itself rather than the index. */
+    listFolder: reader.listFolder,
 
     usage: reader.usage,
 

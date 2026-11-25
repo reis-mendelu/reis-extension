@@ -72,3 +72,49 @@ export async function atomicWrite(
     throw e;
   }
 }
+
+/**
+ * Runs `fn` while holding a lock no other process can hold: a file created exclusively
+ * beside the data, removed afterwards. For a change that reads several files and writes
+ * back (the ledger's cap and dedupe, an update of one entry), which two server processes
+ * on one folder would otherwise interleave and lose one side of. Its name starts with the
+ * temp prefix, so the store's scan and index skip it and a crashed holder's file is swept
+ * as a stale temp. A lock still held after about ten seconds belongs to a crashed process
+ * (these changes take milliseconds) and is taken over. When the folder cannot be used at
+ * all, nobody else shares it, so `fn` runs without a lock.
+ */
+export async function withFileLock<T>(
+  fs: StoreFs,
+  dir: string,
+  name: string,
+  fn: () => Promise<T>,
+  {
+    sleep = sleepMs,
+    tries = 400,
+    pause = 25,
+  }: { sleep?: (ms: number) => Promise<void>; tries?: number; pause?: number } = {}
+): Promise<T> {
+  const lock = path.join(dir, `${TEMP_PREFIX}lock-${name}`);
+  let held = false;
+  try {
+    await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+    for (let attempt = 0; !held; attempt++) {
+      try {
+        await (await fs.open(lock, 'wx', 0o600)).close();
+        held = true;
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+        if (attempt >= tries)
+          await fs.rm(lock, { force: true }); // a crashed holder's
+        else await sleep(pause);
+      }
+    }
+  } catch {
+    // The folder cannot be used: the store is memory-only, so there is no other process to wait for.
+  }
+  try {
+    return await fn();
+  } finally {
+    if (held) await fs.rm(lock, { force: true }).catch(() => {});
+  }
+}

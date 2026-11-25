@@ -36,9 +36,16 @@ export function createLedger(
   now: () => number = Date.now,
   max: number = MAX_ENTRIES
 ) {
-  /** One change at a time per store in this process: the cap and the dedupe read the whole list. */
+  /**
+   * One change at a time: first per store in this process, then per folder across processes
+   * (a lock file). The cap and the dedupe read the whole list, and an update reads one entry
+   * and writes it back, so two processes in between would lose one side.
+   */
   const serial = <T>(fn: () => Promise<T>): Promise<T> => {
-    const run = (queues.get(store) ?? Promise.resolve()).then(fn, fn);
+    const run = (queues.get(store) ?? Promise.resolve()).then(
+      () => store.exclusive('ledger', fn),
+      () => store.exclusive('ledger', fn)
+    );
     queues.set(
       store,
       run.catch(() => {})
@@ -47,7 +54,7 @@ export function createLedger(
   };
 
   async function list(): Promise<{ entries: LedgerEntry[]; unreadable: number }> {
-    const ids = (await store.list()).flatMap((e) => FILE.exec(e.path)?.[1] ?? []);
+    const ids = (await store.listFolder('ledger')).flatMap((e) => FILE.exec(e.path)?.[1] ?? []);
     const read = await Promise.all(
       ids.map(async (id) => parseStored(await store.readText(pathOf(id))))
     );
@@ -63,7 +70,11 @@ export function createLedger(
       );
   }
 
-  /** Drops events that ended long ago, so a full ledger frees itself. `today` is the Prague day, YYYY-MM-DD. */
+  /**
+   * Drops events that ended long ago, so a full ledger frees itself. Only called when the
+   * ledger is full: an event Claude saved is not thrown away while there is room, so "what was
+   * that test" keeps its answer. `today` is the Prague day, YYYY-MM-DD.
+   */
   async function prune(entries: LedgerEntry[], today: string) {
     const limit = dayNumber(today) - KEEP_PAST_DAYS;
     const old = entries.filter((e) => dayNumber(e.until ?? e.date) < limit);
@@ -82,10 +93,10 @@ export function createLedger(
         const gen = await store.generation();
         const fields = parseFields(args);
         const { entries } = await list();
-        const live = await prune(entries, today);
         const probe = finish(fields as Raw, { id: 'ev-000000000000', savedAt: '', updatedAt: '' });
-        const twin = live.find((e) => sameEvent(e) === sameEvent(probe));
+        const twin = entries.find((e) => sameEvent(e) === sameEvent(probe));
         if (twin) return { entry: await merge(twin, fields as Raw, gen), created: false };
+        const live = entries.length >= max ? await prune(entries, today) : entries;
         if (live.length >= max)
           throw new LedgerInputError(
             `The ledger holds ${max} events, its limit. Remove finished or wrong ones with action "remove" first.`

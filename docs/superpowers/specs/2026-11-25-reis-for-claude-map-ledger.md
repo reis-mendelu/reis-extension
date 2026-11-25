@@ -55,12 +55,18 @@ step 4b; the digest and calendar proposals in step 6.
 ## Built in step 4b (builder's calls, 2026-11-26)
 
 - **One file per event**, `ledger/ev-<12 hex>.json`, not one list: Desktop and every Claude Code
-  window share the folder, so two adds at once each write their own atomic file and nothing is read,
-  changed and written back over another process's add. The id is made by reIS and never changes.
+  window share the folder, so two adds at once each write their own atomic file. The id is made by
+  reIS and never changes. A change that reads several files and writes back (the cap, the dedupe, an
+  update of one entry) holds a lock file shared by every process on the folder
+  (`withFileLock` in `storeFs.ts`, name starts `.tmp-lock-`, a holder gone for ten seconds is taken
+  over), so two processes cannot each write from a stale copy. `list` reads the `ledger/` folder
+  itself, not `index.json`: two commits at once can overwrite each other's index entry.
 - **The tool is `mendelu_ledger`** with actions `list`, `add`, `update`, `remove`. It asks IS nothing,
   works with no login, and writes only the store. Adding the same event again (same subject, kind,
   day, time and source file) updates it instead of duplicating. Capped at 200 events; an event that
-  ended more than 30 days ago is dropped when an add needs the room.
+  ended more than 30 days ago is dropped only when the ledger is full and an add needs the room.
+  `list` takes `offset`, `limit` and `id`; a long list is cut at what one answer can carry and says
+  which offset to pass next.
 - **Never evicted by the size budget** (`storeIndex.ts`): a ledger entry is the only thing in the
   store that cannot be fetched again from IS. It still counts in the budget. Step 5's originals will
   not push it out.

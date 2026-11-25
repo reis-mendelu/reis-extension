@@ -13,14 +13,14 @@ export const LEDGER_TOOL = {
     'DO NOT add what reIS already shows: registered exam terms and open assignment deadlines come from IS by themselves. ' +
     'FIELDS: title (what, short), kind, date YYYY-MM-DD (Prague time), time HH:MM when the file gives one; for a stretch of days (a programme week, "in the 12th week") pass `until` as the last day. code = subject code. room, length_minutes, points, rule (minimum points, no aids), unregister_by (the last day to unregister), depends_on (what needs it, e.g. a programme that needs this test passed). source_kind says where it came from: is, course_file, mail, calendar or student. For a course_file ALWAYS pass source_url (the file\'s `url` from the overview) and source_modified (its `modified`) and source_file (its name): that is how reIS notices the file was replaced later and marks the entry "recheck". ' +
     'STATED OR INFERRED: basis "stated" when the file names the date. When you worked it out (the "12th week" is 14-18 December), pass basis "inferred" and inferred_how; the overview then tells the student to confirm it with the teacher. Never present an inferred date as certain. ' +
-    'OTHER ACTIONS: "list" shows the saved events (past ones only with include_past, and a replaced source file shows as recheck); "update" changes the fields you pass for an id (an empty string clears one; pass source_modified to say you rechecked the file); "remove" deletes one. Adding the same event twice updates it, it does not duplicate. It changes nothing in IS and nothing in the student\'s calendar.',
+    'OTHER ACTIONS: "list" shows the saved events, soonest first (past ones only with include_past, one entry with id, and a replaced source file shows as recheck); a long list is cut and says which offset to pass next; "update" changes the fields you pass for an id (an empty string clears one; pass source_modified to say you rechecked the file); "remove" deletes one. Adding the same event twice updates it, it does not duplicate. It changes nothing in IS and nothing in the student\'s calendar.',
   input: {
     action: z.enum(['list', 'add', 'update', 'remove']).describe('What to do.'),
     id: z
       .string()
       .max(20)
       .optional()
-      .describe('update, remove: the event id (ev-…) from list or add.'),
+      .describe('update, remove: the event id (ev-…) from list or add. list: only that entry.'),
     title: z
       .string()
       .max(120)
@@ -100,5 +100,22 @@ export const LEDGER_TOOL = {
     inferred_how: z.string().max(300).optional().describe('How an inferred date was worked out.'),
     subject: z.string().max(30).optional().describe('list: only this subject code.'),
     include_past: z.boolean().optional().describe('list: also events already past.'),
+    offset: z
+      .number()
+      .int()
+      .min(0)
+      .optional()
+      .describe(
+        'list: skip this many events (soonest first). A long list says which offset to pass next.'
+      ),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(200)
+      .optional()
+      .describe(
+        'list: at most this many events. Fewer come back when the answer would be too long.'
+      ),
   },
 } as const;
