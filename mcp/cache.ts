@@ -1,8 +1,15 @@
 // Answers from IS kept in this process's memory, so Claude asking the same
 // thing twice (a subagent rereading a PDF, a grader checking the brief again)
 // does not ask IS twice. In 6 weeks of real use 71 of 73 same-session repeats
-// got an identical answer. Memory only: nothing is written to disk and all of
-// it is gone when the server stops (mcpStaysReadOnly.test.ts, PRIVACY.md).
+// got an identical answer. This memory is the first tier and is gone when the
+// server stops. The second tier is the store on disk (storeMap.ts): a file's
+// text it holds is served again after a restart while the folder listing still
+// shows the modified date it was read at and the read began on a later day than
+// that date (no time of day in IS: storeMap.ts); everything else goes back to IS, and what IS
+// answers is saved there. The tiers never hold the password or the IS
+// sign-in (mcpStaysReadOnly.test.ts, README.md, PRIVACY.md).
+
+import type { Persist, Ticket } from './cacheTypes';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -39,6 +46,14 @@ type Entry = { value: unknown; at: number; bytes: number; stamp?: string };
 type Pending = { promise: Promise<unknown>; stamp?: string };
 type Listed = { downloadUrl?: unknown; date?: unknown; modified?: unknown };
 
+/**
+ * What a listing shows for a file. Says which column it came from: only IS's
+ * Modifikace changes when a teacher replaces a file, the document date does not
+ * (storeMap.ts trusts nothing else).
+ */
+const stampOf = (f: Listed) =>
+  f.modified ? `modified ${String(f.modified)}` : `date ${String(f.date ?? '')}`;
+
 function stable(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(stable);
   if (v && typeof v === 'object') {
@@ -59,12 +74,17 @@ function keyOf(tool: string, args: Record<string, unknown>): string {
 
 export type ToolCache = ReturnType<typeof createToolCache>;
 
-export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
+export function createToolCache({
+  now = Date.now,
+  maxBytes = MAX_BYTES,
+  persist,
+}: { now?: () => number; maxBytes?: number; persist?: Persist } = {}) {
   const entries = new Map<string, Entry>(); // insertion order = least recently used first
   const inflight = new Map<string, Pending>();
   /** downloadUrl -> the Modifikace (or upload) date its folder last showed. */
   const fileStamps = new Map<string, string>();
   let total = 0;
+  let epoch = 0; // bumped by clear(): a call that began before it is stale
 
   const drop = (key: string) => {
     const e = entries.get(key);
@@ -95,7 +115,7 @@ export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
     if (!Array.isArray(files)) return;
     for (const f of files as Listed[]) {
       if (typeof f?.downloadUrl !== 'string') continue;
-      const stamp = String(f.modified ?? f.date ?? '');
+      const stamp = stampOf(f);
       fileStamps.set(f.downloadUrl, stamp);
       const key = keyOf(READ, { url: f.downloadUrl });
       if (entries.has(key) && entries.get(key)!.stamp !== stamp) drop(key);
@@ -104,7 +124,25 @@ export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
   };
 
   return {
-    async run(tool: string, args: Record<string, unknown>, fetch: () => Promise<unknown>) {
+    /** Forget everything held here, including reads still in flight (forget everything). */
+    clear() {
+      epoch++;
+      entries.clear();
+      inflight.clear();
+      fileStamps.clear();
+      total = 0;
+    },
+    /** One per tool call, before it does anything; pass it to run(). */
+    async ticket(): Promise<Ticket> {
+      const started = epoch;
+      return { epoch: started, token: await persist?.begin().catch(() => null) };
+    },
+    async run(
+      tool: string,
+      args: Record<string, unknown>,
+      fetch: () => Promise<unknown>,
+      ticket?: Ticket
+    ) {
       const ttl = TTL_MS[tool];
       if (!ttl) return fetch();
       const key = keyOf(tool, args);
@@ -121,10 +159,24 @@ export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
         promise: Promise.resolve(),
         stamp: tool === READ ? fileStamps.get(String(args.url)) : undefined,
       };
-      mine.promise = fetch().then((value) => {
-        if (tool === LIST) noteListing(value);
-        // Cut loose by a newer listing: hand it to its caller, keep nothing.
-        if (inflight.get(key) === mine) keep(key, value, mine.stamp);
+      // fetch() starts at once when there is no second tier, as it always did.
+      const fromFetch = () => fetch().then((value) => ({ value, stored: false }));
+      const began = ticket ?? { epoch, token: persist?.begin().catch(() => null) };
+      const obtained = persist
+        ? persist
+            .load(tool, args, mine.stamp)
+            .catch(() => undefined)
+            .then((value) => (value !== undefined ? { value, stored: true } : fromFetch()))
+        : fromFetch();
+      mine.promise = obtained.then(async ({ value, stored }) => {
+        // Cut loose by a newer listing or begun before clear(): hand it to its
+        // caller, note, keep and save nothing.
+        const current = inflight.get(key) === mine && epoch === began.epoch;
+        if (tool === LIST && epoch === began.epoch) noteListing(value);
+        if (current) keep(key, value, mine.stamp);
+        if (current && !stored) {
+          await persist?.save(tool, args, value, mine.stamp, await began.token).catch(() => {});
+        }
         return value;
       });
       inflight.set(key, mine);

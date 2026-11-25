@@ -1,8 +1,9 @@
 // reIS for Claude's map on disk: one shared folder per laptop that Desktop and
 // every Claude Code window read and write at once. Decided with Dominik
 // 2026-11-25 (docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md).
-// Nothing imports this yet (step 1 of 7); it never holds the password or the IS
-// sign-in (mcpStaysReadOnly.test.ts keeps those words out of the store files).
+// server.ts creates one and register.ts passes it to storeMap.ts (step 2 of 7).
+// It never holds the password or the IS sign-in (mcpStaysReadOnly.test.ts keeps
+// those words out of the store files).
 import * as realFs from 'node:fs/promises';
 import path from 'node:path';
 import type { StoreFs } from './storeFs';
@@ -38,6 +39,7 @@ export type StoreOptions = {
 };
 
 export type Notice = { persistent: false; reason: string };
+export type Store = ReturnType<typeof createStore>;
 
 /**
  * Another forget() deletes everything it listed, including this one's temp file
@@ -100,6 +102,9 @@ export function createStore(opts: StoreOptions = {}) {
   });
 
   return {
+    /** The folder this store uses (it may not exist until something is saved). */
+    dir,
+
     /** False once the folder could not be used and the store fell back to memory. */
     get persistent() {
       return persistent;
@@ -116,17 +121,24 @@ export function createStore(opts: StoreOptions = {}) {
      * True if kept. False if it was not stored: bigger than the budget, a name
      * that clashes with another file's folder, or forget() ran while it wrote.
      */
-    async write(rel: string, data: string | Uint8Array): Promise<boolean> {
+    async write(
+      rel: string,
+      data: string | Uint8Array,
+      opts: { after?: string | null } = {}
+    ): Promise<boolean> {
       const p = safeRelPath(rel);
       const buf = Buffer.from(data);
       // Noted at submit, not at its turn, so another store's forget() in between
-      // cancels it; not awaited, so the queue order is unchanged.
+      // cancels it; not awaited, so the queue order is unchanged. A caller that
+      // began earlier (a download) passes the token it took then: a forget() since
+      // that moment, here or in another process, cancels the write.
       const submitted = forgets;
-      const noted = readGeneration(fs, dir, now);
+      const noted =
+        'after' in opts ? Promise.resolve(opts.after ?? null) : readGeneration(fs, dir, now);
       const queuedBehindOwnForget = forgetting;
       return locked(async () => {
         const g0 =
-          forgets === submitted && !queuedBehindOwnForget
+          'after' in opts || (forgets === submitted && !queuedBehindOwnForget)
             ? await noted
             : await readGeneration(fs, dir, now);
         // Submitted while another process's forget() was deleting: it began after
@@ -146,6 +158,9 @@ export function createStore(opts: StoreOptions = {}) {
         return true;
       });
     },
+
+    /** The folder's forget token now; hand it to write({ after }) to cancel the write if forget() runs first. */
+    generation: () => readGeneration(fs, dir),
 
     async read(rel: string): Promise<Buffer | undefined> {
       const p = safeRelPath(rel);
@@ -188,25 +203,34 @@ export function createStore(opts: StoreOptions = {}) {
       return { files: entries.length, bytes: totalBytes(entries) };
     },
 
-    /** Rewrite the index from the files on disk. */
+    /** Rewrite the index from the files on disk. A folder that does not exist yet is left alone. */
     rebuild(): Promise<void> {
-      return locked(() => disk.rebuild());
+      return locked(async () => {
+        if (!(await fs.stat(dir).catch(() => null))) return;
+        await disk.rebuild();
+      });
     },
 
     /**
      * Delete everything in the store folder (and memory). A write that began
      * before this, in this process or another, is cancelled and cannot land
-     * afterwards. Throws if something could not be deleted.
+     * afterwards. Returns what it removed, counted under the same lock as the
+     * delete (a write by another process landing during the delete is removed but
+     * not counted); throws if something could not be deleted.
      */
-    forget(): Promise<void> {
+    forget(): Promise<{ files: number; bytes: number }> {
       return locked(async () => {
+        await syncMemory();
+        const held = toEntries(mem.overlay(toIndex(await scan(fs, dir, now()))));
+        const removed = { files: held.length, bytes: totalBytes(held) };
         forgets++;
         forgetting = true;
         try {
-          return await forgetNow();
+          await forgetNow();
         } finally {
           forgetting = false;
         }
+        return removed;
       });
     },
   };
