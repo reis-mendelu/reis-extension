@@ -45,6 +45,8 @@ export const INDEX_FILE = 'index.json';
 export const TEMP_PREFIX = '.tmp-';
 /** Holds a random token that forget() replaces, so a write begun before it can tell. */
 export const GEN_FILE = '.generation';
+/** One empty file per running forget(); see storeGen.ts. Not a name a caller may use. */
+export const FORGET_PREFIX = '.forgetting-';
 
 /** Two names that differ only by case or Unicode form are one file on macOS and Windows. */
 export const fold = (p: string) => p.normalize('NFC').toLowerCase();
@@ -81,7 +83,10 @@ export function safeRelPath(input: unknown): string {
     if (s.toLowerCase().startsWith(TEMP_PREFIX)) throw new StorePathError('reserved temp name');
   }
   // The first segment too: `.generation/x` would make the token a folder.
-  if ([INDEX_FILE, GEN_FILE].includes(fold(segments[0]!)))
+  if (
+    [INDEX_FILE, GEN_FILE].includes(fold(segments[0]!)) ||
+    fold(segments[0]!).startsWith(FORGET_PREFIX)
+  )
     throw new StorePathError('reserved name');
   return p;
 }

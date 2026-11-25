@@ -76,8 +76,18 @@ and exams (3 of 15) change. A download link never changes when a file is replace
    against writes in flight: no write may commit after forget starts, from any process,
    including the scheduled refresh, so forgotten content can never reappear. The mechanism is the
    builder's call (recommended: a generation marker that forget bumps first and that every write
-   checks right before its rename).
+   checks right before its rename). Built (PR #753, #755): a generation token that
+   forget replaces first and every write checks around its rename, plus a `.forgetting-<id>` marker
+   that forget keeps from before the bump until its last delete. While a live marker exists the
+   token reads as unreadable, so no write, rebuild or index update starts or publishes during a
+   forget, whatever token it captured. A marker is refreshed as forget deletes; one untouched for
+   five minutes belongs to a crashed forget and is ignored and swept.
 8. **Shared-laptop risk accepted:** one store per machine, not keyed to the IS login.
+9. **An upcoming-events ledger, kept by Claude, in the store** (added 2026-11-25): one list of
+   every dated thing that needs the student somewhere (tests from harmonograms, credit tests,
+   defences, mandatory programme days, events they chose to attend), mentioned at least a week
+   ahead and proposed as University-calendar entries. Full decision, entry fields, reminder rules
+   and the calendar proposal: `2026-11-25-reis-for-claude-map-ledger.md`.
 
 ## Approaches considered
 
@@ -131,6 +141,10 @@ answer "not retained" (needs resubmitting).
 2. After a restart, repeating a question asks IS only for the cheap listings.
 3. A new file in IS shows up in "what changed" the next day.
 4. Points appear in the overview without being asked for.
+5. Every test, credit test and defence the course files and IS name for this semester is in the
+   ledger, checked against the student's own University calendar (acceptance scenario S5).
+6. Each of them is mentioned at least a week before it happens, in the weekly digest as well as
+   the daily one (acceptance scenario S6).
 
 ## Builder's calls (not yet confirmed by Dominik)
 
@@ -165,12 +179,14 @@ start-up path changed). These are headless tools, so there is no UI tree and no 
 | 2   | Persist what is already read: subjects, file listings (link plus modified date), full untruncated file text and the study-form profile go into the store; the **forget everything** tool; every "nothing is written to disk" text rewritten in the same PR. | On test |
 | 3   | The overview tool: refreshes the cheap listings on first call, diffs them against the store, and returns the map, the profile, points, deadlines and "what changed", with a tool description that tells Claude to call it first. | In review   |
 | 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | Not started |
+| 4b  | The upcoming-events ledger (decision 9): a ledger tool Claude writes dated events to, an "upcoming" section in the overview (soonest first, days left, attendance flag, stated or inferred), IS exam terms and assignment deadlines merged in by reIS, recheck marks when a source file is replaced, forget covers it. | Not started |
 | 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run of counts and types first), return their paths in the overview.                                       | Not started |
-| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz.                              | Not started |
+| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz. The prompt offers daily, weekly and on-demand digests as an email draft, with the one-week-ahead rule of decision 9 and a 14-day look for weekly, and a proposed calendar entry for every new or changed ledger event, asked before it is written. | Not started |
 | 7   | Release: version bump, both builds, `mcp-v*` tag; ships only once the corrected directory-listing answer is published, or Dominik has said in writing that it ships with the stale "not retained" answer.                                                                                                                                                      | Not started |
 
 Merge order: 1, 2, then 3 and 4 (either order, they share `mcp/tools.ts` and `mcp/register.ts`, so the
-second rebases), 5, 6, 7.
+second rebases), 4b, 5, 6, 7. Step 4b needs 3 (the overview carries its section) and 4 (Claude finds
+the dates with search).
 
 **Parked for Dominik** (hard lines, asked once, never block steps 1 to 6): resubmitting the
 directory listing's data-handling answer ("not retained"), the release in step 7, and the Windows

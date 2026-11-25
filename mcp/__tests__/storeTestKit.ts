@@ -2,9 +2,11 @@
 // student's data.
 import { afterEach, beforeEach } from 'vitest';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import * as realFs from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createStore } from '../store';
+import type { StoreFs } from '../storeFs';
 
 export function clock(start = 1_700_000_000_000) {
   let t = start;
@@ -52,4 +54,35 @@ export function storeHarness() {
     return out;
   }
   return { h, open, names, leftovers };
+}
+
+export const MARKER = '.forgetting-';
+// Misses in-flight temp files, so a held rename can still land after forget().
+export const blind = {
+  ...realFs,
+  rm: (async (p: string, o: object) =>
+    String(p).includes('.tmp-') ? undefined : realFs.rm(p, o)) as StoreFs['rm'],
+} as StoreFs;
+
+/** A forgetter whose deletion pauses at the first rm of a file matching `at`; listing is sorted. */
+export function pausedForgetter(at: (p: string) => boolean) {
+  const reached = gate();
+  const release = gate();
+  let paused = false;
+  const fs = {
+    ...realFs,
+    readdir: (async (...a: Parameters<typeof realFs.readdir>) => {
+      const r = await (realFs.readdir as (...x: unknown[]) => Promise<unknown[]>)(...a);
+      return typeof r[0] === 'string' ? (r as string[]).sort() : r;
+    }) as StoreFs['readdir'],
+    rm: (async (p: string, o: object) => {
+      if (!paused && at(String(p))) {
+        paused = true;
+        reached.release();
+        await release.wait;
+      }
+      return realFs.rm(p, o);
+    }) as StoreFs['rm'],
+  } as StoreFs;
+  return { fs, reached: reached.wait, release: release.release };
 }

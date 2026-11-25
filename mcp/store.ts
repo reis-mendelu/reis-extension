@@ -7,9 +7,10 @@
 import * as realFs from 'node:fs/promises';
 import path from 'node:path';
 import type { StoreFs } from './storeFs';
-import { bumpGeneration, readGeneration } from './storeGen';
-import { readIndex, scan, toEntries, toIndex, totalBytes, writeIndex } from './storeIndex';
-import { GEN_FILE, OS_MAX_PATH, insideDir, resolveStoreDir, safeRelPath } from './storePath';
+import { forgetFolder } from './storeForget';
+import { FORGETTING, readGeneration } from './storeGen';
+import { scan, toEntries, toIndex, totalBytes } from './storeIndex';
+import { OS_MAX_PATH, insideDir, resolveStoreDir, safeRelPath } from './storePath';
 import { createMemory } from './storeMemory';
 import { createReader } from './storeRead';
 import { createDiskWriter } from './storeWrite';
@@ -54,8 +55,11 @@ export function createStore(opts: StoreOptions = {}) {
   };
 
   let forgets = 0; // forget() runs here: a write queued behind one re-reads its generation
+  let forgetting = false; // this store's own forget() is running
   const syncMemory = async () => {
-    if (mem.active) mem.sync(await readGeneration(fs, dir));
+    // While another process is deleting this reads FORGETTING, which is not the
+    // token memory holds, so what memory holds is dropped with the rest.
+    if (mem.active) mem.sync(await readGeneration(fs, dir, now));
   };
 
   function degrade(e: unknown) {
@@ -107,10 +111,18 @@ export function createStore(opts: StoreOptions = {}) {
       // began earlier (a download) passes the token it took then: a forget() since
       // that moment, here or in another process, cancels the write.
       const submitted = forgets;
-      const noted = 'after' in opts ? Promise.resolve(opts.after ?? null) : readGeneration(fs, dir);
+      const noted =
+        'after' in opts ? Promise.resolve(opts.after ?? null) : readGeneration(fs, dir, now);
+      const queuedBehindOwnForget = forgetting;
       return locked(async () => {
         const g0 =
-          'after' in opts || forgets === submitted ? await noted : await readGeneration(fs, dir);
+          'after' in opts || (forgets === submitted && !queuedBehindOwnForget)
+            ? await noted
+            : await readGeneration(fs, dir, now);
+        // Submitted while a forget() was deleting: it began after that forget did, so
+        // it is refused, and never kept in memory (which cannot tell a later forget
+        // apart without a token). Judged by what was seen then, not by looking again.
+        if (g0 === FORGETTING) return false;
         if (persistent) {
           if (buf.length > maxBytes) return false;
           const result = await disk.write(p, buf, g0);
@@ -127,7 +139,7 @@ export function createStore(opts: StoreOptions = {}) {
     },
 
     /** The folder's forget token now; hand it to write({ after }) to cancel the write if forget() runs first. */
-    generation: () => readGeneration(fs, dir),
+    generation: () => readGeneration(fs, dir, now),
 
     read: reader.read,
 
@@ -144,11 +156,7 @@ export function createStore(opts: StoreOptions = {}) {
         // If the disk will not let go, hide the path for this process rather than
         // let the old copy come back on the next read.
         await fs.rm(insideDir(dir, p), { force: true }).catch(() => mem.hide(p));
-        const index = await readIndex(fs, dir);
-        if (index && p in index) {
-          delete index[p];
-          await writeIndex(fs, dir, index, now()).catch(() => {});
-        }
+        await disk.dropEntry(p);
       });
     },
 
@@ -160,8 +168,7 @@ export function createStore(opts: StoreOptions = {}) {
     rebuild(): Promise<void> {
       return locked(async () => {
         if (!(await fs.stat(dir).catch(() => null))) return;
-        const entries = await scan(fs, dir, now());
-        await writeIndex(fs, dir, toIndex(entries), now()).catch(() => {});
+        await disk.rebuild();
       });
     },
 
@@ -178,25 +185,13 @@ export function createStore(opts: StoreOptions = {}) {
         const held = toEntries(mem.overlay(toIndex(await scan(fs, dir, now()))));
         const removed = { files: held.length, bytes: totalBytes(held) };
         forgets++;
-        mem.clear();
-        let bumpError: unknown;
+        forgetting = true;
         try {
-          await bumpGeneration(fs, dir, now());
-        } catch (e) {
-          bumpError = e;
+          mem.clear();
+          await forgetFolder(fs, dir, now);
+        } finally {
+          forgetting = false;
         }
-        let names: string[] = [];
-        try {
-          names = await fs.readdir(dir);
-        } catch (e) {
-          const code = (e as NodeJS.ErrnoException).code;
-          if (code !== 'ENOENT' && code !== 'ENOTDIR') throw e;
-        }
-        for (const name of names) {
-          if (name === GEN_FILE) continue;
-          await fs.rm(path.join(dir, name), { recursive: true, force: true });
-        }
-        if (bumpError && (bumpError as NodeJS.ErrnoException).code !== 'ENOTDIR') throw bumpError;
         return removed;
       });
     },

@@ -120,6 +120,35 @@ describe('a stale writer does not run its commit', () => {
   });
 });
 
+describe('rebuild() against a forget() by another process', () => {
+  it('does not put forgotten file names back into the index', async () => {
+    const paused = gate();
+    const atIndex = gate();
+    await open().write('gone.txt', 'forgotten soon');
+    const slow = {
+      ...realFs,
+      rename: async (...a: Parameters<typeof realFs.rename>) => {
+        atIndex.release(); // the scan is done; the new index is about to be published
+        await paused.wait;
+        return realFs.rename(...a);
+      },
+    } as StoreFs;
+    const rebuilding = open({ fs: slow }).rebuild();
+    await atIndex.wait;
+    // Misses the in-flight temp file, so the rebuild's rename can still land.
+    const blind = {
+      ...realFs,
+      rm: (async (p: string, o: object) =>
+        String(p).includes('.tmp-') ? undefined : realFs.rm(p, o)) as StoreFs['rm'],
+    } as StoreFs;
+    await open({ fs: blind }).forget();
+    paused.release();
+    await rebuilding;
+    expect(await open().list()).toEqual([]);
+    expect(await leftovers()).toEqual([]);
+  });
+});
+
 describe('the memory fallback', () => {
   const brokenWrites = () =>
     ({
