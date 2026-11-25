@@ -2,6 +2,13 @@
 // password. These are its standing promises; a change here is a product
 // decision, not a refactor. Decided with Dominik 2026-10-10; the reasoning is in
 // docs/superpowers/specs/2026-10-10-student-mcp-design.md.
+//
+// The disk promise changed on 2026-11-25 by Dominik's decision: the server may
+// keep a map of what it read in one per-laptop folder, through mcp/store.ts and
+// nowhere else, and that store never holds the password or the IS sign-in. See
+// docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md. Until that map
+// is wired in (step 2 of 7) nothing the server runs imports the store, so at
+// runtime nothing is written to disk yet.
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -37,6 +44,11 @@ function importClosure(entry: string): Map<string, string> {
   visit(entry);
   return seen;
 }
+
+/** The store's files: the only ones that may write, and they never touch credentials. */
+const STORE_FILES = sources.filter(({ f }) => /^store.*\.ts$/.test(f));
+/** The only store files that write bytes: the store itself and its atomic-write helper. */
+const MAY_WRITE = ['store.ts', 'storeFs.ts'];
 
 const closure = importClosure(join(mcpDir, 'server.ts'));
 const rel = (file: string) => relative(root, file).split('\\').join('/');
@@ -77,9 +89,22 @@ describe('reIS for Claude stays read-only and local', () => {
     }
   });
 
-  it('never writes credentials or the cookie to disk', () => {
+  it('writes to disk only through the store, and the store never sees credentials', () => {
+    expect(STORE_FILES.map((s) => s.f)).toEqual(expect.arrayContaining(MAY_WRITE));
     for (const { f, src } of sources) {
-      expect(src, f).not.toMatch(/writeFile|appendFile|createWriteStream/);
+      if (MAY_WRITE.includes(f)) continue;
+      expect(src, f).not.toMatch(/\b(writeFile|appendFile|createWriteStream|rename)\b/);
+    }
+    for (const { f, src } of STORE_FILES) {
+      expect(src, f).not.toMatch(/login|session|UISAuth|cookie|MENDELU_PASS/i);
+    }
+  });
+
+  // Step 1 of the map: the store exists but nothing calls it, so the product
+  // still writes nothing. Step 2 removes this test when it wires the store in.
+  it('does not run the store yet', () => {
+    for (const file of closure.keys()) {
+      expect(rel(file), 'the server must not reach the store yet').not.toMatch(/mcp\/store/);
     }
   });
 
