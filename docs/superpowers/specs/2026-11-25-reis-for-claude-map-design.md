@@ -1,7 +1,7 @@
 # reIS for Claude: a map on disk (design record)
 
 Status: agreed in conversation 2026-11-25 and cut into build steps (see Steps). **Steps 1 and 2 are on
-`test` (#753, #756), step 4 too (#761); step 3 is in review.**
+`test` (#753, #756), steps 3 and 4 too (#759, #761); step 4b is in review.**
 Decided with Dominik. Follows PR #749 (in-memory tool cache), which he judged "pretty useless"
 once he tried it: the server process does not outlive a window reload, an app launch or a
 Claude Code session.
@@ -184,7 +184,7 @@ start-up path changed). These are headless tools, so there is no UI tree and no 
 | 2   | Persist what is already read: subjects, file listings (link plus modified date), full untruncated file text and the study-form profile go into the store; the **forget everything** tool; every "nothing is written to disk" text rewritten in the same PR. | On test |
 | 3   | The overview tool: refreshes the cheap listings on first call, diffs them against the store, and returns the map, the profile, points, deadlines and "what changed", with a tool description that tells Claude to call it first. | In review   |
 | 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | On test |
-| 4b  | The upcoming-events ledger (decision 9): a ledger tool Claude writes dated events to, an "upcoming" section in the overview (soonest first, days left, attendance flag, stated or inferred), IS exam terms and assignment deadlines merged in by reIS, recheck marks when a source file is replaced, forget covers it. | Not started |
+| 4b  | The upcoming-events ledger (decision 9): a ledger tool Claude writes dated events to, an "upcoming" section in the overview (soonest first, days left, attendance flag, stated or inferred), IS exam terms and assignment deadlines merged in by reIS, recheck marks when a source file is replaced, forget covers it. | In review |
 | 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run of counts and types first), return their paths in the overview.                                       | Not started |
 | 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz. The prompt offers daily, weekly and on-demand digests as an email draft, with the one-week-ahead rule of decision 9 and a 14-day look for weekly, and a proposed calendar entry for every new or changed ledger event, asked before it is written. | Not started |
 | 7   | Release: version bump, both builds, `mcp-v*` tag; ships only once the corrected directory-listing answer is published, or Dominik has said in writing that it ships with the stale "not retained" answer.                                                                                                                                                      | Not started |

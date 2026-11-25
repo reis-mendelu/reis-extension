@@ -10,6 +10,7 @@ import type { Gathered } from './overviewGather';
 import type { SubjectFile } from './files';
 import { deadlineKey, fileRows, shownExams, student } from './overviewRows';
 import { upcomingItems } from './overviewUpcoming';
+import type { LedgerEntry } from './ledgerEntry';
 
 export type RenderInput = {
   g: Gathered;
@@ -25,6 +26,10 @@ export type RenderInput = {
   omitted?: number;
   /** Most open assignments listed, the last resort when long names still overflow (see fitOverview). */
   assignments?: number;
+  /** The events Claude saved in the ledger (ledgerTool.ts): merged into "upcoming". */
+  ledger?: LedgerEntry[];
+  /** Most upcoming items listed, the last resort after the assignments (see fitOverview). */
+  upcomingShown?: number;
 };
 
 /** The largest file list shown whole, tried in turn until the answer fits. */
@@ -79,7 +84,13 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
 
   const { exams, hidden } = shownExams(g.exams ?? []);
 
-  const upcoming = upcomingItems(g.boxes, g.exams, input.now ?? new Date());
+  const upcoming = upcomingItems(
+    g.boxes,
+    g.exams,
+    input.now ?? new Date(),
+    input.ledger?.length ? { entries: input.ledger, listings: g.listings } : undefined,
+    input.upcomingShown
+  );
   const lines = input.first ? [] : changeLines(input.changes);
   const note = input.first
     ? 'First overview on this computer, so this is the whole map and there is nothing to compare it with. From the next call on, "changed" lists what is new since this one.'
@@ -97,7 +108,7 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
     student: student(input.profile),
     upcoming: upcoming.items.length ? upcoming.items : undefined,
     moreUpcoming: upcoming.more
-      ? `${upcoming.more} more, later: see openAssignments and exams`
+      ? `${upcoming.more} more, later: see openAssignments, exams and mendelu_ledger (action list)`
       : undefined,
     subjects,
     openAssignments: listed.length ? listed : undefined,
@@ -150,19 +161,25 @@ export function fitOverview(input: RenderInput): { out: object; held: Change[] }
   // The rest are held back, so a bulk upload is reported over several calls, not cut off.
   const rowed = input.changes.filter((c) => c.url && c.what);
   const isRowed = new Set(rowed);
-  const lean = (k: number, assignments?: number) => {
+  type Bound = { assignments?: number; upcomingShown?: number };
+  const lean = (k: number, bound: Bound) => {
     const kept = new Set(rowed.slice(0, k));
     const changes = input.changes.filter((c) => !isRowed.has(c) || kept.has(c));
     const omitted = rowed.length - k;
     const out = build(
-      { ...input, changes, saved: () => false, omitted, assignments },
+      { ...input, changes, saved: () => false, omitted, ...bound },
       (_, n) => n <= 0,
       marksOf(changes)
     );
     return { out, held: rowed.slice(k) };
   };
-  // Long assignment names can still overflow with every file row held back: bound them too.
-  const bound = [Infinity, 20, 10, 5, 3, 1, 0].find((a) => small(lean(0, a).out)) ?? 0;
+  // Long assignment names can still overflow with every file row held back: bound them too, and
+  // only after them the upcoming list, which is the more important of the two.
+  const steps: Bound[] = [
+    ...[Infinity, 20, 10, 5, 3, 1, 0].map((assignments) => ({ assignments })),
+    ...[10, 5, 3, 1, 0].map((upcomingShown) => ({ assignments: 0, upcomingShown })),
+  ];
+  const bound = steps.find((b) => small(lean(0, b).out)) ?? steps[steps.length - 1]!;
   let [lo, hi] = [0, rowed.length];
   while (lo < hi) {
     const mid = Math.ceil((lo + hi) / 2);

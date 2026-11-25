@@ -103,9 +103,18 @@ export const toEntries = (index: Index): Entry[] =>
 
 export const totalBytes = (entries: Entry[]) => entries.reduce((n, e) => n + e.bytes, 0);
 
-/** Oldest first, ties by path; the one in `keep` is never listed. */
+/**
+ * The ledger of upcoming events (ledgerTool.ts) is the one thing here that cannot be fetched
+ * again from IS: the budget evicts copies, never the student's saved dates. It stays inside the
+ * budget's count, and it is capped at a few hundred small files, so it cannot crowd the rest out.
+ */
+const isProtected = (p: string) => p.startsWith('ledger/');
+
+/** Oldest first, ties by path; the one in `keep` and the ledger are never listed. */
 const oldestFirst = (entries: Entry[], keep: string) =>
-  entries.filter((e) => e.path !== keep).sort((a, b) => a.at - b.at || (a.path < b.path ? -1 : 1));
+  entries
+    .filter((e) => e.path !== keep && !isProtected(e.path))
+    .sort((a, b) => a.at - b.at || (a.path < b.path ? -1 : 1));
 
 export function pickEvictions(entries: Entry[], max: number, keep: string): Entry[] {
   let total = totalBytes(entries);

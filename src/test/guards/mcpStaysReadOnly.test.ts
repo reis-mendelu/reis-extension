@@ -10,6 +10,8 @@
 // wired it in: subjects, folder listings, file text and the study programme are
 // saved, and mendelu_forget_everything deletes them. Step 3 added mendelu_overview, which
 // also keeps a record of what it reported (overview/seen.json: fingerprints, no grades).
+// Step 4b added mendelu_ledger: the upcoming events Claude saves (ledger/<id>.json, written
+// through storeLedger.ts like everything else), which asks IS nothing and touches no calendar.
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -125,6 +127,24 @@ describe('reIS for Claude stays read-only and local', () => {
     const fields = /const PROFILE_FIELDS = \[([^\]]+)\]/.exec(map)?.[1] ?? '';
     expect(fields).toMatch(/studyForm/);
     expect(fields).not.toMatch(/username|fullName|studentId|email|name/i);
+  });
+
+  // Decided 2026-11-25 (decision 9): the ledger is Claude's list, in reIS's own folder. reIS never
+  // writes the student's calendar (their own Claude does, after asking), and the ledger tool never
+  // asks IS anything, so it works with no login.
+  it('keeps the ledger local: no IS fetcher, no login, no calendar API', () => {
+    const ledger = sources.filter(({ f }) => /^ledger.*\.ts$/.test(f) || f === 'storeLedger.ts');
+    expect(ledger.map((s) => s.f)).toEqual(
+      expect.arrayContaining(['ledgerTool.ts', 'ledgerEntry.ts', 'storeLedger.ts'])
+    );
+    for (const { f, src } of ledger) {
+      for (const m of src.matchAll(/from\s+['"]([^'"]+)['"]/g)) {
+        expect(m[1], `${f} imports ${m[1]}`).not.toMatch(
+          /\.\/(tools|login|session|files|cache|server|documentText)$|\.\.\/src\/api/
+        );
+      }
+      expect(src, f).not.toMatch(/fetch\(|googleapis|calendar\.google|webcal|\.ics\b|caldav/i);
+    }
   });
 
   it('POSTs only where the allow-list says, anywhere in the server graph', () => {

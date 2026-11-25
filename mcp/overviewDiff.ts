@@ -5,12 +5,14 @@ import type { PointRow, BoxRow } from './overviewShape';
 import { hash, own, type FileLite, type Snapshot, type World } from './overviewRecord';
 
 export type Change = {
-  kind: 'subject' | 'file' | 'points' | 'box' | 'exam';
+  kind: 'subject' | 'file' | 'points' | 'box' | 'exam' | 'ledger';
   code: string;
   /** For files: new, replaced or gone, so a long run of them can be summed up. */
   what?: 'new' | 'replaced' | 'gone';
   /** For a new or replaced file: its link, so the map can mark it. */
   url?: string;
+  /** For a file gone from IS: the link it had, so the ledger can tell which entries lost their source. */
+  was?: string;
   text: string;
 };
 
@@ -86,6 +88,7 @@ function fileChanges(code: string, before: Snapshot['files'][string], files: Fil
         kind: 'file',
         what: 'gone',
         code,
+        was: url,
         text: `File gone from IS in ${code}: ${was.n}`,
       });
     }
@@ -142,6 +145,7 @@ export function changeLines(changes: Change[], max = 40): string[] {
     points: 'new or changed points rows',
     box: 'new or changed assignment boxes',
     exam: 'new exam terms',
+    ledger: 'ledger entries to recheck',
   };
   for (const c of changes) {
     if (c.kind === 'subject') {
