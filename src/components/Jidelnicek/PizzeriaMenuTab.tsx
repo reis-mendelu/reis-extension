@@ -67,6 +67,9 @@ export function PizzeriaMenuTab({
           scrolls inside a fixed height instead; a cut-off row says it does. */}
       <ul
         data-testid="pizza-list"
+        // Focusable so a keyboard user can scroll past the first few pizzas.
+        tabIndex={0}
+        aria-label={t('menu.pizzeriaOffer')}
         className={`divide-y divide-base-300 overflow-y-auto overscroll-contain ${card} !py-0 max-h-60`}
       >
         {pizzeria.pizzas.map((p) => (

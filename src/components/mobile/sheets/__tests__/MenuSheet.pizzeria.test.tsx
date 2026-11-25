@@ -81,4 +81,11 @@ describe('MenuSheet — the pizzeria', () => {
       within(screen.getByTestId('menu-pizzeria')).getByText('Opening hours')
     ).toBeInTheDocument();
   });
+
+  it('the scrolling pizza list can be focused, so a keyboard reaches every pizza', () => {
+    render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Pizza' }));
+    const list = screen.getByRole('list', { name: 'Nabídka pizzerie' });
+    expect(list).toHaveAttribute('tabindex', '0');
+  });
 });
