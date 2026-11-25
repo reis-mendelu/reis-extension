@@ -28,6 +28,25 @@ const asFetch = (f: unknown) => f as typeof fetch;
 type Listing = Awaited<ReturnType<typeof fetchFolderListing>>;
 const listing = (files: Listing['files'], complete = true): Listing => ({ files, complete });
 
+describe('readDokServerFile: text files IS serves as octet-stream', () => {
+  for (const name of ['skript.m', 'sit.ipynb', 'schema.drawio', 'index.html']) {
+    it(`reads ${name} as text`, async () => {
+      const f = vi.fn().mockResolvedValue(
+        fileResponse('x = 1; % made-up course script', {
+          'content-type': 'application/octet-stream',
+          'content-disposition': `attachment; filename="${name}"`,
+        })
+      );
+      const r = await readDokServerFile(DL, asFetch(f));
+      expect(r).toMatchObject({
+        kind: 'text',
+        filename: name,
+        text: 'x = 1; % made-up course script',
+      });
+    });
+  }
+});
+
 describe('listFolderFiles', () => {
   it('keeps one download link per file and drops entries without one', async () => {
     const entry = (file_name: string, link?: string) => ({

@@ -129,7 +129,7 @@ and exams (3 of 15) change. A download link never changes when a file is replace
   the 5 MiB cap. Pure-JavaScript PDF extractors that read a Czech week table correctly: pdfjs-dist
   (in the tree, legacy build) 1.06 MB unminified but its worker is 2.38 MB, 1.26 MB minified;
   pdf2json 1.83 MB (0.96 MB minified); unpdf 2.45 MB (1.65 MB minified); pdf-parse needs a native
-  canvas. None fits unminified in the one file the plugin ships, so the fallback above is taken.
+  canvas. None fits unminified in the one file the plugin ships, so the fallback above is taken. A two-file layout does fit and was tested (pdfjs legacy inline in `index.mjs`, 4.69 MB, plus its worker as a second plugin file, 2.44 MB: it loads under plain node and reads the harmonogram table). It is **parked for Dominik**: it makes the plugin carry a PDF parser and a second file, which `mcp-plugin.mjs` forbids today and the submitted listing does not have, and it leaves 0.5 MB of headroom in the main file.
 
 ## Promises that change (product decision, not a refactor)
 

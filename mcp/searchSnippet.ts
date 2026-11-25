@@ -68,8 +68,13 @@ export type Snippet = {
   page?: number;
 };
 
-/** `terms` are folded (see parseQuery). Null when none of them is in the text. */
-export function snippetFor(text: string, terms: string[], side = SIDE): Snippet | null {
+/**
+ * Finds where the words are once (the expensive part: the whole text is folded), and returns
+ * a function that cuts the snippet for a given width, so a caller that shrinks the snippets
+ * to fit a size limit does not fold the text again. `terms` are folded (see parseQuery).
+ * Null when none of them is in the text.
+ */
+export function prepareSnippet(text: string, terms: string[]): ((side: number) => Snippet) | null {
   const f = foldMapped(text);
   const lists = terms.map((t) => rangesOf(f.text, t));
   const present = lists.filter((l) => l.length).length;
@@ -82,6 +87,21 @@ export function snippetFor(text: string, terms: string[], side = SIDE): Snippet 
     window = rarest[0]!;
     together = false;
   }
+  const found = window;
+  return (side) => cut(text, f, lists, found, together, side);
+}
+
+export const snippetFor = (text: string, terms: string[], side = SIDE): Snippet | null =>
+  prepareSnippet(text, terms)?.(side) ?? null;
+
+function cut(
+  text: string,
+  f: ReturnType<typeof foldMapped>,
+  lists: Range[][],
+  window: Range,
+  together: boolean,
+  side: number
+): Snippet {
   const from = f.origin(window[0]);
   const to = Math.max(f.origin(window[1]), from);
   let start = Math.max(0, from - side);

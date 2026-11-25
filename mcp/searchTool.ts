@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import type { Store } from './store';
 import { countMatches, foldPlain, parseQuery, termRegex } from './searchFold';
-import { snippetFor, spanOf, SIDE } from './searchSnippet';
+import { prepareSnippet, spanOf, SIDE } from './searchSnippet';
 import { loadDocs, type Doc } from './searchStore';
 
 // Why "search": it is the word a student and a model both reach for ("search my files for
@@ -100,9 +100,16 @@ export async function runSearch(store: Store, args: Record<string, unknown>) {
     .filter((s): s is Scored => !!s)
     .sort(byRank);
 
+  // Where the words are in each hit's text, found once however often the snippets are shrunk.
+  const prepared = new Map<Doc, ReturnType<typeof prepareSnippet>>();
+  const snippetOf = (doc: Doc, inText: boolean, side: number) => {
+    if (!inText || !doc.text) return null;
+    if (!prepared.has(doc)) prepared.set(doc, prepareSnippet(doc.text, q.terms));
+    return prepared.get(doc)?.(side) ?? null;
+  };
   const shape = (side: number, count: number) =>
     found.slice(0, count).map(({ doc, inText }) => {
-      const snip = inText && doc.text ? snippetFor(doc.text, q.terms, side) : null;
+      const snip = snippetOf(doc, inText, side);
       const stale =
         doc.readStamp && doc.listedStamp && doc.readStamp !== doc.listedStamp
           ? `stored text may be out of date: IS now lists this file as "${doc.listedStamp}", the text was saved when it showed "${doc.readStamp}". Read it again with mendelu_read_file.`

@@ -39,7 +39,7 @@ So Claude can start from what it read before instead of forgetting it with each 
 - Windows: `%LOCALAPPDATA%\reIS for Claude`
 - Linux: `$XDG_DATA_HOME/reIS for Claude`, or `~/.local/share/reIS for Claude`
 
-**Search in the plugin.** `mendelu_search` looks through the text reIS has saved, so in the plugin it reads inside the plain-text files Claude has opened (such as `.txt`, `.md`, `.csv`, and code or notebooks when IS labels them as text) and finds PDFs and Office files only by their name, folder, date and subject. The plugin stays small by not carrying a PDF reader (a pure-JavaScript one would not fit under the directory's 5 MiB file limit), so it does not keep the text of those files; Claude Code reads them itself when Claude opens one. The Claude Desktop extension (`.mcpb`) extracts and searches everything.
+**Search in the plugin.** `mendelu_search` looks through the text reIS has saved, so in the plugin it reads inside the plain-text files Claude has opened (`.txt`, `.md`, `.csv`, `.m`, `.ipynb`, `.drawio`, `.html`) and finds PDFs and Office files only by their name, folder, date and subject. The plugin stays small by not carrying a PDF reader (a pure-JavaScript one would not fit in its one 5 MiB file), so it does not keep the text of those files; Claude Code reads them itself when Claude opens one. The Claude Desktop extension (`.mcpb`) extracts and searches everything.
 
 Ask Claude to "forget everything reIS saved" (`mendelu_forget_everything`) or delete the folder (with Claude Code closed: a file being downloaded at that moment would be saved again) to remove it. Uninstalling the plugin does not delete it.
 
