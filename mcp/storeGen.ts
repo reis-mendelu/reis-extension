@@ -1,23 +1,93 @@
 // Safety around forget(): a write that began before it must never land after it,
-// from any process. forget() replaces a random token in the folder first; every
-// write remembers the token it started under and checks it again before and
-// after its rename. The token is not student data and survives forget().
+// from any process, and nothing may publish an index that names what it deleted.
+//
+// Two things make that checkable. forget() replaces a random token in the folder
+// (the generation) before it deletes anything; every write remembers the token it
+// started under and checks it again before and after its rename. And for as long
+// as forget() is still deleting, it keeps a marker file, `.forgetting-<id>`, so
+// that a reader who looks at the token in the middle of a forget (after the
+// bump, before the last delete) can tell it from a forget that is over: while a
+// live marker exists the token is unreadable (null), and null is never "the
+// same", so nothing starts and nothing publishes. Neither file is student data;
+// the token survives forget(), the marker does not outlive it.
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { atomicWrite, type StoreFs } from './storeFs';
-import { GEN_FILE } from './storePath';
+import { FORGET_PREFIX, GEN_FILE } from './storePath';
+
+/** A marker not refreshed for this long belongs to a forget() that crashed. */
+export const FORGET_STALE_MS = 5 * 60_000;
+/** How often a running forget() refreshes its marker, even in the middle of one slow delete. */
+export const FORGET_BEAT_MS = 30_000;
+
+/** Live = refreshed recently; a clock far off in either direction counts as abandoned. */
+async function markerIsLive(fs: StoreFs, abs: string, now: () => number): Promise<boolean> {
+  try {
+    const age = now() - (await fs.stat(abs)).mtimeMs;
+    return Math.abs(age) <= FORGET_STALE_MS;
+  } catch {
+    return false; // gone between the listing and now: that forget finished
+  }
+}
+
+/** True if a forget() in any process has begun deleting and has not finished (or crashed). */
+export async function forgetRunning(fs: StoreFs, dir: string, now: () => number): Promise<boolean> {
+  let names: string[];
+  try {
+    names = await fs.readdir(dir);
+  } catch {
+    return false; // no folder: nothing to delete. An unreadable one cannot be written either.
+  }
+  for (const name of names)
+    if (name.startsWith(FORGET_PREFIX) && (await markerIsLive(fs, path.join(dir, name), now)))
+      return true;
+  return false;
+}
+
+/** True for the marker of a forget() that is still alive; forget() must leave those alone. */
+export const isLiveMarker = async (fs: StoreFs, dir: string, name: string, now: () => number) =>
+  name.startsWith(FORGET_PREFIX) && (await markerIsLive(fs, path.join(dir, name), now));
 
 /**
  * The folder's token: '' when there is none yet (no folder, no file), null when
- * it exists but cannot be read. null never counts as "the same" (sameGeneration).
+ * it exists but cannot be read, or when a forget() is in progress. null never
+ * counts as "the same" (sameGeneration). The token is read first and the marker
+ * second, which is what makes this sound: a forget() writes its marker before it
+ * bumps the token and clears it after the last delete, so a token read after the
+ * bump is followed by a marker read that sees the forget unfinished, or one that
+ * finds it finished and the folder already empty.
  */
-export async function readGeneration(fs: StoreFs, dir: string): Promise<string | null> {
+export async function readGeneration(
+  fs: StoreFs,
+  dir: string,
+  now: () => number = Date.now
+): Promise<string | null> {
+  let token: string | null;
   try {
-    return (await fs.readFile(path.join(dir, GEN_FILE), 'utf8')).trim();
+    token = (await fs.readFile(path.join(dir, GEN_FILE), 'utf8')).trim();
   } catch (e) {
     const code = (e as NodeJS.ErrnoException)?.code;
-    return code === 'ENOENT' || code === 'ENOTDIR' ? '' : null;
+    token = code === 'ENOENT' || code === 'ENOTDIR' ? '' : null;
   }
+  return token !== null && (await forgetRunning(fs, dir, now)) ? null : token;
+}
+
+export type ForgetMarker = { beat: () => Promise<void>; end: () => Promise<void> };
+
+/** Announce a forget(), before its token is bumped. One marker per call, so two forgets cannot clear each other's. */
+export async function beginForget(
+  fs: StoreFs,
+  dir: string,
+  now: () => number
+): Promise<ForgetMarker> {
+  const file = path.join(dir, `${FORGET_PREFIX}${process.pid}-${randomBytes(6).toString('hex')}`);
+  await atomicWrite(fs, file, Buffer.from(String(process.pid)), now());
+  return {
+    /** Prove this forget() is alive; a failure is not worth stopping the delete for. */
+    beat: () => fs.utimes(file, new Date(now()), new Date(now())).catch(() => {}),
+    /** The deletion is over (or gave up, and said so): readers may publish again. */
+    end: () => fs.rm(file, { force: true }).catch(() => {}),
+  };
 }
 
 export const sameGeneration = (a: string | null, b: string | null) => a !== null && a === b;

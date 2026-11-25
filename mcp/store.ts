@@ -6,16 +6,15 @@
 import * as realFs from 'node:fs/promises';
 import path from 'node:path';
 import type { StoreFs } from './storeFs';
-import { bumpGeneration, readGeneration } from './storeGen';
 import {
-  readIndex,
-  scan,
-  toEntries,
-  toIndex,
-  totalBytes,
-  writeIndex,
-  type Entry,
-} from './storeIndex';
+  FORGET_BEAT_MS,
+  beginForget,
+  bumpGeneration,
+  isLiveMarker,
+  readGeneration,
+  type ForgetMarker,
+} from './storeGen';
+import { readIndex, scan, toEntries, toIndex, totalBytes, type Entry } from './storeIndex';
 import { GEN_FILE, OS_MAX_PATH, insideDir, resolveStoreDir, safeRelPath } from './storePath';
 import { createMemory } from './storeMemory';
 import { createDiskWriter } from './storeWrite';
@@ -39,6 +38,21 @@ export type StoreOptions = {
 
 export type Notice = { persistent: false; reason: string };
 
+/**
+ * Another forget() deletes everything it listed, including this one's temp file
+ * while its token or marker is being written: ENOENT as it lands. That is not a
+ * failure, the other forget just got there first, so write it again.
+ */
+async function untilKept<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'ENOENT' || attempt >= 4) throw e;
+    }
+  }
+}
+
 export function createStore(opts: StoreOptions = {}) {
   const dir = path.resolve(opts.dir ?? resolveStoreDir(opts.resolve));
   const fs = opts.fs ?? (realFs as StoreFs);
@@ -60,7 +74,7 @@ export function createStore(opts: StoreOptions = {}) {
 
   let forgets = 0; // forget() runs here: a write queued behind one re-reads its generation
   const syncMemory = async () => {
-    if (mem.active) mem.sync(await readGeneration(fs, dir));
+    if (mem.active) mem.sync(await readGeneration(fs, dir, now));
   };
 
   function degrade(e: unknown) {
@@ -102,9 +116,9 @@ export function createStore(opts: StoreOptions = {}) {
       // Noted at submit, not at its turn, so another store's forget() in between
       // cancels it; not awaited, so the queue order is unchanged.
       const submitted = forgets;
-      const noted = readGeneration(fs, dir);
+      const noted = readGeneration(fs, dir, now);
       return locked(async () => {
-        const g0 = forgets === submitted ? await noted : await readGeneration(fs, dir);
+        const g0 = forgets === submitted ? await noted : await readGeneration(fs, dir, now);
         if (persistent) {
           if (buf.length > maxBytes) return false;
           const result = await disk.write(p, buf, g0);
@@ -144,11 +158,7 @@ export function createStore(opts: StoreOptions = {}) {
         // If the disk will not let go, hide the path for this process rather than
         // let the old copy come back on the next read.
         await fs.rm(insideDir(dir, p), { force: true }).catch(() => mem.hide(p));
-        const index = await readIndex(fs, dir);
-        if (index && p in index) {
-          delete index[p];
-          await writeIndex(fs, dir, index, now()).catch(() => {});
-        }
+        await disk.dropEntry(p);
       });
     },
 
@@ -179,24 +189,46 @@ export function createStore(opts: StoreOptions = {}) {
       return locked(async () => {
         forgets++;
         mem.clear();
-        let bumpError: unknown;
+        // The marker goes up before the token is bumped and comes down after the last
+        // delete: in between, a rebuild or index write that reads the new token cannot
+        // mistake this forget for one that is over (storeGen.ts).
+        let setupError: unknown;
+        let marker: ForgetMarker | undefined;
         try {
-          await bumpGeneration(fs, dir, now());
+          marker = await untilKept(() => beginForget(fs, dir, now));
         } catch (e) {
-          bumpError = e;
+          setupError = e;
         }
-        let names: string[] = [];
+        // A delete that takes longer than a beat must not look like a crashed forget.
+        const timer = setInterval(() => void marker?.beat(), FORGET_BEAT_MS);
+        timer.unref?.();
         try {
-          names = await fs.readdir(dir);
-        } catch (e) {
-          const code = (e as NodeJS.ErrnoException).code;
-          if (code !== 'ENOENT' && code !== 'ENOTDIR') throw e;
+          try {
+            await untilKept(() => bumpGeneration(fs, dir, now()));
+          } catch (e) {
+            setupError ??= e;
+          }
+          let names: string[] = [];
+          try {
+            names = await fs.readdir(dir);
+          } catch (e) {
+            const code = (e as NodeJS.ErrnoException).code;
+            if (code !== 'ENOENT' && code !== 'ENOTDIR') throw e;
+          }
+          for (const name of names) {
+            if (name === GEN_FILE) continue;
+            // Another forget() still running keeps its marker; a crashed one's is swept.
+            if (await isLiveMarker(fs, dir, name, now)) continue;
+            await marker?.beat();
+            await fs.rm(path.join(dir, name), { recursive: true, force: true });
+          }
+          if (setupError && (setupError as NodeJS.ErrnoException).code !== 'ENOTDIR')
+            throw setupError;
+        } finally {
+          clearInterval(timer);
+          // Also when a delete failed: forget() then says so, and what is left is the truth.
+          await marker?.end();
         }
-        for (const name of names) {
-          if (name === GEN_FILE) continue;
-          await fs.rm(path.join(dir, name), { recursive: true, force: true });
-        }
-        if (bumpError && (bumpError as NodeJS.ErrnoException).code !== 'ENOTDIR') throw bumpError;
       });
     },
   };

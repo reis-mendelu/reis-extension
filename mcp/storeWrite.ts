@@ -1,7 +1,13 @@
 // One write to the folder: atomic file, index entry, budget, and the checks that
 // make forget() safe against a write in flight (storeGen.ts).
 import { atomicWrite, type StoreFs } from './storeFs';
-import { isPerPathFailure, pruneEmptyDirs, readGeneration, sameGeneration } from './storeGen';
+import {
+  forgetRunning,
+  isPerPathFailure,
+  pruneEmptyDirs,
+  readGeneration,
+  sameGeneration,
+} from './storeGen';
 import {
   evict,
   putEntry,
@@ -49,24 +55,37 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
   }
 
   /**
-   * The write landed, then a forget() began: take back what it left. A newer
-   * writer may have put its own file at the same path since, so only a file
-   * holding our bytes is deleted and only our index entry is touched.
+   * The write landed, then a forget() began (or is still running): take back what
+   * it left. A newer writer may have put its own file at the same path since, so
+   * only a file holding our bytes is deleted. The index is not patched: the one on
+   * disk may be a commit that read it before forget() deleted everything, so it can
+   * name forgotten files. It is a cache, so it goes, and rebuild() (which refuses
+   * while a forget() is running) writes the true one from the files.
    */
   async function undo(p: string, buf: Buffer) {
     const target = insideDir(dir, p);
     const current = await fs.readFile(target).catch(() => null);
-    const ours = current?.equals(buf) ?? false;
-    if (ours) await fs.rm(target, { force: true }).catch(() => {});
-    const index = await readIndex(fs, dir);
-    if (index) {
-      const st = current && !ours ? await fs.stat(target).catch(() => null) : null;
-      if (st) index[p] = { bytes: st.size, at: st.mtimeMs };
-      else delete index[p];
-      if (Object.keys(index).length) await writeIndex(fs, dir, index, now()).catch(() => {});
-      else await fs.rm(path.join(dir, INDEX_FILE), { force: true }).catch(() => {});
-    }
+    if (current?.equals(buf)) await fs.rm(target, { force: true }).catch(() => {});
+    await fs.rm(path.join(dir, INDEX_FILE), { force: true }).catch(() => {});
     await pruneEmptyDirs(fs, dir, p);
+    await rebuild();
+  }
+
+  /** Take one entry out of the index (its file was deleted); never lets a forgotten name back in. */
+  async function dropEntry(p: string) {
+    const g = await readGeneration(fs, dir, now);
+    const indexFile = path.join(dir, INDEX_FILE);
+    if (g === null) {
+      // A forget() is running (or the token is unreadable): do not rewrite anything.
+      await fs.rm(indexFile, { force: true }).catch(() => {});
+      return;
+    }
+    const index = await readIndex(fs, dir);
+    if (!index || !(p in index)) return;
+    delete index[p];
+    await writeIndex(fs, dir, index, now()).catch(() => {});
+    if (!sameGeneration(await readGeneration(fs, dir, now), g))
+      await fs.rm(indexFile, { force: true }).catch(() => {});
   }
 
   /**
@@ -81,7 +100,7 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
   ): Promise<'kept' | 'skipped' | 'unusable'> {
     const at = now();
     // An unreadable token counts as changed: the write cannot prove it is not stale.
-    const forgotten = async () => !sameGeneration(await readGeneration(fs, dir), g0);
+    const forgotten = async () => !sameGeneration(await readGeneration(fs, dir, now), g0);
     const target = insideDir(dir, p);
     // The temp file sits beside the target and has a longer name; a path the OS
     // would refuse is this file's problem, not the folder's.
@@ -95,8 +114,10 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
     } catch (e) {
       // Only a token that is readable and different proves forget() ran; a folder
       // that cannot be read at all must still fall back to memory.
-      const current = await readGeneration(fs, dir);
-      const proven = g0 !== null && current !== null && current !== g0;
+      // (null is also what a forget() still deleting looks like, which proves it too.)
+      const current = await readGeneration(fs, dir, now);
+      const proven =
+        g0 !== null && (current === null ? await forgetRunning(fs, dir, now) : current !== g0);
       if (!proven) {
         if (!(await isPerPathFailure(fs, dir, e))) {
           degrade(e);
@@ -122,18 +143,23 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
   }
 
   /**
-   * Rewrite the index from the files on disk. A forget() while this runs must not
-   * be undone by the old file names it scanned: if the token moved, publish
-   * nothing, or take the index back if it already landed (it is only a cache).
+   * Rewrite the index from the files on disk. It must never publish names that a
+   * forget() has deleted or is about to: it starts only when the token is readable,
+   * which excludes a forget() still deleting (storeGen.ts), and if the token moved
+   * while it ran, it publishes nothing, or takes the index back if it already
+   * landed (it is only a cache).
    */
   async function rebuild(): Promise<void> {
-    const g0 = await readGeneration(fs, dir);
-    const moved = async () => !sameGeneration(await readGeneration(fs, dir), g0);
+    const g0 = await readGeneration(fs, dir, now);
+    if (g0 === null) return; // a forget() is deleting, or the token cannot be read
+    const moved = async () => !sameGeneration(await readGeneration(fs, dir, now), g0);
     const entries = await scan(fs, dir, now());
     if (await moved()) return;
-    await writeIndex(fs, dir, toIndex(entries), now()).catch(() => {});
+    // An empty store has no index at all, as after forget(): nothing to list or to go stale.
+    if (entries.length) await writeIndex(fs, dir, toIndex(entries), now()).catch(() => {});
+    else await fs.rm(path.join(dir, INDEX_FILE), { force: true }).catch(() => {});
     if (await moved()) await fs.rm(path.join(dir, INDEX_FILE), { force: true }).catch(() => {});
   }
 
-  return { write, rebuild };
+  return { write, rebuild, dropEntry };
 }
