@@ -87,9 +87,23 @@ IS shows no maximum for three of the four, so the answer could not say "out of h
 
 **Findings the baseline surfaced:**
 
-- `mendelu_schedule` asked for a range to 15 Feb 2027 returned only through 17 Dec 2026. Either
-  IS publishes no later lessons yet or a fetcher caps the range; worth a look in step 2 or 3.
+- `mendelu_schedule` asked for a range to 15 Feb 2027 returned only through 17 Dec 2026 in the
+  first run and rows through the end date in the second. Not a fetcher cap; IS data or a one-off.
 - Points need one call per subject, so an overview that returns them together is a real saving.
-- The persona text says it "expects it to look wherever the answer might be". That coaches the
-  agent toward the behaviour under test and is the likely reason S1 passed when the real session
-  failed. Before step 3, re-run S1 and S4 with that sentence removed and record the difference.
+
+## Re-run with a neutral persona (2026-11-25, same installed server)
+
+The persona sentence "expects it to look wherever the answer might be" was removed, to test
+whether it had coached the first runs. It had not.
+
+**S1: pass, 8 calls.** Same date, same two files, same quoted harmonogram line, same honest
+"this is inferred" wording.
+
+**S4: pass, 15 calls.** Points for every subject that has a points sheet (five), the study-plan
+credits, open assignments, exam terms and the week's timetable, unasked. Five more calls than
+the first run because it also read the study plan, grades and three syllabi.
+
+**Reading:** the real failure (a date answered "IS has no date" until the student said "projdi
+soubory") does not reproduce with a fresh agent on a fresh question. S1 and S4 stay regression
+checks with call-count targets after steps 3 and 4: **S1 at most 5 calls, S4 at most 8**. The
+map's measurable gains here are fewer calls and no per-subject points loop, plus S2 and S3.
