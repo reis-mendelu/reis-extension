@@ -70,6 +70,11 @@ the hub; **only subject code, kind and date go into this repo**, never points, n
 credit tests, a project defence and a written test in four courses, taken from the harmonogram,
 the conditions files and IS.
 
+The persona has only the reIS tools, so the **key for this run is limited to events those tools can
+find**: the course files and IS. Events that come from a mail, a poster or what the student told
+Claude are covered by the ledger tool's own tests (write, read back, merge into the overview) in
+step 4b, not by this persona run.
+
 Pass: every event in the key that is still ahead appears in the answer with its date (or window,
 marked inferred, with the source file named); nothing in the answer is absent from both the key
 and a source file; the answer does not call an inferred date certain. Record the call count
