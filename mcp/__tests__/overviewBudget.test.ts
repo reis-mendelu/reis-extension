@@ -60,7 +60,7 @@ describe('renderOverview', () => {
     const small = JSON.stringify(run(5));
     expect(small).not.toContain('files in all');
     expect(JSON.stringify(run(43))).toContain('43 files in all');
-    expect(JSON.stringify(run(43))).toContain('call mendelu_subject_files with code EBC-S0');
+    expect(JSON.stringify(run(43))).toContain('call mendelu_subject_files with code EBC-S6');
   });
 
   it('still marks a new file inside a list that was cut, and never cuts the changes', () => {

@@ -152,6 +152,18 @@ for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
     if (!(await readRealFiles())) failed = true;
     continue;
   }
+  if (name === 'mendelu_overview') {
+    // Counts and the fixed first sentence of its note only: the overview carries points and names.
+    const t0 = Date.now();
+    const o = await json(name, {});
+    const files = o.subjects.reduce((n, s) => n + (Array.isArray(s.files) ? s.files.length : 0), 0);
+    const cut = o.subjects.filter((s) => s.moreFiles).length;
+    console.log(
+      `${name}: ${Date.now() - t0} ms, "${String(o.note).split(/[.,]/, 1)[0].slice(0, 60)}", ${o.subjects.length} subjects, ${files} files listed (${cut} lists cut), ${o.changed?.length ?? 0} changed lines, ${o.problems?.length ?? 0} problems`
+    );
+    if (o.problems?.length) failed = true;
+    continue;
+  }
   const r = await call('tools/call', { name, arguments: {} });
   const text = r.result.content[0].text;
   const summary = r.result.isError

@@ -62,7 +62,10 @@ function fileRows(files: SubjectFile[], marks: Map<string, string>, input: Rende
   });
 }
 
-function build(input: RenderInput, cap: number, marks: Map<string, string>) {
+/** `whole(code, n)`: whether a subject's n files are all listed or replaced by a pointer. */
+type Whole = (code: string, n: number) => boolean;
+
+function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
   const { g } = input;
   const subjects = g.subjects.map((s) => {
     const files = g.listings[s.code];
@@ -71,7 +74,7 @@ function build(input: RenderInput, cap: number, marks: Map<string, string>) {
     let more: string | undefined;
     if (files) {
       const rows = fileRows(files, marks, input);
-      if (rows.length <= cap) shown = rows;
+      if (whole(s.code, rows.length)) shown = rows;
       else {
         // Too many to list here: keep the ones that matter now, point to the rest.
         shown = rows.filter((r) => r.changed || r.textSaved);
@@ -154,11 +157,21 @@ const sizeOf = (o: object, format: RenderInput['format']) =>
 export function renderOverview(input: RenderInput) {
   const marks = new Map<string, string>();
   for (const c of input.changes) if (c.url && c.what) marks.set(c.url, c.what);
-  let out = build(input, Infinity, marks);
-  for (const cap of CAPS) {
-    out = build(input, cap, marks);
-    // Room for the cut marker format.ts would add if it still did not fit.
-    if (sizeOf(out, input.format) <= CHARACTER_LIMIT - 300) break;
+  // Room for the cut marker format.ts would add if it still did not fit.
+  const fits = (whole: Whole) => {
+    const out = build(input, whole, marks);
+    return sizeOf(out, input.format) <= CHARACTER_LIMIT - 300 ? out : null;
+  };
+  const cap = CAPS.find((c) => fits((_, n) => n <= c)) ?? 0;
+  const expanded = new Set<string>();
+  const whole: Whole = (code, n) => n <= cap || expanded.has(code);
+  // The cap cuts the longest lists first; with room left over, give them back smallest first.
+  const left = Object.entries(input.g.listings)
+    .filter(([, f]) => f && f.length > cap)
+    .sort((a, b) => a[1]!.length - b[1]!.length);
+  for (const [code] of left) {
+    expanded.add(code);
+    if (!fits(whole)) expanded.delete(code);
   }
-  return out;
+  return fits(whole) ?? build(input, (_, n) => n <= 0, marks);
 }
