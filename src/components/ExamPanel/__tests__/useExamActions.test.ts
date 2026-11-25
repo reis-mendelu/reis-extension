@@ -10,11 +10,13 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { toast } from 'sonner';
 import { useExamActions } from '../useExamActions';
 import * as examsAPI from '../../../api/exams';
+import * as swapAPI from '../../../api/examSwap';
 import { IndexedDBService } from '../../../services/storage';
 import type { ExamSubject, ExamSection } from '../../../types/exams';
 
 // Mock dependencies
 vi.mock('../../../api/exams');
+vi.mock('../../../api/examSwap');
 vi.mock('../../../services/storage', () => ({
   StorageService: {
     set: vi.fn(),
@@ -225,7 +227,7 @@ describe('useExamActions - Optimistic Updates', () => {
       );
     });
 
-    it('should handle term change (unregister + register) atomically', async () => {
+    it('should change a registered term with IS’s own swap, never unregistering', async () => {
       // Start with registered section
       const registeredExams = createMockExams(
         {},
@@ -239,6 +241,20 @@ describe('useExamActions - Optimistic Updates', () => {
           },
         }
       );
+
+      // The switch reads IS before and after: registered on term-1, then term-2.
+      vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: true });
+      vi.mocked(examsAPI.fetchExamData)
+        .mockResolvedValueOnce(registeredExams)
+        .mockResolvedValueOnce(
+          createMockExams(
+            {},
+            {
+              status: 'registered',
+              registeredTerm: { id: 'term-2', date: '20.01.2026', time: '09:00', room: 'Q01' },
+            }
+          )
+        );
 
       const { result } = renderHook(() =>
         useExamActions({
@@ -263,9 +279,10 @@ describe('useExamActions - Optimistic Updates', () => {
       });
 
       await waitFor(() => {
-        expect(examsAPI.unregisterExam).toHaveBeenCalledWith('term-1');
-        expect(examsAPI.registerExam).toHaveBeenCalledWith(newTermId);
+        expect(swapAPI.swapExamTerm).toHaveBeenCalledWith('term-1', newTermId);
       });
+      expect(examsAPI.unregisterExam).not.toHaveBeenCalled();
+      expect(examsAPI.registerExam).not.toHaveBeenCalled();
 
       // Verify final state has new term
       const updatedExams = mockSetExams.mock.calls[0][0];
