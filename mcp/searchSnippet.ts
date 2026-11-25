@@ -6,7 +6,8 @@ import { foldMapped, termRegex } from './searchFold';
 export const SIDE = 200;
 /** Two words further apart than this are shown by the first one's neighbourhood only. */
 const MAX_SPAN = 600;
-const MAX_POSITIONS = 5000;
+// Far beyond any real text; a cap only keeps a pathological one from filling memory.
+const MAX_POSITIONS = 100_000;
 
 type Range = [number, number];
 
@@ -51,6 +52,14 @@ function tightest(lists: Range[][]): Range | null {
   return best;
 }
 
+/** How far apart the words are in the tightest place they all occur; null if one is missing. */
+export function spanOf(folded: string, terms: string[]): number | null {
+  const lists = terms.map((t) => rangesOf(folded, t));
+  if (lists.some((l) => !l.length)) return null;
+  const w = tightest(lists);
+  return w ? w[1] - w[0] : null;
+}
+
 export type Snippet = {
   snippet: string;
   /** Words found in the text close together: the most useful kind of hit. */
@@ -60,7 +69,7 @@ export type Snippet = {
 };
 
 /** `terms` are folded (see parseQuery). Null when none of them is in the text. */
-export function snippetFor(text: string, terms: string[]): Snippet | null {
+export function snippetFor(text: string, terms: string[], side = SIDE): Snippet | null {
   const f = foldMapped(text);
   const lists = terms.map((t) => rangesOf(f.text, t));
   const present = lists.filter((l) => l.length).length;
@@ -75,15 +84,21 @@ export function snippetFor(text: string, terms: string[]): Snippet | null {
   }
   const from = f.origin(window[0]);
   const to = Math.max(f.origin(window[1]), from);
-  let start = Math.max(0, from - SIDE);
-  let end = Math.min(text.length, to + SIDE);
+  let start = Math.max(0, from - side);
+  let end = Math.min(text.length, to + side);
   // Word boundaries, never cutting into the match itself.
   while (start > 0 && start < from && !/\s/.test(text[start - 1]!)) start++;
   while (end < text.length && end > to && !/\s/.test(text[end]!)) end--;
 
   const marks = lists
     .flat()
-    .map(([a, b]): Range => [f.origin(a), Math.max(f.origin(b), f.origin(a) + 1)])
+    .map(([a, b]): Range => {
+      const from = f.origin(a);
+      let to = Math.max(f.origin(b), from + 1);
+      // never end between the two halves of a character outside the BMP
+      if (/[\ud800-\udbff]/.test(text[to - 1] ?? '')) to++;
+      return [from, to];
+    })
     .filter(([a, b]) => a >= start && b <= end)
     .sort((a, b) => a[0] - b[0]);
   let out = '';

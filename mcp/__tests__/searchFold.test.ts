@@ -10,6 +10,8 @@ describe('folding', () => {
     expect(foldPlain('zápocet')).toBe('zapocet');
     // a PDF's ligature is spelled out
     expect(foldPlain('ﬁnanční')).toBe('financni');
+    // Greek final sigma folds the same whole-string and letter by letter
+    expect(foldMapped('ΟΔΟΣ ΤΕΛΟΣ').text).toBe(foldPlain('ΟΔΟΣ ΤΕΛΟΣ'));
   });
 
   it('maps a folded position back to the original text', () => {
@@ -28,6 +30,8 @@ describe('parseQuery', () => {
       'zapoctove pisemne prace',
     ]);
     expect(parseQuery('„písemná práce“ 12.').terms).toEqual(['pisemna prace', '12.']);
+    // a Czech opening quote closed with a straight one is still a phrase
+    expect(parseQuery('„zápočtová práce" test').terms).toEqual(['zapoctova prace', 'test']);
   });
 
   it('drops stray punctuation and repeats, and caps the number of words', () => {
@@ -66,6 +70,18 @@ describe('snippetFor', () => {
   it('finds a match near the end of a very long text', () => {
     const text = `${'a'.repeat(60_000)} Konec: odevzdat do 17. 1. 2027.`;
     expect(snippetFor(text, ['odevzdat'])!.snippet).toContain('**odevzdat** do 17. 1. 2027.');
+  });
+
+  it('marks a word beside the match even when that word is in the text thousands of times', () => {
+    const text = `${'student pracuje. '.repeat(6000)}Zápočet je v pondělí, student musí přijít.`;
+    const s = snippetFor(text, ['student', 'zapocet'])!;
+    expect(s.together).toBe(true);
+    expect(s.snippet).toContain('**Zápočet** je v pondělí, **student**');
+  });
+
+  it('never cuts a character outside the BMP in two', () => {
+    const s = snippetFor('x 🄀 y 0 z', ['0'])!;
+    expect(s.snippet).not.toMatch(/[\ud800-\udbff](?![\udc00-\udfff])/);
   });
 
   it('reports a page when the text has page breaks, and null when nothing is found', () => {

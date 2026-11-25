@@ -4,7 +4,7 @@
 import { z } from 'zod';
 import type { Store } from './store';
 import { countMatches, foldPlain, parseQuery, termRegex } from './searchFold';
-import { snippetFor } from './searchSnippet';
+import { snippetFor, spanOf, SIDE } from './searchSnippet';
 import { loadDocs, type Doc } from './searchStore';
 
 // Why "search": it is the word a student and a model both reach for ("search my files for
@@ -16,7 +16,7 @@ export const SEARCH_TOOL = {
   description:
     'Searches, on this computer and without asking IS anything, the text of the course files reIS has saved, in ALL subjects at once, plus every listed file\'s name, folder, date and subject. USE IT BEFORE telling the student that something is not in IS or that you cannot find it: dates (credit test, "zápočtová písemná práce", exam, defence), test topics, passing conditions, points rules, reference sheets, project briefs and deadlines are very often only written inside a course file (a harmonogram, a conditions PDF, a lecture), not in IS\'s exam list or timetable. ' +
     'Case and diacritics do not matter ("zapocet" finds "zápočet"). Several words must ALL be in the same file; put "a phrase in quotes" to match it exactly. A part of a word matches too ("zapoc" finds "zápočtový"). Each hit gives the subject, the file, its date modified, a snippet with the matching words in **bold**, the line, and a `storedPath`. ' +
-    'It only finds what is saved. The answer says how many listed files have no saved text yet; those were searched by name only, so when nothing fits, open the likely ones with mendelu_read_file (their `url` is in mendelu_overview or mendelu_subject_files) before saying IS has no answer. A hit marked `stale` was replaced in IS after its text was saved: re-read it with mendelu_read_file. Quote the snippet and name the file when you answer. Read-only.',
+    'It only finds what is saved. The answer says how many files have no searchable text yet (not read, or a scan); those were searched by name only, so when nothing fits, open the likely ones with mendelu_read_file (pass the `readWith` of a hit, or a `downloadUrl` from mendelu_subject_files) before saying IS has no answer. A hit marked `stale` was replaced in IS after its text was saved: re-read it with mendelu_read_file. Quote the snippet and name the file when you answer. Read-only.',
   input: {
     query: z
       .string()
@@ -34,6 +34,9 @@ export const SEARCH_TOOL = {
   },
 } as const;
 
+/** What the hits may take of the 25,000 characters a result may have (format.ts), leaving room for the rest. */
+const BUDGET = 19_000;
+
 /** The most hits one answer carries: it goes into the student's chat and Claude's context. */
 export const MAX_HITS = 20;
 
@@ -48,7 +51,6 @@ function score(doc: Doc, terms: string[], text: string | undefined): Scored | nu
       .join(' ')
   );
   let nameHits = 0;
-  let metaHits = 0;
   let bodyOccurrences = 0;
   let inText = false;
   for (const t of terms) {
@@ -57,16 +59,18 @@ function score(doc: Doc, terms: string[], text: string | undefined): Scored | nu
     const n = text ? countMatches(text, termRegex(t), 10) : 0;
     if (!inName && !inMeta && !n) return null;
     if (inName) nameHits++;
-    else if (inMeta) metaHits++;
     if (n) inText = true;
     bodyOccurrences += n;
   }
-  // A name match outranks everything a body can earn (at most 10 + 15), and only a name does.
+  // Words close together in the text (one line of a schedule, not a whole script) count extra.
+  const close = text && terms.length > 1 ? spanOf(text, terms) : null;
+  // A name match outranks everything a body can earn (at most 10 + 15), and only a name does:
+  // a match in the subject, folder or date only lets a file in, it adds nothing.
   const s =
     nameHits * 50 +
     (nameHits === terms.length ? 50 : 0) +
-    Math.min(metaHits * 3, 9) +
-    Math.min(bodyOccurrences, 10);
+    Math.min(bodyOccurrences, 10) +
+    (close !== null && close <= 300 ? 15 : 0);
   return { doc, score: s, inText };
 }
 
@@ -79,12 +83,12 @@ export async function runSearch(store: Store, args: Record<string, unknown>) {
   const q = parseQuery(String(args.query ?? ''));
   if (!q.terms.length) throw new Error('Give at least one word to search for.');
   const only = typeof args.subject === 'string' ? args.subject.trim().toLowerCase() : '';
-  const { docs, subjects } = await loadDocs(store);
-  if (!docs.length && !subjects) {
+  const { docs } = await loadDocs(store);
+  if (!docs.length) {
     return {
       query: q.display.join(' '),
       found: 0,
-      note: 'Nothing is stored yet, so there is nothing to search. Open files with mendelu_read_file (or run mendelu_overview first) and search again.',
+      note: 'Nothing is stored yet, so there is nothing to search: no file is listed or read. Open files with mendelu_read_file (the file list comes from mendelu_subject_files) and search again.',
     };
   }
 
@@ -96,29 +100,45 @@ export async function runSearch(store: Store, args: Record<string, unknown>) {
     .filter((s): s is Scored => !!s)
     .sort(byRank);
 
-  const hits = found.slice(0, MAX_HITS).map(({ doc, inText }) => {
-    const snip = inText && doc.text ? snippetFor(doc.text, q.terms) : null;
-    const stale =
-      doc.readStamp && doc.listedStamp && doc.readStamp !== doc.listedStamp
-        ? `stored text may be out of date: IS now lists this file as "${doc.listedStamp}", the text was saved when it showed "${doc.readStamp}". Read it again with mendelu_read_file.`
-        : undefined;
-    return {
-      subject: doc.code ?? 'unknown (its listing is not stored)',
-      ...(doc.subjectName ? { subjectName: doc.subjectName } : {}),
-      file: doc.file ?? doc.title ?? '(unnamed)',
-      ...(doc.title && doc.file && doc.title !== doc.file ? { document: doc.title } : {}),
-      ...(doc.folder ? { folder: doc.folder } : {}),
-      modified: doc.modified ?? doc.date ?? 'unknown',
-      ...(doc.textPath ? { storedPath: doc.textPath } : { textSaved: 'no, matched by name only' }),
-      ...(snip ? { line: snip.line, page: snip.page, snippet: snip.snippet } : {}),
-      ...(stale ? { stale } : {}),
-      readWith: doc.url,
-    };
-  });
+  const shape = (side: number, count: number) =>
+    found.slice(0, count).map(({ doc, inText }) => {
+      const snip = inText && doc.text ? snippetFor(doc.text, q.terms, side) : null;
+      const stale =
+        doc.readStamp && doc.listedStamp && doc.readStamp !== doc.listedStamp
+          ? `stored text may be out of date: IS now lists this file as "${doc.listedStamp}", the text was saved when it showed "${doc.readStamp}". Read it again with mendelu_read_file.`
+          : undefined;
+      return {
+        subject: doc.code ?? 'unknown (its listing is not stored)',
+        ...(doc.subjectName ? { subjectName: doc.subjectName } : {}),
+        file: doc.file ?? doc.title ?? '(unnamed)',
+        ...(doc.title && doc.file && doc.title !== doc.file ? { document: doc.title } : {}),
+        ...(doc.folder ? { folder: doc.folder } : {}),
+        modified: doc.modified ?? doc.date ?? 'unknown',
+        ...(doc.textPath
+          ? { storedPath: doc.textPath }
+          : { textSaved: 'no, matched by name only' }),
+        ...(snip ? { line: snip.line, page: snip.page, snippet: snip.snippet } : {}),
+        ...(stale ? { stale } : {}),
+        readWith: doc.url,
+      };
+    });
+
+  // The whole answer goes into the student's chat and Claude's context, and a result over
+  // 25,000 characters is cut mid-row (and cut JSON does not parse): shrink the snippets, then drop
+  // the last hits, until it fits.
+  let count = Math.min(found.length, MAX_HITS);
+  let hits = shape(SIDE, count);
+  for (const side of [120, 60, 30]) {
+    if (JSON.stringify(hits, null, 2).length <= BUDGET) break;
+    hits = shape(side, count);
+  }
+  while (count > 1 && JSON.stringify(hits, null, 2).length > BUDGET) hits = shape(30, --count);
 
   const more = found.length - hits.length;
   const coverage = `${withText} file${withText === 1 ? '' : 's'} with saved text searched in full${
-    nameOnly ? `; ${nameOnly} listed without saved text searched by name only` : ''
+    nameOnly
+      ? `; ${nameOnly} without searchable text (not read yet, or no text in the file) searched by name only`
+      : ''
   }.`;
   return {
     query: q.display.map((t) => (/\s/.test(t) ? `"${t}"` : t)).join(' '),
@@ -130,7 +150,7 @@ export async function runSearch(store: Store, args: Record<string, unknown>) {
     ...(!found.length
       ? {
           note: nameOnly
-            ? `No file matches. ${nameOnly} listed file${nameOnly === 1 ? ' has' : 's have'} no saved text: read the likely ones with mendelu_read_file before telling the student IS has no answer.`
+            ? `No file matches. ${nameOnly} file${nameOnly === 1 ? ' has' : 's have'} no searchable text (not read yet, or a scan): read the likely ones with mendelu_read_file before telling the student IS has no answer.`
             : 'No saved file matches. If the student expects an answer, check mendelu_exams, mendelu_syllabus or the file list for a file not read yet.',
         }
       : {}),

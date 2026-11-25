@@ -45,7 +45,7 @@ async function readJson(store: Store, path: string): Promise<Json | undefined> {
 const subjectNameOf = (s: Json) =>
   str(s.nameCs) ?? str(s.fullName) ?? str(s.displayName) ?? str(s.name);
 
-export async function loadDocs(store: Store): Promise<{ docs: Doc[]; subjects: number }> {
+export async function loadDocs(store: Store): Promise<{ docs: Doc[] }> {
   const paths = (await store.list()).map((e) => e.path);
   const names = new Map<string, string>();
   const subjects = await readJson(store, 'subjects.json');
@@ -96,5 +96,5 @@ export async function loadDocs(store: Store): Promise<{ docs: Doc[]; subjects: n
       byUrl.set(url, doc);
     });
   }
-  return { docs: [...byUrl.values()], subjects: list.length };
+  return { docs: [...byUrl.values()] };
 }

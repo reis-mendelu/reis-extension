@@ -8,7 +8,9 @@ const MARKS = /\p{M}/gu;
  * Lower case, no diacritics, a PDF's ligatures ("ﬁ") spelled out. Used for the query
  * and, as one string, for a whole text.
  */
-export const foldPlain = (s: string) => s.normalize('NFKD').replace(MARKS, '').toLowerCase();
+export const foldPlain = (s: string) =>
+  // ς (word-final sigma) is σ: lower-casing a whole string and a single letter disagree on it.
+  s.normalize('NFKD').replace(MARKS, '').toLowerCase().replace(/ς/g, 'σ');
 
 /**
  * A text folded character by character, so a position in the folded string can be
@@ -23,10 +25,19 @@ export function foldMapped(s: string): Folded {
   if (ASCII.test(s)) return { text: s.toLowerCase(), origin: (i) => Math.min(i, s.length) };
   const parts: string[] = [];
   const starts: number[] = [];
+  // A text has a few hundred distinct non-ASCII letters; normalizing each once is what keeps
+  // a multi-megabyte text fast.
+  const cache = new Map<string, string>();
   for (let i = 0; i < s.length;) {
     const cp = s.codePointAt(i)!;
     const len = cp > 0xffff ? 2 : 1;
-    const f = cp < 128 ? String.fromCharCode(cp).toLowerCase() : foldPlain(s.slice(i, i + len));
+    let f: string;
+    if (cp < 128) f = String.fromCharCode(cp).toLowerCase();
+    else {
+      const ch = s.slice(i, i + len);
+      f = cache.get(ch) ?? foldPlain(ch);
+      cache.set(ch, f);
+    }
     if (f) {
       parts.push(f);
       for (let k = 0; k < f.length; k++) starts.push(i);
@@ -46,7 +57,7 @@ export function parseQuery(raw: string): Query {
   const found: string[] = [];
   // A phrase between matching quotes (straight, curly or Czech), or a bare word. A quote
   // that never closes is stray punctuation, not the start of a phrase.
-  for (const m of raw.matchAll(/"([^"]*)"|“([^”]*)”|„([^“”]*)[“”]|(\S+)/g)) {
+  for (const m of raw.matchAll(/"([^"]*)"|“([^”]*)”|„([^“”"]*)[“”"]|(\S+)/g)) {
     const t = (m[1] ?? m[2] ?? m[3] ?? (m[4] ?? '').replace(/["“”„]/g, ''))
       .trim()
       .replace(/\s+/g, ' ');

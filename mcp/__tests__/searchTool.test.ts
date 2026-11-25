@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createStore } from '../store';
+import { toResult } from '../format';
 import { runSearch, MAX_HITS } from '../searchTool';
 import { storeHarness } from './storeTestKit';
 import { seed, type SearchResult } from './searchKit';
@@ -94,7 +95,7 @@ describe('mendelu_search over the store', () => {
       textSaved: 'no, matched by name only',
       modified: '24. 11. 2026',
     });
-    expect(byName.searched).toMatch(/1 file with saved text.*1 listed without saved text/);
+    expect(byName.searched).toMatch(/1 file with saved text.*1 without searchable text/);
     expect((await search(store, 'ekonomika organizace')).found).toBe(1); // subject name + folder
     expect((await search(store, '"24. 11. 2026"')).found).toBe(1); // modified date
     expect((await search(store, 'harmonogram', 'EBC-PS')).found).toBe(0); // subject filter
@@ -106,7 +107,7 @@ describe('mendelu_search over the store', () => {
     await seed(store, [{ code: 'EBC-PE', file: 'conditions.pdf' }]);
     const r = await search(store, 'zapocet');
     expect(r.found).toBe(0);
-    expect(r.note).toMatch(/no saved text.*mendelu_read_file/);
+    expect(r.note).toMatch(/no searchable text.*mendelu_read_file/);
   });
 
   it('caps the answer and says how many more', async () => {
@@ -178,6 +179,70 @@ describe('mendelu_search over the store', () => {
     await busy;
     for (const r of during) expect(r.found).toBeGreaterThanOrEqual(1);
     expect((await search(reader, 'zapocet')).found).toBe(11);
+  });
+
+  it('says nothing is listed when only the subject list is stored', async () => {
+    const store = open();
+    await store.write('subjects.json', JSON.stringify({ subjects: [{ subjectCode: 'EBC-PE' }] }));
+    const r = await search(store, 'zapocet');
+    expect(r.note).toMatch(/Nothing is stored yet.*no file is listed or read/);
+  });
+
+  it('counts a scanned file (saved, no text) as unsearchable and says so', async () => {
+    const store = open();
+    await seed(store, [{ code: 'EBC-PE', file: 'sken.pdf', text: '  ' }]);
+    const r = await search(store, 'zapocet');
+    expect(r.searched).toMatch(/1 without searchable text.*no text in the file/);
+  });
+
+  it('prefers words that sit together over words scattered through a long text', async () => {
+    const store = open();
+    // five times as many occurrences, but never within 3,000 characters of each other
+    const far = `${`zápočet ${'slovo '.repeat(500)}`.repeat(5)}písemka`;
+    await seed(store, [
+      { code: 'EBC-PE', file: 'skripta.pdf', text: far },
+      { code: 'EBC-PE', file: 'harmonogram.pdf', text: 'Zápočet: 9. 12. písemka' },
+    ]);
+    expect((await search(store, 'zapocet pisemka')).hits.map((x) => x.file)).toEqual([
+      'harmonogram.pdf',
+      'skripta.pdf',
+    ]);
+  });
+
+  it('lets a subject, folder or date match admit a file but never lift it above a body hit', async () => {
+    const store = open();
+    await seed(store, [
+      { code: 'EBC-PE', folder: 'Zápočet', file: 'a.txt', text: 'test' },
+      { code: 'EBC-PE', file: 'b.txt', text: 'test a zápočet' },
+    ]);
+    expect((await search(store, 'test zapocet')).hits.map((x) => x.file)).toEqual([
+      'b.txt',
+      'a.txt',
+    ]);
+  });
+
+  it('stays inside the size limit, as markdown and as parseable JSON, with long rows', async () => {
+    const store = open();
+    const text = `zápočet${' slovo'.repeat(90)} písemka`;
+    await seed(
+      store,
+      Array.from({ length: 30 }, (_, i) => ({
+        code: 'EBC-PE',
+        name: 'Podniková ekonomika a management výrobních podniků',
+        folder: 'Přednášky a materiály ke zkoušce a zápočtu',
+        file: `soubor-s-dlouhym-nazvem-${i}.pdf`,
+        modified: '25. 11. 2026',
+        readStamp: 'modified 24. 11. 2026',
+        text,
+      }))
+    );
+    const r = await runSearch(store, { query: 'zapocet pisemka' });
+    expect(JSON.stringify(r, null, 2).length).toBeLessThan(21_000);
+    const out = toResult(r, 'json');
+    expect(out.content[0]!.text).not.toMatch(/truncated at/);
+    expect(() => JSON.parse(out.content[0]!.text)).not.toThrow();
+    expect(toResult(r, 'markdown').content[0]!.text).not.toMatch(/truncated at/);
+    expect((r as unknown as SearchResult).found).toBe(30);
   });
 
   it('rejects a query with no usable word', async () => {
