@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { switchExamTerm } from '../switchExamTerm';
 import * as examsAPI from '../../../api/exams';
+import * as swapAPI from '../../../api/examSwap';
 import type { ExamSubject, ExamSection } from '../../../types/exams';
 
 vi.mock('../../../api/exams');
+vi.mock('../../../api/examSwap');
 vi.mock('../../../utils/reportError', () => ({ logError: vi.fn() }));
 
 const term = (id: string, o: Record<string, unknown> = {}) => ({
@@ -36,24 +38,31 @@ function list(
 
 const OLD = 'old-1';
 const NEW = 'new-2';
+const before = () => list(OLD, [term(OLD), term(NEW)]);
 
 describe('switchExamTerm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(examsAPI.unregisterExam).mockResolvedValue({ success: true });
-    vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: true });
-    vi.mocked(examsAPI.fetchExamData).mockResolvedValue(list(OLD, [term(OLD), term(NEW)]));
+    vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: true });
+    vi.mocked(examsAPI.fetchExamData)
+      .mockResolvedValueOnce(before()) // pre-flight
+      .mockResolvedValueOnce(list(NEW, [term(OLD), term(NEW)])); // read-back
   });
 
-  it('unregisters the old term, then registers the new one', async () => {
+  // IS swaps in one operation, so the old seat is never released on purpose:
+  // no unregister, no rollback.
+  it('swaps in IS’s single operation and never unregisters', async () => {
     expect(await switchExamTerm(OLD, NEW)).toEqual({ kind: 'registered' });
-    expect(examsAPI.unregisterExam).toHaveBeenCalledWith(OLD);
-    expect(examsAPI.registerExam).toHaveBeenCalledWith(NEW);
+    expect(swapAPI.swapExamTerm).toHaveBeenCalledWith(OLD, NEW);
+    expect(examsAPI.unregisterExam).not.toHaveBeenCalled();
+    expect(examsAPI.registerExam).not.toHaveBeenCalled();
   });
 
-  // The seat is only ever put at risk by the unregister, so everything that can
-  // be checked beforehand is checked on a FRESH list before it.
-  describe('refuses before touching the seat', () => {
+  describe('refuses before sending anything', () => {
+    beforeEach(() => {
+      vi.mocked(examsAPI.fetchExamData).mockReset();
+    });
+
     it('when the new term has filled up since the list was loaded', async () => {
       vi.mocked(examsAPI.fetchExamData).mockResolvedValue(
         list(OLD, [term(OLD), term(NEW, { full: true })])
@@ -62,7 +71,7 @@ describe('switchExamTerm', () => {
         kind: 'refused',
         reason: 'targetUnavailable',
       });
-      expect(examsAPI.unregisterExam).not.toHaveBeenCalled();
+      expect(swapAPI.swapExamTerm).not.toHaveBeenCalled();
     });
 
     it('when registration for the new term is not open', async () => {
@@ -70,88 +79,77 @@ describe('switchExamTerm', () => {
         list(OLD, [term(OLD), term(NEW, { canRegisterNow: false })])
       );
       expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'refused' });
-      expect(examsAPI.unregisterExam).not.toHaveBeenCalled();
+      expect(swapAPI.swapExamTerm).not.toHaveBeenCalled();
     });
 
-    it('when the old term can no longer be deregistered', async () => {
+    it('when the old term can no longer be left', async () => {
       vi.mocked(examsAPI.fetchExamData).mockResolvedValue(
         list(OLD, [term(OLD), term(NEW)], '01.01.2020 23:59')
       );
       expect(await switchExamTerm(OLD, NEW)).toEqual({ kind: 'refused', reason: 'locked' });
-      expect(examsAPI.unregisterExam).not.toHaveBeenCalled();
+      expect(swapAPI.swapExamTerm).not.toHaveBeenCalled();
+    });
+
+    it('when the student is no longer registered on the old term', async () => {
+      vi.mocked(examsAPI.fetchExamData).mockResolvedValue(list(null, [term(OLD), term(NEW)]));
+      expect(await switchExamTerm(OLD, NEW)).toEqual({ kind: 'refused', reason: 'unverified' });
+      expect(swapAPI.swapExamTerm).not.toHaveBeenCalled();
     });
 
     it('when the fresh list cannot be read (fetchExamData hides a failure as [])', async () => {
       vi.mocked(examsAPI.fetchExamData).mockResolvedValue([]);
       expect(await switchExamTerm(OLD, NEW)).toEqual({ kind: 'refused', reason: 'unverified' });
-      expect(examsAPI.unregisterExam).not.toHaveBeenCalled();
+      expect(swapAPI.swapExamTerm).not.toHaveBeenCalled();
     });
   });
 
-  it('reports a failed unregister without trying to register', async () => {
-    vi.mocked(examsAPI.unregisterExam).mockResolvedValue({ success: false, error: 'x' });
-    expect(await switchExamTerm(OLD, NEW)).toEqual({ kind: 'unregisterFailed', error: 'x' });
-    expect(examsAPI.registerExam).not.toHaveBeenCalled();
-  });
+  // The list read back after the swap is the truth, whatever IS's page said.
+  describe('reads the outcome back from IS', () => {
+    const readBack = (after: ExamSubject[]) =>
+      vi
+        .mocked(examsAPI.fetchExamData)
+        .mockReset()
+        .mockResolvedValueOnce(before())
+        .mockResolvedValueOnce(after);
 
-  describe('when registering the new term fails after the old one is gone', () => {
-    beforeEach(() => {
-      vi.mocked(examsAPI.registerExam).mockImplementation(async (id) =>
-        id === NEW ? { success: false, error: 'plno' } : { success: true }
-      );
-    });
-
-    it('says restored only when the fresh list shows the old term registered', async () => {
-      vi.mocked(examsAPI.fetchExamData)
-        .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW)])) // pre-flight
-        .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW)])); // after
+    it('keeps the old seat when the swap fails and the list still shows it', async () => {
+      vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: false, error: 'plno' });
+      readBack(before());
       expect(await switchExamTerm(OLD, NEW)).toEqual({
         kind: 'failed',
         error: 'plno',
-        seat: 'restored',
+        seat: 'kept',
       });
     });
 
-    // The rollback call can answer "ok" and be wrong; the list is the truth.
-    it('says the seat is lost when rollback claims success but the list shows no term', async () => {
-      vi.mocked(examsAPI.fetchExamData)
-        .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW)]))
-        .mockResolvedValueOnce(list(null, [term(OLD), term(NEW)]));
-      expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'failed', seat: 'lost' });
-    });
-
-    it('says the seat is lost when the rollback fails and the list shows no term', async () => {
-      vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: false, error: 'plno' });
-      vi.mocked(examsAPI.fetchExamData)
-        .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW)]))
-        .mockResolvedValueOnce(list(null, [term(OLD, { full: true }), term(NEW)]));
-      expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'failed', seat: 'lost' });
-    });
-
-    // Another tab or device can register a third term between the failure and
-    // the read-back; "you are on no term" would then be false.
-    it('does not call the seat lost when a third term got registered meanwhile', async () => {
-      vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: false, error: 'plno' });
-      const withThird = list('third-3', [term(OLD), term(NEW), term('third-3')]);
-      vi.mocked(examsAPI.fetchExamData)
-        .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW), term('third-3')]))
-        .mockResolvedValueOnce(withThird);
-      expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'failed', seat: 'unknown' });
-    });
-
-    it('treats the switch as done when IS did register the new term after all', async () => {
-      vi.mocked(examsAPI.fetchExamData)
-        .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW)]))
-        .mockResolvedValueOnce(list(NEW, [term(OLD), term(NEW)]));
+    it('calls it done when IS registered the new term although its page did not say so', async () => {
+      vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: false, error: 'x' });
+      readBack(list(NEW, [term(OLD), term(NEW)]));
       expect(await switchExamTerm(OLD, NEW)).toEqual({ kind: 'registered' });
     });
 
-    it('does not guess when the list cannot be read: unknown, not restored', async () => {
-      vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: false, error: 'plno' });
-      vi.mocked(examsAPI.fetchExamData)
-        .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW)]))
-        .mockResolvedValueOnce([]);
+    it('says the seat is lost when the list shows no term (never expected, never hidden)', async () => {
+      vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: false, error: 'x' });
+      readBack(list(null, [term(OLD), term(NEW)]));
+      expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'failed', seat: 'lost' });
+    });
+
+    // Another tab or device can register a third term in between.
+    it('does not call the seat lost when a third term got registered meanwhile', async () => {
+      vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: false, error: 'x' });
+      readBack(list('third-3', [term(OLD), term(NEW), term('third-3')]));
       expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'failed', seat: 'unknown' });
+    });
+
+    it('does not guess when the list cannot be read after a failed swap', async () => {
+      vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: false, error: 'x' });
+      readBack([]);
+      expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'failed', seat: 'unknown' });
+    });
+
+    it('trusts IS’s own confirmation when the list cannot be read after a good swap', async () => {
+      readBack([]);
+      expect(await switchExamTerm(OLD, NEW)).toEqual({ kind: 'registered' });
     });
   });
 });

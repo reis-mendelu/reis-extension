@@ -1,20 +1,19 @@
-import { fetchExamData, registerExam, unregisterExam } from '../../api/exams';
+import { fetchExamData } from '../../api/exams';
+import { swapExamTerm } from '../../api/examSwap';
 import type { ExamSubject, ExamTerm } from '../../types/exams';
 import { parseRegistrationStart } from '../../utils/termUtils';
 import { logError } from '../../utils/reportError';
 
 /**
- * What a term switch came to. The student's seat is only ever at risk between
- * the unregister and the register, so every outcome says which side of that
- * line it is on, and `failed` says where the seat ended up.
+ * What a term switch came to. Every outcome says whether the student's seat is
+ * safe, and `failed` says where it ended up, read from IS.
  */
 export type SwitchOutcome =
   | { kind: 'registered' }
-  /** Nothing was changed: the old registration is exactly as it was. */
+  /** Nothing was sent: the old registration is exactly as it was. */
   | { kind: 'refused'; reason: 'targetUnavailable' | 'locked' | 'unverified' }
-  | { kind: 'unregisterFailed'; error?: string }
   /** The new term was not registered. `seat` is read from IS, not assumed. */
-  | { kind: 'failed'; error?: string; seat: 'restored' | 'lost' | 'unknown' };
+  | { kind: 'failed'; error?: string; seat: 'kept' | 'lost' | 'unknown' };
 
 const allTerms = (exams: ExamSubject[]): ExamTerm[] =>
   exams.flatMap((e) => e.sections.flatMap((s) => s.terms));
@@ -29,23 +28,25 @@ const registeredIds = (exams: ExamSubject[]): Set<string> =>
 /**
  * Change an exam registration from `previousTermId` to `termId`.
  *
- * IS has no "move": reIS unregisters the old term, then registers the new one,
- * so a failure in between leaves the student on NO term. Two guards follow from
- * that:
+ * IS does this itself: registering a term while holding another of the same
+ * kind opens a confirmation whose form registers the new term and drops the old
+ * one as one operation. So reIS never releases the seat on purpose (it used to
+ * unregister first and register second, and a failure in between left the
+ * student on no term). Two things surround the swap:
  *
- * 1. Everything checkable is checked on a fresh list BEFORE the unregister (the
- *    new term filled up or closed since the list was loaded, the old term's
- *    deregistration deadline has passed), so those cases never touch the seat.
- * 2. After a failure, the outcome is read back from IS. A rollback call that
- *    answers "ok" proves nothing; the list does.
+ * 1. A fresh list is checked BEFORE it, so a target that filled up or closed
+ *    since the list was loaded, or an old term that can no longer be left, is
+ *    refused without sending anything.
+ * 2. The outcome is read back from IS afterwards. IS's confirmation page is a
+ *    hint; the list is the truth.
  */
 export async function switchExamTerm(
   previousTermId: string,
   termId: string
 ): Promise<SwitchOutcome> {
   const before = await fetchExamData('cz');
-  // fetchExamData hides a failure as [] — and a switch without a look at IS is
-  // exactly the one that cannot be undone.
+  // fetchExamData hides a failure as [] — and a change made without a look at
+  // IS is exactly the one that cannot be checked.
   if (before.length === 0) return { kind: 'refused', reason: 'unverified' };
 
   const target = allTerms(before).find((t) => t.id === termId);
@@ -55,25 +56,24 @@ export async function switchExamTerm(
   const previous = before
     .flatMap((e) => e.sections)
     .find((s) => s.registeredTerm?.id === previousTermId)?.registeredTerm;
-  const deadline = previous?.deregistrationDeadline
+  // Not registered where we thought: IS would not offer a swap from there.
+  if (!previous) return { kind: 'refused', reason: 'unverified' };
+  const deadline = previous.deregistrationDeadline
     ? parseRegistrationStart(previous.deregistrationDeadline)
     : null;
   if (deadline && deadline.getTime() < Date.now()) return { kind: 'refused', reason: 'locked' };
 
-  const out = await unregisterExam(previousTermId);
-  if (!out.success) return { kind: 'unregisterFailed', error: out.error };
+  const res = await swapExamTerm(previousTermId, termId);
 
-  const res = await registerExam(termId);
-  if (res.success) return { kind: 'registered' };
-
-  const rollback = await registerExam(previousTermId);
   const after = await fetchExamData('cz');
   if (after.length === 0)
-    return { kind: 'failed', error: res.error, seat: rollback.success ? 'restored' : 'unknown' };
+    return res.success
+      ? { kind: 'registered' }
+      : { kind: 'failed', error: res.error, seat: 'unknown' };
 
   const now = registeredIds(after);
   if (now.has(termId)) return { kind: 'registered' };
-  if (now.has(previousTermId)) return { kind: 'failed', error: res.error, seat: 'restored' };
+  if (now.has(previousTermId)) return { kind: 'failed', error: res.error, seat: 'kept' };
 
   // Neither term is held. "Lost" is only true if the section itself holds
   // nothing: another tab or device may have registered a third term meanwhile,
@@ -86,9 +86,7 @@ export async function switchExamTerm(
 
   logError(
     'switchExamTerm.seatLost',
-    new Error(
-      `no term registered after switch ${previousTermId} -> ${termId}: regErr=${res.error}; rollbackErr=${rollback.error}`
-    )
+    new Error(`no term registered after swap ${previousTermId} -> ${termId}: err=${res.error}`)
   );
   return { kind: 'failed', error: res.error, seat: 'lost' };
 }

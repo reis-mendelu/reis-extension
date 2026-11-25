@@ -68,18 +68,16 @@ export function useExamActions({
       void maybeAskForStoreReview('exam_registered');
   };
 
-  // A switch is unregister + register: see switchExamTerm for why its failure
-  // messages come from a fresh list and never from the rollback call alone.
+  // IS swaps the term itself; see switchExamTerm for why the outcome is read
+  // back from a fresh list.
   const handleSwitch = async (sec: ExamSection, tid: string, previousTermId: string) => {
     const out = await switchExamTerm(previousTermId, tid);
     if (out.kind === 'registered') return applyRegistered(sec, tid);
     const refresh = () => useAppStore.getState().triggerExamsRefresh();
     if (out.kind === 'refused') {
       toast.error(tr(`exams.actionSwitchRefused.${out.reason}`), report());
-    } else if (out.kind === 'unregisterFailed') {
-      toast.error(tr('exams.actionUnregisterFailed'), report());
     } else {
-      const key = { restored: 'RolledBack', lost: 'Lost', unknown: 'NoRollback' }[out.seat];
+      const key = { kept: 'Kept', lost: 'Lost', unknown: 'Unknown' }[out.seat];
       toast.error(tr(`exams.actionSwitchFailed${key}`), report());
     }
     // Always re-read: after a failed switch the list on screen may show a term

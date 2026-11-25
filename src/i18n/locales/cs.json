@@ -248,9 +248,9 @@
     "actionFailed": "Selhalo.",
     "actionGenericError": "Chyba.",
     "actionMissingId": "Chybí ID.",
-    "actionSwitchFailedRolledBack": "Nepodařilo se přepnout na nový termín. Tvoje původní registrace byla obnovena.",
-    "actionSwitchFailedNoRollback": "Nepodařilo se přepnout termín ani obnovit původní. Zkontroluj přihlášení přímo v IS MENDELU.",
-    "actionSwitchFailedLost": "Nepodařilo se přepnout termín a původní se nepodařilo obnovit. Teď nemáš přihlášený žádný termín. Přihlas se znovu v IS MENDELU co nejdřív.",
+    "actionSwitchFailedKept": "Nepodařilo se přepnout na nový termín. Tvoje původní přihlášení zůstává, jak bylo.",
+    "actionSwitchFailedUnknown": "Nepodařilo se ověřit, jestli se termín změnil. Zkontroluj přihlášení přímo v IS MENDELU.",
+    "actionSwitchFailedLost": "Nepodařilo se přepnout termín a teď nemáš přihlášený žádný. Přihlas se znovu v IS MENDELU co nejdřív.",
     "actionSwitchRefused": {
       "targetUnavailable": "Na tenhle termín se už přihlásit nejde (zaplnil se nebo se zavřel). Tvoje přihlášení zůstává, jak bylo.",
       "locked": "Z původního termínu se už odhlásit nejde (termín odhlášení uplynul), takže ho nelze změnit.",

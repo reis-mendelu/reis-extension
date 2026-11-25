@@ -8,9 +8,11 @@ import { renderHook, act } from '@testing-library/react';
 import { toast } from 'sonner';
 import { useExamActions } from '../useExamActions';
 import * as examsAPI from '../../../api/exams';
+import * as swapAPI from '../../../api/examSwap';
 import type { ExamSubject, ExamSection } from '../../../types/exams';
 
 vi.mock('../../../api/exams');
+vi.mock('../../../api/examSwap');
 vi.mock('../../../services/storage', () => ({
   IndexedDBService: { set: vi.fn().mockResolvedValue(undefined), get: vi.fn() },
   STORAGE_KEYS: {},
@@ -71,8 +73,7 @@ const mockSetExpandedSectionId = vi.fn();
 describe('useExamActions - switching a registered term', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: true });
-    vi.mocked(examsAPI.unregisterExam).mockResolvedValue({ success: true });
+    vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: true });
   });
 
   const registered = () =>
@@ -99,7 +100,7 @@ describe('useExamActions - switching a registered term', () => {
     vi.mocked(examsAPI.fetchExamData)
       .mockResolvedValueOnce(exams) // pre-flight: term-1 registered, term-2 open
       .mockResolvedValueOnce(createMockExams()); // after: registered nowhere
-    vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: false, error: 'plno' });
+    vi.mocked(swapAPI.swapExamTerm).mockResolvedValue({ success: false, error: 'plno' });
     await switchTo(exams);
     expect(vi.mocked(toast.error).mock.calls[0]?.[0]).toMatch(/not registered for any term/);
     expect(mockTriggerExamsRefresh).toHaveBeenCalled();
@@ -122,7 +123,7 @@ describe('useExamActions - switching a registered term', () => {
       )
     );
     await switchTo(exams);
-    expect(examsAPI.unregisterExam).not.toHaveBeenCalled();
+    expect(swapAPI.swapExamTerm).not.toHaveBeenCalled();
     expect(vi.mocked(toast.error).mock.calls[0]?.[0]).toMatch(/can no longer register/);
   });
 
