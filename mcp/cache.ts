@@ -176,7 +176,9 @@ export function createToolCache({
         // Cut loose by a newer listing or begun before clear(): hand it to its
         // caller, note, keep and save nothing.
         const current = inflight.get(key) === mine && epoch === began.epoch;
-        if (tool === LIST && epoch === began.epoch) noteListing(value);
+        // Only the current listing says what date a file has: an older one that finished late must not
+        // put an earlier date back (a replaced file would then be served from its old saved text).
+        if (tool === LIST && current) noteListing(value);
         if (current) keep(key, value, mine.stamp);
         if (current && !stored) {
           await persist?.save(tool, args, value, mine.stamp, await began.token).catch(() => {});

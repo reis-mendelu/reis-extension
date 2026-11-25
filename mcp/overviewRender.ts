@@ -162,7 +162,7 @@ export function fitOverview(input: RenderInput): { out: object; held: Change[] }
     return { out, held: rowed.slice(k) };
   };
   // Long assignment names can still overflow with every file row held back: bound them too.
-  const bound = [undefined, 20, 10, 5, 3, 1, 0].find((a) => small(lean(0, a).out)) ?? 0;
+  const bound = [Infinity, 20, 10, 5, 3, 1, 0].find((a) => small(lean(0, a).out)) ?? 0;
   let [lo, hi] = [0, rowed.length];
   while (lo < hi) {
     const mid = Math.ceil((lo + hi) / 2);

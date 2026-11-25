@@ -135,3 +135,35 @@ describe('many open assignments with long names', () => {
     expect(held).toEqual([]);
   });
 });
+
+describe('a bulk upload with a few open assignments', () => {
+  it('keeps the assignments that fit, and holds back files only', () => {
+    const g = {
+      ...gathered(60),
+      boxes: [1, 2, 3].map((i) => ({
+        key: `EBC-S1|${i}`,
+        code: 'EBC-S1',
+        name: `Úkol ${i}`,
+        deadline: `${i}.12.2099 23:59`,
+        open: true,
+        submission: 'nothing_uploaded',
+        points: '',
+      })),
+    };
+    const changes = Object.entries(g.listings).flatMap(([code, files]) =>
+      files!.map((f): Change => ({ kind: 'file', what: 'new', code, url: f.downloadUrl, text: 'x' }))
+    );
+    const { out, held } = fitOverview({
+      g,
+      first: false,
+      changes,
+      profile: null,
+      saved: () => false,
+      format: 'json',
+    });
+    const o = JSON.parse(JSON.stringify(out)) as Record<string, unknown>;
+    expect(held.length).toBeGreaterThan(0);
+    expect(o.openAssignments).toHaveLength(3);
+    expect(o.moreAssignments).toBeUndefined();
+  });
+});
