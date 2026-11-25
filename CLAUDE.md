@@ -88,7 +88,10 @@ their laptop and exposes eleven read-only tools over the same `src/api` fetchers
 It has no UI tree, so the parity rule does not apply to it. It is also the only
 reIS code that handles a password: it comes from the keychain and is sent only
 to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
-`src/test/guards/mcpStaysReadOnly.test.ts`.
+`src/test/guards/mcpStaysReadOnly.test.ts`. A persistent on-disk map is decided
+but not built yet: its design, steps and the promises it will change are in
+`docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md`. Until a step
+lands, the "nothing is written to disk" promise still holds.
 
 A `src/api` change reaches it too. `npx vitest run mcp/` covers the tool
 shaping; `npm run mcp:smoke` only proves the server starts and lists its tools.
