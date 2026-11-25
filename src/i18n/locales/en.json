@@ -200,6 +200,12 @@
     "actionMissingId": "Missing ID.",
     "actionSwitchFailedRolledBack": "Couldn't switch to the new term. Your previous registration was restored.",
     "actionSwitchFailedNoRollback": "Couldn't switch and couldn't restore the previous term. Check your registration directly in IS MENDELU.",
+    "actionSwitchFailedLost": "Couldn't switch terms and couldn't restore the previous one. You are not registered for any term right now. Register again in IS MENDELU as soon as possible.",
+    "actionSwitchRefused": {
+      "targetUnavailable": "You can no longer register for this term (it filled up or closed). Your registration is unchanged.",
+      "locked": "The deregistration deadline for your current term has passed, so it can't be changed.",
+      "unverified": "Couldn't check the terms, nothing was changed. Try again in a moment."
+    },
     "confirmation": {
       "registerTitle": "Confirm registration",
       "unregisterTitle": "Confirm unregistration",

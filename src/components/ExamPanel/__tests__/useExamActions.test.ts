@@ -362,6 +362,60 @@ describe('useExamActions - Optimistic Updates', () => {
       expect(vi.mocked(toast.error).mock.calls[0][1]).toMatchObject({ duration: 10_000 });
     });
 
+    describe('switching a registered term', () => {
+      const registered = () =>
+        createMockExams(
+          {},
+          {
+            status: 'registered',
+            registeredTerm: { id: 'term-1', date: '20.01.2026', time: '09:00', room: 'Q01' },
+          }
+        );
+      const switchTo = async (exams: ExamSubject[]) => {
+        const { result } = renderHook(() =>
+          useExamActions({ exams, setExpandedSectionId: mockSetExpandedSectionId })
+        );
+        await act(async () => {
+          await result.current.handleRegisterDirect(exams[0].sections[0], 'term-2');
+        });
+      };
+
+      it('tells the student plainly when no term is left, and re-reads the list', async () => {
+        const exams = registered();
+        vi.mocked(examsAPI.fetchExamData)
+          .mockResolvedValueOnce(exams) // pre-flight: term-1 registered, term-2 open
+          .mockResolvedValueOnce(createMockExams()); // after: registered nowhere
+        vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: false, error: 'plno' });
+        await switchTo(exams);
+        expect(vi.mocked(toast.error).mock.calls[0][0]).toMatch(/not registered for any term/);
+        expect(mockTriggerExamsRefresh).toHaveBeenCalled();
+        expect(mockSetExams).not.toHaveBeenCalled();
+      });
+
+      it('leaves the registration alone when the new term filled up meanwhile', async () => {
+        const exams = registered();
+        vi.mocked(examsAPI.fetchExamData).mockResolvedValue(
+          createMockExams({}, {
+            status: 'registered',
+            registeredTerm: { id: 'term-1', date: '20.01.2026', time: '09:00', room: 'Q01' },
+            terms: [
+              createMockTerm('term-1'),
+              createMockTerm('term-2', { full: true }),
+            ] as unknown as ExamSection['terms'],
+          } as Partial<ExamSection>)
+        );
+        await switchTo(exams);
+        expect(examsAPI.unregisterExam).not.toHaveBeenCalled();
+        expect(vi.mocked(toast.error).mock.calls[0][0]).toMatch(/can no longer register/);
+      });
+
+      it('re-reads the list when the switch throws', async () => {
+        vi.mocked(examsAPI.fetchExamData).mockRejectedValue(new Error('boom'));
+        await switchTo(registered());
+        expect(mockTriggerExamsRefresh).toHaveBeenCalled();
+      });
+    });
+
     it('should rollback optimistic update on API failure', async () => {
       // Mock API failure
       vi.mocked(examsAPI.registerExam).mockResolvedValue({
