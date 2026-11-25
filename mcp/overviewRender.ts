@@ -8,7 +8,7 @@ import { toMarkdown } from './markdown';
 import { changeLines, type Change } from './overviewDiff';
 import type { Gathered } from './overviewGather';
 import type { SubjectFile } from './files';
-import { deadlineKey, fileRows, student } from './overviewRows';
+import { deadlineKey, fileRows, shownExams, student } from './overviewRows';
 import { upcomingItems } from './overviewUpcoming';
 
 export type RenderInput = {
@@ -23,9 +23,10 @@ export type RenderInput = {
   now?: Date;
   /** Changed files this answer leaves out (see fitOverview): said in the note, never silent. */
   omitted?: number;
+  /** Most open assignments listed, the last resort when long names still overflow (see fitOverview). */
+  assignments?: number;
 };
 
-const SHOWN_TERMS = 6;
 /** The largest file list shown whole, tried in turn until the answer fits. */
 const CAPS = [Infinity, 30, 20, 12, 8, 5, 3, 1, 0];
 
@@ -74,27 +75,9 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
       points: b.points,
     }));
   const closed = (g.boxes ?? []).length - open.length;
+  const listed = open.slice(0, input.assignments ?? open.length);
 
-  const terms = new Map<string, number>();
-  let hidden = 0;
-  const exams = (g.exams ?? [])
-    .filter((e) => {
-      if (e.state === 'registered') return true;
-      const k = `${e.code}|${e.section}`;
-      const n = (terms.get(k) ?? 0) + 1;
-      terms.set(k, n);
-      if (n <= SHOWN_TERMS) return true;
-      hidden++;
-      return false;
-    })
-    .map(({ code, section, state, date, time, room }) => ({
-      code,
-      section,
-      state,
-      date,
-      time,
-      room,
-    }));
+  const { exams, hidden } = shownExams(g.exams ?? []);
 
   const upcoming = upcomingItems(g.boxes, g.exams, input.now ?? new Date());
   const lines = input.first ? [] : changeLines(input.changes);
@@ -117,7 +100,11 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
       ? `${upcoming.more} more, later: see openAssignments and exams`
       : undefined,
     subjects,
-    openAssignments: open.length ? open : undefined,
+    openAssignments: listed.length ? listed : undefined,
+    moreAssignments:
+      listed.length < open.length
+        ? `${open.length - listed.length} more open: call mendelu_assignments`
+        : undefined,
     closedAssignments:
       closed > 0 ? `${closed} closed (call mendelu_assignments to see them)` : undefined,
     exams: exams.length ? exams : undefined,
@@ -163,22 +150,24 @@ export function fitOverview(input: RenderInput): { out: object; held: Change[] }
   // The rest are held back, so a bulk upload is reported over several calls, not cut off.
   const rowed = input.changes.filter((c) => c.url && c.what);
   const isRowed = new Set(rowed);
-  const lean = (k: number) => {
+  const lean = (k: number, assignments?: number) => {
     const kept = new Set(rowed.slice(0, k));
     const changes = input.changes.filter((c) => !isRowed.has(c) || kept.has(c));
     const omitted = rowed.length - k;
     const out = build(
-      { ...input, changes, saved: () => false, omitted },
+      { ...input, changes, saved: () => false, omitted, assignments },
       (_, n) => n <= 0,
       marksOf(changes)
     );
     return { out, held: rowed.slice(k) };
   };
+  // Long assignment names can still overflow with every file row held back: bound them too.
+  const bound = [undefined, 20, 10, 5, 3, 1, 0].find((a) => small(lean(0, a).out)) ?? 0;
   let [lo, hi] = [0, rowed.length];
   while (lo < hi) {
     const mid = Math.ceil((lo + hi) / 2);
-    if (small(lean(mid).out)) lo = mid;
+    if (small(lean(mid, bound).out)) lo = mid;
     else hi = mid - 1;
   }
-  return lean(lo);
+  return lean(lo, bound);
 }

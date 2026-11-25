@@ -33,17 +33,18 @@ export function diffWorld(prev: Snapshot, world: World): Change[] {
   for (const code of names.keys()) {
     // A subject that is new brings all its files and points: that is one line, not a flood.
     if (fresh.has(code)) continue;
+    // A part that could not be read last time has no entry: what is read now is compared
+    // with an empty baseline, so it is reported as new instead of being recorded unseen.
     const files = world.files[code];
-    const before = prev.files[code];
-    if (files && before) out.push(...fileChanges(code, before, files));
+    if (files) out.push(...fileChanges(code, prev.files[code] ?? {}, files));
     const points = world.points[code];
-    const was = prev.points[code];
-    if (points && was) out.push(...pointChanges(code, was, points));
+    if (points) out.push(...pointChanges(code, prev.points[code] ?? {}, points));
   }
-  if (world.boxes && prev.boxes) out.push(...boxChanges(prev.boxes, world.boxes));
-  if (world.exams && prev.exams) {
+  if (world.boxes) out.push(...boxChanges(prev.boxes ?? {}, world.boxes));
+  if (world.exams) {
+    const seen = prev.exams ?? {};
     for (const e of world.exams) {
-      if (e.state === 'registered' || own(prev.exams, e.key)) continue;
+      if (e.state === 'registered' || own(seen, e.key)) continue;
       out.push({
         kind: 'exam',
         code: e.code,

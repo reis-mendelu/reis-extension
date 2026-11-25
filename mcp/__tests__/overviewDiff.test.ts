@@ -119,6 +119,37 @@ describe('changeLines', () => {
   });
 });
 
+describe('a part that could not be read last time', () => {
+  it('is reported as new when it is read later, not recorded unseen', () => {
+    const unread = world({ files: {}, points: {}, boxes: undefined, exams: undefined });
+    const prev = snapshotOf(unread, null);
+    expect(prev.files['A-1']).toBeUndefined();
+    const lines = diffWorld(prev, world()).map((c) => c.text);
+    expect(lines).toEqual([
+      expect.stringContaining('New file in A-1: f1.pdf'),
+      expect.stringContaining('New file in A-1: f2.pdf'),
+      expect.stringContaining('New points row in A-1: PH / T1'),
+      expect.stringContaining('New assignment box in A-1: Box'),
+      expect.stringContaining('New exam term in A-1'),
+    ]);
+    // once reported and recorded, it is quiet again
+    expect(diffWorld(snapshotOf(world(), prev), world())).toEqual([]);
+  });
+
+  it('still reports a brand-new subject as one line, and a part still unread as nothing', () => {
+    const prev = seen();
+    const w = world({
+      subjects: [
+        { code: 'A-1', name: 'Alpha' },
+        { code: 'B-2', name: 'Beta' },
+      ],
+      files: { 'A-1': [f(1), f(2)], 'B-2': [f(7), f(8)] },
+      points: { 'A-1': [{ key: 'PH / T1', text: 'Body=5' }] },
+    });
+    expect(diffWorld(prev, w).map((c) => c.text)).toEqual(['New subject: B-2 Beta']);
+  });
+});
+
 describe('parseSnapshot', () => {
   it('reads what it wrote and nothing else', () => {
     expect(parseSnapshot(JSON.stringify(seen()))).toEqual(seen());

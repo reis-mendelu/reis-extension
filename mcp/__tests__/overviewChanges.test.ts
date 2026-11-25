@@ -107,6 +107,30 @@ describe('what changed (S3)', () => {
   });
 });
 
+describe('a second overview inside the cache TTL', () => {
+  it('sees what changed in IS, while other tools still answer from the cache', async () => {
+    const { root, dir } = await tempDir();
+    const s = boot(dir);
+    await s.call(O);
+    world.files['EBC-PE']!.push({ id: 3, file: 'podminky.pdf', modified: '2. 12. 2026' });
+    world.points['EBC-PS']![0]!.value = '15';
+    world.boxes.push({ name: 'Esej', deadline: '1.2.2100 12:00' });
+    world.terms.push({ id: 't2', date: '19.01.2027', time: '10:00' });
+    const t = textOf(await s.call(O)); // same process, seconds later
+    expect(changed(t)).toEqual([
+      expect.stringContaining('Points changed in EBC-PS'),
+      expect.stringContaining('New file in EBC-PE: podminky.pdf'),
+      expect.stringContaining('New assignment box in EBC-PS: Esej'),
+      expect.stringContaining('New exam term in EBC-PS'),
+    ]);
+    const listings = world.listings;
+    await s.call('mendelu_subject_files', { code: 'EBC-PE' });
+    await s.call('mendelu_subject_files', { code: 'EBC-PE' });
+    expect(world.listings).toBe(listings); // the overview's fresh listing is what they reuse
+    await done(root);
+  });
+});
+
 describe('an upload too big for one answer', () => {
   const upload = (n: number) =>
     Array.from({ length: n }, (_, i) => ({

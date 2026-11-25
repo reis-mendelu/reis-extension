@@ -31,17 +31,31 @@ export type ExamRow = {
   room: string;
 };
 
+/**
+ * Keys that stay unique within one answer: a repeated key gets " #n" (or "|n") after it, and a
+ * suffixed key already taken by another row's own label is skipped, so no two rows ever share
+ * a key (snapshotOf would overwrite one fingerprint with the other).
+ */
+function uniqueKeys(sep: string) {
+  const used = new Set<string>();
+  const count = new Map<string, number>();
+  return (base: string) => {
+    let n = count.get(base) ?? 0;
+    let key: string;
+    do key = ++n > 1 ? `${base}${sep}${n}` : base;
+    while (used.has(key));
+    count.set(base, n);
+    used.add(key);
+    return key;
+  };
+}
+
 /** The student's own rows in the teacher's tables, and their graded online tests. */
 export function pointRows(value: unknown): PointRow[] {
   const v = isObject(value) ? value : {};
   const rows: PointRow[] = [];
-  const seen = new Map<string, number>();
   // Two rows can share a label: the second is told apart by its place, so each keeps its own fingerprint.
-  const unique = (key: string) => {
-    const n = (seen.get(key) ?? 0) + 1;
-    seen.set(key, n);
-    return n > 1 ? `${key} #${n}` : key;
-  };
+  const unique = uniqueKeys(' #');
   for (const section of list(v.continuousAssessment)) {
     for (const arch of list(section.arches)) {
       if (arch.empty === true) continue;
@@ -67,16 +81,13 @@ export function pointRows(value: unknown): PointRow[] {
 
 /** Every box of the period, from what mendelu_assignments returns. */
 export function boxRows(value: unknown, now: number): BoxRow[] {
-  const seen = new Map<string, number>();
+  const unique = uniqueKeys('|');
   return list(isObject(value) ? value.assignments : []).map((r) => {
     const code = str(r.courseCode) || str(r.courseId);
     const name = str(r.name);
     // Two boxes can share a name: the second is told apart by its place in the list.
-    const base = `${code}|${name}`;
-    const n = (seen.get(base) ?? 0) + 1;
-    seen.set(base, n);
     return {
-      key: n > 1 ? `${base}|${n}` : base,
+      key: unique(`${code}|${name}`),
       code,
       name,
       deadline: str(r.deadline),

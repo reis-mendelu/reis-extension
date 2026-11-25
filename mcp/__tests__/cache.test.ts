@@ -23,6 +23,31 @@ describe('createToolCache', () => {
     expect(run).toHaveBeenCalledTimes(2);
   });
 
+  it('fresh asks IS again inside the TTL and keeps the new answer, other calls still hit the cache', async () => {
+    const cache = createToolCache({ now: clock().now });
+    let n = 0;
+    const run = vi.fn(async () => ++n);
+    expect(await cache.run('mendelu_exams', {}, run)).toBe(1);
+    expect(await cache.run('mendelu_exams', {}, run)).toBe(1); // cached
+    expect(await cache.run('mendelu_exams', {}, run, undefined, { fresh: true })).toBe(2);
+    expect(await cache.run('mendelu_exams', {}, run)).toBe(2); // the fresh answer is what is held now
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('fresh does not join a request already in flight', async () => {
+    const cache = createToolCache({ now: clock().now });
+    let release!: () => void;
+    const slow = vi.fn(() => new Promise<string>((r) => (release = () => r('old'))));
+    const quick = vi.fn(async () => 'new');
+    const first = cache.run('mendelu_points', { code: 'X' }, slow);
+    expect(
+      await cache.run('mendelu_points', { code: 'X' }, quick, undefined, { fresh: true })
+    ).toBe('new');
+    release();
+    expect(await first).toBe('old');
+    expect(await cache.run('mendelu_points', { code: 'X' }, quick)).toBe('new'); // not overwritten by the old one
+  });
+
   it('keys on the arguments but not on response_format', async () => {
     const cache = createToolCache({ now: clock().now });
     const run = vi.fn(async () => 'x');

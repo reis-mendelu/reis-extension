@@ -99,7 +99,7 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
             await runOverview({
               store,
               ctx: { ...ctx, noteStudy: (p) => map.saveProfile(p, ticket.token) },
-              run: (tool, a, fn) => cache.run(tool, a, fn, ticket),
+              run: (tool, a, fn) => cache.run(tool, a, fn, ticket, { fresh: true }),
               token: ticket.token,
               settled: map.settled,
               extractsText: EXTRACTS_TEXT,

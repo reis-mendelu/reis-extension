@@ -141,19 +141,23 @@ export function createToolCache({
       tool: string,
       args: Record<string, unknown>,
       fetch: () => Promise<unknown>,
-      ticket?: Ticket
+      ticket?: Ticket,
+      // `fresh`: ask IS even when a live answer is held or being fetched (the overview compares
+      // IS with what it last said, so a minute-old answer would hide a change). The new answer
+      // still replaces the held one; the TTLs for every other call are untouched.
+      { fresh = false }: { fresh?: boolean } = {}
     ) {
       const ttl = TTL_MS[tool];
       if (!ttl) return fetch();
       const key = keyOf(tool, args);
-      const hit = entries.get(key);
+      const hit = fresh ? undefined : entries.get(key);
       if (hit && now() - hit.at < ttl) {
         entries.delete(key); // move to the most recently used end
         entries.set(key, hit);
         return hit.value;
       }
       drop(key);
-      const pending = inflight.get(key);
+      const pending = fresh ? undefined : inflight.get(key);
       if (pending) return pending.promise;
       const mine: Pending = {
         promise: Promise.resolve(),

@@ -47,3 +47,33 @@ export function fileRows(
     };
   });
 }
+
+const SHOWN_TERMS = 6;
+type Term = { code: string; section: string; state: string };
+
+/** Registered terms always, open ones up to a few per section; how many were left out is said. */
+export function shownExams<T extends Term & { date: string; time: string; room: string }>(
+  rows: T[]
+) {
+  const terms = new Map<string, number>();
+  let hidden = 0;
+  const exams = rows
+    .filter((e) => {
+      if (e.state === 'registered') return true;
+      const k = `${e.code}|${e.section}`;
+      const n = (terms.get(k) ?? 0) + 1;
+      terms.set(k, n);
+      if (n <= SHOWN_TERMS) return true;
+      hidden++;
+      return false;
+    })
+    .map(({ code, section, state, date, time, room }) => ({
+      code,
+      section,
+      state,
+      date,
+      time,
+      room,
+    }));
+  return { exams, hidden };
+}

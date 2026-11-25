@@ -8,17 +8,10 @@ import * as realFs from 'node:fs/promises';
 import path from 'node:path';
 import type { StoreFs } from './storeFs';
 import { bumpGeneration, readGeneration } from './storeGen';
-import {
-  readIndex,
-  scan,
-  toEntries,
-  toIndex,
-  totalBytes,
-  writeIndex,
-  type Entry,
-} from './storeIndex';
+import { readIndex, scan, toEntries, toIndex, totalBytes, writeIndex } from './storeIndex';
 import { GEN_FILE, OS_MAX_PATH, insideDir, resolveStoreDir, safeRelPath } from './storePath';
 import { createMemory } from './storeMemory';
+import { createReader } from './storeRead';
 import { createDiskWriter } from './storeWrite';
 
 /** The real number is chosen after measuring a real student's files. */
@@ -71,6 +64,7 @@ export function createStore(opts: StoreOptions = {}) {
     notice = { persistent: false, reason: code ?? (e instanceof Error ? e.message : String(e)) };
   }
 
+  const reader = createReader(fs, dir, mem, syncMemory, now);
   const disk = createDiskWriter({
     fs,
     dir,
@@ -135,42 +129,9 @@ export function createStore(opts: StoreOptions = {}) {
     /** The folder's forget token now; hand it to write({ after }) to cancel the write if forget() runs first. */
     generation: () => readGeneration(fs, dir),
 
-    async read(rel: string): Promise<Buffer | undefined> {
-      const p = safeRelPath(rel);
-      await syncMemory();
-      const held = mem.get(p);
-      if (held) return held;
-      if (mem.isShadowed(p)) return undefined;
-      try {
-        return await fs.readFile(insideDir(dir, p));
-      } catch {
-        return undefined;
-      }
-    },
+    read: reader.read,
 
-    /**
-     * Only the first `bytes` of a file, as text, so a caller that needs a record's header
-     * does not read a whole document. The cut may end inside a multi-byte character.
-     */
-    async readHead(rel: string, bytes: number): Promise<string | undefined> {
-      const p = safeRelPath(rel);
-      await syncMemory();
-      const held = mem.get(p);
-      if (held) return held.subarray(0, bytes).toString('utf8');
-      if (mem.isShadowed(p)) return undefined;
-      try {
-        const handle = await fs.open(insideDir(dir, p), 'r');
-        try {
-          const buf = Buffer.alloc(bytes);
-          const { bytesRead } = await handle.read(buf, 0, bytes, 0);
-          return buf.subarray(0, bytesRead).toString('utf8');
-        } finally {
-          await handle.close();
-        }
-      } catch {
-        return undefined;
-      }
-    },
+    readHead: reader.readHead,
 
     async readText(rel: string): Promise<string | undefined> {
       return (await this.read(rel))?.toString('utf8');
@@ -191,18 +152,9 @@ export function createStore(opts: StoreOptions = {}) {
       });
     },
 
-    /** From the index: empty when it is missing or damaged (see rebuild). */
-    async list(): Promise<Entry[]> {
-      await syncMemory();
-      return toEntries(mem.overlay((await readIndex(fs, dir)) ?? toIndex([])));
-    },
+    list: reader.list,
 
-    /** Count and size of the content files themselves, not the index. */
-    async usage(): Promise<{ files: number; bytes: number }> {
-      await syncMemory();
-      const entries = toEntries(mem.overlay(toIndex(await scan(fs, dir, now()))));
-      return { files: entries.length, bytes: totalBytes(entries) };
-    },
+    usage: reader.usage,
 
     /** Rewrite the index from the files on disk. A folder that does not exist yet is left alone. */
     rebuild(): Promise<void> {

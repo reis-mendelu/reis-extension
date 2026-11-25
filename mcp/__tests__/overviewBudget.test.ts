@@ -2,7 +2,7 @@
 // folders are too big, file lists give way to a pointer, and the changes never do.
 import { describe, it, expect } from 'vitest';
 import { CHARACTER_LIMIT, toResult } from '../format';
-import { renderOverview } from '../overviewRender';
+import { fitOverview, renderOverview } from '../overviewRender';
 import type { Gathered } from '../overviewGather';
 import type { Change } from '../overviewDiff';
 import type { SubjectFile } from '../files';
@@ -83,5 +83,55 @@ describe('renderOverview', () => {
     expect(text).toContain(f.downloadUrl);
     for (let i = 0; i < 30; i++) expect(text).toContain(`Box ${i}`);
     expect(text).not.toContain('[truncated');
+  });
+});
+
+describe('many open assignments with long names', () => {
+  const boxes = Array.from({ length: 300 }, (_, i) => ({
+    key: `EBC-S1|${i}`,
+    code: 'EBC-S1',
+    name: `Domácí úkol číslo ${i}: ${'velmi dlouhé zadání s podrobným popisem '.repeat(4)}`,
+    deadline: `${(i % 28) + 1}.12.2099 23:59`,
+    open: true,
+    submission: 'nothing_uploaded',
+    points: '',
+  }));
+  for (const format of ['markdown', 'json'] as const) {
+    it(`are bounded with a pointer, so the answer fits and stays valid (${format})`, () => {
+      const g = { ...gathered(5), boxes };
+      const out = renderOverview({
+        g,
+        first: true,
+        changes: [],
+        profile: null,
+        saved: () => false,
+        format,
+      });
+      const text = toResult(out, format).content[0]!.text;
+      expect(text.length).toBeLessThanOrEqual(CHARACTER_LIMIT);
+      expect(text).not.toContain('[truncated');
+      expect(text).toContain('mendelu_assignments');
+      if (format === 'json') expect(() => JSON.parse(text)).not.toThrow();
+    });
+  }
+
+  it('keeps every changed file row it can: the files are held back, not the assignments first', () => {
+    const f = file('EBC-S3', 7);
+    const change: Change = {
+      kind: 'file',
+      what: 'new',
+      code: 'EBC-S3',
+      url: f.downloadUrl,
+      text: 'x',
+    };
+    const { held } = fitOverview({
+      g: { ...gathered(5), boxes },
+      first: false,
+      changes: [change],
+      profile: null,
+      saved: () => false,
+      format: 'json',
+    });
+    expect(held).toEqual([]);
   });
 });
