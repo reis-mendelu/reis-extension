@@ -30,21 +30,28 @@ async function getExamListUrl(lang: string = 'cz'): Promise<string> {
 }
 
 /**
- * Check if HTML response indicates successful registration.
- * IS MENDELU shows the term in table_1 (registered) after success.
+ * Does this page carry `<flag>=1` on a link for THIS term? Both tokens are
+ * anchored to the same href: the exam-list page lists every term of every
+ * subject, so a bare `includes('odhlasit_ihned=1')` matches an unrelated
+ * registered exam, and a bare `termin=${termId}` collides with longer ids
+ * (555 vs 5550). Word-bounded id, then the flag within the same href (no quote
+ * or space breaking out of it).
+ */
+function hasTermLink(html: string, termId: string, flag: 'odhlasit_ihned' | 'prihlasit_ihned') {
+  const escaped = termId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`termin=${escaped}\\b[^"'\\s]*${flag}=1`).test(html);
+}
+
+/**
+ * Check if HTML response indicates successful registration: the term's own row
+ * now offers "odhlásit". The switch's rollback re-registers the old term through
+ * this check, so a loose match tells the student their seat was restored when
+ * it was not. Page-wide error strings are deliberately not consulted here — they
+ * pick the message when this fails, but cannot undo the student's own row
+ * flipping to registered.
  */
 function verifyRegistrationSuccess(html: string, termId: string): boolean {
-  // After successful registration, the term should appear in registered table
-  // Check for the term ID in unregister links (confirms registration)
-  const hasUnregisterLink = html.includes(`termin=${termId}`) && html.includes('odhlasit_ihned=1');
-
-  // Also check for common error patterns
-  const hasError =
-    html.includes('Termín je již plný') ||
-    html.includes('nelze přihlásit') ||
-    html.includes('Chyba');
-
-  return hasUnregisterLink && !hasError;
+  return hasTermLink(html, termId, 'odhlasit_ihned');
 }
 
 /**
@@ -54,14 +61,7 @@ function verifyRegistrationSuccess(html: string, termId: string): boolean {
  * the unregister link for this term is absent.
  */
 function verifyUnregistrationSuccess(html: string, termId: string): boolean {
-  // Anchor both tokens to the SAME link: the exam-list page lists every term
-  // for every subject, so a bare html.includes('odhlasit_ihned=1') would match
-  // an unrelated still-registered exam, and a bare termin=${termId} collides
-  // with longer ids (555 vs 5550). Require termin=<id> (word-bounded) followed
-  // by odhlasit_ihned=1 within the same href (no quote/space breaking out).
-  const escaped = termId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const stillRegistered = new RegExp(`termin=${escaped}\\b[^"'\\s]*odhlasit_ihned=1`).test(html);
-  return !stillRegistered;
+  return !hasTermLink(html, termId, 'odhlasit_ihned');
 }
 
 /**
