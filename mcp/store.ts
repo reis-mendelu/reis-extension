@@ -8,7 +8,6 @@ import path from 'node:path';
 import type { StoreFs } from './storeFs';
 import { bumpGeneration } from './storeGen';
 import {
-  pickEvictions,
   readIndex,
   scan,
   toEntries,
@@ -16,9 +15,9 @@ import {
   totalBytes,
   writeIndex,
   type Entry,
-  type Index,
 } from './storeIndex';
-import { GEN_FILE, insideDir, resolveStoreDir, safeRelPath } from './storePath';
+import { GEN_FILE, OS_MAX_PATH, insideDir, resolveStoreDir, safeRelPath } from './storePath';
+import { createMemory } from './storeMemory';
 import { createDiskWriter } from './storeWrite';
 
 /** The real number is chosen after measuring a real student's files. */
@@ -33,6 +32,8 @@ export type StoreOptions = {
   fs?: StoreFs;
   now?: () => number;
   maxBytes?: number;
+  /** Longest whole path the OS accepts; default 259 on Windows, unlimited elsewhere. */
+  maxPathLength?: number;
   sleep?: (ms: number) => Promise<void>;
 };
 
@@ -47,9 +48,7 @@ export function createStore(opts: StoreOptions = {}) {
 
   let persistent = true;
   let notice: Notice | undefined;
-  const mem = new Map<string, { data: Buffer; at: number }>();
-  /** Paths written in memory after the fall-back: an older copy on disk is stale, never served. */
-  const shadowed = new Set<string>();
+  const mem = createMemory(memMax);
   // One write at a time per process; other processes are handled by the
   // atomic swap and by re-reading the index right before each merge.
   let chain: Promise<unknown> = Promise.resolve();
@@ -59,28 +58,21 @@ export function createStore(opts: StoreOptions = {}) {
     return run;
   };
 
-  const memEntries = (): Entry[] =>
-    [...mem].map(([p, v]) => ({ path: p, bytes: v.data.length, at: v.at }));
-  const withMemory = (disk: Index): Index => {
-    const merged: Index = Object.assign(Object.create(null), disk, toIndex(memEntries()));
-    for (const p of shadowed) if (!mem.has(p)) delete merged[p];
-    return merged;
-  };
-
   function degrade(e: unknown) {
     persistent = false;
     const code = (e as NodeJS.ErrnoException)?.code;
     notice = { persistent: false, reason: code ?? (e instanceof Error ? e.message : String(e)) };
   }
 
-  function putInMemory(p: string, data: Buffer, at: number) {
-    mem.delete(p);
-    mem.set(p, { data, at });
-    shadowed.add(p);
-    for (const old of pickEvictions(memEntries(), memMax, p)) mem.delete(old.path);
-  }
-
-  const disk = createDiskWriter({ fs, dir, now, maxBytes, sleep: opts.sleep, degrade });
+  const disk = createDiskWriter({
+    fs,
+    dir,
+    now,
+    maxBytes,
+    maxPathLength: opts.maxPathLength ?? OS_MAX_PATH,
+    sleep: opts.sleep,
+    degrade,
+  });
 
   return {
     /** False once the folder could not be used and the store fell back to memory. */
@@ -113,7 +105,7 @@ export function createStore(opts: StoreOptions = {}) {
           }
         }
         if (buf.length > memMax) return false;
-        putInMemory(p, buf, now());
+        mem.put(p, buf, now());
         return true;
       });
     },
@@ -121,8 +113,8 @@ export function createStore(opts: StoreOptions = {}) {
     async read(rel: string): Promise<Buffer | undefined> {
       const p = safeRelPath(rel);
       const held = mem.get(p);
-      if (held) return held.data;
-      if (shadowed.has(p)) return undefined;
+      if (held) return held;
+      if (mem.isShadowed(p)) return undefined;
       try {
         return await fs.readFile(insideDir(dir, p));
       } catch {
@@ -138,8 +130,9 @@ export function createStore(opts: StoreOptions = {}) {
       const p = safeRelPath(rel);
       return locked(async () => {
         mem.delete(p);
-        shadowed.delete(p);
-        await fs.rm(insideDir(dir, p), { force: true }).catch(() => {});
+        // If the disk will not let go, hide the path for this process rather than
+        // let the old copy come back on the next read.
+        await fs.rm(insideDir(dir, p), { force: true }).catch(() => mem.hide(p));
         const index = await readIndex(fs, dir);
         if (index && p in index) {
           delete index[p];
@@ -150,12 +143,12 @@ export function createStore(opts: StoreOptions = {}) {
 
     /** From the index: empty when it is missing or damaged (see rebuild). */
     async list(): Promise<Entry[]> {
-      return toEntries(withMemory((await readIndex(fs, dir)) ?? toIndex([])));
+      return toEntries(mem.overlay((await readIndex(fs, dir)) ?? toIndex([])));
     },
 
     /** Count and size of the content files themselves, not the index. */
     async usage(): Promise<{ files: number; bytes: number }> {
-      const entries = toEntries(withMemory(toIndex(await scan(fs, dir, now()))));
+      const entries = toEntries(mem.overlay(toIndex(await scan(fs, dir, now()))));
       return { files: entries.length, bytes: totalBytes(entries) };
     },
 
@@ -175,7 +168,6 @@ export function createStore(opts: StoreOptions = {}) {
     forget(): Promise<void> {
       return locked(async () => {
         mem.clear();
-        shadowed.clear();
         let bumpError: unknown;
         try {
           await bumpGeneration(fs, dir, now());

@@ -51,7 +51,8 @@ export const fold = (p: string) => p.normalize('NFC').toLowerCase();
 
 // Windows stops at 260 characters in all; the folder itself takes about 60 of them.
 const MAX_PATH = 200;
-const WINDOWS_MAX = 259;
+/** What the operating system accepts for a whole path: Windows stops at 260, others are not limited here. */
+export const OS_MAX_PATH = path.sep === '\\' ? 259 : Infinity;
 const MAX_SEGMENT_BYTES = 255;
 // eslint-disable-next-line no-control-regex -- control characters are exactly what is refused
 const BAD_CHARS = /[\u0000-\u001f\u007f<>:"|?*\\]/;
@@ -79,7 +80,9 @@ export function safeRelPath(input: unknown): string {
     if (DEVICE.test(s)) throw new StorePathError('reserved device name');
     if (s.toLowerCase().startsWith(TEMP_PREFIX)) throw new StorePathError('reserved temp name');
   }
-  if ([INDEX_FILE, GEN_FILE].includes(fold(p))) throw new StorePathError('reserved name');
+  // The first segment too: `.generation/x` would make the token a folder.
+  if ([INDEX_FILE, GEN_FILE].includes(fold(segments[0]!)))
+    throw new StorePathError('reserved name');
   return p;
 }
 
@@ -87,7 +90,5 @@ export function safeRelPath(input: unknown): string {
 export function insideDir(dir: string, rel: string): string {
   const full = path.join(dir, ...safeRelPath(rel).split('/'));
   if (!full.startsWith(dir + path.sep)) throw new StorePathError('escapes the store folder');
-  if (path.sep === '\\' && full.length > WINDOWS_MAX)
-    throw new StorePathError('too long for Windows');
   return full;
 }
