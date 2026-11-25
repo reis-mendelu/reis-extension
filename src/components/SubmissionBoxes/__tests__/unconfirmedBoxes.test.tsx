@@ -111,16 +111,18 @@ describe('submission boxes — uploaded but not confirmed', () => {
       expect(unconfirmed.textContent).not.toContain('Odevzdáno');
     });
 
-    it('expanded: marks unconfirmed and confirmed boxes differently', () => {
+    it('handed-in boxes, even still open, are listed once, under "Odevzdáno"', () => {
       render(<SubmissionBoxesSummary onOpen={vi.fn()} />);
-      fireEvent.click(screen.getByTestId('submission-boxes-toggle'));
-      const byName = (n: string) =>
-        screen.getAllByTestId('submission-open-row').find((r) => r.textContent?.includes(n))!;
-      expect(byName('Nepotvrzený').textContent).toContain('Nepotvrzeno');
-      expect(byName('Nepotvrzený').textContent).not.toContain('Odevzdáno');
-      expect(byName('Potvrzený').textContent).toContain('Odevzdáno');
-      expect(byName('Potvrzený').textContent).not.toContain('Nepotvrzeno');
-      expect(byName('Ze staré verze').textContent).toContain('Odevzdáno');
+      // The two boxes left to hand in are both due, so nothing is left to expand.
+      expect(screen.queryByTestId('submission-boxes-toggle')).toBeNull();
+      expect(screen.getByText('2 otevřené')).toBeTruthy();
+      const due = screen.getAllByTestId('submission-due-row').map((r) => r.textContent ?? '');
+      expect(due.some((t) => t.includes('Potvrzený'))).toBe(false);
+      expect(due.some((t) => t.includes('Ze staré verze'))).toBe(false);
+      fireEvent.click(screen.getByTestId('submitted-boxes-toggle'));
+      const handedIn = screen.getAllByTestId('submitted-box-row').map((r) => r.textContent ?? '');
+      expect(handedIn.some((t) => t.includes('Potvrzený'))).toBe(true);
+      expect(handedIn.some((t) => t.includes('Ze staré verze'))).toBe(true);
     });
   });
 });
