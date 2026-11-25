@@ -76,7 +76,12 @@ and exams (3 of 15) change. A download link never changes when a file is replace
    against writes in flight: no write may commit after forget starts, from any process,
    including the scheduled refresh, so forgotten content can never reappear. The mechanism is the
    builder's call (recommended: a generation marker that forget bumps first and that every write
-   checks right before its rename).
+   checks right before its rename). Built (PR #753, #755): a generation token that
+   forget replaces first and every write checks around its rename, plus a `.forgetting-<id>` marker
+   that forget keeps from before the bump until its last delete. While a live marker exists the
+   token reads as unreadable, so no write, rebuild or index update starts or publishes during a
+   forget, whatever token it captured. A marker is refreshed as forget deletes; one untouched for
+   five minutes belongs to a crashed forget and is ignored and swept.
 8. **Shared-laptop risk accepted:** one store per machine, not keyed to the IS login.
 
 ## Approaches considered

@@ -2,7 +2,7 @@
 // empty and is rebuilt from the content files, which are the truth.
 import path from 'node:path';
 import { atomicWrite, type StoreFs } from './storeFs';
-import { GEN_FILE, INDEX_FILE, TEMP_PREFIX, fold, safeRelPath } from './storePath';
+import { FORGET_PREFIX, GEN_FILE, INDEX_FILE, TEMP_PREFIX, fold, safeRelPath } from './storePath';
 
 export type Entry = { path: string; bytes: number; at: number };
 export type Index = Record<string, { bytes: number; at: number }>;
@@ -58,7 +58,13 @@ export async function scan(fs: StoreFs, dir: string, nowMs: number): Promise<Ent
       const childAbs = path.join(abs, item.name);
       if (item.isDirectory()) await walk(childAbs, childRel);
       else if (item.isFile()) {
-        if (!rel && (item.name === INDEX_FILE || item.name === GEN_FILE)) continue;
+        if (
+          !rel &&
+          (item.name === INDEX_FILE ||
+            item.name === GEN_FILE ||
+            item.name.startsWith(FORGET_PREFIX))
+        )
+          continue;
         try {
           const st = await fs.stat(childAbs);
           if (item.name.startsWith(TEMP_PREFIX)) {
