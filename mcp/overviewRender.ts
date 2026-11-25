@@ -7,6 +7,7 @@ import { toMarkdown } from './markdown';
 import { changeLines, type Change } from './overviewDiff';
 import { labelOf, modifiedOf, type Gathered } from './overviewGather';
 import type { SubjectFile } from './files';
+import { upcomingItems } from './overviewUpcoming';
 
 export type RenderInput = {
   g: Gathered;
@@ -17,6 +18,7 @@ export type RenderInput = {
   /** Whether mendelu_read_file would answer from the store without downloading. */
   saved: (f: SubjectFile) => boolean;
   format: 'markdown' | 'json';
+  now?: Date;
 };
 
 const FORMS: Record<string, string> = {
@@ -129,6 +131,7 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
       room,
     }));
 
+  const upcoming = upcomingItems(g.boxes, g.exams, input.now ?? new Date());
   const lines = input.first ? [] : changeLines(input.changes);
   const note = input.first
     ? 'First overview on this computer, so this is the whole map and there is nothing to compare it with. From the next call on, "changed" lists what is new since this one.'
@@ -141,6 +144,10 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
     changed: lines.length ? lines : undefined,
     problems: g.problems.length ? g.problems : undefined,
     student: student(input.profile),
+    upcoming: upcoming.items.length ? upcoming.items : undefined,
+    moreUpcoming: upcoming.more
+      ? `${upcoming.more} more, later: see openAssignments and exams`
+      : undefined,
     subjects,
     openAssignments: open.length ? open : undefined,
     closedAssignments:
