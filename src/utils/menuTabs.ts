@@ -22,8 +22,8 @@ export type MenuTab =
  * sees their own building first: KA (budova Z's výdejna), S-klub (the café in
  * budova Z), then X and JAK. The pizzeria is last for everyone.
  */
-const EVERYONE = ['X', 'JAK', 'KA', SKLUB_TAB, PIZZA_TAB];
-const FRRMS = ['KA', SKLUB_TAB, 'X', 'JAK', PIZZA_TAB];
+const EVERYONE = ['X', 'JAK', 'KA', SKLUB_TAB];
+const FRRMS = ['KA', SKLUB_TAB, 'X', 'JAK'];
 
 /**
  * The tabs for one day: the canteens serving it, plus S-klub when the café is
@@ -55,6 +55,8 @@ export function menuTabs(
   }
   if (pizzeria && outlets.length > 0) tabs.push({ kind: 'pizzeria', key: PIZZA_TAB, pizzeria });
   const rank = (key: string) => {
+    // Pizza is last of all, after a canteen reIS does not know yet.
+    if (key === PIZZA_TAB) return order.length + 1;
     const i = order.indexOf(key);
     return i < 0 ? order.length : i;
   };

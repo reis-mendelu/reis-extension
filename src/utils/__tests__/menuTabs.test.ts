@@ -127,14 +127,14 @@ describe('menuTabs — the pizzeria', () => {
     expect(keysWith([], 'PEF')).toEqual([SKLUB_TAB]);
   });
 
-  it('a canteen reIS does not know yet still goes after Pizza', () => {
+  it('Pizza stays last, even after a canteen reIS does not know yet', () => {
     expect(keysWith([outlet('Nová'), ...SKM], 'PEF')).toEqual([
       'X',
       'JAK',
       'KA',
       SKLUB_TAB,
-      PIZZA_TAB,
       'Nová',
+      PIZZA_TAB,
     ]);
   });
 
