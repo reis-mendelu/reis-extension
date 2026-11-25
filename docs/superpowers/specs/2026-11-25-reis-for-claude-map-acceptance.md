@@ -83,6 +83,9 @@ Pass: with the clock set 14, 7, 3 and 1 days before each event, the weekly diges
 event no later than 14 days out, the daily digest no later than 14 days out and again on the day
 before, an event that needs attendance carries the flag, a past event is gone, and an event whose
 source file was replaced is listed as "recheck", not dropped.
+The digest also proposes a University-calendar entry once for each new ledger event, in the student's
+format, updates it when the ledger changes, finds an existing hand-made entry instead of adding a
+second, and writes nothing until the student agrees.
 
 ## Which step moves which scenario
 

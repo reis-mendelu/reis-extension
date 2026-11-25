@@ -115,8 +115,17 @@ and exams (3 of 15) change. A download link never changes when a file is replace
      anything inside 14 days.
    - **The email is a draft in the student's own mail**, written by their Claude through a
      connector they already have, daily, weekly or on demand. reIS never sends mail.
-   - Optionally the student's Claude may also put an entry in their calendar in the same format
-     (reIS itself writes nowhere but the store). Forget removes the ledger with the rest.
+   - **The daily (and weekly) routine proposes calendar entries.** For every ledger event that is
+     not yet in the student's University calendar, and every one whose date, room or rule changed,
+     the routine proposes the entry in the format the student already uses (title
+     "Kind – Subject (CODE)", room as location, a description with scope, rule, source and the
+     "ověř" note for an inferred date, reminders a week before, a day before and an hour before).
+     The proposal goes into the digest email; **nothing is written to the calendar until the
+     student says yes**, because it is the student's own calendar. Each entry carries the ledger
+     id in its description so a later run updates it instead of adding a second one, and finds an
+     entry the student already made by hand rather than duplicating it. The calendar write is
+     done by the student's own Claude through their calendar connector; reIS itself still writes
+     nowhere but the store. Forget removes the ledger with the rest and leaves the calendar alone.
 
 ## Approaches considered
 
@@ -210,7 +219,7 @@ start-up path changed). These are headless tools, so there is no UI tree and no 
 | 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | Not started |
 | 4b  | The upcoming-events ledger (decision 9): a ledger tool Claude writes dated events to, an "upcoming" section in the overview (soonest first, days left, attendance flag, stated or inferred), IS exam terms and assignment deadlines merged in by reIS, recheck marks when a source file is replaced, forget covers it. | Not started |
 | 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run of counts and types first), return their paths in the overview.                                       | Not started |
-| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz. The prompt offers daily, weekly and on-demand digests as an email draft, with the one-week-ahead rule of decision 9 and a 14-day look for weekly. | Not started |
+| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz. The prompt offers daily, weekly and on-demand digests as an email draft, with the one-week-ahead rule of decision 9 and a 14-day look for weekly, and a proposed calendar entry for every new or changed ledger event, asked before it is written. | Not started |
 | 7   | Release: version bump, both builds, `mcp-v*` tag; ships only once the corrected directory-listing answer is published, or Dominik has said in writing that it ships with the stale "not retained" answer.                                                                                                                                                      | Not started |
 
 Merge order: 1, 2, then 3 and 4 (either order, they share `mcp/tools.ts` and `mcp/register.ts`, so the
