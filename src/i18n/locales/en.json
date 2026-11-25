@@ -1012,6 +1012,13 @@
   },
   "map": {
     "title": "Map",
+    "isoTitle": "Isometric map",
+    "isoOpen": "Open the isometric map",
+    "isoClose": "Close the isometric map",
+    "isoLoading": "Loading the map",
+    "isoCredit": "© OpenStreetMap contributors, © ČÚZK",
+    "isoOffCampus": "The isometric map covers only the campus and its surroundings – move the map back",
+    "isoShowOnMap": "Show on map",
     "searchPlaceholder": "Search a room or place…",
     "noFloorPlan": "No floor plan available.",
     "noFloorPlanShort": "no floor plan",

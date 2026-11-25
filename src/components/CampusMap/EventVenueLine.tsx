@@ -10,6 +10,7 @@ import { openVenue } from '../../mobile/openVenue';
 import { logError } from '../../utils/reportError';
 import { venueMapUrl } from '../../utils/venueMapUrl';
 import type { MapEvent } from '../../types/events';
+import { EventFactChip } from './EventFactChip';
 
 const INDEX = roomsIndexJson as RoomIndexEntry[];
 
@@ -36,10 +37,13 @@ export function EventVenueLine({ event }: { event: MapEvent }) {
 
   return event.roomCode ? (
     <button
-      className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      className="flex items-center gap-2.5 text-sm font-medium text-primary hover:underline"
       onClick={() => focusRoom(event.roomCode!)}
     >
-      <MapPin size={13} className="shrink-0" /> {roomCodeToName(event.roomCode, INDEX)}
+      <EventFactChip active>
+        <MapPin size={14} />
+      </EventFactChip>
+      {roomCodeToName(event.roomCode, INDEX)}
     </button>
   ) : event.coord ? (
     // Off-campus venue: open it in a map app so the student can
@@ -74,9 +78,12 @@ export function EventVenueLine({ event }: { event: MapEvent }) {
           );
         });
       }}
-      className="flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      className="flex items-center gap-2.5 text-sm font-medium text-primary hover:underline"
     >
-      <MapPin size={13} className="shrink-0" /> {venueName ?? t('map.openInMaps')}
+      <EventFactChip active>
+        <MapPin size={14} />
+      </EventFactChip>
+      {venueName ?? t('map.openInMaps')}
       {/* Navigation, not ExternalLink. The ↗ is the app's mark for
           "this leaves for a web page", and it was promising exactly
           the wrong thing on the one control whose job is to start a
@@ -87,8 +94,11 @@ export function EventVenueLine({ event }: { event: MapEvent }) {
     // A name and nothing to open it with. Not reachable from the
     // composer (it will not publish without a coordinate) but rows
     // predating that rule exist.
-    <div className="flex items-center gap-1.5 text-sm text-base-content/70">
-      <MapPin size={13} className="shrink-0" /> {venueName}
+    <div className="flex items-center gap-2.5 text-sm text-base-content/70">
+      <EventFactChip>
+        <MapPin size={14} />
+      </EventFactChip>
+      {venueName}
     </div>
   ) : // Nothing for a place not announced yet (venueKind 'tba'): the card's
   // Instagram button is where it will be, and "Místo upřesní …" only said

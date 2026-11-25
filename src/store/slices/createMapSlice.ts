@@ -77,6 +77,8 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
   setMapTilt: (mapTilt) => set({ mapTilt }),
   mapLoadingBuilding: null,
   mapSearchQuery: '',
+  isoMapOpen: false,
+  setIsoMapOpen: (open) => set({ isoMapOpen: open }),
   mapSearchResults: [],
   mapFocusRequest: 0,
   mapEvents: [],
@@ -399,6 +401,9 @@ export const createMapSlice: AppSlice<MapSlice> = (set, get, api) => ({
     set({
       ...(opts?.keepBuilding ? {} : { activeBuildingId: null, activeFloorId: null }),
       mapSelection: { kind: 'event', event },
+      // The isometric map covers the detail card. An event with no coordinate does not
+      // bump mapFocusRequest, so the map cannot rely on that to step aside.
+      isoMapOpen: false,
       ...(fly
         ? { mapFocusRequest: get().mapFocusRequest + 1, mapFocusTarget: 'campus' as const }
         : {}),

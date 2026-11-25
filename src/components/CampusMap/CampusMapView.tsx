@@ -7,6 +7,8 @@ import { EventLayer } from './EventLayer';
 import { SocietyPinLayer } from './SocietyPinLayer';
 import { SportPlaceLayer } from './SportPlaceLayer';
 import { OsmTileAccessBanner } from './OsmTileAccessBanner';
+import { IsoMapButton } from './iso/IsoMapButton';
+import { IsoMapView } from './iso/IsoMapView';
 import { useAppStore } from '../../store/useAppStore';
 import { useMapDwell } from '../../hooks/useMapDwell';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -51,6 +53,9 @@ export function CampusMapView() {
           <OsmTileAccessBanner />
         </div>
       )}
+      {/* Prototype, off unless VITE_ISO_MAP_URL is set: the isometric map. */}
+      <IsoMapButton className="absolute bottom-36 right-3 z-[1000]" />
+      <IsoMapView />
       {placing && (
         <div className="absolute bottom-6 left-1/2 z-[1001] flex -translate-x-1/2 items-center gap-3 rounded-full bg-primary px-4 py-2 text-primary-content shadow-popover-heavy">
           <span className="text-sm font-semibold">{t('map.clickToPlace')}</span>

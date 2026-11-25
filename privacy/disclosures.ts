@@ -285,6 +285,23 @@ export const FLOWS: Flow[] = [
     ],
     stores: { apple: [], play: [], firefox: [], cws: [] },
   },
+  {
+    id: 'iso_map_tiles',
+    what: "The isometric campus map's pre-rendered picture tiles (prototype: off in every release until VITE_ISO_MAP_URL names a host), fetched as static image files from wherever reIS hosts them when the student opens that view. The request names a tile and nothing else; no identifier, no sign-in, nothing about the student.",
+    when: 'student-action',
+    identifier: 'none',
+    transport: 'direct',
+    files: ['src/components/CampusMap/iso/IsoMapView.tsx', 'src/data/map/isoMap.ts'],
+    calls: ['VITE_ISO_MAP_URL/<season>/<level>/<col>_<row>.webp'],
+    policyRows: [
+      [
+        'Isometric campus map tiles (only when that view is switched on)',
+        'you open the isometric map',
+        "which picture tile you are looking at, requested as a static image file; nothing about you. The host sees your device's IP address, as any web server does",
+      ],
+    ],
+    stores: { apple: [], play: [], firefox: [], cws: [] },
+  },
 ];
 
 /** Supabase calls that carry no student data flow, each with the reason. */

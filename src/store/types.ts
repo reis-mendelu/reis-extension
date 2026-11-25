@@ -629,6 +629,9 @@ export interface MapSlice {
   roomsByBuilding: Record<number, RoomsCollection>;
   mapLoadingBuilding: number | null;
   mapSearchQuery: string;
+  /** The isometric campus map (prototype, off unless VITE_ISO_MAP_URL is set) is open over the map. */
+  isoMapOpen: boolean;
+  setIsoMapOpen: (open: boolean) => void;
   mapSearchResults: MapSelection[];
   mapFocusRequest: number;
   setMapBuilding: (id: number) => void;

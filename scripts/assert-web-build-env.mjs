@@ -17,11 +17,14 @@
 // VITE_MAP3D is the 3D map's on-switch (src/data/map/buildingModels.ts). A production
 // build ignores ?map3d, so `VITE_MAP3D=1 npm run preview:real` is how a preview shows
 // the Q tilt. A flag, not a credential.
+// VITE_ISO_MAP_URL is where the isometric map's tiles are served from (src/data/map/isoMap.ts);
+// a URL, not a credential. Unset, the prototype is off.
 const ALLOWED_VITE_VARS = [
   'VITE_DEV_SOCIETY',
   'VITE_PREVIEW_BUILD',
   'VITE_PREVIEW_DATA',
   'VITE_MAP3D',
+  'VITE_ISO_MAP_URL',
 ];
 
 // Vercel injects its own build metadata under this prefix and there is no
