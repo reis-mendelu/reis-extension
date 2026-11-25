@@ -101,15 +101,22 @@ export function createStore(opts: StoreOptions = {}) {
      * True if kept. False if it was not stored: bigger than the budget, a name
      * that clashes with another file's folder, or forget() ran while it wrote.
      */
-    async write(rel: string, data: string | Uint8Array): Promise<boolean> {
+    async write(
+      rel: string,
+      data: string | Uint8Array,
+      opts: { after?: string | null } = {}
+    ): Promise<boolean> {
       const p = safeRelPath(rel);
       const buf = Buffer.from(data);
       // Noted at submit, not at its turn, so another store's forget() in between
-      // cancels it; not awaited, so the queue order is unchanged.
+      // cancels it; not awaited, so the queue order is unchanged. A caller that
+      // began earlier (a download) passes the token it took then: a forget() since
+      // that moment, here or in another process, cancels the write.
       const submitted = forgets;
-      const noted = readGeneration(fs, dir);
+      const noted = 'after' in opts ? Promise.resolve(opts.after ?? null) : readGeneration(fs, dir);
       return locked(async () => {
-        const g0 = forgets === submitted ? await noted : await readGeneration(fs, dir);
+        const g0 =
+          'after' in opts || forgets === submitted ? await noted : await readGeneration(fs, dir);
         if (persistent) {
           if (buf.length > maxBytes) return false;
           const result = await disk.write(p, buf, g0);
@@ -124,6 +131,9 @@ export function createStore(opts: StoreOptions = {}) {
         return true;
       });
     },
+
+    /** The folder's forget token now; hand it to write({ after }) to cancel the write if forget() runs first. */
+    generation: () => readGeneration(fs, dir),
 
     async read(rel: string): Promise<Buffer | undefined> {
       const p = safeRelPath(rel);
@@ -182,10 +192,14 @@ export function createStore(opts: StoreOptions = {}) {
     /**
      * Delete everything in the store folder (and memory). A write that began
      * before this, in this process or another, is cancelled and cannot land
-     * afterwards. Throws if something could not be deleted.
+     * afterwards. Returns what it removed, counted under the same lock as the
+     * delete; throws if something could not be deleted.
      */
-    forget(): Promise<void> {
+    forget(): Promise<{ files: number; bytes: number }> {
       return locked(async () => {
+        await syncMemory();
+        const held = toEntries(mem.overlay(toIndex(await scan(fs, dir, now()))));
+        const removed = { files: held.length, bytes: totalBytes(held) };
         forgets++;
         mem.clear();
         let bumpError: unknown;
@@ -206,6 +220,7 @@ export function createStore(opts: StoreOptions = {}) {
           await fs.rm(path.join(dir, name), { recursive: true, force: true });
         }
         if (bumpError && (bumpError as NodeJS.ErrnoException).code !== 'ENOTDIR') throw bumpError;
+        return removed;
       });
     },
   };

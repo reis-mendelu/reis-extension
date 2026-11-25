@@ -3,7 +3,8 @@
 // can open:
 //   subjects.json         the list mendelu_subjects returned
 //   listings/<CODE>.json  a subject's folder: each file's download link and modified date
-//   text/<hash>.json      one file's whole extracted text, with the link and date it was read at
+//   text/<hash>.json      one file's whole extracted text, with the link and date it was read at,
+//                         and the moment the read started
 //   profile.json          study programme, form, year and semester (nothing that says who the student is)
 // Saving never fails a tool: a folder that cannot be written is the store's
 // business (it falls back to memory), anything else is swallowed here.
@@ -34,18 +35,57 @@ const isObject = (v: unknown): v is Json => !!v && typeof v === 'object' && !Arr
 export const textPath = (url: string) =>
   `text/${createHash('sha256').update(url).digest('hex').slice(0, 32)}.json`;
 
-export function createMapPersist(store: Store, now: () => number = Date.now) {
+/** The moment a request began and the folder's forget token then (see store.write's `after`). */
+type Token = { gen: string | null; at: number } | null | undefined;
+const isToken = (t: unknown): t is NonNullable<Token> => isObject(t) && 'gen' in t && 'at' in t;
+
+/**
+ * IS's Modifikace is a date without a time, so a file replaced later the day it
+ * was read would look unchanged. A stored text is therefore trusted only when
+ * its read began on a later day than the date shown: any replacement after
+ * the read then carries a different date. Same day, or no usable date, means
+ * download again (the next read is saved under a later day and is trusted).
+ */
+function readAfterModified(stamp: string, readAt: unknown): boolean {
+  const m = /^modified\s+(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/.exec(stamp);
+  const read = new Date(String(readAt));
+  if (!m || Number.isNaN(read.getTime())) return false;
+  try {
+    const modified = `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`;
+    // IS dates are Czech dates, whatever the laptop's clock says.
+    return read.toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' }) > modified;
+  } catch {
+    return false;
+  }
+}
+
+export function createMapPersist(
+  store: Store,
+  {
+    now = Date.now,
+    // false in the plugin build: it hands documents over whole, so it must not serve
+    // the text the other build extracted, and it saves only text-native files.
+    extractsText = true,
+  }: { now?: () => number; extractsText?: boolean } = {}
+) {
   let lastProfile = '';
   let profileWrite: Promise<unknown> = Promise.resolve();
-  const put = async (path: string, body: Json) => {
+  const put = async (path: string, body: Json, token?: Token) => {
     try {
-      await store.write(path, JSON.stringify({ savedAt: new Date(now()).toISOString(), ...body }));
+      const at = isToken(token) ? token.at : now();
+      await store.write(
+        path,
+        JSON.stringify({ savedAt: new Date(at).toISOString(), ...body }),
+        isToken(token) ? { after: token.gen } : {}
+      );
     } catch {
       // an unusable name or a failing disk must not fail the tool that read the data
     }
   };
 
   const persist: Persist = {
+    begin: async () => ({ gen: await store.generation(), at: now() }),
+
     async load(tool, args, stamp) {
       // Only a file's text is served from here: every listing still goes to IS.
       if (tool !== READ || !stamp || typeof args.url !== 'string') return undefined;
@@ -53,30 +93,36 @@ export function createMapPersist(store: Store, now: () => number = Date.now) {
         const rec = JSON.parse((await store.readText(textPath(args.url))) ?? 'null') as unknown;
         // The date the listing shows now must be the one the text was read at.
         if (!isObject(rec) || rec.url !== args.url || rec.stamp !== stamp) return undefined;
+        if (!readAfterModified(stamp, rec.savedAt)) return undefined;
         const f = rec.file;
-        return isObject(f) && typeof f.text === 'string' && typeof f.kind === 'string'
-          ? f
-          : undefined;
+        if (!isObject(f) || typeof f.text !== 'string' || typeof f.kind !== 'string')
+          return undefined;
+        return extractsText || f.kind === 'text' ? f : undefined;
       } catch {
         return undefined;
       }
     },
 
-    async save(tool, args, value, stamp) {
-      if (tool === SUBJECTS) return put('subjects.json', { subjects: value });
+    async save(tool, args, value, stamp, token) {
+      if (tool === SUBJECTS) return put('subjects.json', { subjects: value }, token as Token);
       if (tool === LIST && typeof args.code === 'string') {
-        return put(`listings/${args.code}.json`, { code: args.code, files: value });
+        return put(`listings/${args.code}.json`, { code: args.code, files: value }, token as Token);
       }
       // The plugin build hands a document over whole (no text): its originals are step 5.
       if (tool === READ && typeof args.url === 'string' && isObject(value)) {
         if (typeof value.text !== 'string' || typeof value.kind !== 'string') return;
-        return put(textPath(args.url), { url: args.url, stamp: stamp || null, file: value });
+        if (!extractsText && value.kind !== 'text') return;
+        return put(
+          textPath(args.url),
+          { url: args.url, stamp: stamp || null, file: value },
+          token as Token
+        );
       }
     },
   };
 
   /** Called with what getUserParams already holds: it never asks IS anything. */
-  async function saveProfile(params: unknown): Promise<void> {
+  async function saveProfile(params: unknown, token?: Token): Promise<void> {
     if (!isObject(params)) return;
     const profile: Profile = {};
     for (const k of PROFILE_FIELDS) {
@@ -86,12 +132,17 @@ export function createMapPersist(store: Store, now: () => number = Date.now) {
     const body = JSON.stringify(profile);
     if (body === '{}' || body === lastProfile) return;
     lastProfile = body;
-    profileWrite = put('profile.json', profile);
+    profileWrite = put('profile.json', profile, token);
     await profileWrite;
   }
 
   /** Resolves once the profile write a tool started has finished, so a restart cannot lose it. */
   const settled = () => profileWrite;
 
-  return { persist, saveProfile, settled };
+  /** After forget: the next profile seen is saved again. */
+  const reset = () => {
+    lastProfile = '';
+  };
+
+  return { persist, saveProfile, settled, reset };
 }

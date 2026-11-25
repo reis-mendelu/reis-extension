@@ -9,6 +9,9 @@ import { clean, type DocumentMeta, type FileText } from './files';
 // pdfjs-dist 6.2.108. unpdf bundled its own pdfjs 6.1.200 (inside the
 // GHSA-hq66-cqwq-w95j range), and two pdfjs copies in one process collide.
 
+/** Whether this build extracts a document's text itself (the store may then serve and keep it). */
+export const EXTRACTS_TEXT = true;
+
 export const DOCUMENT_DESCRIPTION =
   'Downloads one file from the IS document server and returns its text (PDF, DOCX, PPTX, XLSX, ODT, plain text). Only accepts a downloadUrl from mendelu_subject_files. Read-only.';
 

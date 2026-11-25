@@ -56,7 +56,7 @@ const is = {
   subjects: 0,
   listings: 0,
   downloads: [] as string[],
-  modified: '24. 11. 2026',
+  modified: '24. 11. 2025',
   body: TEXT,
   /** Holds a download open until released. */
   hold: null as null | Promise<void>,
@@ -67,7 +67,7 @@ beforeEach(() => {
     subjects: 0,
     listings: 0,
     downloads: [],
-    modified: '24. 11. 2026',
+    modified: '24. 11. 2025',
     body: TEXT,
   });
   is.hold = null;
@@ -188,7 +188,7 @@ describe('what the tools read survives a restart', () => {
   it('downloads again when the listing shows another modified date', async () => {
     const { root, dir } = await tempDir();
     await ask(boot(dir));
-    is.modified = '25. 11. 2026';
+    is.modified = '25. 11. 2025';
     is.body = 'Nový termín: 19. 1. 2027.';
     const changed = await ask(boot(dir));
     expect(is.downloads).toHaveLength(2);
@@ -197,6 +197,18 @@ describe('what the tools read survives a restart', () => {
     const again = await ask(boot(dir)); // the new copy is what the store holds now
     expect(is.downloads).toHaveLength(2);
     expect(textOf(again)).toContain('19. 1. 2027');
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it('does not trust a date it cannot tell from an edit made later the same day', async () => {
+    const { root, dir } = await tempDir();
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' }).split('-');
+    is.modified = `${Number(today[2])}. ${Number(today[1])}. ${today[0]}`;
+    await ask(boot(dir)); // read on the day the file shows
+    is.body = 'Opraveno odpoledne.';
+    const again = await ask(boot(dir)); // same date, so only a download can tell
+    expect(is.downloads).toHaveLength(2);
+    expect(textOf(again)).toContain('Opraveno');
     await rm(root, { recursive: true, force: true });
   });
 
@@ -242,7 +254,7 @@ describe('what the tools read survives a restart', () => {
       expect(profile).not.toContain(secret);
     }
     const listing = JSON.parse(await readFile(join(dir, 'listings/EBC-PS.json'), 'utf8'));
-    expect(listing.files[0]).toMatchObject({ downloadUrl: DL, modified: '24. 11. 2026' });
+    expect(listing.files[0]).toMatchObject({ downloadUrl: DL, modified: '24. 11. 2025' });
     await rm(root, { recursive: true, force: true });
   });
 

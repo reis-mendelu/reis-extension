@@ -45,12 +45,15 @@ const MAX_BYTES = 64 * 1024 * 1024;
  * `save` gets what IS answered. Neither may throw into a tool.
  */
 export type Persist = {
+  /** Taken when a request starts, handed back to save(): a forget() in between cancels the save. */
+  begin(): Promise<unknown>;
   load(tool: string, args: Record<string, unknown>, stamp: string | undefined): Promise<unknown>;
   save(
     tool: string,
     args: Record<string, unknown>,
     value: unknown,
-    stamp: string | undefined
+    stamp: string | undefined,
+    token?: unknown
   ): Promise<void>;
 };
 
@@ -58,6 +61,14 @@ export type Persist = {
 type Entry = { value: unknown; at: number; bytes: number; stamp?: string };
 type Pending = { promise: Promise<unknown>; stamp?: string };
 type Listed = { downloadUrl?: unknown; date?: unknown; modified?: unknown };
+
+/**
+ * What a listing shows for a file. Says which column it came from: only IS's
+ * Modifikace changes when a teacher replaces a file, the document date does not
+ * (storeMap.ts trusts nothing else).
+ */
+const stampOf = (f: Listed) =>
+  f.modified ? `modified ${String(f.modified)}` : `date ${String(f.date ?? '')}`;
 
 function stable(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(stable);
@@ -119,7 +130,7 @@ export function createToolCache({
     if (!Array.isArray(files)) return;
     for (const f of files as Listed[]) {
       if (typeof f?.downloadUrl !== 'string') continue;
-      const stamp = String(f.modified ?? f.date ?? '');
+      const stamp = stampOf(f);
       fileStamps.set(f.downloadUrl, stamp);
       const key = keyOf(READ, { url: f.downloadUrl });
       if (entries.has(key) && entries.get(key)!.stamp !== stamp) drop(key);
@@ -154,6 +165,7 @@ export function createToolCache({
       };
       // fetch() starts at once when there is no second tier, as it always did.
       const fromFetch = () => fetch().then((value) => ({ value, stored: false }));
+      const token = persist?.begin().catch(() => null);
       const obtained = persist
         ? persist
             .load(tool, args, mine.stamp)
@@ -167,7 +179,7 @@ export function createToolCache({
         const current = inflight.get(key) === mine;
         if (current) keep(key, value, mine.stamp);
         if (current && !stored) {
-          await persist?.save(tool, args, value, mine.stamp).catch(() => {});
+          await persist?.save(tool, args, value, mine.stamp, await token).catch(() => {});
         }
         return value;
       });

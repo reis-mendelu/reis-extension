@@ -5,6 +5,8 @@ import { toolResult, toError } from './format';
 import { createToolCache, type ToolCache } from './cache';
 import { createMapPersist } from './storeMap';
 import { FORGET_TOOL, forgetEverything } from './forgetTool';
+// Aliased to ./documentHandover in the plugin build, like the import in files.ts.
+import { EXTRACTS_TEXT } from './documentText';
 import type { Store } from './store';
 
 const READ_ONLY = {
@@ -52,7 +54,8 @@ function withNotice<R extends { content: object[] }>(r: R, ctx: ToolCtx, store?:
   const lines = [
     ctx.updateNotice?.(),
     folder &&
-      `reIS could not save to its folder this session (${folder.reason}), so it is working from memory only.`,
+      // The code only (EACCES): a message can carry a path with the account name.
+      `reIS could not save to its folder this session (${/^[A-Z0-9_]+$/.test(folder.reason) ? folder.reason : 'unexpected error'}), so it is working from memory only.`,
   ].filter(Boolean);
   return lines.length
     ? ({ ...r, content: [...r.content, { type: 'text' as const, text: lines.join('\n') }] } as R)
@@ -65,10 +68,9 @@ function withNotice<R extends { content: object[] }>(r: R, ctx: ToolCtx, store?:
  * (tests) everything stays in this process's memory.
  */
 export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): void {
-  const map = store && createMapPersist(store);
+  const map = store && createMapPersist(store, { extractsText: EXTRACTS_TEXT });
   // The first tier lives as long as this server process does.
   const cache = createToolCache({ persist: map?.persist });
-  const toolCtx: ToolCtx = map ? { ...ctx, noteStudy: (p) => map.saveProfile(p) } : ctx;
   for (const t of TOOLS) {
     server.registerTool(
       t.name,
@@ -79,6 +81,12 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
         annotations: READ_ONLY,
       },
       async (args: Record<string, unknown>) => {
+        // The token is taken before the tool runs: a forget() after this moment, in
+        // any process, cancels what this call saves.
+        const token = await map?.persist.begin().catch(() => null);
+        const toolCtx: ToolCtx = map
+          ? { ...ctx, noteStudy: (p) => map.saveProfile(p, token as never) }
+          : ctx;
         const result = await runTool(t, args, toolCtx, cache);
         await map?.settled();
         return withNotice(result, ctx, store);
@@ -99,7 +107,10 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
       let result;
       try {
         result = toolResult(
-          await forgetEverything(store, () => cache.clear()),
+          await forgetEverything(store, () => {
+            cache.clear();
+            map?.reset();
+          }),
           args.response_format === 'json' ? 'json' : 'markdown'
         );
       } catch (e) {

@@ -106,7 +106,7 @@ describe('reserved names as a folder', () => {
       await expect(s.write(p, 'x')).rejects.toThrow(/path/i);
       await mkdir(h.dir, { recursive: true });
       await writeFile(join(h.dir, 'unrelated.txt'), '1');
-      await expect(s.forget()).resolves.toBeUndefined();
+      await expect(s.forget()).resolves.toMatchObject({ files: expect.any(Number) });
       await s.write('after.txt', 'ok');
       await s.forget();
       expect(await leftovers()).toEqual([]);

@@ -23,9 +23,9 @@ describe('forget', () => {
   });
 
   it('is fine when there is nothing to forget', async () => {
-    await expect(open().forget()).resolves.toBeUndefined();
+    await expect(open().forget()).resolves.toMatchObject({ files: 0 });
     await mkdir(h.dir, { recursive: true });
-    await expect(open().forget()).resolves.toBeUndefined();
+    await expect(open().forget()).resolves.toMatchObject({ files: 0 });
   });
 
   it('clears the memory fallback too', async () => {

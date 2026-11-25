@@ -1,3 +1,4 @@
+import { homedir } from 'node:os';
 import type { Store } from './store';
 
 // Named like the other tools (mendelu_) and in the words of the design record
@@ -13,22 +14,37 @@ const GB = 1024 ** 3;
 const MB = 1024 ** 2;
 const size = (b: number) => (b >= GB ? `${(b / GB).toFixed(1)} GB` : `${(b / MB).toFixed(1)} MB`);
 
-/** The numbers come from the files themselves, before and after, so the report is what really happened. */
+/** The student's own folder, without the account name in it: this text goes into their chat. */
+export const shown = (dir: string, home = homedir()) =>
+  dir.startsWith(home) ? `~${dir.slice(home.length)}` : dir;
+
+/**
+ * The numbers are counted by the store under the same lock as the delete, so
+ * they are what was really removed even with other tool calls running.
+ */
 export async function forgetEverything(store: Store, clearMemory: () => void) {
-  const before = await store.usage();
   clearMemory(); // first: a read in flight must not be kept or saved after this
-  await store.forget();
-  const left = await store.usage();
-  if (left.files > 0) {
-    throw new Error(
-      `Could not delete ${left.files} saved file(s) in ${store.dir}. Close any program that has them open and try again, or delete the folder yourself.`
-    );
+  let removed: { files: number; bytes: number };
+  try {
+    removed = await store.forget();
+  } catch (e) {
+    // A folder reIS could not write this session cannot be emptied by it either:
+    // say so instead of failing, because the memory side is done.
+    if (store.persistent)
+      throw new Error(
+        `Could not delete everything in ${shown(store.dir)}. Close any program that has files there open and try again, or delete the folder yourself.`
+      );
+    return {
+      forgotten: false,
+      folder: shown(store.dir),
+      note: `Memory is cleared, but reIS could not reach its folder this session (${(e as NodeJS.ErrnoException).code ?? 'unknown error'}), so anything saved there earlier is untouched. Delete the folder yourself.`,
+    };
   }
   return {
     forgotten: true,
-    folder: store.dir,
-    filesRemoved: before.files,
-    removed: size(before.bytes),
+    folder: shown(store.dir),
+    filesRemoved: removed.files,
+    removed: size(removed.bytes),
     note: store.persistent
       ? 'Deleted from this computer and from this session’s memory. Nothing was changed in IS Mendelu, and anything already shared in a Claude conversation stays there.'
       : 'reIS could not use its folder this session, so it only held things in memory; that is cleared. Nothing was changed in IS Mendelu.',
