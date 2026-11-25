@@ -369,5 +369,110 @@
         }
       ]
     }
-  ]
+  ],
+  "pizzeria": {
+    "address": "Zemědělská 1, Brno",
+    "hours": [
+      "Po-Čt 8:00 - 15:00 výdej pizzy 10:30 - 14:30",
+      "Pá 8:00 - 13:00 výdej pizzy 10:30 - 13:00"
+    ],
+    "pizzas": [
+      {
+        "name": "01. PIZZA POLLO",
+        "price": 86
+      },
+      {
+        "name": "02. PIZZA AMERICANA",
+        "price": 80
+      },
+      {
+        "name": "03. PIZZA VEGETARIÁN",
+        "price": 80
+      },
+      {
+        "name": "04. PIZZA ČTYŘI DRUHY SÝRŮ",
+        "price": 86
+      },
+      {
+        "name": "05. PIZZA HAWAI",
+        "price": 80
+      },
+      {
+        "name": "06. PIZZA ŽAMPIONOVÁ",
+        "price": 80
+      },
+      {
+        "name": "07. PIZZA MEXICANA",
+        "price": 80
+      },
+      {
+        "name": "08. PIZZA SALLAMI",
+        "price": 80
+      },
+      {
+        "name": "09. PIZZA SMETANOVO-SÝROVÁ",
+        "price": 86
+      },
+      {
+        "name": "10. PIZZA KAPSA",
+        "price": 80
+      },
+      {
+        "name": "11. PIZZA MENDELKA",
+        "price": 86
+      },
+      {
+        "name": "13. PIZZA ŠUNKOVÁ",
+        "price": 80
+      },
+      {
+        "name": "14. BZL POLLO",
+        "price": 99
+      },
+      {
+        "name": "15. BZL AMERICANA",
+        "price": 92
+      },
+      {
+        "name": "16. BZL VEGETARIÁN",
+        "price": 92
+      },
+      {
+        "name": "17. BZL ČTYŘI DRUHY SÝRŮ",
+        "price": 99
+      },
+      {
+        "name": "18. BZL HAWAI",
+        "price": 92
+      },
+      {
+        "name": "19. BZL ŽAMPIONOVÁ",
+        "price": 92
+      },
+      {
+        "name": "20. BZL MEXICANA",
+        "price": 92
+      },
+      {
+        "name": "21. BZL SALLAMI",
+        "price": 92
+      },
+      {
+        "name": "22. BZL SMETANOVO-SÝROVÁ",
+        "price": 99
+      },
+      {
+        "name": "23. BZL KAPSA",
+        "price": 92
+      },
+      {
+        "name": "24. BZL MENDELKA",
+        "price": 99
+      },
+      {
+        "name": "25. BZL ŠUNKOVÁ",
+        "price": 92
+      }
+    ]
+  }
 }

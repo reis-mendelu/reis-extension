@@ -6,6 +6,7 @@ import { useScreenSignal } from '../../hooks/useScreenSignal';
 import { menuForDay } from '../../utils/menuForDay';
 import { menuTabs } from '../../utils/menuTabs';
 import { VenueMenuTab } from '../Jidelnicek/VenueMenuTab';
+import { PizzeriaMenuTab } from '../Jidelnicek/PizzeriaMenuTab';
 
 /**
  * The extension's jídelníček for one day, under a weekly-header chef hat: the
@@ -31,6 +32,7 @@ export function MenuPopoverContent({
   const menuError = useAppStore((s) => s.menuError);
   const faculty = useAppStore((s) => s.userFaculty);
   const venuePins = useAppStore((s) => s.venuePins);
+  const pizzeria = useAppStore((s) => s.pizzeria);
   const focusSocietyPin = useAppStore((s) => s.focusSocietyPin);
   // By KEY, not position: S-klub and the faculty arrive asynchronously, and a
   // tab inserted before the picked one would otherwise take its place.
@@ -53,6 +55,7 @@ export function MenuPopoverContent({
         faculty,
         venuePins,
         dayIso,
+        pizzeria,
       });
 
   if (tabs.length === 0) {
@@ -90,7 +93,9 @@ export function MenuPopoverContent({
         </div>
       )}
 
-      {current.kind === 'venue' ? (
+      {current.kind === 'pizzeria' ? (
+        <PizzeriaMenuTab pizzeria={current.pizzeria} variant="popover" />
+      ) : current.kind === 'venue' ? (
         <VenueMenuTab
           pin={current.pin}
           venue={current.venue}

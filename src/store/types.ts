@@ -19,7 +19,7 @@ import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig, University } from '../types/erasmus';
 import type { BulletinPost } from '../types/bulletin';
-import type { OutletMenu } from '../types/menuTypes';
+import type { OutletMenu, PizzeriaMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
@@ -352,6 +352,8 @@ export interface UseThemeResult {
 
 export interface MenuSlice {
   menu: OutletMenu[] | null;
+  /** SKM's pizzeria, from the same page as `menu` and replaced with it. */
+  pizzeria: PizzeriaMenu | null;
   menuLoading: boolean;
   menuError: boolean;
   /** The language `menu` (or the request in flight) was fetched for. */
