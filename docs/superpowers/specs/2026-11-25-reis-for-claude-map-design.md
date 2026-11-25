@@ -78,6 +78,45 @@ and exams (3 of 15) change. A download link never changes when a file is replace
    builder's call (recommended: a generation marker that forget bumps first and that every write
    checks right before its rename).
 8. **Shared-laptop risk accepted:** one store per machine, not keyed to the IS login.
+9. **An upcoming-events ledger, kept by Claude, in the store** (added 2026-11-25 on Dominik's
+   words: he wants to know when the tests are coming, and those live mostly in course
+   documents, not in IS's exam list). One list of everything dated that needs the student to be
+   somewhere: tests, credit tests, project defences, resits, unregistration deadlines.
+   - **Claude writes it, reIS does not.** reIS has no model and extracts nothing; Claude reads the
+     harmonogram, conditions and brief files (through the overview and search) and saves each
+     event through a ledger tool. IS exam terms and assignment deadlines are added by reIS
+     itself, already exact.
+   - **Each entry carries**: date and time (or the window when the file only gives one), kind,
+     subject code, room, how long and how many points when stated, the rule that matters (minimum
+     points, no aids), the unregister deadline, the **source file and its modified date**, and a
+     flag **stated or inferred**. An inferred date says how it was inferred and tells the
+     student to confirm with the teacher. Modelled on the student's own University calendar, where
+     this is already kept by hand (title "Kind – Subject (CODE)", the description holding scope,
+     rule, source and the "ověř u cvičícího" note, reminders a day and an hour before).
+   - **Not only tests, and not only IS.** The student's own calendars show the real range: besides
+     tests, credit tests and defences, they save programme days with mandatory attendance (an
+     Erasmus+ blended intensive programme abroad, several days, some marked mandatory), a lecture
+     about choosing a specialisation, and university and society events they decided to go to
+     (a quiz night, a market day, an ISIC event). Many of these never appear in IS: they come from
+     a mail, a course page or a poster. So an entry has a **source kind** (IS, course file, mail,
+     calendar, the student told Claude) and the ledger tool takes any of them. reIS adds only
+     what its own IS tools see; everything else is Claude's, from whatever the student's Claude
+     can read. An entry also records **what depends on it** when stated (a programme that
+     needs a test passed first), because that raises how early it should be mentioned.
+   - **A replaced source file marks its entries "recheck"** (the diff in decision 5 already sees the
+     new modified date); entries are never silently kept past their source. A past event is
+     dropped after its day.
+   - **Reminders:** an exam, a test, a credit test or any event that needs the student to come
+     for its own reason (a project defence, an oral exam) is **mentioned at least a week ahead,
+     and again the day before**. reIS stays passive, so the mention comes from the overview (an
+     "upcoming" section, soonest first, with days left and a flag on events that need attendance)
+     and from the daily or weekly digest of step 6. A **weekly digest looks 14 days ahead**, so
+     even a weekly cadence reaches every event at least seven days out; a daily one flags
+     anything inside 14 days.
+   - **The email is a draft in the student's own mail**, written by their Claude through a
+     connector they already have, daily, weekly or on demand. reIS never sends mail.
+   - Optionally the student's Claude may also put an entry in their calendar in the same format
+     (reIS itself writes nowhere but the store). Forget removes the ledger with the rest.
 
 ## Approaches considered
 
@@ -131,6 +170,10 @@ answer "not retained" (needs resubmitting).
 2. After a restart, repeating a question asks IS only for the cheap listings.
 3. A new file in IS shows up in "what changed" the next day.
 4. Points appear in the overview without being asked for.
+5. Every test, credit test and defence the course files and IS name for this semester is in the
+   ledger, checked against the student's own University calendar (acceptance scenario S5).
+6. Each of them is mentioned at least a week before it happens, in the weekly digest as well as
+   the daily one (acceptance scenario S6).
 
 ## Builder's calls (not yet confirmed by Dominik)
 
@@ -165,12 +208,14 @@ start-up path changed). These are headless tools, so there is no UI tree and no 
 | 2   | Persist what is already read: subjects, file listings (link plus modified date), full untruncated file text and the study-form profile go into the store; the **forget everything** tool; every "nothing is written to disk" text rewritten in the same PR. | In review |
 | 3   | The overview tool: refreshes the cheap listings on first call, diffs them against the store, and returns the map, the profile, points, deadlines and "what changed", with a tool description that tells Claude to call it first. | Not started |
 | 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | Not started |
+| 4b  | The upcoming-events ledger (decision 9): a ledger tool Claude writes dated events to, an "upcoming" section in the overview (soonest first, days left, attendance flag, stated or inferred), IS exam terms and assignment deadlines merged in by reIS, recheck marks when a source file is replaced, forget covers it. | Not started |
 | 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run of counts and types first), return their paths in the overview.                                       | Not started |
-| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz.                              | Not started |
+| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz. The prompt offers daily, weekly and on-demand digests as an email draft, with the one-week-ahead rule of decision 9 and a 14-day look for weekly. | Not started |
 | 7   | Release: version bump, both builds, `mcp-v*` tag; ships only once the corrected directory-listing answer is published, or Dominik has said in writing that it ships with the stale "not retained" answer.                                                                                                                                                      | Not started |
 
 Merge order: 1, 2, then 3 and 4 (either order, they share `mcp/tools.ts` and `mcp/register.ts`, so the
-second rebases), 5, 6, 7.
+second rebases), 4b, 5, 6, 7. Step 4b needs 3 (the overview carries its section) and 4 (Claude finds
+the dates with search).
 
 **Parked for Dominik** (hard lines, asked once, never block steps 1 to 6): resubmitting the
 directory listing's data-handling answer ("not retained"), the release in step 7, and the Windows

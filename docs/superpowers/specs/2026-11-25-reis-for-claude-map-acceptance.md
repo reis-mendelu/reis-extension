@@ -58,6 +58,32 @@ Pass: the answer contains the student's Záznamník points for every subject tha
 the points tool or, once step 3 exists, from the overview), the open assignments and the exam terms for the week, all without the
 student naming points. Record the call count.
 
+### S5. The ledger matches the student's own calendar
+
+Message: "co mě čeká do konce semestru? testy, zápočty, obhajoby."
+
+Answer key: the student's own University calendar and the school-related part of their Social
+Events calendar (programme days with mandatory attendance, a specialisation lecture, university
+and society events they chose to attend; personal events are never part of the key) for this semester (Google Calendar, read once by
+the hub; **only subject code, kind and date go into this repo**, never points, names or marks). On
+2026-11-25 the University calendar held eight school events, two of them already past: tests,
+credit tests, a project defence and a written test in four courses, taken from the harmonogram,
+the conditions files and IS.
+
+Pass: every event in the key that is still ahead appears in the answer with its date (or window,
+marked inferred, with the source file named); nothing in the answer is absent from both the key
+and a source file; the answer does not call an inferred date certain. Record the call count
+(target after step 4b: overview plus at most two reads). Runs after step 4b.
+
+### S6. Mentioned a week ahead, on every cadence
+
+Not runnable by a persona (it needs a fixed clock): this is an integration test in step 6 with a
+ledger holding one test, one defence and one past event.
+Pass: with the clock set 14, 7, 3 and 1 days before each event, the weekly digest first lists an
+event no later than 14 days out, the daily digest no later than 14 days out and again on the day
+before, an event that needs attendance carries the flag, a past event is gone, and an event whose
+source file was replaced is listed as "recheck", not dropped.
+
 ## Which step moves which scenario
 
 | Scenario | Today                                                        | Moved by         |
@@ -66,6 +92,8 @@ student naming points. Record the call count.
 | S2       | fails: nothing is kept past the process                      | step 2           |
 | S3       | fails: no overview and no change record exist                | step 3           |
 | S4       | passes, 10 calls (one points call per subject)               | step 3           |
+| S5       | not run yet: no ledger exists                                | steps 4, 4b      |
+| S6       | fails: nothing reminds, the server is passive                | steps 4b, 6      |
 
 S1 and S4 are regression checks with a call-count target until a harder persona reproduces the
 real failure. S2 and S3 are the ones the build must turn from red to green.
