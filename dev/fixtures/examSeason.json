@@ -82,6 +82,27 @@
               "sectionForm": "písemná a ústní",
               "sectionFormEn": "written and oral",
               "durationMinutes": 45
+            },
+            {
+              "id": "fx-mt-zk-t4",
+              "dayOffset": 4,
+              "time": "14:00",
+              "room": "Q01",
+              "teacher": "doc. Ing. Jan Novák, Ph.D.",
+              "capacity": {
+                "occupied": 59,
+                "total": 60,
+                "raw": "59/60(1)",
+                "reserve": 1
+              },
+              "full": true,
+              "canRegisterNow": false,
+              "regEndDayOffset": 3,
+              "watchdogUrl": "https://is.mendelu.cz/auth/student/terminy_seznam.pl?termin=fx-mt-zk-t4;aktivace=1",
+              "attemptTypes": ["regular"],
+              "sectionForm": "písemná",
+              "sectionFormEn": "written",
+              "durationMinutes": 45
             }
           ]
         }

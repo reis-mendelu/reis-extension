@@ -5,6 +5,7 @@ import type { OpenExam } from '../../../../utils/mobile/examRows';
 import type { ExamSection } from '../../../../types/exams';
 import { ExamRowCard, type ExamAccent } from './ExamRowCard';
 import { TermRow } from './TermRow';
+import { bookableFirst } from '../../../ExamPanel/utils';
 import { AttemptBadgeLegend } from './AttemptBadgeLegend';
 import { SectionMore } from './SectionMore';
 
@@ -58,7 +59,7 @@ export function OpenCard({
       {/* One "Více" for the card; the rows open nothing and say inline until
           when they take registrations, as under a registered card. */}
       <SectionMore section={row.section} />
-      {row.section.terms.map((term) => (
+      {bookableFirst(row.section.terms).map((term) => (
         <TermRow
           key={term.id}
           term={term}

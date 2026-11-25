@@ -137,7 +137,7 @@ describe('availableTermsParser — capacity formats', () => {
     expect(terms).toHaveLength(1);
     // total must be 12, not 0 (the bug: Number('12(8)') === NaN → was clamped to 0)
     // safe: length asserted above
-    expect(terms[0]!.capacity).toEqual({ occupied: 0, total: 12, raw: '0/12(8)' });
+    expect(terms[0]!.capacity).toEqual({ occupied: 0, total: 12, raw: '0/12(8)', reserve: 8 });
     expect(terms[0]!.full).toBe(false);
     expect(reportError).not.toHaveBeenCalled();
   });
@@ -147,7 +147,7 @@ describe('availableTermsParser — capacity formats', () => {
     const terms = result.flatMap((s) => s.sections.flatMap((sec) => sec.terms));
     expect(terms).toHaveLength(1);
     // safe: length asserted above
-    expect(terms[0]!.capacity).toEqual({ occupied: 12, total: 12, raw: '12/12(3)' });
+    expect(terms[0]!.capacity).toEqual({ occupied: 12, total: 12, raw: '12/12(3)', reserve: 3 });
     expect(terms[0]!.full).toBe(true);
   });
 });
