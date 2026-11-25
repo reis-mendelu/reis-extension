@@ -59,18 +59,63 @@ export function readAfterModified(stamp: string, readAt: unknown): boolean {
   }
 }
 
+/** What a kept text's decision needs, without its body. */
+type TextMeta = { url: unknown; stamp: unknown; savedAt: unknown; kind: unknown };
+
 /**
  * The one rule for a kept text, shared by load() and the overview's "textSaved" hint so they
  * cannot disagree: the record is for this link, was read against the date the listing shows
- * now, was read on a later day than that date, and has the shape (and, in the plugin build,
- * the kind) this build serves. Returns the file to hand back, or undefined.
+ * now, was read on a later day than that date, and (in the plugin build) is plain text.
  */
+function isKept(m: TextMeta, url: string, stamp: string, extractsText: boolean): boolean {
+  if (m.url !== url || m.stamp !== stamp) return false;
+  if (!readAfterModified(stamp, m.savedAt)) return false;
+  return extractsText || m.kind === 'text';
+}
+
+/** A whole record: the rule above plus the shape of the file it holds. Returns the file to hand back. */
 export function keptText(rec: unknown, url: string, stamp: string, extractsText: boolean) {
-  if (!isObject(rec) || rec.url !== url || rec.stamp !== stamp) return undefined;
-  if (!readAfterModified(stamp, rec.savedAt)) return undefined;
+  if (!isObject(rec)) return undefined;
   const f = rec.file;
   if (!isObject(f) || typeof f.text !== 'string' || typeof f.kind !== 'string') return undefined;
-  return extractsText || f.kind === 'text' ? f : undefined;
+  return isKept(
+    { url: rec.url, stamp: rec.stamp, savedAt: rec.savedAt, kind: f.kind },
+    url,
+    stamp,
+    extractsText
+  )
+    ? f
+    : undefined;
+}
+
+/**
+ * Whether the record at `path` would be served, decided from its first bytes only. A record
+ * is written as {savedAt, url, stamp, kind, file} in that order (see save), so the header
+ * ends before the document's text starts. A record that does not match (older, damaged, a
+ * very long link) is not saved: the hint errs on the side of "download again".
+ */
+const HEAD = 2048;
+const STR = String.raw`"(?:[^"\\]|\\.)*"`;
+const HEADER = new RegExp(
+  String.raw`^\{"savedAt":("[^"]*"),"url":(${STR}),"stamp":(${STR}|null)(?:,"kind":("[^"]*"))?`
+);
+export async function textIsKept(
+  store: Pick<Store, 'readHead'>,
+  path: string,
+  url: string,
+  stamp: string,
+  extractsText: boolean
+): Promise<boolean> {
+  const m = HEADER.exec((await store.readHead(path, HEAD)) ?? '');
+  if (!m) return false;
+  try {
+    const [savedAt, u, st, kind] = m
+      .slice(1)
+      .map((x) => (x ? (JSON.parse(x) as unknown) : undefined));
+    return isKept({ url: u, stamp: st, savedAt, kind }, url, stamp, extractsText);
+  } catch {
+    return false;
+  }
 }
 
 export function createMapPersist(
@@ -134,7 +179,8 @@ export function createMapPersist(
         if (!extractsText && value.kind !== 'text') return;
         await put(
           textPath(args.url),
-          { url: args.url, stamp: stamp || null, file: value },
+          // The order is the header's: textIsKept() reads these four from the first bytes.
+          { url: args.url, stamp: stamp || null, kind: value.kind, file: value },
           token as Token
         );
       }

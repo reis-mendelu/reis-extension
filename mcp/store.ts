@@ -148,6 +148,30 @@ export function createStore(opts: StoreOptions = {}) {
       }
     },
 
+    /**
+     * Only the first `bytes` of a file, as text, so a caller that needs a record's header
+     * does not read a whole document. The cut may end inside a multi-byte character.
+     */
+    async readHead(rel: string, bytes: number): Promise<string | undefined> {
+      const p = safeRelPath(rel);
+      await syncMemory();
+      const held = mem.get(p);
+      if (held) return held.subarray(0, bytes).toString('utf8');
+      if (mem.isShadowed(p)) return undefined;
+      try {
+        const handle = await fs.open(insideDir(dir, p), 'r');
+        try {
+          const buf = Buffer.alloc(bytes);
+          const { bytesRead } = await handle.read(buf, 0, bytes, 0);
+          return buf.subarray(0, bytesRead).toString('utf8');
+        } finally {
+          await handle.close();
+        }
+      } catch {
+        return undefined;
+      }
+    },
+
     async readText(rel: string): Promise<string | undefined> {
       return (await this.read(rel))?.toString('utf8');
     },

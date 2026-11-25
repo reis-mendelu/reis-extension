@@ -8,7 +8,7 @@ import { gather, type Gathered, type Run } from './overviewGather';
 import { diffWorld, holdBack } from './overviewDiff';
 import { parseSnapshot, snapshotOf } from './overviewRecord';
 import { fitOverview } from './overviewRender';
-import { keptText, textPath } from './storeMap';
+import { textIsKept, textPath } from './storeMap';
 
 // Why "overview": the failure it fixes is Claude not knowing where to look. The
 // description is the only thing a model that has never seen reIS reads before it
@@ -123,13 +123,17 @@ async function savedFiles(d: OverviewDeps, listings: Gathered['listings']) {
   for (const f of Object.values(listings).flatMap((l) => l ?? [])) {
     const path = textPath(f.downloadUrl);
     if (!f.modified || !stored.has(path)) continue;
-    try {
-      const rec = JSON.parse((await d.store.readText(path)) ?? 'null') as unknown;
-      if (keptText(rec, f.downloadUrl, `modified ${f.modified}`, d.extractsText !== false)) {
-        kept.add(f.downloadUrl);
-      }
-    } catch {
-      // unreadable: not saved
+    // From the record's first bytes only: the text of a document can be megabytes.
+    if (
+      await textIsKept(
+        d.store,
+        path,
+        f.downloadUrl,
+        `modified ${f.modified}`,
+        d.extractsText !== false
+      )
+    ) {
+      kept.add(f.downloadUrl);
     }
   }
   return (f: { downloadUrl: string }) => kept.has(f.downloadUrl);

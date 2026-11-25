@@ -114,6 +114,18 @@ describe('what the student sees of a file', () => {
     await done(root);
   });
 
+  it('decides textSaved from the record header: an overview with nothing changed reads no document body', async () => {
+    const { root, dir } = await tempDir();
+    const first = boot(dir);
+    await first.call(O);
+    await first.call('mendelu_read_file', { url: link(2) });
+    const later = boot(dir);
+    const read = vi.spyOn(later.store, 'read');
+    expect(textOf(await later.call(O))).toMatch(/harmonogram\.pdf \| .*\| yes \|/);
+    expect(read.mock.calls.filter(([p]) => String(p).startsWith('text/'))).toEqual([]);
+    await done(root);
+  });
+
   it('is an error, not a map, while there is no login', async () => {
     const { root, dir } = await tempDir();
     const r: Result = await boot(dir, { unavailable: 'No login.' }).call(O);
