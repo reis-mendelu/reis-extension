@@ -50,7 +50,7 @@ Saved, as plain files you can open:
 - each subject's file list: file names, dates and download links;
 - the **whole text** of every file Claude reads (the answer Claude sees is cut at 25,000 characters; the saved copy is not);
 - your study programme, form, year and semester;
-- a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates): it lets the next overview tell you only what is new, and holds no grade or points value.
+- a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates): it lets the next overview tell you only what is new, and your points are not saved in readable form, only a fingerprint.
 
 Never saved: your password or IS's sign-in cookie. The study profile holds no name, student number or e-mail, but file names and the text of files are kept exactly as they are, so anything written in them is kept too.
 

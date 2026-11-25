@@ -102,6 +102,7 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
               run: (tool, a, fn) => cache.run(tool, a, fn, ticket),
               token: ticket.token,
               settled: map.settled,
+              extractsText: EXTRACTS_TEXT,
               format,
             }),
             format

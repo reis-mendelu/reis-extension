@@ -180,5 +180,6 @@ export function renderOverview(input: RenderInput) {
     expanded.add(code);
     if (!fits(whole)) expanded.delete(code);
   }
-  return fits(whole) ?? build(input, (_, n) => n <= 0, marks);
+  // Nothing fits even with every list cut: keep only the files that changed.
+  return fits(whole) ?? build({ ...input, saved: () => false }, (_, n) => n <= 0, marks);
 }

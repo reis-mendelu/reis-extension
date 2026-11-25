@@ -113,8 +113,8 @@ describe('changeLines', () => {
     );
     const lines = changeLines(changes);
     expect(lines).toEqual([
-      'Points changed in A-1: PH / T1',
-      '50 new files in A-1 (marked in the files of A-1 below)',
+      '50 new files in A-1 (see the map below)',
+      '1 new or changed points rows in A-1 (see the map below)',
     ]);
   });
 });

@@ -35,6 +35,13 @@ export type ExamRow = {
 export function pointRows(value: unknown): PointRow[] {
   const v = isObject(value) ? value : {};
   const rows: PointRow[] = [];
+  const seen = new Map<string, number>();
+  // Two rows can share a label: the second is told apart by its place, so each keeps its own fingerprint.
+  const unique = (key: string) => {
+    const n = (seen.get(key) ?? 0) + 1;
+    seen.set(key, n);
+    return n > 1 ? `${key} #${n}` : key;
+  };
   for (const section of list(v.continuousAssessment)) {
     for (const arch of list(section.arches)) {
       if (arch.empty === true) continue;
@@ -42,13 +49,16 @@ export function pointRows(value: unknown): PointRow[] {
       const values = Array.isArray(arch.values) ? arch.values.map(str) : [];
       const cells = values.map((x, i) => (columns[i] ? `${columns[i]}=${x}` : x)).filter(Boolean);
       if (!cells.length) continue;
-      rows.push({ key: `${str(section.label)} / ${str(arch.name)}`, text: cells.join(', ') });
+      rows.push({
+        key: unique(`${str(section.label)} / ${str(arch.name)}`),
+        text: cells.join(', '),
+      });
     }
   }
   for (const t of list(v.tests)) {
     const when = str(t.submittedAt);
     rows.push({
-      key: `test / ${str(t.name)} / ${when}`,
+      key: unique(`test / ${str(t.name)} / ${when}`),
       text: `${str(t.name)}: ${str(t.score)}/${str(t.maxScore)}${when ? ` (${when})` : ''}`,
     });
   }

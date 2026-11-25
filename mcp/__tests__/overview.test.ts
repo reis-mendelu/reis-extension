@@ -172,6 +172,69 @@ describe('a part IS did not answer', () => {
   });
 });
 
+describe('an answer that is not one', () => {
+  it('no subjects where the record has some is an error, and the record is left alone', async () => {
+    const { root, dir } = await tempDir();
+    await ask(dir);
+    world.subjects = [];
+    const r: Result = await boot(dir).call(O);
+    expect(r.isError).toBe(true);
+    world.subjects = ['EBC-PS', 'EBC-PE'];
+    const t = await ask(dir);
+    expect(changed(t)).toEqual([]);
+    expect(t).toContain('Nothing changed');
+    await done(root);
+  });
+
+  it('no points where the record has some keeps the record, and says so', async () => {
+    const { root, dir } = await tempDir();
+    await ask(dir);
+    world.points['EBC-PS'] = [];
+    const t = await ask(dir);
+    expect(t).toContain('points of EBC-PS: IS returned none this time');
+    world.points['EBC-PS'] = [{ name: 'Test 1', value: '12' }];
+    expect(changed(await ask(dir))).toEqual([]);
+    await done(root);
+  });
+
+  it('two points rows with one label do not read as changed on every call', async () => {
+    const { root, dir } = await tempDir();
+    world.points['EBC-PS'] = [
+      { name: 'Test', value: '1' },
+      { name: 'Test', value: '2' },
+    ];
+    await ask(dir);
+    expect(changed(await ask(dir))).toEqual([]);
+    await done(root);
+  });
+
+  it('a new exam period with hundreds of terms is summed up, never cut off', async () => {
+    const { root, dir } = await tempDir();
+    await ask(dir);
+    world.terms = Array.from({ length: 300 }, (_, i) => ({
+      id: `n${i}`,
+      date: '12.01.2027',
+      time: '09:00',
+    }));
+    const t = textOf(await boot(dir).call(O));
+    expect(t).toContain('300 new exam terms in EBC-PS');
+    expect(t).not.toContain('[truncated');
+    await done(root);
+  });
+
+  it('two overviews at once report a change once between them', async () => {
+    const { root, dir } = await tempDir();
+    const s = boot(dir);
+    await s.call(O);
+    world.files['EBC-PE']!.push({ id: 3, file: 'podminky.pdf', modified: '2. 12. 2026' });
+    // a new process: this one's tool cache still holds the listing it read a moment ago
+    const later = boot(dir);
+    const both = await Promise.all([later.call(O), later.call(O)]);
+    expect(both.flatMap((r) => changed(textOf(r)))).toHaveLength(1);
+    await done(root);
+  });
+});
+
 describe('forget', () => {
   it('removes the record, so the next overview is a first one again', async () => {
     const { root, dir } = await tempDir();

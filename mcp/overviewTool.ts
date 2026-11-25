@@ -38,21 +38,44 @@ export type OverviewDeps = {
   settled: () => Promise<unknown>;
   format: 'markdown' | 'json';
   now?: Date;
+  /** False in the plugin build: only plain-text files have their text kept there. */
+  extractsText?: boolean;
 };
 
-export async function runOverview(d: OverviewDeps) {
+// One overview at a time per store in this process: two parallel calls (subagents) would
+// both read the same record and report the same change twice.
+const queues = new WeakMap<Store, Promise<unknown>>();
+
+export function runOverview(d: OverviewDeps) {
+  const prior = queues.get(d.store) ?? Promise.resolve();
+  const run = prior.then(
+    () => overview(d),
+    () => overview(d)
+  );
+  queues.set(
+    d.store,
+    run.catch(() => {})
+  );
+  return run;
+}
+
+async function overview(d: OverviewDeps) {
   const prev = parseSnapshot(await d.store.readText(RECORD));
   const g = await gather(d.run, d.ctx, d.now ?? new Date());
+  // An empty answer where the record has subjects is IS not answering properly (a login
+  // page, a changed layout), not a student who dropped everything: say so, record nothing.
+  if (!g.subjects.length && prev && Object.keys(prev.subjects).length) {
+    throw new Error('IS Mendelu returned no subjects this time. Try again in a minute.');
+  }
+  for (const [code, rows] of Object.entries(g.world.points)) {
+    if (rows && !rows.length && Object.keys(prev?.points[code] ?? {}).length) {
+      delete g.world.points[code];
+      g.problems.push(
+        `points of ${code}: IS returned none this time, so the earlier record is kept`
+      );
+    }
+  }
   const changes = prev ? diffWorld(prev, g.world) : [];
-  // Written only once the look at IS has succeeded, and only if no forget() ran since
-  // the call began (the same token every other save of this call carries).
-  await d.store
-    .write(
-      RECORD,
-      JSON.stringify(snapshotOf(g.world, prev)),
-      isToken(d.token) ? { after: d.token.gen } : {}
-    )
-    .catch(() => false);
   await d.settled();
 
   let profile: Record<string, unknown> | null = null;
@@ -62,16 +85,59 @@ export async function runOverview(d: OverviewDeps) {
   } catch {
     profile = null;
   }
-  // The same rule as storeMap's load(): a text is good for a file whose Modifikace is
-  // earlier than the day it was read.
+  const saved = await savedFiles(d);
+  const out = renderOverview({
+    g,
+    first: !prev,
+    changes,
+    profile,
+    saved,
+    format: d.format,
+    now: d.now,
+  });
+  // Recorded only after the answer exists, so a failure in between reports the changes
+  // again instead of losing them; and only if no forget() ran since the call began (the
+  // token every other save of this call carries). Built on the record as it is now, so a
+  // part this call could not read does not undo what another process reported meanwhile.
+  const latest = parseSnapshot(await d.store.readText(RECORD)) ?? prev;
+  await d.store
+    .write(
+      RECORD,
+      JSON.stringify(snapshotOf(g.world, latest)),
+      isToken(d.token) ? { after: d.token.gen } : {}
+    )
+    .catch(() => false);
+  return out;
+}
+
+/**
+ * The same rule as storeMap's load(): a text is good for a file whose Modifikace is
+ * earlier than the day it was read. The plugin build keeps only plain text.
+ */
+async function savedFiles(d: OverviewDeps) {
   const readAt = new Map((await d.store.list()).map((e) => [e.path, e.at]));
-  const saved = (f: { downloadUrl: string; modified?: string }) => {
-    const at = readAt.get(textPath(f.downloadUrl));
+  const plain = new Set<string>();
+  if (d.extractsText === false) {
+    for (const path of readAt.keys()) {
+      if (!path.startsWith('text/')) continue;
+      try {
+        const rec = JSON.parse((await d.store.readText(path)) ?? 'null') as {
+          file?: { kind?: unknown };
+        } | null;
+        if (rec?.file?.kind === 'text') plain.add(path);
+      } catch {
+        // unreadable: not saved
+      }
+    }
+  }
+  return (f: { downloadUrl: string; modified?: string }) => {
+    const path = textPath(f.downloadUrl);
+    const at = readAt.get(path);
+    if (d.extractsText === false && !plain.has(path)) return false;
     return (
       !!at &&
       !!f.modified &&
       readAfterModified(`modified ${f.modified}`, new Date(at).toISOString())
     );
   };
-  return renderOverview({ g, first: !prev, changes, profile, saved, format: d.format, now: d.now });
 }

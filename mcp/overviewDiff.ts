@@ -126,30 +126,33 @@ function boxChanges(before: NonNullable<Snapshot['boxes']>, boxes: BoxRow[]): Ch
 }
 
 /**
- * The lines to show. Past `max` the file changes are summed up per subject (their
- * names are in the map with their dates), so nothing is cut and nothing is lost.
+ * The lines to show. Past `max` everything but subjects is summed up per kind and
+ * subject (the details are in the map below), so the list stays short, nothing is cut
+ * and nothing is lost: changes are reported only once.
  */
 export function changeLines(changes: Change[], max = 40): string[] {
   if (changes.length <= max) return changes.map((c) => c.text);
   const lines: string[] = [];
-  const sums = new Map<string, number>();
+  const sums = new Map<string, { n: number; label: string }>();
+  const words: Record<string, string> = {
+    'file|new': 'new files',
+    'file|replaced': 'replaced files',
+    'file|gone': 'files gone from IS',
+    points: 'new or changed points rows',
+    box: 'new or changed assignment boxes',
+    exam: 'new exam terms',
+  };
   for (const c of changes) {
-    if (c.kind !== 'file') lines.push(c.text);
-    else {
-      const k = `${c.what}|${c.code}`;
-      sums.set(k, (sums.get(k) ?? 0) + 1);
+    if (c.kind === 'subject') {
+      lines.push(c.text);
+      continue;
     }
+    const w = c.kind === 'file' ? `file|${c.what}` : c.kind;
+    const k = `${w}|${c.code}`;
+    const cur = sums.get(k) ?? { n: 0, label: `${words[w]} in ${c.code}` };
+    cur.n++;
+    sums.set(k, cur);
   }
-  const word = {
-    new: 'new files',
-    replaced: 'replaced files',
-    gone: 'files gone from IS',
-  } as const;
-  for (const [k, n] of sums) {
-    const [what, code] = k.split('|') as [keyof typeof word, string];
-    lines.push(
-      `${n} ${word[what]} in ${code}${what === 'gone' ? '' : ` (marked in the files of ${code} below)`}`
-    );
-  }
+  for (const { n, label } of sums.values()) lines.push(`${n} ${label} (see the map below)`);
   return lines;
 }
