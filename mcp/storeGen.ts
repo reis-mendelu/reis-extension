@@ -25,8 +25,10 @@ async function markerIsLive(fs: StoreFs, abs: string, now: () => number): Promis
   try {
     const age = now() - (await fs.stat(abs)).mtimeMs;
     return Math.abs(age) <= FORGET_STALE_MS;
-  } catch {
-    return false; // gone between the listing and now: that forget finished
+  } catch (e) {
+    // Gone between the listing and now means that forget finished; any other
+    // failure (a Windows delete-pending EPERM) cannot prove it, so it counts as live.
+    return (e as NodeJS.ErrnoException).code !== 'ENOENT';
   }
 }
 
@@ -35,8 +37,12 @@ export async function forgetRunning(fs: StoreFs, dir: string, now: () => number)
   let names: string[];
   try {
     names = await fs.readdir(dir);
-  } catch {
-    return false; // no folder: nothing to delete. An unreadable one cannot be written either.
+  } catch (e) {
+    // No folder, or one we may not read (it cannot be used at all, so the store is
+    // going memory-only): no forget to wait for. Anything else (EMFILE under load)
+    // cannot prove there is none.
+    const code = (e as NodeJS.ErrnoException).code;
+    return code !== 'ENOENT' && code !== 'ENOTDIR' && code !== 'EACCES';
   }
   for (const name of names)
     if (name.startsWith(FORGET_PREFIX) && (await markerIsLive(fs, path.join(dir, name), now)))
@@ -81,12 +87,28 @@ export async function beginForget(
   now: () => number
 ): Promise<ForgetMarker> {
   const file = path.join(dir, `${FORGET_PREFIX}${process.pid}-${randomBytes(6).toString('hex')}`);
-  await atomicWrite(fs, file, Buffer.from(String(process.pid)), now());
+  const body = Buffer.from(String(process.pid));
+  await atomicWrite(fs, file, body, now());
+  let ended = false;
   return {
-    /** Prove this forget() is alive; a failure is not worth stopping the delete for. */
-    beat: () => fs.utimes(file, new Date(now()), new Date(now())).catch(() => {}),
+    /**
+     * Prove this forget() is alive. If another forget swept the marker (a long
+     * pause made it look abandoned) put it back; any other failure is not worth
+     * stopping the delete for.
+     */
+    beat: async () => {
+      try {
+        await fs.utimes(file, new Date(now()), new Date(now()));
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code === 'ENOENT' && !ended)
+          await atomicWrite(fs, file, body, now()).catch(() => {});
+      }
+    },
     /** The deletion is over (or gave up, and said so): readers may publish again. */
-    end: () => fs.rm(file, { force: true }).catch(() => {}),
+    end: async () => {
+      ended = true;
+      await fs.rm(file, { force: true }).catch(() => {});
+    },
   };
 }
 

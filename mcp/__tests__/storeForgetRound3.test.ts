@@ -250,3 +250,125 @@ describe("the marker is the store's own file", () => {
     expect(await s.usage()).toEqual({ files: 1, bytes: 1 });
   });
 });
+
+describe('review of the marker itself', () => {
+  const failing = (code: string, when: (p: string) => boolean, times = Infinity): StoreFs => {
+    let n = 0;
+    return {
+      ...realFs,
+      rename: (async (a: string, b: string) => {
+        if (when(String(b)) && n++ < times) throw Object.assign(new Error(code), { code });
+        return realFs.rename(a, b);
+      }) as StoreFs['rename'],
+    } as StoreFs;
+  };
+
+  it('a forget that cannot raise its marker deletes nothing and says so', async () => {
+    const s = open();
+    await s.write('a.txt', '1');
+    const before = await readdir(h.dir);
+    await expect(
+      open({ fs: failing('ENOSPC', (p) => p.includes(MARKER)) }).forget()
+    ).rejects.toMatchObject({ code: 'ENOSPC' });
+    expect(await readdir(h.dir)).toEqual(before);
+  });
+
+  it('retries when another forget deleted its temp file under it (ENOENT)', async () => {
+    const s = open();
+    await s.write('a.txt', '1');
+    await open({
+      fs: failing('ENOENT', (p) => p.includes(MARKER) || p.endsWith('.generation'), 3),
+    }).forget();
+    expect(await readdir(h.dir)).toEqual(['.generation']);
+  });
+
+  it('keeps deleting after a name that will not go, then reports it and leaves no marker', async () => {
+    const s = open();
+    await s.write('a.txt', '1');
+    await s.write('zzz.txt', '2');
+    const fs = {
+      ...realFs,
+      rm: (async (p: string, o: object) => {
+        if (String(p).endsWith('a.txt')) throw Object.assign(new Error('busy'), { code: 'EBUSY' });
+        return realFs.rm(p, o);
+      }) as StoreFs['rm'],
+    } as StoreFs;
+    await expect(open({ fs }).forget()).rejects.toMatchObject({ code: 'EBUSY' });
+    expect(await readdir(h.dir)).toEqual(['.generation', 'a.txt']);
+  });
+
+  it('a marker that cannot be read counts as live, not as finished', async () => {
+    await mkdir(h.dir, { recursive: true });
+    await writeFile(join(h.dir, `${MARKER}1-x`), '1');
+    const fs = {
+      ...realFs,
+      stat: (async (p: string, ...r: unknown[]) => {
+        if (String(p).includes(MARKER))
+          throw Object.assign(new Error('pending'), { code: 'EPERM' });
+        return (realFs.stat as (...a: unknown[]) => unknown)(p, ...r);
+      }) as StoreFs['stat'],
+    } as StoreFs;
+    expect(await open({ fs, now: Date.now }).write('a.txt', 'x')).toBe(false);
+  });
+
+  it('a forget whose marker was swept puts it back as it goes on deleting', async () => {
+    const s = open();
+    await s.write('a.txt', '1');
+    await s.write('b.txt', '2');
+    let swept = false;
+    let sawBack = false;
+    const fs = {
+      ...realFs,
+      rm: (async (p: string, o: object) => {
+        if (String(p).includes(MARKER)) return realFs.rm(p, o);
+        const marker = (await realFs.readdir(h.dir)).find((n) => n.startsWith(MARKER));
+        if (!swept) {
+          swept = true;
+          await realFs.rm(join(h.dir, marker!)); // another forget swept it
+        } else {
+          sawBack ||= Boolean(marker);
+        }
+        return realFs.rm(p, o);
+      }) as StoreFs['rm'],
+    } as StoreFs;
+    await open({ fs }).forget();
+    expect(sawBack).toBe(true);
+    expect(await readdir(h.dir)).toEqual(['.generation']);
+  });
+
+  it("a write submitted behind the same store's own running forget still lands", async () => {
+    const s = open();
+    await s.write('old.txt', 'old');
+    const f = pausedForgetter((p) => p.endsWith('old.txt'));
+    const own = open({ fs: f.fs });
+    const forgetting = own.forget();
+    await f.reached; // this store's forget is mid-delete
+    const written = own.write('new.txt', 'new');
+    f.release();
+    await forgetting;
+    expect(await written).toBe(true);
+    expect(await own.readText('new.txt')).toBe('new');
+    expect(await own.readText('old.txt')).toBeUndefined();
+  });
+
+  it('memory held by a degraded store is dropped as soon as another process starts a forget', async () => {
+    await mkdir(h.dir, { recursive: true });
+    const broken = open({
+      fs: {
+        ...realFs,
+        open: async () => {
+          throw Object.assign(new Error('denied'), { code: 'EACCES' });
+        },
+      } as unknown as StoreFs,
+    });
+    await broken.write('a.txt', 'kept in memory');
+    expect(broken.persistent).toBe(false);
+    await open().write('x.txt', 'x');
+    const f = pausedForgetter((p) => p.endsWith('x.txt'));
+    const forgetting = open({ fs: f.fs }).forget();
+    await f.reached;
+    expect(await broken.readText('a.txt')).toBeUndefined();
+    f.release();
+    await forgetting;
+  });
+});
