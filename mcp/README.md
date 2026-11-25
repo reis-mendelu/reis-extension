@@ -18,6 +18,7 @@ Then ask Claude things like "what's due this week?" or "explain lecture 7 of PoÄ
 
 | Tool | What it returns |
 | --- | --- |
+| `mendelu_overview` | Start here: what changed in IS since last time, then your subjects with points and files, open assignments, exam terms and the next 7 days. Downloads no file |
 | `mendelu_schedule` | Your timetable for today and the next 14 days; ask for any other dates this semester |
 | `mendelu_exams` | Exam and credit terms, registered and still open |
 | `mendelu_subjects` | Subjects you are enrolled in this semester |
@@ -48,7 +49,8 @@ Saved, as plain files you can open:
 - the list of your subjects (code, name, IS id);
 - each subject's file list: file names, dates and download links;
 - the **whole text** of every file Claude reads (the answer Claude sees is cut at 25,000 characters; the saved copy is not);
-- your study programme, form, year and semester.
+- your study programme, form, year and semester;
+- a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates): it lets the next overview tell you only what is new, and holds no grade or points value.
 
 Never saved: your password or IS's sign-in cookie. The study profile holds no name, student number or e-mail, but file names and the text of files are kept exactly as they are, so anything written in them is kept too.
 

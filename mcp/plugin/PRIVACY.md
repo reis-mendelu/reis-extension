@@ -36,7 +36,7 @@ computer: reIS receives none of it.
 
 - **Saved**, as plain files in one folder: your subject list (code, name, IS id); each
   subject's file list (names, dates, download links); the text of plain-text files Claude
-  reads; your study programme, form, year and semester. A PDF or Office file Claude reads
+  reads; your study programme, form, year and semester; a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates), with no grade or points value. A PDF or Office file Claude reads
   is handed to Claude Code, which saves its own copy as before; the plugin does not keep
   one yet.
 - **Never saved:** your IS password or IS's sign-in cookie. The study profile holds no

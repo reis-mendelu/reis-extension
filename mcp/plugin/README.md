@@ -10,6 +10,7 @@ The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Cla
 
 | Tool | What it returns |
 | --- | --- |
+| `mendelu_overview` | Start here: what changed in IS since last time, then your subjects with points and files, open assignments, exam terms and the next 7 days. Downloads no file |
 | `mendelu_schedule` | Your timetable for today and the next 14 days; ask for any other dates this semester |
 | `mendelu_exams` | Exam and credit terms, registered and still open |
 | `mendelu_subjects` | Subjects you are enrolled in this semester |
@@ -32,7 +33,7 @@ The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Cla
 
 ## What it saves on your computer
 
-So Claude can start from what it read before instead of forgetting it with each Claude Code window, the plugin keeps: your subject list, each subject's file list (names, dates, download links), the text of plain-text files Claude reads (PDFs and Office files are handed to Claude Code whole, and the plugin does not keep a copy of them yet), and your study programme, form, year and semester. Never your password or the IS cookie; the study profile holds no name, student number or e-mail, but file names and plain-text contents are kept as they are, so anything written in them is kept too. It is plain files in one folder per computer account, shared with Claude Desktop if you use both:
+So Claude can start from what it read before instead of forgetting it with each Claude Code window, the plugin keeps: your subject list, each subject's file list (names, dates, download links), the text of plain-text files Claude reads (PDFs and Office files are handed to Claude Code whole, and the plugin does not keep a copy of them yet), your study programme, form, year and semester, and a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates) (no grade or points value). Never your password or the IS cookie; the study profile holds no name, student number or e-mail, but file names and plain-text contents are kept as they are, so anything written in them is kept too. It is plain files in one folder per computer account, shared with Claude Desktop if you use both:
 
 - macOS: `~/Library/Application Support/reIS for Claude`
 - Windows: `%LOCALAPPDATA%\reIS for Claude`

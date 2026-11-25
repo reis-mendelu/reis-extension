@@ -8,7 +8,8 @@
 // nowhere else, and that store never holds the password or the IS sign-in. See
 // docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md. Step 2 of 7
 // wired it in: subjects, folder listings, file text and the study programme are
-// saved, and mendelu_forget_everything deletes them.
+// saved, and mendelu_forget_everything deletes them. Step 3 added mendelu_overview, which
+// also keeps a record of what it reported (overview/seen.json: fingerprints, no grades).
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -107,7 +108,12 @@ describe('reIS for Claude stays read-only and local', () => {
   // server starts one store (server.ts) and nothing else may open another.
   it('opens the store in server.ts only, and the server reaches it', () => {
     expect([...closure.keys()].map(rel)).toEqual(
-      expect.arrayContaining(['mcp/store.ts', 'mcp/storeMap.ts', 'mcp/forgetTool.ts'])
+      expect.arrayContaining([
+        'mcp/store.ts',
+        'mcp/storeMap.ts',
+        'mcp/forgetTool.ts',
+        'mcp/overviewTool.ts',
+      ])
     );
     const openers = sources.filter(({ src }) => /createStore\(/.test(src)).map((s) => s.f);
     expect(openers.sort()).toEqual(['server.ts', 'store.ts']);

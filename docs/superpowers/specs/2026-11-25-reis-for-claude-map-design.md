@@ -1,7 +1,7 @@
 # reIS for Claude: a map on disk (design record)
 
-Status: agreed in conversation 2026-11-25 and cut into build steps (see Steps). **Step 1 is on
-`test` (#753); step 2 is in review.**
+Status: agreed in conversation 2026-11-25 and cut into build steps (see Steps). **Steps 1 and 2 are on
+`test` (#753, #756); step 3 is in review.**
 Decided with Dominik. Follows PR #749 (in-memory tool cache), which he judged "pretty useless"
 once he tried it: the server process does not outlive a window reload, an app launch or a
 Claude Code session.
@@ -163,7 +163,7 @@ start-up path changed). These are headless tools, so there is no UI tree and no 
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
 | 1   | The store module only: folder resolver, atomic writes, rebuildable index, memory-only fallback, size budget, with the guard test allowing writes inside that folder and nowhere else; a forget that no in-flight write can undo; nothing calls it. | On test     |
 | 2   | Persist what is already read: subjects, file listings (link plus modified date), full untruncated file text and the study-form profile go into the store; the **forget everything** tool; every "nothing is written to disk" text rewritten in the same PR. | In review |
-| 3   | The overview tool: refreshes the cheap listings on first call, diffs them against the store, and returns the map, the profile, points, deadlines and "what changed", with a tool description that tells Claude to call it first. | Not started |
+| 3   | The overview tool: refreshes the cheap listings on first call, diffs them against the store, and returns the map, the profile, points, deadlines and "what changed", with a tool description that tells Claude to call it first. | In review   |
 | 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | Not started |
 | 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run of counts and types first), return their paths in the overview.                                       | Not started |
 | 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz.                              | Not started |

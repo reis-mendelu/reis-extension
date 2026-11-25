@@ -46,7 +46,7 @@ const isToken = (t: unknown): t is NonNullable<Token> => isObject(t) && 'gen' in
  * the read then carries a different date. Same day, or no usable date, means
  * download again (the next read is saved under a later day and is trusted).
  */
-function readAfterModified(stamp: string, readAt: unknown): boolean {
+export function readAfterModified(stamp: string, readAt: unknown): boolean {
   const m = /^modified\s+(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/.exec(stamp);
   const read = new Date(String(readAt));
   if (!m || Number.isNaN(read.getTime())) return false;

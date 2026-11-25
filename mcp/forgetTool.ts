@@ -7,7 +7,7 @@ export const FORGET_TOOL = {
   name: 'mendelu_forget_everything',
   title: 'Forget everything reIS saved',
   description:
-    'Deletes everything reIS for Claude has saved on this computer: the subject list, folder listings, the text of every file read and the study profile, and empties its memory of this session. It changes nothing in IS Mendelu, and it cannot remove what is already in a Claude conversation. Call it ONLY when the student explicitly asks to forget or delete what reIS saved; never as a fix for another problem. Reports what it removed.',
+    'Deletes everything reIS for Claude has saved on this computer: the subject list, folder listings, the text of every file read, the study profile and the record of what the overview already reported, and empties its memory of this session. It changes nothing in IS Mendelu, and it cannot remove what is already in a Claude conversation. Call it ONLY when the student explicitly asks to forget or delete what reIS saved; never as a fix for another problem. Reports what it removed.',
 } as const;
 
 const GB = 1024 ** 3;
