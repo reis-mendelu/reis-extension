@@ -128,6 +128,17 @@ describe('switchExamTerm', () => {
       expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'failed', seat: 'lost' });
     });
 
+    // Another tab or device can register a third term between the failure and
+    // the read-back; "you are on no term" would then be false.
+    it('does not call the seat lost when a third term got registered meanwhile', async () => {
+      vi.mocked(examsAPI.registerExam).mockResolvedValue({ success: false, error: 'plno' });
+      const withThird = list('third-3', [term(OLD), term(NEW), term('third-3')]);
+      vi.mocked(examsAPI.fetchExamData)
+        .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW), term('third-3')]))
+        .mockResolvedValueOnce(withThird);
+      expect(await switchExamTerm(OLD, NEW)).toMatchObject({ kind: 'failed', seat: 'unknown' });
+    });
+
     it('treats the switch as done when IS did register the new term after all', async () => {
       vi.mocked(examsAPI.fetchExamData)
         .mockResolvedValueOnce(list(OLD, [term(OLD), term(NEW)]))

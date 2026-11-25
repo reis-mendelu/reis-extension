@@ -75,6 +75,15 @@ export async function switchExamTerm(
   if (now.has(termId)) return { kind: 'registered' };
   if (now.has(previousTermId)) return { kind: 'failed', error: res.error, seat: 'restored' };
 
+  // Neither term is held. "Lost" is only true if the section itself holds
+  // nothing: another tab or device may have registered a third term meanwhile,
+  // and then the student is registered, just not where we expected.
+  const section = after
+    .flatMap((e) => e.sections)
+    .find((s) => s.terms.some((t) => t.id === termId || t.id === previousTermId));
+  if (!section || section.registeredTerm?.id)
+    return { kind: 'failed', error: res.error, seat: 'unknown' };
+
   logError(
     'switchExamTerm.seatLost',
     new Error(
