@@ -1,7 +1,7 @@
 // One write to the folder: atomic file, index entry, budget, and the checks that
 // make forget() safe against a write in flight (storeGen.ts).
 import { atomicWrite, type StoreFs } from './storeFs';
-import { isPerPathFailure, pruneEmptyDirs, readGeneration } from './storeGen';
+import { isPerPathFailure, pruneEmptyDirs, readGeneration, sameGeneration } from './storeGen';
 import {
   evict,
   putEntry,
@@ -69,11 +69,19 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
     await pruneEmptyDirs(fs, dir, p);
   }
 
-  /** On disk: 'kept', or 'skipped' when this file was not stored (and nothing was left behind). */
-  async function write(p: string, buf: Buffer): Promise<'kept' | 'skipped' | 'unusable'> {
+  /**
+   * On disk: 'kept', or 'skipped' when this file was not stored (and nothing was
+   * left behind). `g0` is the folder generation when the write was submitted, not
+   * when its turn came: a forget() in between cancels it.
+   */
+  async function write(
+    p: string,
+    buf: Buffer,
+    g0: string | null
+  ): Promise<'kept' | 'skipped' | 'unusable'> {
     const at = now();
-    const g0 = await readGeneration(fs, dir);
-    const forgotten = async () => (await readGeneration(fs, dir)) !== g0;
+    // An unreadable token counts as changed: the write cannot prove it is not stale.
+    const forgotten = async () => !sameGeneration(await readGeneration(fs, dir), g0);
     const target = insideDir(dir, p);
     // The temp file sits beside the target and has a longer name; a path the OS
     // would refuse is this file's problem, not the folder's.
@@ -85,7 +93,11 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
         stillValid: async () => !(await forgotten()),
       });
     } catch (e) {
-      if (!(await forgotten())) {
+      // Only a token that is readable and different proves forget() ran; a folder
+      // that cannot be read at all must still fall back to memory.
+      const current = await readGeneration(fs, dir);
+      const proven = g0 !== null && current !== null && current !== g0;
+      if (!proven) {
         if (!(await isPerPathFailure(fs, dir, e))) {
           degrade(e);
           return 'unusable';
@@ -94,6 +106,11 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
     }
     if (!stored) {
       await pruneEmptyDirs(fs, dir, p);
+      return 'skipped';
+    }
+    if (await forgotten()) {
+      // forget() ran since: neither index this file nor evict a newer writer's.
+      await undo(p, buf);
       return 'skipped';
     }
     await commit(p, buf.length, at).catch(() => {}); // the index is only a cache

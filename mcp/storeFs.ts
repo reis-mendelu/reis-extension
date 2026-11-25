@@ -19,7 +19,7 @@ const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
  * Write `data` to `target` atomically and stamp its modification time `at`.
- * `stillValid` is asked right before the rename; if it says no, nothing is
+ * `stillValid` is asked right before each rename attempt; if it says no, nothing is
  * written and this returns false (forget() ran while this write was in flight).
  * On Windows another process (or an antivirus scan) can hold the target for a
  * moment, so a rename refused with EPERM/EBUSY/EACCES is retried with a short
@@ -52,11 +52,12 @@ export async function atomicWrite(
     }
     // Only orders eviction, so a refusal is not worth failing the write for.
     await fs.utimes(tmp, new Date(at), new Date(at)).catch(() => {});
-    if (stillValid && !(await stillValid())) {
-      await fs.rm(tmp, { force: true }).catch(() => {});
-      return false;
-    }
     for (let attempt = 0; ; attempt++) {
+      // Asked before every try: forget() can run while a refused rename waits.
+      if (stillValid && !(await stillValid())) {
+        await fs.rm(tmp, { force: true }).catch(() => {});
+        return false;
+      }
       try {
         await fs.rename(tmp, target);
         return true;

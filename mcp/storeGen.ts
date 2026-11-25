@@ -7,13 +7,20 @@ import { randomBytes } from 'node:crypto';
 import { atomicWrite, type StoreFs } from './storeFs';
 import { GEN_FILE } from './storePath';
 
-export async function readGeneration(fs: StoreFs, dir: string): Promise<string> {
+/**
+ * The folder's token: '' when there is none yet (no folder, no file), null when
+ * it exists but cannot be read. null never counts as "the same" (sameGeneration).
+ */
+export async function readGeneration(fs: StoreFs, dir: string): Promise<string | null> {
   try {
     return (await fs.readFile(path.join(dir, GEN_FILE), 'utf8')).trim();
-  } catch {
-    return '';
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException)?.code;
+    return code === 'ENOENT' || code === 'ENOTDIR' ? '' : null;
   }
 }
+
+export const sameGeneration = (a: string | null, b: string | null) => a !== null && a === b;
 
 export async function bumpGeneration(fs: StoreFs, dir: string, at: number): Promise<void> {
   const token = Buffer.from(randomBytes(8).toString('hex'));

@@ -53,7 +53,12 @@ describe('forget', () => {
 });
 
 describe('forget() against a write in flight (another process)', () => {
-  const settle = async (hold: 'open' | 'rename', forgetterFs?: StoreFs) => {
+  const settle = async (
+    hold: 'open' | 'rename',
+    forgetterFs?: StoreFs,
+    target = 'subjects/X/new.txt'
+  ) => {
+    let renamed = false;
     const g = gate();
     const reached = gate();
     const slow: StoreFs = {
@@ -61,17 +66,20 @@ describe('forget() against a write in flight (another process)', () => {
       [hold]: async (...args: unknown[]) => {
         reached.release();
         await g.wait;
-        return (realFs[hold] as (...a: unknown[]) => unknown)(...args);
+        const r = await (realFs[hold] as (...a: unknown[]) => unknown)(...args);
+        if (hold === 'rename') renamed = true;
+        return r;
       },
     } as StoreFs;
     const writer = open({ fs: slow });
     const forgetter = open(forgetterFs ? { fs: forgetterFs } : {});
     await forgetter.write('keep/old.txt', 'written before');
-    const pending = writer.write('subjects/X/new.txt', 'in flight');
+    const pending = writer.write(target, 'in flight');
     await reached.wait;
     await forgetter.forget();
     g.release();
-    return { writer, forgetter, result: await pending };
+    const result = await pending;
+    return { writer, forgetter, result, renamed };
   };
 
   it('a write stopped before its rename leaves nothing, and does not flip to memory', async () => {
@@ -96,7 +104,10 @@ describe('forget() against a write in flight (another process)', () => {
       rm: (async (p: string, o: object) =>
         String(p).includes('.tmp-') ? undefined : realFs.rm(p, o)) as StoreFs['rm'],
     };
-    const { result } = await settle('rename', blind);
+    // A top-level target: the blind forgetter then really leaves the temp file
+    // (it would otherwise delete the whole subjects/ folder), so the rename lands.
+    const { result, renamed } = await settle('rename', blind, 'late.txt');
+    expect(renamed).toBe(true);
     expect(result).toBe(false);
     expect(await leftovers()).toEqual([]);
   });

@@ -34,7 +34,14 @@ export function storeHarness() {
   async function leftovers(): Promise<string[]> {
     const out: string[] = [];
     const walk = async (abs: string, rel: string) => {
-      for (const e of await readdir(abs, { withFileTypes: true }).catch(() => [])) {
+      // An absent folder is empty; any other failure must fail the test.
+      const found = await readdir(abs, { withFileTypes: true }).catch(
+        (e: NodeJS.ErrnoException) => {
+          if (e.code === 'ENOENT') return [];
+          throw e;
+        }
+      );
+      for (const e of found) {
         const r = rel ? `${rel}/${e.name}` : e.name;
         if (!rel && e.name === '.generation') continue;
         out.push(e.isDirectory() ? `${r}/` : r);

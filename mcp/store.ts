@@ -1,12 +1,12 @@
 // reIS for Claude's map on disk: one shared folder per laptop that Desktop and
 // every Claude Code window read and write at once. Decided with Dominik
 // 2026-11-25 (docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md).
-// Nothing imports this yet (step 1 of 7). It never holds the password or the
-// IS sign-in; mcpStaysReadOnly.test.ts keeps those words out of the store files.
+// Nothing imports this yet (step 1 of 7); it never holds the password or the IS
+// sign-in (mcpStaysReadOnly.test.ts keeps those words out of the store files).
 import * as realFs from 'node:fs/promises';
 import path from 'node:path';
 import type { StoreFs } from './storeFs';
-import { bumpGeneration } from './storeGen';
+import { bumpGeneration, readGeneration } from './storeGen';
 import {
   readIndex,
   scan,
@@ -58,6 +58,11 @@ export function createStore(opts: StoreOptions = {}) {
     return run;
   };
 
+  let forgets = 0; // forget() runs here: a write queued behind one re-reads its generation
+  const syncMemory = async () => {
+    if (mem.active) mem.sync(await readGeneration(fs, dir));
+  };
+
   function degrade(e: unknown) {
     persistent = false;
     const code = (e as NodeJS.ErrnoException)?.code;
@@ -94,10 +99,15 @@ export function createStore(opts: StoreOptions = {}) {
     async write(rel: string, data: string | Uint8Array): Promise<boolean> {
       const p = safeRelPath(rel);
       const buf = Buffer.from(data);
+      // Noted at submit, not at its turn, so another store's forget() in between
+      // cancels it; not awaited, so the queue order is unchanged.
+      const submitted = forgets;
+      const noted = readGeneration(fs, dir);
       return locked(async () => {
+        const g0 = forgets === submitted ? await noted : await readGeneration(fs, dir);
         if (persistent) {
           if (buf.length > maxBytes) return false;
-          const result = await disk.write(p, buf);
+          const result = await disk.write(p, buf, g0);
           if (result === 'skipped') return false;
           if (result === 'kept') {
             mem.delete(p);
@@ -105,13 +115,14 @@ export function createStore(opts: StoreOptions = {}) {
           }
         }
         if (buf.length > memMax) return false;
-        mem.put(p, buf, now());
+        mem.put(p, buf, now(), g0);
         return true;
       });
     },
 
     async read(rel: string): Promise<Buffer | undefined> {
       const p = safeRelPath(rel);
+      await syncMemory();
       const held = mem.get(p);
       if (held) return held;
       if (mem.isShadowed(p)) return undefined;
@@ -143,11 +154,13 @@ export function createStore(opts: StoreOptions = {}) {
 
     /** From the index: empty when it is missing or damaged (see rebuild). */
     async list(): Promise<Entry[]> {
+      await syncMemory();
       return toEntries(mem.overlay((await readIndex(fs, dir)) ?? toIndex([])));
     },
 
     /** Count and size of the content files themselves, not the index. */
     async usage(): Promise<{ files: number; bytes: number }> {
+      await syncMemory();
       const entries = toEntries(mem.overlay(toIndex(await scan(fs, dir, now()))));
       return { files: entries.length, bytes: totalBytes(entries) };
     },
@@ -167,6 +180,7 @@ export function createStore(opts: StoreOptions = {}) {
      */
     forget(): Promise<void> {
       return locked(async () => {
+        forgets++;
         mem.clear();
         let bumpError: unknown;
         try {
