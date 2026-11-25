@@ -33,7 +33,8 @@ harmonogram PDF, not in IS's exam list).
 Pass: the answer states a specific date, or the exact rule that gives it, **and** names the file it
 comes from **and** quotes the sentence; the tool log shows a file or search tool used without the
 student asking for files; the answer never says "IS has no date" before the files were opened.
-Record the call count (target after steps 3 and 4: overview plus search plus at most one read).
+Record the call count. Target after steps 3 and 4: at most 5 calls; the ideal run is three
+(overview, one search, one read), but a four- or five-call run passes.
 
 ### S2. After a restart, IS is asked only for the cheap listings
 
@@ -123,9 +124,24 @@ IS shows no maximum for three of the four, so the answer could not say "out of h
 
 **Findings the baseline surfaced:**
 
-- `mendelu_schedule` asked for a range to 15 Feb 2027 returned only through 17 Dec 2026. Either
-  IS publishes no later lessons yet or a fetcher caps the range; worth a look in step 2 or 3.
+- `mendelu_schedule` asked for a range to 15 Feb 2027 returned only through 17 Dec 2026 in the
+  first run and rows through the end date in the second. Not a fetcher cap; IS data or a one-off.
 - Points need one call per subject, so an overview that returns them together is a real saving.
-- The persona text says it "expects it to look wherever the answer might be". That coaches the
-  agent toward the behaviour under test and is the likely reason S1 passed when the real session
-  failed. Before step 3, re-run S1 and S4 with that sentence removed and record the difference.
+
+## Re-run with a neutral persona (2026-11-25, same installed server)
+
+The persona sentence "expects it to look wherever the answer might be" was removed, to test
+whether it had coached the first runs. The re-run passes without it, so the sentence was not
+necessary for a pass; one run each cannot show it had no effect at all.
+
+**S1: pass, 8 calls.** Same date, same two files, same quoted harmonogram line, same honest
+"this is inferred" wording.
+
+**S4: pass, 15 calls.** Points for every subject that has a points sheet (five), the study-plan
+credits, open assignments, exam terms and the week's timetable, unasked. Five more calls than
+the first run because it also read the study plan, grades and three syllabi.
+
+**Reading:** the real failure (a date answered "IS has no date" until the student said "projdi
+soubory") did not reproduce in either run, with or without the sentence. S1 and S4 stay regression
+checks with call-count targets after steps 3 and 4: **S1 at most 5 calls, S4 at most 8**. The
+map's measurable gains here are fewer calls and no per-subject points loop, plus S2 and S3.
