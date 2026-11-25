@@ -1,6 +1,6 @@
 // mendelu_ledger list pages a long ledger: every entry is reachable with offset, one with id
 // (split from ledgerKept.test.ts, which keeps the tool's other behaviour).
-import { it, describe, expect, vi } from 'vitest';
+import { it, describe, expect, vi, beforeEach, afterEach } from 'vitest';
 import { rm } from 'node:fs/promises';
 
 vi.mock('../../src/utils/userParams', () => ({
@@ -43,6 +43,13 @@ const test9 = {
   date: '2026-12-10',
   source_kind: 'student',
 };
+
+beforeEach(() => {
+  // Only the clock: the events are dated 10 December, so a real "today" must not hide them.
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-12-01T11:00:00Z')); // noon in Prague
+});
+afterEach(() => vi.useRealTimers());
 
 describe('mendelu_ledger list paging', () => {
   it('pages a long list: every entry is reachable with offset, one with id', async () => {
