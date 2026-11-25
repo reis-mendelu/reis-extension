@@ -330,7 +330,7 @@ describe('forget', () => {
     await s.write('deep/er/b.txt', '2');
     await writeFile(join(dir, `.tmp-${process.pid}-x`), 'leftover');
     await s.forget();
-    expect(await readdir(dir)).toEqual([]);
+    expect(await readdir(dir)).toEqual(['.generation']); // only forget's own token stays
     expect(await s.list()).toEqual([]);
     expect(await s.usage()).toEqual({ files: 0, bytes: 0 });
     await s.write('again.txt', 'new');

@@ -43,12 +43,20 @@ export class StorePathError extends Error {
 /** The store's own files; a caller must never name them. */
 export const INDEX_FILE = 'index.json';
 export const TEMP_PREFIX = '.tmp-';
+/** Holds a random token that forget() replaces, so a write begun before it can tell. */
+export const GEN_FILE = '.generation';
 
-const MAX_PATH = 480;
+/** Two names that differ only by case or Unicode form are one file on macOS and Windows. */
+export const fold = (p: string) => p.normalize('NFC').toLowerCase();
+
+// Windows stops at 260 characters in all; the folder itself takes about 60 of them.
+const MAX_PATH = 200;
+const WINDOWS_MAX = 259;
 const MAX_SEGMENT_BYTES = 255;
 // eslint-disable-next-line no-control-regex -- control characters are exactly what is refused
 const BAD_CHARS = /[\u0000-\u001f\u007f<>:"|?*\\]/;
-const DEVICE = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+const DEVICE =
+  /^(con|prn|aux|nul|com[0-9\u00b9\u00b2\u00b3]|lpt[0-9\u00b9\u00b2\u00b3]|conin\$|conout\$) *(\..*)?$/i;
 
 /**
  * A relative path the store may use, as given: forward slashes, no `.` or `..`,
@@ -56,8 +64,9 @@ const DEVICE = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
  * looks. Names come from IS, so this is a security boundary. It rejects rather
  * than repairs: a file that cannot be stored safely is skipped by its caller.
  */
-export function safeRelPath(p: unknown): string {
-  if (typeof p !== 'string') throw new StorePathError('not a string');
+export function safeRelPath(input: unknown): string {
+  if (typeof input !== 'string') throw new StorePathError('not a string');
+  const p = input.normalize('NFC');
   if (!p.trim()) throw new StorePathError('empty');
   if (p.length > MAX_PATH) throw new StorePathError('too long');
   if (p.startsWith('/')) throw new StorePathError('absolute');
@@ -68,9 +77,9 @@ export function safeRelPath(p: unknown): string {
     if (/[. ]$/.test(s)) throw new StorePathError('segment ends with a dot or space');
     if (Buffer.byteLength(s) > MAX_SEGMENT_BYTES) throw new StorePathError('name too long');
     if (DEVICE.test(s)) throw new StorePathError('reserved device name');
-    if (s.startsWith(TEMP_PREFIX)) throw new StorePathError('reserved temp name');
+    if (s.toLowerCase().startsWith(TEMP_PREFIX)) throw new StorePathError('reserved temp name');
   }
-  if (p === INDEX_FILE) throw new StorePathError('reserved index name');
+  if ([INDEX_FILE, GEN_FILE].includes(fold(p))) throw new StorePathError('reserved name');
   return p;
 }
 
@@ -78,5 +87,7 @@ export function safeRelPath(p: unknown): string {
 export function insideDir(dir: string, rel: string): string {
   const full = path.join(dir, ...safeRelPath(rel).split('/'));
   if (!full.startsWith(dir + path.sep)) throw new StorePathError('escapes the store folder');
+  if (path.sep === '\\' && full.length > WINDOWS_MAX)
+    throw new StorePathError('too long for Windows');
   return full;
 }

@@ -5,21 +5,21 @@
 // IS sign-in; mcpStaysReadOnly.test.ts keeps those words out of the store files.
 import * as realFs from 'node:fs/promises';
 import path from 'node:path';
-import { atomicWrite, type StoreFs } from './storeFs';
+import type { StoreFs } from './storeFs';
+import { bumpGeneration } from './storeGen';
 import {
-  readIndex,
-  writeIndex,
-  scan,
-  toIndex,
-  toEntries,
-  totalBytes,
   pickEvictions,
+  readIndex,
+  scan,
+  toEntries,
+  toIndex,
+  totalBytes,
+  writeIndex,
   type Entry,
+  type Index,
 } from './storeIndex';
-import { insideDir, resolveStoreDir, safeRelPath } from './storePath';
-
-export { safeRelPath, resolveStoreDir, StorePathError } from './storePath';
-export type { Entry } from './storeIndex';
+import { GEN_FILE, insideDir, resolveStoreDir, safeRelPath } from './storePath';
+import { createDiskWriter } from './storeWrite';
 
 /** The real number is chosen after measuring a real student's files. */
 export const DEFAULT_MAX_BYTES = 4 * 1024 ** 3;
@@ -37,7 +37,6 @@ export type StoreOptions = {
 };
 
 export type Notice = { persistent: false; reason: string };
-export type Store = ReturnType<typeof createStore>;
 
 export function createStore(opts: StoreOptions = {}) {
   const dir = path.resolve(opts.dir ?? resolveStoreDir(opts.resolve));
@@ -49,8 +48,10 @@ export function createStore(opts: StoreOptions = {}) {
   let persistent = true;
   let notice: Notice | undefined;
   const mem = new Map<string, { data: Buffer; at: number }>();
-  // One write at a time per process; other processes are handled by the atomic
-  // rename and by re-reading the index right before each merge.
+  /** Paths written in memory after the fall-back: an older copy on disk is stale, never served. */
+  const shadowed = new Set<string>();
+  // One write at a time per process; other processes are handled by the
+  // atomic swap and by re-reading the index right before each merge.
   let chain: Promise<unknown> = Promise.resolve();
   const locked = <T>(fn: () => Promise<T>): Promise<T> => {
     const run = chain.then(fn, fn);
@@ -60,6 +61,11 @@ export function createStore(opts: StoreOptions = {}) {
 
   const memEntries = (): Entry[] =>
     [...mem].map(([p, v]) => ({ path: p, bytes: v.data.length, at: v.at }));
+  const withMemory = (disk: Index): Index => {
+    const merged: Index = Object.assign(Object.create(null), disk, toIndex(memEntries()));
+    for (const p of shadowed) if (!mem.has(p)) delete merged[p];
+    return merged;
+  };
 
   function degrade(e: unknown) {
     persistent = false;
@@ -70,30 +76,11 @@ export function createStore(opts: StoreOptions = {}) {
   function putInMemory(p: string, data: Buffer, at: number) {
     mem.delete(p);
     mem.set(p, { data, at });
+    shadowed.add(p);
     for (const old of pickEvictions(memEntries(), memMax, p)) mem.delete(old.path);
   }
 
-  /** Record a finished write in the index and evict the oldest files if over budget. */
-  async function commit(p: string, bytes: number, at: number) {
-    const index = await readIndex(fs, dir);
-    let entries: Entry[];
-    let scanned = false;
-    if (index) {
-      index[p] = { bytes, at };
-      entries = toEntries(index);
-    } else {
-      entries = await scan(fs, dir, now());
-      scanned = true;
-    }
-    if (totalBytes(entries) > maxBytes) {
-      if (!scanned) entries = await scan(fs, dir, now()); // the files are the truth
-      const gone = pickEvictions(entries, maxBytes, p);
-      for (const e of gone) await fs.rm(insideDir(dir, e.path), { force: true });
-      const goneSet = new Set(gone.map((e) => e.path));
-      entries = entries.filter((e) => !goneSet.has(e.path));
-    }
-    await writeIndex(fs, dir, toIndex(entries), at);
-  }
+  const disk = createDiskWriter({ fs, dir, now, maxBytes, sleep: opts.sleep, degrade });
 
   return {
     /** False once the folder could not be used and the store fell back to memory. */
@@ -108,26 +95,25 @@ export function createStore(opts: StoreOptions = {}) {
       return n;
     },
 
-    /** True if kept; false if the file alone is bigger than the budget. */
+    /**
+     * True if kept. False if it was not stored: bigger than the budget, a name
+     * that clashes with another file's folder, or forget() ran while it wrote.
+     */
     async write(rel: string, data: string | Uint8Array): Promise<boolean> {
       const p = safeRelPath(rel);
       const buf = Buffer.from(data);
       return locked(async () => {
-        if (buf.length > (persistent ? maxBytes : memMax)) return false;
-        const at = now();
         if (persistent) {
-          try {
-            await atomicWrite(fs, insideDir(dir, p), buf, at, { sleep: opts.sleep });
-          } catch (e) {
-            degrade(e);
+          if (buf.length > maxBytes) return false;
+          const result = await disk.write(p, buf);
+          if (result === 'skipped') return false;
+          if (result === 'kept') {
+            mem.delete(p);
+            return true;
           }
         }
-        if (persistent) {
-          await commit(p, buf.length, at).catch(() => {}); // the index is only a cache
-          mem.delete(p);
-          return true;
-        }
-        putInMemory(p, buf, at);
+        if (buf.length > memMax) return false;
+        putInMemory(p, buf, now());
         return true;
       });
     },
@@ -136,6 +122,7 @@ export function createStore(opts: StoreOptions = {}) {
       const p = safeRelPath(rel);
       const held = mem.get(p);
       if (held) return held.data;
+      if (shadowed.has(p)) return undefined;
       try {
         return await fs.readFile(insideDir(dir, p));
       } catch {
@@ -151,6 +138,7 @@ export function createStore(opts: StoreOptions = {}) {
       const p = safeRelPath(rel);
       return locked(async () => {
         mem.delete(p);
+        shadowed.delete(p);
         await fs.rm(insideDir(dir, p), { force: true }).catch(() => {});
         const index = await readIndex(fs, dir);
         if (index && p in index) {
@@ -162,14 +150,12 @@ export function createStore(opts: StoreOptions = {}) {
 
     /** From the index: empty when it is missing or damaged (see rebuild). */
     async list(): Promise<Entry[]> {
-      const merged = (await readIndex(fs, dir)) ?? {};
-      return toEntries({ ...merged, ...toIndex(memEntries()) });
+      return toEntries(withMemory((await readIndex(fs, dir)) ?? toIndex([])));
     },
 
     /** Count and size of the content files themselves, not the index. */
     async usage(): Promise<{ files: number; bytes: number }> {
-      const byPath = toIndex(await scan(fs, dir, now()));
-      const entries = toEntries({ ...byPath, ...toIndex(memEntries()) });
+      const entries = toEntries(withMemory(toIndex(await scan(fs, dir, now()))));
       return { files: entries.length, bytes: totalBytes(entries) };
     },
 
@@ -181,21 +167,33 @@ export function createStore(opts: StoreOptions = {}) {
       });
     },
 
-    /** Delete everything in the store folder (and memory). Throws if something could not be deleted. */
+    /**
+     * Delete everything in the store folder (and memory). A write that began
+     * before this, in this process or another, is cancelled and cannot land
+     * afterwards. Throws if something could not be deleted.
+     */
     forget(): Promise<void> {
       return locked(async () => {
         mem.clear();
-        let names: string[];
+        shadowed.clear();
+        let bumpError: unknown;
+        try {
+          await bumpGeneration(fs, dir, now());
+        } catch (e) {
+          bumpError = e;
+        }
+        let names: string[] = [];
         try {
           names = await fs.readdir(dir);
         } catch (e) {
           const code = (e as NodeJS.ErrnoException).code;
-          if (code === 'ENOENT' || code === 'ENOTDIR') return;
-          throw e;
+          if (code !== 'ENOENT' && code !== 'ENOTDIR') throw e;
         }
         for (const name of names) {
+          if (name === GEN_FILE) continue;
           await fs.rm(path.join(dir, name), { recursive: true, force: true });
         }
+        if (bumpError && (bumpError as NodeJS.ErrnoException).code !== 'ENOTDIR') throw bumpError;
       });
     },
   };

@@ -9,7 +9,7 @@ import { TEMP_PREFIX } from './storePath';
 /** The slice of node:fs/promises the store uses; tests swap pieces to simulate failures. */
 export type StoreFs = Pick<
   typeof fsp,
-  'mkdir' | 'open' | 'rename' | 'rm' | 'readFile' | 'readdir' | 'stat' | 'utimes'
+  'mkdir' | 'open' | 'rename' | 'rm' | 'rmdir' | 'readFile' | 'readdir' | 'stat' | 'utimes'
 >;
 
 const RETRY_CODES = new Set(['EPERM', 'EBUSY', 'EACCES']);
@@ -19,6 +19,8 @@ const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
  * Write `data` to `target` atomically and stamp its modification time `at`.
+ * `stillValid` is asked right before the rename; if it says no, nothing is
+ * written and this returns false (forget() ran while this write was in flight).
  * On Windows another process (or an antivirus scan) can hold the target for a
  * moment, so a rename refused with EPERM/EBUSY/EACCES is retried with a short
  * backoff. Throws the last error if it never goes through; the temp file is
@@ -29,26 +31,35 @@ export async function atomicWrite(
   target: string,
   data: Buffer,
   at: number,
-  { sleep = sleepMs }: { sleep?: (ms: number) => Promise<void> } = {}
-): Promise<void> {
-  await fs.mkdir(path.dirname(target), { recursive: true });
+  {
+    sleep = sleepMs,
+    stillValid,
+  }: { sleep?: (ms: number) => Promise<void>; stillValid?: () => Promise<boolean> } = {}
+): Promise<boolean> {
+  // Owner only: these are a student's grades and course files.
+  await fs.mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
   const tmp = path.join(
     path.dirname(target),
     `${TEMP_PREFIX}${process.pid}-${randomBytes(6).toString('hex')}`
   );
   try {
-    const handle = await fs.open(tmp, 'w');
+    const handle = await fs.open(tmp, 'w', 0o600);
     try {
       await handle.writeFile(data);
       await handle.sync();
     } finally {
       await handle.close();
     }
-    await fs.utimes(tmp, new Date(at), new Date(at));
+    // Only orders eviction, so a refusal is not worth failing the write for.
+    await fs.utimes(tmp, new Date(at), new Date(at)).catch(() => {});
+    if (stillValid && !(await stillValid())) {
+      await fs.rm(tmp, { force: true }).catch(() => {});
+      return false;
+    }
     for (let attempt = 0; ; attempt++) {
       try {
         await fs.rename(tmp, target);
-        return;
+        return true;
       } catch (e) {
         const code = (e as NodeJS.ErrnoException).code;
         if (!code || !RETRY_CODES.has(code) || attempt >= DELAYS_MS.length) throw e;

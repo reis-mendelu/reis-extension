@@ -47,8 +47,8 @@ function importClosure(entry: string): Map<string, string> {
 
 /** The store's files: the only ones that may write, and they never touch credentials. */
 const STORE_FILES = sources.filter(({ f }) => /^store.*\.ts$/.test(f));
-/** The only store files that write bytes: the store itself and its atomic-write helper. */
-const MAY_WRITE = ['store.ts', 'storeFs.ts'];
+/** The only store files that write or create: the atomic-write helper and the generation helper. */
+const MAY_WRITE = ['storeFs.ts', 'storeGen.ts'];
 
 const closure = importClosure(join(mcpDir, 'server.ts'));
 const rel = (file: string) => relative(root, file).split('\\').join('/');
@@ -93,7 +93,10 @@ describe('reIS for Claude stays read-only and local', () => {
     expect(STORE_FILES.map((s) => s.f)).toEqual(expect.arrayContaining(MAY_WRITE));
     for (const { f, src } of sources) {
       if (MAY_WRITE.includes(f)) continue;
-      expect(src, f).not.toMatch(/\b(writeFile|appendFile|createWriteStream|rename)\b/);
+      // Substrings on purpose: writeFileSync, renameSync, mkdirSync all count.
+      expect(src, f).not.toMatch(
+        /writeFile|appendFile|createWriteStream|rename|copyFile|mkdir|symlink/
+      );
     }
     for (const { f, src } of STORE_FILES) {
       expect(src, f).not.toMatch(/login|session|UISAuth|cookie|MENDELU_PASS/i);
