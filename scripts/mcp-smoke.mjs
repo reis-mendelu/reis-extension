@@ -76,7 +76,7 @@ await call('initialize', {
 toServer.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
 const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sort();
 console.log('tools:', tools.length, tools.join(', '));
-let failed = tools.length !== 12;
+let failed = tools.length < 12 || !tools.includes('mendelu_search');
 
 const json = async (name, args) => {
   const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
@@ -147,7 +147,45 @@ async function readRealFiles() {
   );
 }
 
+/**
+ * mendelu_search needs words, and the text it searches is the student's own. Search for a
+ * very common letter to get some hits, take three words from the first snippet, search for
+ * that quoted phrase and expect the same file back. Prints counts only, never text or names.
+ * Needs files read before (`--live mendelu_read_file`): the store is on disk, shared by runs.
+ */
+async function searchLive() {
+  const first = await json('mendelu_search', { query: 'e' });
+  if (!first.hits?.length) {
+    console.log(
+      `mendelu_search: nothing stored to search (${first.note ?? first.searched ?? 'no hits'})`
+    );
+    return false;
+  }
+  const withText = first.hits.find((h) => h.snippet);
+  if (!withText) {
+    console.log('mendelu_search: hits by file name only, no saved text to take a phrase from');
+    return false;
+  }
+  // Three consecutive plain words, so the phrase is really in the text as written.
+  const tokens = withText.snippet.replace(/\*\*|…/g, '').split(/\s+/);
+  const plain = (w) => /^\p{L}{3,}$/u.test(w);
+  const at = tokens.findIndex(
+    (_, i) => tokens.slice(i, i + 3).length === 3 && tokens.slice(i, i + 3).every(plain)
+  );
+  const phrase = (at >= 0 ? tokens.slice(at, at + 3) : [tokens.find(plain) ?? 'e']).join(' ');
+  const again = await json('mendelu_search', { query: `"${phrase}"` });
+  const same = again.hits?.some((h) => h.file === withText.file && h.subject === withText.subject);
+  console.log(
+    `mendelu_search: ${first.found} files match "e"; a ${phrase.split(' ').length}-word phrase from one snippet found ${again.found} file(s), the same file ${same ? 'included' : 'MISSING'}; ${first.searched}`
+  );
+  return !!same;
+}
+
 for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
+  if (name === 'mendelu_search') {
+    if (!(await searchLive())) failed = true;
+    continue;
+  }
   if (name === 'mendelu_read_file') {
     if (!(await readRealFiles())) failed = true;
     continue;
