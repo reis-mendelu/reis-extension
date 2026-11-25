@@ -122,8 +122,25 @@ describe('storeMap trust rules', () => {
     const token = await mine.persist.begin();
     await open().forget(); // another process
     await mine.persist.save('mendelu_read_file', { url: URL }, FILE, STAMP, token);
-    await mine.saveProfile({ studyForm: 'P' }, token as never);
+    await mine.saveProfile({ studyForm: 'P' }, token);
     expect(await open().list()).toEqual([]);
+  });
+
+  it('writes the profile again once another process has forgotten the folder', async () => {
+    const m = createMapPersist(open());
+    await m.saveProfile({ studyForm: 'P' }, await m.persist.begin());
+    await open().forget(); // another process
+    await m.saveProfile({ studyForm: 'P' }, await m.persist.begin());
+    expect((await open().list()).map((e) => e.path)).toEqual(['profile.json']);
+  });
+
+  it('does not count a cancelled profile write as saved', async () => {
+    const m = createMapPersist(open());
+    const stale = await m.persist.begin();
+    await open().forget();
+    await m.saveProfile({ studyForm: 'P' }, stale); // cancelled
+    await m.saveProfile({ studyForm: 'P' }, await m.persist.begin());
+    expect((await open().list()).map((e) => e.path)).toEqual(['profile.json']);
   });
 
   it('saves the profile again after a reset', async () => {

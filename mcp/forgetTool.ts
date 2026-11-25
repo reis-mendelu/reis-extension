@@ -32,12 +32,12 @@ export async function forgetEverything(store: Store, clearMemory: () => void) {
     // say so instead of failing, because the memory side is done.
     if (store.persistent)
       throw new Error(
-        `Could not delete everything in ${shown(store.dir)}. Close any program that has files there open and try again, or delete the folder yourself.`
+        `Could not delete everything in ${shown(store.dir)}. Some saved files may remain: close any program that has files there open and try again, or delete the folder yourself.`
       );
     return {
       forgotten: false,
       folder: shown(store.dir),
-      note: `Memory is cleared, but reIS could not reach its folder this session (${(e as NodeJS.ErrnoException).code ?? 'unknown error'}), so anything saved there earlier is untouched. Delete the folder yourself.`,
+      note: `Memory is cleared, but reIS could not reach its folder this session (${(e as NodeJS.ErrnoException).code ?? 'unknown error'}), so saved files there may remain. Delete the folder yourself.`,
     };
   }
   return {
@@ -45,8 +45,6 @@ export async function forgetEverything(store: Store, clearMemory: () => void) {
     folder: shown(store.dir),
     filesRemoved: removed.files,
     removed: size(removed.bytes),
-    note: store.persistent
-      ? 'Deleted from this computer and from this session’s memory. Nothing was changed in IS Mendelu, and anything already shared in a Claude conversation stays there.'
-      : 'reIS could not use its folder this session, so it only held things in memory; that is cleared. Nothing was changed in IS Mendelu.',
+    note: 'Deleted what reIS had saved on this computer and cleared this session’s memory. Nothing was changed in IS Mendelu, and anything already shared in a Claude conversation stays there.',
   };
 }

@@ -4,9 +4,12 @@
 // got an identical answer. This memory is the first tier and is gone when the
 // server stops. The second tier is the store on disk (storeMap.ts): a file's
 // text it holds is served again after a restart while the folder listing still
-// shows the date it was read at; everything else goes back to IS, and what IS
+// shows the modified date it was read at and the read began on a later day than
+// that date (no time of day in IS: storeMap.ts); everything else goes back to IS, and what IS
 // answers is saved there. The tiers never hold the password or the IS
 // sign-in (mcpStaysReadOnly.test.ts, README.md, PRIVACY.md).
+
+import type { Persist, Ticket } from './cacheTypes';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -37,25 +40,6 @@ export const TTL_MS: Record<string, number> = {
 
 /** The plugin build hands over files of up to 10 MB whole; a few of them fit. */
 const MAX_BYTES = 64 * 1024 * 1024;
-
-/**
- * The second tier (storeMap.ts). `load` runs on a memory miss, before IS is
- * asked, and returns an answer the disk can vouch for or undefined; `stamp` is
- * the listing date known now (a file read only; undefined before any listing).
- * `save` gets what IS answered. Neither may throw into a tool.
- */
-export type Persist = {
-  /** Taken when a request starts, handed back to save(): a forget() in between cancels the save. */
-  begin(): Promise<unknown>;
-  load(tool: string, args: Record<string, unknown>, stamp: string | undefined): Promise<unknown>;
-  save(
-    tool: string,
-    args: Record<string, unknown>,
-    value: unknown,
-    stamp: string | undefined,
-    token?: unknown
-  ): Promise<void>;
-};
 
 /** `stamp`: for a file read, the listing date known when the download started. */
 type Entry = { value: unknown; at: number; bytes: number; stamp?: string };
@@ -100,6 +84,7 @@ export function createToolCache({
   /** downloadUrl -> the Modifikace (or upload) date its folder last showed. */
   const fileStamps = new Map<string, string>();
   let total = 0;
+  let epoch = 0; // bumped by clear(): a call that began before it is stale
 
   const drop = (key: string) => {
     const e = entries.get(key);
@@ -141,12 +126,23 @@ export function createToolCache({
   return {
     /** Forget everything held here, including reads still in flight (forget everything). */
     clear() {
+      epoch++;
       entries.clear();
       inflight.clear();
       fileStamps.clear();
       total = 0;
     },
-    async run(tool: string, args: Record<string, unknown>, fetch: () => Promise<unknown>) {
+    /** One per tool call, before it does anything; pass it to run(). */
+    async ticket(): Promise<Ticket> {
+      const started = epoch;
+      return { epoch: started, token: await persist?.begin().catch(() => null) };
+    },
+    async run(
+      tool: string,
+      args: Record<string, unknown>,
+      fetch: () => Promise<unknown>,
+      ticket?: Ticket
+    ) {
       const ttl = TTL_MS[tool];
       if (!ttl) return fetch();
       const key = keyOf(tool, args);
@@ -165,7 +161,7 @@ export function createToolCache({
       };
       // fetch() starts at once when there is no second tier, as it always did.
       const fromFetch = () => fetch().then((value) => ({ value, stored: false }));
-      const token = persist?.begin().catch(() => null);
+      const began = ticket ?? { epoch, token: persist?.begin().catch(() => null) };
       const obtained = persist
         ? persist
             .load(tool, args, mine.stamp)
@@ -173,13 +169,13 @@ export function createToolCache({
             .then((value) => (value !== undefined ? { value, stored: true } : fromFetch()))
         : fromFetch();
       mine.promise = obtained.then(async ({ value, stored }) => {
-        if (tool === LIST) noteListing(value);
-        // Cut loose by a newer listing or by clear(): hand it to its caller,
-        // keep and save nothing.
-        const current = inflight.get(key) === mine;
+        // Cut loose by a newer listing or begun before clear(): hand it to its
+        // caller, note, keep and save nothing.
+        const current = inflight.get(key) === mine && epoch === began.epoch;
+        if (tool === LIST && epoch === began.epoch) noteListing(value);
         if (current) keep(key, value, mine.stamp);
         if (current && !stored) {
-          await persist?.save(tool, args, value, mine.stamp, await token).catch(() => {});
+          await persist?.save(tool, args, value, mine.stamp, await began.token).catch(() => {});
         }
         return value;
       });

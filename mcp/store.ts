@@ -193,7 +193,8 @@ export function createStore(opts: StoreOptions = {}) {
      * Delete everything in the store folder (and memory). A write that began
      * before this, in this process or another, is cancelled and cannot land
      * afterwards. Returns what it removed, counted under the same lock as the
-     * delete; throws if something could not be deleted.
+     * delete (a write by another process landing during the delete is removed but
+     * not counted); throws if something could not be deleted.
      */
     forget(): Promise<{ files: number; bytes: number }> {
       return locked(async () => {

@@ -50,7 +50,7 @@ Saved, as plain files you can open:
 - the **whole text** of every file Claude reads (the answer Claude sees is cut at 25,000 characters; the saved copy is not);
 - your study programme, form, year and semester.
 
-Never saved: your password, IS's sign-in cookie, your name, student number or e-mail.
+Never saved: your password or IS's sign-in cookie. The study profile holds no name, student number or e-mail, but file names and the text of files are kept exactly as they are, so anything written in them is kept too.
 
 Where (one folder per computer account, shared by Claude Desktop and Claude Code):
 
@@ -62,11 +62,11 @@ Where (one folder per computer account, shared by Claude Desktop and Claude Code
 
 It takes up to 4 GB, then the oldest copies are removed. It is not tied to your IS login, so if you share a computer account with someone else, delete it before handing over. Uninstalling the extension does **not** delete it.
 
-**To delete it:** ask Claude to "forget everything reIS saved" (it runs `mendelu_forget_everything`, deletes the folder's contents and says what it removed), or delete the folder yourself. If the folder cannot be written, reIS says so and works from memory until Claude closes.
+**To delete it:** ask Claude to "forget everything reIS saved" (it runs `mendelu_forget_everything`, deletes the folder's contents and says what it removed), or delete the folder yourself (with Claude closed: a file being downloaded at that moment would be saved again). If the folder cannot be written, reIS says so and works from memory until Claude closes.
 
 ## Repeated questions
 
-Asking IS is kept to what is cheap. A file's text is read from the saved copy as long as its folder still shows the date it was read at, even after a restart; a different date, or a file read before its folder was listed, is downloaded again. The lists (subjects, file lists, points, assignments, exams, the timetable) always come from IS, and within one Claude run an answer is also kept in memory for a while so asking the same thing twice does not ask IS twice: a minute for assignments, exams, points and grades (what you or a teacher can change while you wait), 5 minutes for a subject's file list, 15 for the timetable, an hour for subjects, the study plan and a file's text, and a day for syllabi. Pass rates are not kept here: their own fetcher keeps them and asks again for any subject it could not get. A file is read again as soon as its folder shows a different date for it.
+Asking IS is kept to what is cheap. A file's text is read from the saved copy as long as its folder still shows the same modified date and the text was read on a later day than that date (IS shows no time of day, so an edit made the same day cannot be told apart), even after a restart; a different date, a file read the day it was modified, or a file read before its folder was listed, is downloaded again. The lists (subjects, file lists, points, assignments, exams, the timetable) always come from IS, and within one Claude run an answer is also kept in memory for a while so asking the same thing twice does not ask IS twice: a minute for assignments, exams, points and grades (what you or a teacher can change while you wait), 5 minutes for a subject's file list, 15 for the timetable, an hour for subjects, the study plan and a file's text, and a day for syllabi. Pass rates are not kept here: their own fetcher keeps them and asks again for any subject it could not get. A file is read again as soon as its folder shows a different date for it.
 
 ## Limits
 

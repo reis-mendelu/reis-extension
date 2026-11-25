@@ -3,6 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TOOLS, type ToolCtx } from './tools';
 import { toolResult, toError } from './format';
 import { createToolCache, type ToolCache } from './cache';
+import type { Ticket } from './cacheTypes';
 import { createMapPersist } from './storeMap';
 import { FORGET_TOOL, forgetEverything } from './forgetTool';
 // Aliased to ./documentHandover in the plugin build, like the import in files.ts.
@@ -33,14 +34,15 @@ async function runTool(
   t: (typeof TOOLS)[number],
   args: Record<string, unknown>,
   ctx: ToolCtx,
-  cache: ToolCache
+  cache: ToolCache,
+  ticket: Ticket
 ) {
   // Before the tool runs: fetchers catch a failed request and say "try
   // again", which would hide that the login is missing.
   if (ctx.unavailable) return toError(t.name, new Error(ctx.unavailable));
   try {
     return toolResult(
-      await cache.run(t.name, args, () => t.run(args, ctx)),
+      await cache.run(t.name, args, () => t.run(args, ctx), ticket),
       args.response_format === 'json' ? 'json' : 'markdown'
     );
   } catch (e) {
@@ -81,13 +83,13 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
         annotations: READ_ONLY,
       },
       async (args: Record<string, unknown>) => {
-        // The token is taken before the tool runs: a forget() after this moment, in
-        // any process, cancels what this call saves.
-        const token = await map?.persist.begin().catch(() => null);
+        // One ticket per call, taken before it does anything: a forget() after this
+        // moment, in this process or another, cancels what the call keeps or saves.
+        const ticket = await cache.ticket();
         const toolCtx: ToolCtx = map
-          ? { ...ctx, noteStudy: (p) => map.saveProfile(p, token as never) }
+          ? { ...ctx, noteStudy: (p) => map.saveProfile(p, ticket.token) }
           : ctx;
-        const result = await runTool(t, args, toolCtx, cache);
+        const result = await runTool(t, args, toolCtx, cache, ticket);
         await map?.settled();
         return withNotice(result, ctx, store);
       }

@@ -39,8 +39,9 @@ computer: reIS receives none of it.
   reads; your study programme, form, year and semester. A PDF or Office file Claude reads
   is handed to Claude Code, which saves its own copy as before; the plugin does not keep
   one yet.
-- **Never saved:** your IS password, IS's sign-in cookie, your name, your student number
-  or your e-mail. The password stays in Claude Code's secure storage and the IS session in
+- **Never saved:** your IS password or IS's sign-in cookie. The study profile holds no
+  name, student number or e-mail, but file names and the text of plain-text files are
+  kept exactly as they are, so anything written in them is kept too. The password stays in Claude Code's secure storage and the IS session in
   the plugin's memory, gone when Claude Code closes.
 - **Where:** macOS `~/Library/Application Support/reIS for Claude`; Windows
   `%LOCALAPPDATA%\reIS for Claude`; Linux `$XDG_DATA_HOME/reIS for Claude` or
@@ -56,7 +57,7 @@ computer: reIS receives none of it.
 ## Deleting it
 
 Ask Claude to "forget everything reIS saved": the `mendelu_forget_everything` tool deletes
-the folder's contents and says what it removed. Or delete the folder yourself. It does not
+the folder's contents and says what it removed. Or delete the folder yourself, with Claude closed (a file being downloaded at that moment would be saved again). It does not
 change anything in IS or in a Claude conversation that already holds it.
 
 ## What it never does

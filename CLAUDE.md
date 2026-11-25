@@ -94,7 +94,7 @@ default and local only: one folder per laptop (`~/Library/Application Support/re
 Claude`, `%LOCALAPPDATA%\reIS for Claude`, `$XDG_DATA_HOME` or `~/.local/share`), written
 only through `mcp/store*.ts`, never holding the password or the session cookie. Step 2 of 7
 is in: subjects, folder listings, the full text of files read and the study programme are
-saved, a file's text is served again after a restart while its listing date is unchanged
+saved, a file's text is served again after a restart while its listing's Modifikace date is unchanged and the text was read on a later day than that date (IS gives no time of day, so a same-day edit cannot be told apart)
 (`mcp/cache.ts` second tier, `mcp/storeMap.ts`), and `mendelu_forget_everything` deletes it.
 The overview, search, originals and refresh steps are not built yet. Design, steps and the
 promises it changed: `docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md`. The

@@ -32,13 +32,13 @@ The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Cla
 
 ## What it saves on your computer
 
-So Claude can start from what it read before instead of forgetting it with each Claude Code window, the plugin keeps: your subject list, each subject's file list (names, dates, download links), the text of plain-text files Claude reads (PDFs and Office files are handed to Claude Code whole, and the plugin does not keep a copy of them yet), and your study programme, form, year and semester. Not your password, the IS cookie, your name, student number or e-mail. It is plain files in one folder per computer account, shared with Claude Desktop if you use both:
+So Claude can start from what it read before instead of forgetting it with each Claude Code window, the plugin keeps: your subject list, each subject's file list (names, dates, download links), the text of plain-text files Claude reads (PDFs and Office files are handed to Claude Code whole, and the plugin does not keep a copy of them yet), and your study programme, form, year and semester. Never your password or the IS cookie; the study profile holds no name, student number or e-mail, but file names and plain-text contents are kept as they are, so anything written in them is kept too. It is plain files in one folder per computer account, shared with Claude Desktop if you use both:
 
 - macOS: `~/Library/Application Support/reIS for Claude`
 - Windows: `%LOCALAPPDATA%\reIS for Claude`
 - Linux: `$XDG_DATA_HOME/reIS for Claude`, or `~/.local/share/reIS for Claude`
 
-Ask Claude to "forget everything reIS saved" (`mendelu_forget_everything`) or delete the folder to remove it. Uninstalling the plugin does not delete it.
+Ask Claude to "forget everything reIS saved" (`mendelu_forget_everything`) or delete the folder (with Claude Code closed: a file being downloaded at that moment would be saved again) to remove it. Uninstalling the plugin does not delete it.
 
 Whatever Claude reads goes to Claude like anything else you share in a chat. The full privacy policy is in [PRIVACY.md](PRIVACY.md).
 

@@ -1,10 +1,9 @@
-// S2 of docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md: what the
-// tools read survives a restart, and only the cheap listings go back to IS.
+// S2 of docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md: what the tools read survives a restart, and only the cheap listings go back to IS.
 // A "restart" is a second store and a second server on the same folder.
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mkdtemp, readFile, writeFile, readdir, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { it, describe, expect, vi } from 'vitest';
+import { readFile, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
+import { registerTools } from '../register';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 vi.mock('../../src/utils/userParams', () => ({
@@ -38,134 +37,21 @@ vi.mock('../../src/api/odevzdavarny', () => ({ fetchOdevzdavarny: vi.fn() }));
 vi.mock('../../src/api/zaznamnik', () => ({ fetchSubjectZaznamnik: vi.fn() }));
 vi.mock('../../src/api/documents/service', () => ({ fetchFolderListing: vi.fn() }));
 
-import { fetchDualLanguageSubjects } from '../../src/api/subjects';
-import { fetchFolderListing } from '../../src/api/documents/service';
-import { registerTools } from '../register';
+import {
+  DL,
+  TEXT as _TEXT,
+  is,
+  tempDir,
+  boot,
+  ask,
+  textOf,
+  files,
+  fetchFromIs,
+  type Result,
+} from './mapKit';
 import { createStore } from '../store';
-import { NO_LOGIN_MESSAGE } from '../session';
 
-const DL = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=1;id=1;download=2';
-const FOLDER = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=1';
-const TEXT = 'Zápočtový test: 12. 1. 2027 v 9:00, místnost Q01.';
-
-type Result = { isError?: boolean; content: { type: string; text?: string }[] };
 type Handler = (args: Record<string, unknown>) => Promise<Result>;
-
-/** The fake IS: counts what reaches it, and what it answers can be changed per test. */
-const is = {
-  subjects: 0,
-  listings: 0,
-  downloads: [] as string[],
-  modified: '24. 11. 2025',
-  body: TEXT,
-  /** Holds a download open until released. */
-  hold: null as null | Promise<void>,
-};
-
-beforeEach(() => {
-  Object.assign(is, {
-    subjects: 0,
-    listings: 0,
-    downloads: [],
-    modified: '24. 11. 2025',
-    body: TEXT,
-  });
-  is.hold = null;
-  vi.mocked(fetchDualLanguageSubjects).mockImplementation((async () => {
-    is.subjects++;
-    return {
-      subjects: {
-        data: {
-          'EBC-PS': {
-            code: 'EBC-PS',
-            name: 'Počítačové sítě',
-            subjectId: '164074',
-            folderUrl: FOLDER,
-            fetchedAt: 1,
-          },
-        },
-      },
-    };
-  }) as never);
-  vi.mocked(fetchFolderListing).mockImplementation((async () => {
-    is.listings++;
-    return {
-      complete: true,
-      files: [
-        {
-          subfolder: '',
-          file_name: 'Harmonogram',
-          file_comment: '',
-          author: 'A',
-          date: '1. 10. 2026',
-          modified: is.modified,
-          files: [{ name: 'x', type: 'txt', link: DL, filename: 'harmonogram.txt' }],
-        },
-      ],
-    };
-  }) as never);
-});
-
-const fetchFromIs = (async (url: RequestInfo | URL) => {
-  is.downloads.push(String(url));
-  if (is.hold) await is.hold;
-  const bytes = new TextEncoder().encode(is.body);
-  return {
-    ok: true,
-    status: 200,
-    headers: {
-      get: (n: string) =>
-        ({
-          'content-type': 'text/plain',
-          'content-disposition': 'attachment; filename="harmonogram.txt"',
-        })[n.toLowerCase()] ?? null,
-    },
-    arrayBuffer: async () =>
-      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-  };
-}) as unknown as typeof fetch;
-
-async function tempDir() {
-  const root = await mkdtemp(join(tmpdir(), 'reis-map-'));
-  return { root, dir: join(root, 'reIS for Claude') };
-}
-
-/** One server process on `dir`: its own store, its own memory. */
-function boot(dir: string, extra: { unavailable?: string } = {}) {
-  const handlers = new Map<string, Handler>();
-  const metas = new Map<string, Record<string, unknown>>();
-  const server = {
-    registerTool: (name: string, meta: Record<string, unknown>, h: Handler) => {
-      handlers.set(name, h);
-      metas.set(name, meta);
-    },
-  } as unknown as McpServer;
-  const store = createStore({ dir });
-  registerTools(server, { fetch: fetchFromIs, ...extra }, store);
-  const call = (name: string, args: Record<string, unknown> = {}) => handlers.get(name)!(args);
-  return { call, store, metas, handlers };
-}
-
-/** The question every test asks: subjects, the folder, then the file. */
-async function ask(s: ReturnType<typeof boot>) {
-  await s.call('mendelu_subjects');
-  await s.call('mendelu_subject_files', { code: 'EBC-PS' });
-  return s.call('mendelu_read_file', { url: DL });
-}
-const textOf = (r: Result) => r.content[0]!.text!;
-
-async function files(dir: string): Promise<string[]> {
-  const out: string[] = [];
-  const walk = async (abs: string, rel: string) => {
-    for (const e of await readdir(abs, { withFileTypes: true }).catch(() => [])) {
-      const r = rel ? `${rel}/${e.name}` : e.name;
-      if (e.isDirectory()) await walk(join(abs, e.name), r);
-      else if (e.name !== '.generation') out.push(r);
-    }
-  };
-  await walk(dir, '');
-  return out.sort();
-}
 
 describe('what the tools read survives a restart', () => {
   it('serves an unchanged file from the store: no download, only listings reach IS', async () => {
@@ -294,52 +180,6 @@ describe('an unwritable folder', () => {
       .flatMap((x) => x.content.map((c) => c.text ?? ''))
       .filter((t) => /working from memory/.test(t));
     expect(notices).toHaveLength(1);
-    await rm(root, { recursive: true, force: true });
-  });
-});
-
-describe('forget everything', () => {
-  it('is registered even without an IS login, and marked destructive', async () => {
-    const { root, dir } = await tempDir();
-    const s = boot(dir, { unavailable: NO_LOGIN_MESSAGE });
-    expect(s.metas.get('mendelu_forget_everything')).toMatchObject({
-      annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
-    });
-    const r = await s.call('mendelu_forget_everything');
-    expect(r.isError).toBeUndefined();
-    await rm(root, { recursive: true, force: true });
-  });
-
-  it('removes everything, says what it removed, and the next run starts from nothing', async () => {
-    const { root, dir } = await tempDir();
-    const s = boot(dir);
-    await ask(s);
-    const r = await s.call('mendelu_forget_everything', { response_format: 'json' });
-    const report = JSON.parse(textOf(r));
-    expect(report).toMatchObject({ forgotten: true, filesRemoved: 4 }); // subjects, listing, profile, one text
-    expect(report.folder).toBe(dir);
-    expect(await files(dir)).toEqual([]);
-
-    await ask(s); // same process: its memory was forgotten too, so IS is asked again
-    expect(is.downloads).toHaveLength(2);
-    await rm(root, { recursive: true, force: true });
-  });
-
-  it('a download still running when it is called does not reappear', async () => {
-    const { root, dir } = await tempDir();
-    const s = boot(dir);
-    await s.call('mendelu_subjects');
-    await s.call('mendelu_subject_files', { code: 'EBC-PS' });
-    let release!: () => void;
-    is.hold = new Promise<void>((r) => (release = r));
-    const reading = s.call('mendelu_read_file', { url: DL });
-    await vi.waitFor(() => expect(is.downloads).toHaveLength(1));
-    await s.call('mendelu_forget_everything');
-    release();
-    await reading;
-    // Let any write the read queued finish, then look at the folder.
-    await s.store.list();
-    expect(await files(dir)).toEqual([]);
     await rm(root, { recursive: true, force: true });
   });
 });

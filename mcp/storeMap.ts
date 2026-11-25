@@ -10,7 +10,7 @@
 // business (it falls back to memory), anything else is swallowed here.
 import { createHash } from 'node:crypto';
 import type { Store } from './store';
-import type { Persist } from './cache';
+import type { Persist } from './cacheTypes';
 
 const SUBJECTS = 'mendelu_subjects';
 const LIST = 'mendelu_subject_files';
@@ -68,23 +68,32 @@ export function createMapPersist(
     extractsText = true,
   }: { now?: () => number; extractsText?: boolean } = {}
 ) {
+  // What was last kept, and the folder's forget token then: another process forgetting
+  // changes the token, so the same profile is written again.
   let lastProfile = '';
+  let lastGen: unknown;
   let profileWrite: Promise<unknown> = Promise.resolve();
-  const put = async (path: string, body: Json, token?: Token) => {
+  /** True if the store kept it; false if it was cancelled, refused or failed. */
+  const put = async (path: string, body: Json, token?: Token): Promise<boolean> => {
     try {
       const at = isToken(token) ? token.at : now();
-      await store.write(
+      return await store.write(
         path,
         JSON.stringify({ savedAt: new Date(at).toISOString(), ...body }),
         isToken(token) ? { after: token.gen } : {}
       );
     } catch {
       // an unusable name or a failing disk must not fail the tool that read the data
+      return false;
     }
   };
 
   const persist: Persist = {
-    begin: async () => ({ gen: await store.generation(), at: now() }),
+    // The time is taken first: a read that crosses midnight began on the earlier day.
+    begin: async () => {
+      const at = now();
+      return { gen: await store.generation(), at };
+    },
 
     async load(tool, args, stamp) {
       // Only a file's text is served from here: every listing still goes to IS.
@@ -104,15 +113,18 @@ export function createMapPersist(
     },
 
     async save(tool, args, value, stamp, token) {
-      if (tool === SUBJECTS) return put('subjects.json', { subjects: value }, token as Token);
+      if (tool === SUBJECTS) {
+        await put('subjects.json', { subjects: value }, token as Token);
+        return;
+      }
       if (tool === LIST && typeof args.code === 'string') {
-        return put(`listings/${args.code}.json`, { code: args.code, files: value }, token as Token);
+        await put(`listings/${args.code}.json`, { code: args.code, files: value }, token as Token);
       }
       // The plugin build hands a document over whole (no text): its originals are step 5.
       if (tool === READ && typeof args.url === 'string' && isObject(value)) {
         if (typeof value.text !== 'string' || typeof value.kind !== 'string') return;
         if (!extractsText && value.kind !== 'text') return;
-        return put(
+        await put(
           textPath(args.url),
           { url: args.url, stamp: stamp || null, file: value },
           token as Token
@@ -122,7 +134,7 @@ export function createMapPersist(
   };
 
   /** Called with what getUserParams already holds: it never asks IS anything. */
-  async function saveProfile(params: unknown, token?: Token): Promise<void> {
+  async function saveProfile(params: unknown, token?: unknown): Promise<void> {
     if (!isObject(params)) return;
     const profile: Profile = {};
     for (const k of PROFILE_FIELDS) {
@@ -130,9 +142,12 @@ export function createMapPersist(
       if ((typeof v === 'string' && v) || typeof v === 'number') profile[k] = v;
     }
     const body = JSON.stringify(profile);
-    if (body === '{}' || body === lastProfile) return;
-    lastProfile = body;
-    profileWrite = put('profile.json', profile, token);
+    const gen = isToken(token) ? token.gen : undefined;
+    if (body === '{}' || (body === lastProfile && gen === lastGen)) return;
+    profileWrite = put('profile.json', profile, token as Token).then((kept) => {
+      if (kept) [lastProfile, lastGen] = [body, gen];
+      return kept;
+    });
     await profileWrite;
   }
 
@@ -142,6 +157,7 @@ export function createMapPersist(
   /** After forget: the next profile seen is saved again. */
   const reset = () => {
     lastProfile = '';
+    lastGen = undefined;
   };
 
   return { persist, saveProfile, settled, reset };
