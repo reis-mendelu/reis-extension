@@ -77,7 +77,7 @@ toServer.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initializ
 const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sort();
 console.log('tools:', tools.length, tools.join(', '));
 let failed =
-  tools.length !== 13 || !tools.includes('mendelu_search') || !tools.includes('mendelu_overview');
+  tools.length !== 14 || !tools.includes('mendelu_search') || !tools.includes('mendelu_overview');
 
 const json = async (name, args) => {
   const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
