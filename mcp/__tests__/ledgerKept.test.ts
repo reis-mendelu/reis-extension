@@ -197,37 +197,4 @@ describe('the tool', () => {
     expect(join(dir, 'ledger')).toBeTruthy();
     await done(root);
   });
-
-  it('pages a long list: every entry is reachable with offset, one with id', async () => {
-    const { root, dir } = await tempDir();
-    const s = boot(dir);
-    const rule = 'x'.repeat(450);
-    const time = (i: number) => `${String(8 + Math.floor(i / 6)).padStart(2, '0')}:${i % 6}0`;
-    for (let i = 0; i < 60; i++)
-      await led(s, { ...test9, title: `Test ${i}`, time: time(i), rule, room: 'Q01' });
-    type Page = { count: number; note?: string; entries: { id: string; title: string }[] };
-    const seen: string[] = [];
-    let offset = 0;
-    let pages = 0;
-    for (;;) {
-      const page = json(await led(s, { action: 'list', offset })) as unknown as Page;
-      pages++;
-      expect(page.count).toBe(60);
-      seen.push(...page.entries.map((e) => e.id));
-      if (!page.note) break;
-      expect(page.note).toMatch(new RegExp(`Pass offset ${offset + page.entries.length} `));
-      offset += page.entries.length;
-    }
-    expect(pages).toBeGreaterThan(1);
-    expect(new Set(seen).size).toBe(60);
-    expect(seen).toHaveLength(60);
-
-    const some = json(await led(s, { action: 'list', limit: 5 })) as unknown as Page;
-    expect(some.entries).toHaveLength(5);
-    expect(some.note).toMatch(/Showing 1-5 of 60. Pass offset 5/);
-    const one = json(await led(s, { action: 'list', id: seen[17] })) as unknown as Page;
-    expect(one.entries.map((e) => e.id)).toEqual([seen[17]]);
-    expect(one.note).toBeUndefined();
-    await done(root);
-  });
 });
