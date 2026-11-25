@@ -21,19 +21,44 @@ export type Upcoming = {
 const DAY = 86_400_000;
 const MAX_SHOWN = 20;
 
-/** IS prints DD.MM.YYYY and, for a term or a deadline, HH:MM. */
-function parse(date: string, time = ''): Date | null {
+const ZONE = 'Europe/Prague';
+const parts = new Intl.DateTimeFormat('en-CA', {
+  timeZone: ZONE,
+  hourCycle: 'h23',
+  year: 'numeric',
+  month: 'numeric',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+});
+
+/** The Prague wall clock at `at`, as the UTC instant that shows the same numbers. */
+function pragueWall(at: number): number {
+  const p = Object.fromEntries(parts.formatToParts(at).map((x) => [x.type, Number(x.value)]));
+  return Date.UTC(p.year!, p.month! - 1, p.day!, p.hour!, p.minute!, p.second!);
+}
+
+/**
+ * IS prints DD.MM.YYYY and, for a term or a deadline, HH:MM, in Prague time whatever the
+ * computer's clock is set to. Returns the instant and the Prague calendar day (as UTC midnight).
+ */
+function parse(date: string, time = ''): { at: number; day: number } | null {
   const m = /(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(
     `${date} ${time}`.trim()
   );
   if (!m) return null;
-  return new Date(
+  const wall = Date.UTC(
     Number(m[3]),
     Number(m[2]) - 1,
     Number(m[1]),
     Number(m[4] ?? 23),
     Number(m[5] ?? 59)
   );
+  // Subtract Prague's offset at that moment; once more, in case the first guess crossed a clock change.
+  let at = wall - (pragueWall(wall) - wall);
+  at = wall - (pragueWall(at) - at);
+  return { at, day: Math.floor(wall / DAY) * DAY };
 }
 
 /** Soonest first; items already past are dropped, a long list is cut with its size said. */
@@ -42,12 +67,11 @@ export function upcomingItems(
   exams: ExamRow[] | undefined,
   now: Date
 ): { items: Upcoming[]; more: number } {
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const today = Math.floor(pragueWall(now.getTime()) / DAY) * DAY;
   const all: { at: number; item: Upcoming }[] = [];
-  const add = (at: Date | null, item: Omit<Upcoming, 'daysLeft'>) => {
-    if (!at || at.getTime() < now.getTime()) return;
-    const day = new Date(at.getFullYear(), at.getMonth(), at.getDate()).getTime();
-    all.push({ at: at.getTime(), item: { ...item, daysLeft: Math.round((day - today) / DAY) } });
+  const add = (when: ReturnType<typeof parse>, item: Omit<Upcoming, 'daysLeft'>) => {
+    if (!when || when.at < now.getTime()) return;
+    all.push({ at: when.at, item: { ...item, daysLeft: Math.round((when.day - today) / DAY) } });
   };
   for (const e of exams ?? []) {
     if (e.state !== 'registered') continue;

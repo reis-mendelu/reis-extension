@@ -1,12 +1,14 @@
 // The map as the overview hands it to Claude, kept inside what one answer can
 // carry (format.ts CHARACTER_LIMIT). When it does not fit, whole file lists are
 // replaced by a pointer and the cut is said in the answer: never a silent
-// truncation, and never of the changes, which are reported only once.
+// truncation. A change is reported once; only a bulk upload too big for one answer is
+// split across calls (fitOverview's `held`), and what is held is not recorded as reported.
 import { CHARACTER_LIMIT } from './format';
 import { toMarkdown } from './markdown';
 import { changeLines, type Change } from './overviewDiff';
-import { labelOf, modifiedOf, type Gathered } from './overviewGather';
+import type { Gathered } from './overviewGather';
 import type { SubjectFile } from './files';
+import { deadlineKey, fileRows, student } from './overviewRows';
 import { upcomingItems } from './overviewUpcoming';
 
 export type RenderInput = {
@@ -19,50 +21,13 @@ export type RenderInput = {
   saved: (f: SubjectFile) => boolean;
   format: 'markdown' | 'json';
   now?: Date;
+  /** Changed files this answer leaves out (see fitOverview): said in the note, never silent. */
+  omitted?: number;
 };
 
-const FORMS: Record<string, string> = {
-  P: 'P (prezenční, full-time)',
-  K: 'K (kombinované, combined)',
-};
 const SHOWN_TERMS = 6;
 /** The largest file list shown whole, tried in turn until the answer fits. */
 const CAPS = [Infinity, 30, 20, 12, 8, 5, 3, 1, 0];
-
-const deadlineKey = (d: string) => {
-  const m = /(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(d);
-  return m
-    ? `${m[3]}${m[2]!.padStart(2, '0')}${m[1]!.padStart(2, '0')}${(m[4] ?? '0').padStart(2, '0')}${m[5] ?? '00'}`
-    : '9';
-};
-
-function student(profile: RenderInput['profile']) {
-  if (!profile) return undefined;
-  const form = typeof profile.studyForm === 'string' ? profile.studyForm : '';
-  return {
-    programme: profile.studyProgram,
-    form: form ? (FORMS[form] ?? form) : undefined,
-    year: profile.studyYear,
-    semester: profile.studySemester,
-    faculty: profile.facultyLabel,
-    period: profile.periodLabel,
-  };
-}
-
-function fileRows(files: SubjectFile[], marks: Map<string, string>, input: RenderInput) {
-  return files.map((f) => {
-    const label = labelOf(f);
-    return {
-      file: label,
-      // The document's own title, only when it says more than the file's name.
-      ...(f.name && f.name !== label.replace(/\.[^.]+$/, '') ? { title: f.name } : {}),
-      modified: modifiedOf(f),
-      ...(input.saved(f) ? { textSaved: 'yes' } : {}),
-      ...(marks.has(f.downloadUrl) ? { changed: marks.get(f.downloadUrl) } : {}),
-      url: f.downloadUrl,
-    };
-  });
-}
 
 /** `whole(code, n)`: whether a subject's n files are all listed or replaced by a pointer. */
 type Whole = (code: string, n: number) => boolean;
@@ -75,7 +40,7 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
     let shown: ReturnType<typeof fileRows> | undefined;
     let more: string | undefined;
     if (files) {
-      const rows = fileRows(files, marks, input);
+      const rows = fileRows(files, marks, input.saved);
       if (whole(s.code, rows.length)) shown = rows;
       else {
         // Too many to list here: keep the ones that matter now, point to the rest.
@@ -138,9 +103,12 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
     : lines.length
       ? `${input.changes.length} change(s) in IS since the last overview. They are listed once under "changed" and will not be repeated.`
       : 'Nothing changed in IS since the last overview.';
+  const noted = input.omitted
+    ? `${note} ${input.omitted} more changed file(s) do not fit in this answer: they come with the next call to mendelu_overview.`
+    : note;
 
   return {
-    note,
+    note: noted,
     changed: lines.length ? lines : undefined,
     problems: g.problems.length ? g.problems : undefined,
     student: student(input.profile),
@@ -161,13 +129,22 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
 const sizeOf = (o: object, format: RenderInput['format']) =>
   format === 'json' ? JSON.stringify(o, null, 2).length : toMarkdown(o).length;
 
-export function renderOverview(input: RenderInput) {
-  const marks = new Map<string, string>();
-  for (const c of input.changes) if (c.url && c.what) marks.set(c.url, c.what);
+const marksOf = (changes: Change[]) =>
+  new Map(changes.flatMap((c) => (c.url && c.what ? [[c.url, c.what] as const] : [])));
+
+export const renderOverview = (input: RenderInput) => fitOverview(input).out;
+
+/**
+ * The answer, and the changed files it had to leave out (`held`), which the caller must not
+ * record as reported: they are listed with the next overview instead.
+ */
+export function fitOverview(input: RenderInput): { out: object; held: Change[] } {
+  const marks = marksOf(input.changes);
   // Room for the cut marker format.ts would add if it still did not fit.
+  const small = (o: object) => sizeOf(o, input.format) <= CHARACTER_LIMIT - 300;
   const fits = (whole: Whole) => {
     const out = build(input, whole, marks);
-    return sizeOf(out, input.format) <= CHARACTER_LIMIT - 300 ? out : null;
+    return small(out) ? out : null;
   };
   const cap = CAPS.find((c) => fits((_, n) => n <= c)) ?? 0;
   const expanded = new Set<string>();
@@ -180,6 +157,28 @@ export function renderOverview(input: RenderInput) {
     expanded.add(code);
     if (!fits(whole)) expanded.delete(code);
   }
-  // Nothing fits even with every list cut: keep only the files that changed.
-  return fits(whole) ?? build({ ...input, saved: () => false }, (_, n) => n <= 0, marks);
+  const best = fits(whole);
+  if (best) return { out: best, held: [] };
+  // Nothing fits even with every list cut: keep only the files that changed, as many as fit.
+  // The rest are held back, so a bulk upload is reported over several calls, not cut off.
+  const rowed = input.changes.filter((c) => c.url && c.what);
+  const isRowed = new Set(rowed);
+  const lean = (k: number) => {
+    const kept = new Set(rowed.slice(0, k));
+    const changes = input.changes.filter((c) => !isRowed.has(c) || kept.has(c));
+    const omitted = rowed.length - k;
+    const out = build(
+      { ...input, changes, saved: () => false, omitted },
+      (_, n) => n <= 0,
+      marksOf(changes)
+    );
+    return { out, held: rowed.slice(k) };
+  };
+  let [lo, hi] = [0, rowed.length];
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (small(lean(mid).out)) lo = mid;
+    else hi = mid - 1;
+  }
+  return lean(lo);
 }

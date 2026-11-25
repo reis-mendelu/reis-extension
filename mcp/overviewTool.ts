@@ -4,11 +4,11 @@
 // the store and the tool cache, and it is registered first (register.ts).
 import type { Store } from './store';
 import type { ToolCtx } from './tools';
-import { gather, type Run } from './overviewGather';
-import { diffWorld } from './overviewDiff';
+import { gather, type Gathered, type Run } from './overviewGather';
+import { diffWorld, holdBack } from './overviewDiff';
 import { parseSnapshot, snapshotOf } from './overviewRecord';
-import { renderOverview } from './overviewRender';
-import { readAfterModified, textPath } from './storeMap';
+import { fitOverview } from './overviewRender';
+import { keptText, textPath } from './storeMap';
 
 // Why "overview": the failure it fixes is Claude not knowing where to look. The
 // description is the only thing a model that has never seen reIS reads before it
@@ -85,8 +85,8 @@ async function overview(d: OverviewDeps) {
   } catch {
     profile = null;
   }
-  const saved = await savedFiles(d);
-  const out = renderOverview({
+  const saved = await savedFiles(d, g.listings);
+  const { out, held } = fitOverview({
     g,
     first: !prev,
     changes,
@@ -99,11 +99,12 @@ async function overview(d: OverviewDeps) {
   // again instead of losing them; and only if no forget() ran since the call began (the
   // token every other save of this call carries). Built on the record as it is now, so a
   // part this call could not read does not undo what another process reported meanwhile.
+  // What the answer had to leave out (a bulk upload) is not recorded: the next call reports it.
   const latest = parseSnapshot(await d.store.readText(RECORD)) ?? prev;
   await d.store
     .write(
       RECORD,
-      JSON.stringify(snapshotOf(g.world, latest)),
+      JSON.stringify(snapshotOf(holdBack(prev, g.world, held), latest)),
       isToken(d.token) ? { after: d.token.gen } : {}
     )
     .catch(() => false);
@@ -111,33 +112,25 @@ async function overview(d: OverviewDeps) {
 }
 
 /**
- * The same rule as storeMap's load(): a text is good for a file whose Modifikace is
- * earlier than the day it was read. The plugin build keeps only plain text.
+ * The same rule as storeMap's load(), applied to the stored record itself (its stamp and
+ * the day it was read), not to when the file was written: a text saved before any listing
+ * has no stamp and load() downloads it again, so it is not "saved". The plugin build keeps
+ * only plain text.
  */
-async function savedFiles(d: OverviewDeps) {
-  const readAt = new Map((await d.store.list()).map((e) => [e.path, e.at]));
-  const plain = new Set<string>();
-  if (d.extractsText === false) {
-    for (const path of readAt.keys()) {
-      if (!path.startsWith('text/')) continue;
-      try {
-        const rec = JSON.parse((await d.store.readText(path)) ?? 'null') as {
-          file?: { kind?: unknown };
-        } | null;
-        if (rec?.file?.kind === 'text') plain.add(path);
-      } catch {
-        // unreadable: not saved
+async function savedFiles(d: OverviewDeps, listings: Gathered['listings']) {
+  const stored = new Set((await d.store.list()).map((e) => e.path));
+  const kept = new Set<string>();
+  for (const f of Object.values(listings).flatMap((l) => l ?? [])) {
+    const path = textPath(f.downloadUrl);
+    if (!f.modified || !stored.has(path)) continue;
+    try {
+      const rec = JSON.parse((await d.store.readText(path)) ?? 'null') as unknown;
+      if (keptText(rec, f.downloadUrl, `modified ${f.modified}`, d.extractsText !== false)) {
+        kept.add(f.downloadUrl);
       }
+    } catch {
+      // unreadable: not saved
     }
   }
-  return (f: { downloadUrl: string; modified?: string }) => {
-    const path = textPath(f.downloadUrl);
-    const at = readAt.get(path);
-    if (d.extractsText === false && !plain.has(path)) return false;
-    return (
-      !!at &&
-      !!f.modified &&
-      readAfterModified(`modified ${f.modified}`, new Date(at).toISOString())
-    );
-  };
+  return (f: { downloadUrl: string }) => kept.has(f.downloadUrl);
 }

@@ -156,3 +156,25 @@ export function changeLines(changes: Change[], max = 40): string[] {
   for (const { n, label } of sums.values()) lines.push(`${n} ${label} (see the map below)`);
   return lines;
 }
+
+/**
+ * The world as the record should see it when the answer left `held` changes out: a held new
+ * file is not there yet and a held replaced file still has its old date, so the next overview
+ * finds them different from the record and reports them. Only new and replaced files are ever
+ * held (a change with a `url`).
+ */
+export function holdBack(prev: Snapshot | null, world: World, held: Change[]): World {
+  if (!held.length) return world;
+  const urls = new Map<string, Set<string>>();
+  for (const c of held) if (c.url) urls.set(c.code, (urls.get(c.code) ?? new Set()).add(c.url));
+  const files = { ...world.files };
+  for (const [code, hold] of urls) {
+    const before = prev?.files[code];
+    files[code] = files[code]?.flatMap((f) => {
+      if (!hold.has(f.url)) return [f];
+      const was = own(before, f.url) ? before![f.url] : undefined;
+      return was ? [{ ...f, label: was.n, modified: was.m }] : [];
+    });
+  }
+  return { ...world, files };
+}

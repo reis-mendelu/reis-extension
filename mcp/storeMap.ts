@@ -59,6 +59,20 @@ export function readAfterModified(stamp: string, readAt: unknown): boolean {
   }
 }
 
+/**
+ * The one rule for a kept text, shared by load() and the overview's "textSaved" hint so they
+ * cannot disagree: the record is for this link, was read against the date the listing shows
+ * now, was read on a later day than that date, and has the shape (and, in the plugin build,
+ * the kind) this build serves. Returns the file to hand back, or undefined.
+ */
+export function keptText(rec: unknown, url: string, stamp: string, extractsText: boolean) {
+  if (!isObject(rec) || rec.url !== url || rec.stamp !== stamp) return undefined;
+  if (!readAfterModified(stamp, rec.savedAt)) return undefined;
+  const f = rec.file;
+  if (!isObject(f) || typeof f.text !== 'string' || typeof f.kind !== 'string') return undefined;
+  return extractsText || f.kind === 'text' ? f : undefined;
+}
+
 export function createMapPersist(
   store: Store,
   {
@@ -100,13 +114,7 @@ export function createMapPersist(
       if (tool !== READ || !stamp || typeof args.url !== 'string') return undefined;
       try {
         const rec = JSON.parse((await store.readText(textPath(args.url))) ?? 'null') as unknown;
-        // The date the listing shows now must be the one the text was read at.
-        if (!isObject(rec) || rec.url !== args.url || rec.stamp !== stamp) return undefined;
-        if (!readAfterModified(stamp, rec.savedAt)) return undefined;
-        const f = rec.file;
-        if (!isObject(f) || typeof f.text !== 'string' || typeof f.kind !== 'string')
-          return undefined;
-        return extractsText || f.kind === 'text' ? f : undefined;
+        return keptText(rec, args.url, stamp, extractsText);
       } catch {
         return undefined;
       }
