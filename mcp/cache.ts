@@ -51,7 +51,7 @@ type Listed = { downloadUrl?: unknown; date?: unknown; modified?: unknown };
  * Modifikace changes when a teacher replaces a file, the document date does not
  * (storeMap.ts trusts nothing else).
  */
-const stampOf = (f: Listed) =>
+export const stampOf = (f: Listed) =>
   f.modified ? `modified ${String(f.modified)}` : `date ${String(f.date ?? '')}`;
 
 function stable(v: unknown): unknown {

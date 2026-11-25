@@ -96,7 +96,7 @@ only through `mcp/store*.ts`, never holding the password or the session cookie. 
 is in: subjects, folder listings, the full text of files read and the study programme are
 saved, a file's text is served again after a restart while its listing's Modifikace date is unchanged and the text was read on a later day than that date (IS gives no time of day, so a same-day edit cannot be told apart)
 (`mcp/cache.ts` second tier, `mcp/storeMap.ts`), and `mendelu_forget_everything` deletes it.
-The overview, search, originals and refresh steps are not built yet. Design, steps and the
+Step 4 (`mendelu_search`, `mcp/search*.ts`: keyword search over the saved text and the listings, reading the store only) is in review. In the plugin build it covers text-native files and file names only: a PDF text extractor did not fit under the 5 MiB file cap (measured, see the PR). The overview (step 3), originals and refresh steps are not all built yet. Design, steps and the
 promises it changed: `docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md`. The
 directory listing's data-handling answer still says "not retained" until Dominik resubmits it.
 

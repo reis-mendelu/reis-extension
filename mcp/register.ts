@@ -6,6 +6,7 @@ import { createToolCache, type ToolCache } from './cache';
 import type { Ticket } from './cacheTypes';
 import { createMapPersist } from './storeMap';
 import { FORGET_TOOL, forgetEverything } from './forgetTool';
+import { SEARCH_TOOL, runSearch } from './searchTool';
 // Aliased to ./documentHandover in the plugin build, like the import in files.ts.
 import { EXTRACTS_TEXT } from './documentText';
 import type { Store } from './store';
@@ -21,6 +22,14 @@ const READ_ONLY = {
 const FORGET = {
   readOnlyHint: false,
   destructiveHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+} as const;
+
+// Reads reIS's own folder only: it asks IS nothing, so it works with no login too.
+const SEARCH = {
+  readOnlyHint: true,
+  destructiveHint: false,
   idempotentHint: true,
   openWorldHint: false,
 } as const;
@@ -117,6 +126,28 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
         );
       } catch (e) {
         result = toError(FORGET_TOOL.name, e);
+      }
+      return withNotice(result, ctx, store);
+    }
+  );
+  // Search (step 4): not behind the IS login check, like forget.
+  server.registerTool(
+    SEARCH_TOOL.name,
+    {
+      title: SEARCH_TOOL.title,
+      description: SEARCH_TOOL.description,
+      inputSchema: { ...SEARCH_TOOL.input, response_format: responseFormat },
+      annotations: SEARCH,
+    },
+    async (args: Record<string, unknown>) => {
+      let result;
+      try {
+        result = toolResult(
+          await runSearch(store, args),
+          args.response_format === 'json' ? 'json' : 'markdown'
+        );
+      } catch (e) {
+        result = toError(SEARCH_TOOL.name, e);
       }
       return withNotice(result, ctx, store);
     }

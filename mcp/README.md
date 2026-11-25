@@ -28,6 +28,7 @@ Then ask Claude things like "what's due this week?" or "explain lecture 7 of PoÄ
 | `mendelu_success_rates` | Historical pass rates of subjects (public reIS statistics) |
 | `mendelu_grades` | Your grades and credits so far |
 | `mendelu_assignments` | Your submission boxes and their deadlines |
+| `mendelu_search` | Searches the text of the course files reIS has saved, in every subject at once (case and diacritics do not matter), plus file names and dates. Works offline and asks IS nothing |
 | `mendelu_forget_everything` | Deletes everything reIS saved on your computer (see below). Claude calls it only when you ask |
 
 ## What it never does

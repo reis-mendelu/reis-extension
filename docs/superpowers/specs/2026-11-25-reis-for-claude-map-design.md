@@ -125,6 +125,11 @@ and exams (3 of 15) change. A download link never changes when a file is replace
   and listing metadata, Claude opens documents natively from the stored originals, and the plugin
   README says so. The `.mcpb` and the user-scope bundle extract everything. (Claude's call; the
   fallback narrows the promise for the plugin only.)
+  **Measured in step 4 (2026-11-25):** the plugin bundle is 3.61 MB unminified, leaving 1.63 MB under
+  the 5 MiB cap. Pure-JavaScript PDF extractors that read a Czech week table correctly: pdfjs-dist
+  (in the tree, legacy build) 1.06 MB unminified but its worker is 2.38 MB, 1.26 MB minified;
+  pdf2json 1.83 MB (0.96 MB minified); unpdf 2.45 MB (1.65 MB minified); pdf-parse needs a native
+  canvas. None fits unminified in the one file the plugin ships, so the fallback above is taken.
 
 ## Promises that change (product decision, not a refactor)
 
@@ -178,7 +183,7 @@ start-up path changed). These are headless tools, so there is no UI tree and no 
 | 1   | The store module only: folder resolver, atomic writes, rebuildable index, memory-only fallback, size budget, with the guard test allowing writes inside that folder and nowhere else; a forget that no in-flight write can undo; nothing calls it. | On test     |
 | 2   | Persist what is already read: subjects, file listings (link plus modified date), full untruncated file text and the study-form profile go into the store; the **forget everything** tool; every "nothing is written to disk" text rewritten in the same PR. | In review |
 | 3   | The overview tool: refreshes the cheap listings on first call, diffs them against the store, and returns the map, the profile, points, deadlines and "what changed", with a tool description that tells Claude to call it first. | Not started |
-| 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | Not started |
+| 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | In review |
 | 4b  | The upcoming-events ledger (decision 9): a ledger tool Claude writes dated events to, an "upcoming" section in the overview (soonest first, days left, attendance flag, stated or inferred), IS exam terms and assignment deadlines merged in by reIS, recheck marks when a source file is replaced, forget covers it. | Not started |
 | 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run of counts and types first), return their paths in the overview.                                       | Not started |
 | 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz. The prompt offers daily, weekly and on-demand digests as an email draft, with the one-week-ahead rule of decision 9 and a 14-day look for weekly, and a proposed calendar entry for every new or changed ledger event, asked before it is written. | Not started |
