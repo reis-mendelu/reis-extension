@@ -36,3 +36,14 @@ describe('boxRows keys', () => {
     expect(new Set(keys(rows)).size).toBe(3);
   });
 });
+
+describe('boxRows open flag', () => {
+  // 9 Dec 2026 12:00 UTC is 13:00 in Prague. IS prints deadlines in Prague time, so the flag must
+  // not move with the computer's own zone.
+  const now = Date.UTC(2026, 11, 9, 12, 0);
+  const box = (deadline: string) => ({ courseCode: 'A-1', name: 'Esej', deadline });
+  it('reads a deadline as Prague time', () => {
+    expect(boxRows({ assignments: [box('9.12.2026 13:30')] }, now)[0]?.open).toBe(true);
+    expect(boxRows({ assignments: [box('9.12.2026 12:30')] }, now)[0]?.open).toBe(false);
+  });
+});

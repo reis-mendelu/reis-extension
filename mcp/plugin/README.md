@@ -21,6 +21,7 @@ The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Cla
 | `mendelu_success_rates` | Historical pass rates of subjects (public reIS statistics) |
 | `mendelu_grades` | Your grades and credits so far |
 | `mendelu_assignments` | Your submission boxes and their deadlines |
+| `mendelu_search` | Searches the plain-text files reIS has saved, in every subject at once (case and diacritics do not matter), plus the name, folder and date of every listed file, including PDFs and Office files. Works offline and asks IS nothing |
 | `mendelu_forget_everything` | Deletes everything reIS saved on your computer (see below). Claude calls it only when you ask |
 
 ## What it never does
@@ -38,6 +39,8 @@ So Claude can start from what it read before instead of forgetting it with each 
 - macOS: `~/Library/Application Support/reIS for Claude`
 - Windows: `%LOCALAPPDATA%\reIS for Claude`
 - Linux: `$XDG_DATA_HOME/reIS for Claude`, or `~/.local/share/reIS for Claude`
+
+**Search in the plugin.** `mendelu_search` looks through the text reIS has saved, so in the plugin it reads inside the plain-text files Claude has opened (`.txt`, `.md`, `.csv`, `.m`, `.ipynb`, `.drawio`, `.html`) and finds PDFs and Office files only by their name, folder, date and subject. The plugin stays small by not carrying a PDF reader (a pure-JavaScript one would not fit in its one 5 MiB file), so it does not keep the text of those files; Claude Code reads them itself when Claude opens one. The Claude Desktop extension (`.mcpb`) extracts and searches everything.
 
 Ask Claude to "forget everything reIS saved" (`mendelu_forget_everything`) or delete the folder (with Claude Code closed: a file being downloaded at that moment would be saved again) to remove it. Uninstalling the plugin does not delete it.
 

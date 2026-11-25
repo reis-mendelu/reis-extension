@@ -40,6 +40,15 @@ function pragueWall(at: number): number {
 }
 
 /**
+ * `at` as a local timestamp that reads the Prague wall clock: what src's isBoxOpen needs, since it
+ * builds a deadline from IS's Prague numbers in the computer's own zone.
+ */
+export function pragueAsLocal(at: number): number {
+  const p = Object.fromEntries(parts.formatToParts(at).map((x) => [x.type, Number(x.value)]));
+  return new Date(p.year!, p.month! - 1, p.day!, p.hour!, p.minute!, p.second!).getTime();
+}
+
+/**
  * IS prints DD.MM.YYYY and, for a term or a deadline, HH:MM, in Prague time whatever the
  * computer's clock is set to. Returns the instant and the Prague calendar day (as UTC midnight).
  */

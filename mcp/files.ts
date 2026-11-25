@@ -28,7 +28,9 @@ export type DocumentMeta = { filename?: string; mediaType: string; ext: string }
 const DOC_EXTENSIONS = ['.pdf', '.docx', '.pptx', '.xlsx', '.odt'];
 /** Pre-2007 binary Office files: officeparser reads none of them. */
 const OLD_OFFICE = ['.doc', '.ppt', '.xls'];
-const TEXT_EXTENSIONS = ['.txt', '.md', '.csv'];
+// IS often serves source files as application/octet-stream, so the extension decides:
+// a MATLAB .m, a notebook, a diagram and a page are all text a student asks about.
+const TEXT_EXTENSIONS = ['.txt', '.md', '.csv', '.m', '.ipynb', '.drawio', '.html', '.htm'];
 
 export const clean = (t: string) => t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n');
 const extOf = (name?: string) => /\.[^./\\]+$/.exec(name ?? '')?.[0].toLowerCase() ?? '';
