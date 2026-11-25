@@ -1,7 +1,8 @@
 // What the ledger accepts from Claude (step 4b of the map): every field is untrusted text, so
 // dates must be real days, strings bounded, and an inferred date must say how.
 import { describe, it, expect } from 'vitest';
-import { finish, parseFields, parseStored, isDay, LedgerInputError } from '../ledgerEntry';
+import { finish, isDay, LedgerInputError } from '../ledgerEntry';
+import { parseFields, parseStored } from '../ledgerFields';
 
 const META = {
   id: 'ev-0123456789ab',

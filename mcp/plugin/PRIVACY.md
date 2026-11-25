@@ -48,7 +48,7 @@ computer: reIS receives none of it.
   `~/.local/share/reIS for Claude`. One folder per computer account, shared with the
   Claude Desktop extension if you use both, and not tied to the IS login: if you share a
   computer account, delete it before handing over. It takes up to 4 GB, then the oldest
-  copies are removed. If the folder cannot be written, the plugin says so and keeps
+  copies are removed (never the list of upcoming events, which cannot be fetched again). If the folder cannot be written, the plugin says so and keeps
   things in memory until Claude Code closes.
 - **Answers IS gave** are also kept in memory for between a minute and a day, so that
   Claude asking the same thing twice does not ask IS twice; they are gone when Claude

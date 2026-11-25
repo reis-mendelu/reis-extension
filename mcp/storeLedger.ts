@@ -6,14 +6,13 @@
 // calendar entry that carries one can be found again later.
 import { randomBytes } from 'node:crypto';
 import type { Store } from './store';
+import { parseFields, parseStored } from './ledgerFields';
 import {
   ID,
   MAX_ENTRIES,
   LedgerInputError,
   dayNumber,
   finish,
-  parseFields,
-  parseStored,
   type LedgerEntry,
 } from './ledgerEntry';
 

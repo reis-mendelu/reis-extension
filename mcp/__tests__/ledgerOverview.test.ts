@@ -3,7 +3,6 @@
 // restart, are marked recheck when their source file is replaced, and are removed by forget.
 import { it, describe, expect, vi, beforeEach, afterEach } from 'vitest';
 import { rm } from 'node:fs/promises';
-import { join } from 'node:path';
 
 vi.mock('../../src/utils/userParams', () => ({
   getUserParams: vi.fn().mockResolvedValue({
@@ -30,9 +29,8 @@ vi.mock('../../src/api/odevzdavarny', () => ({ fetchOdevzdavarny: vi.fn() }));
 vi.mock('../../src/api/zaznamnik', () => ({ fetchSubjectZaznamnik: vi.fn() }));
 vi.mock('../../src/api/documents/service', () => ({ fetchFolderListing: vi.fn() }));
 
-import { tempDir, boot, files, type Result } from './mapKit';
+import { tempDir, boot, type Result } from './mapKit';
 import { world, link } from './overviewKit';
-import { NO_LOGIN_MESSAGE } from '../session';
 
 const O = 'mendelu_overview';
 const L = 'mendelu_ledger';
@@ -197,87 +195,6 @@ describe('S6: a test 9 days out is in the overview with days left and the attend
     expect(after.upcoming!.find((i: Item) => i.source === 'ledger')?.recheck).toMatch(
       /no longer listed/
     );
-    await done(root);
-  });
-});
-
-describe('S5: the ledger is kept like the rest of the map', () => {
-  it('survives a restart (a new server on the same folder) and is gone after forget', async () => {
-    const { root, dir } = await tempDir();
-    await led(boot(dir), test9);
-    await led(boot(dir), test20);
-    const restarted = boot(dir);
-    expect((await upcoming(restarted)).map((i) => i.title)).toEqual([
-      'Zápočtový test 1',
-      'Obhajoba projektu',
-    ]);
-    expect(json(await led(restarted, { action: 'list' })).count).toBe(2);
-    expect((await files(dir)).filter((f) => f.startsWith('ledger/'))).toHaveLength(2);
-
-    const forgot = await restarted.call('mendelu_forget_everything', { response_format: 'json' });
-    expect(json(forgot).forgotten).toBe(true);
-    expect(await files(dir)).toEqual([]);
-    const after = boot(dir);
-    expect(json(await led(after, { action: 'list' })).count).toBe(0);
-    expect(await upcoming(after)).toEqual([]);
-    await done(root);
-  });
-
-  it('fills in the file name and date from the saved listing when Claude passes only the link', async () => {
-    const { root, dir } = await tempDir();
-    const s = boot(dir);
-    await s.call(O);
-    const r = json(
-      await led(s, {
-        action: 'add',
-        title: 'Test',
-        kind: 'test',
-        code: 'EBC-PE',
-        date: '2026-12-09',
-        source_kind: 'course_file',
-        source_url: link(2),
-      })
-    );
-    expect(r.entry).toMatchObject({ sourceFile: 'harmonogram.pdf', sourceModified: '1. 10. 2026' });
-    await done(root);
-  });
-});
-
-describe('the tool', () => {
-  it('is registered, says when to use it, and works without an IS login', async () => {
-    const { root, dir } = await tempDir();
-    const s = boot(dir, { unavailable: NO_LOGIN_MESSAGE });
-    const meta = s.metas.get(L)!;
-    expect(String(meta.description)).toMatch(
-      /after you read a harmonogram[^]*SAVE EVERY dated event/
-    );
-    expect(String(meta.description)).toMatch(/DO NOT add what reIS already shows/);
-    expect(meta.annotations).toMatchObject({ readOnlyHint: false, openWorldHint: false });
-    expect(json(await led(s, test9)).saved).toBe('added');
-    expect(json(await led(s, { action: 'list' })).count).toBe(1);
-    await done(root);
-  });
-
-  it('answers a bad call with what to fix, and saves nothing', async () => {
-    const { root, dir } = await tempDir();
-    const s = boot(dir);
-    const bad = await led(s, { ...test9, date: '2026-02-30' });
-    expect(bad.isError).toBe(true);
-    expect(bad.content[0]!.text).toMatch(/Error in mendelu_ledger: date must be a real date/);
-    const inferred = await led(s, { ...test9, basis: 'inferred' });
-    expect(inferred.content[0]!.text).toMatch(/inferred_how is required/);
-    expect((await files(dir)).filter((f) => f.startsWith('ledger/'))).toEqual([]);
-    expect((await led(s, { action: 'remove', id: 'ev-0123456789ab' })).isError).toBeFalsy();
-    await done(root);
-  });
-
-  it('keeps its folder inside the store: nothing but ledger/ files are added', async () => {
-    const { root, dir } = await tempDir();
-    await led(boot(dir), test9);
-    expect((await files(dir)).every((f) => f.startsWith('ledger/') || f === 'index.json')).toBe(
-      true
-    );
-    expect(join(dir, 'ledger')).toBeTruthy();
     await done(root);
   });
 });

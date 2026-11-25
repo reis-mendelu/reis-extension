@@ -6,7 +6,8 @@ import type { Store } from './store';
 import { toolResult, toError } from './format';
 import { FORGET_TOOL, forgetEverything } from './forgetTool';
 import { SEARCH_TOOL, runSearch } from './searchTool';
-import { LEDGER_TOOL, runLedger } from './ledgerTool';
+import { LEDGER_TOOL } from './ledgerToolDef';
+import { runLedger } from './ledgerTool';
 import { FORGET, LEDGER, SEARCH, responseFormat, withNotice } from './registerKit';
 
 export function registerStoreTools(

@@ -4,7 +4,9 @@ import { describe, it, expect } from 'vitest';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createLedger } from '../storeLedger';
-import { storeHarness } from './storeTestKit';
+import * as realFs from 'node:fs/promises';
+import type { StoreFs } from '../storeFs';
+import { gate, storeHarness } from './storeTestKit';
 
 const { h, open, leftovers } = storeHarness();
 const NOW = Date.parse('2026-12-01T10:00:00Z');
@@ -101,7 +103,7 @@ describe('the ledger store', () => {
     ]);
   });
 
-  it('is removed by forget, with everything else, and an add begun before forget cannot come back', async () => {
+  it('is removed by forget, with everything else', async () => {
     const store = open();
     const l = ledgerOn(store);
     await l.add(ev(), TODAY);
@@ -109,6 +111,34 @@ describe('the ledger store', () => {
     await store.forget();
     expect(await leftovers()).toEqual([]);
     expect((await l.list()).entries).toEqual([]);
+  });
+
+  it('cannot come back after forget: an add that forget overtakes is cancelled, even from another process', async () => {
+    const held = gate();
+    const reached = gate();
+    const slow = {
+      ...realFs,
+      open: async (p: Parameters<typeof realFs.open>[0], ...a: unknown[]) => {
+        // The add's own file is being written: hold it right there.
+        if (String(p).includes('.tmp-')) {
+          reached.release();
+          await held.wait;
+        }
+        return (realFs.open as (...x: unknown[]) => unknown)(p, ...a);
+      },
+    } as StoreFs;
+    const outcome = ledgerOn(open({ fs: slow }))
+      .add(ev(), TODAY)
+      .then(
+        () => 'saved',
+        (e: Error) => e.message
+      );
+    await reached.wait;
+    await open().forget(); // another process forgets while the add is mid-write
+    held.release();
+    expect(await outcome).toMatch(/was not saved/);
+    expect(await leftovers()).toEqual([]);
+    expect((await ledgerOn(open()).list()).entries).toEqual([]);
   });
 
   it('is never evicted by the size budget, only counted in it', async () => {

@@ -3,7 +3,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { upcomingItems } from '../overviewUpcoming';
 import { recheckReason } from '../ledgerSource';
-import { finish, parseFields, type LedgerEntry } from '../ledgerEntry';
+import { finish, type LedgerEntry } from '../ledgerEntry';
+import { parseFields } from '../ledgerFields';
 import type { ExamRow } from '../overviewShape';
 
 let n = 0;

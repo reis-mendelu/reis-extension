@@ -5,6 +5,7 @@
 // "replaced" line, which is reported once and then gone.
 import type { Store } from './store';
 import type { LedgerEntry } from './ledgerEntry';
+import { textPath } from './storeMap';
 
 type Listed = {
   downloadUrl: string;
@@ -65,4 +66,21 @@ export function findListed(listings: Listings, url: string) {
   return Object.values(listings)
     .flatMap((l) => l ?? [])
     .find((f) => f.downloadUrl === url);
+}
+
+/**
+ * The date modified of the version of a file that was actually read: the stamp saved with its
+ * text (storeMap.ts), not what the listing shows now. A teacher may have replaced the file since
+ * Claude read it; filling in today's date would hide exactly that. Undefined when no text of it
+ * is saved (a PDF in the plugin build, or a file not read through reIS).
+ */
+export async function readVersion(store: Store, url: string): Promise<string | undefined> {
+  const head = (await store.readHead(textPath(url), 2048)) ?? '';
+  const m = /"stamp":("(?:[^"\\]|\\.)*")/.exec(head);
+  try {
+    const stamp = m ? (JSON.parse(m[1]!) as string) : '';
+    return /^(?:modified|date)\s+(.+)$/.exec(stamp)?.[1]?.trim() || undefined;
+  } catch {
+    return undefined;
+  }
 }

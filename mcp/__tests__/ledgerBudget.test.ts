@@ -6,7 +6,8 @@ import { CHARACTER_LIMIT, toResult } from '../format';
 import { fitOverview } from '../overviewRender';
 import type { Gathered } from '../overviewGather';
 import type { SubjectFile } from '../files';
-import { MAX_ENTRIES, finish, parseFields, type LedgerEntry } from '../ledgerEntry';
+import { MAX_ENTRIES, finish, type LedgerEntry } from '../ledgerEntry';
+import { parseFields } from '../ledgerFields';
 
 const codes = Array.from({ length: 7 }, (_, i) => `EBC-S${i}`);
 const file = (code: string, n: number): SubjectFile => ({

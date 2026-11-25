@@ -65,7 +65,7 @@ Where (one folder per computer account, shared by Claude Desktop and Claude Code
 | Windows | `%LOCALAPPDATA%\reIS for Claude` |
 | Linux | `$XDG_DATA_HOME/reIS for Claude`, or `~/.local/share/reIS for Claude` |
 
-It takes up to 4 GB, then the oldest copies are removed. It is not tied to your IS login, so if you share a computer account with someone else, delete it before handing over. Uninstalling the extension does **not** delete it.
+It takes up to 4 GB, then the oldest copies are removed (never the list of upcoming events, which cannot be fetched again). It is not tied to your IS login, so if you share a computer account with someone else, delete it before handing over. Uninstalling the extension does **not** delete it.
 
 **To delete it:** ask Claude to "forget everything reIS saved" (it runs `mendelu_forget_everything`, deletes the folder's contents, the list of upcoming events included, and says what it removed; a calendar you have is never touched), or delete the folder yourself (with Claude closed: a file being downloaded at that moment would be saved again). If the folder cannot be written, reIS says so and works from memory until Claude closes.
 
