@@ -57,8 +57,10 @@ and exams (3 of 15) change. A download link never changes when a file is replace
    Code reads them natively by path. Zips stay zipped. Overview returns each file's path. File
    names come from IS and must be sanitised so none can write outside the store.
 4. **Filling:** the index fills at first use. Text and originals fill when files are read, or
-   all at once through the explicit **build my map** call. A dry run reports file count and
-   total size first.
+   all at once through the explicit **build my map** call. A dry run reports file counts and
+   types per subject first. IS listings carry no sizes, so the dry run reports total size as
+   unknown and makes no extra requests to learn it; the size budget is enforced while
+   downloading (stop at the budget, report what was skipped).
 5. **Daily routine:** the server stays passive (a host starts it; it never wakes itself). reIS
    ships a refresh tool and a documented scheduled-task prompt. The daily run refreshes cheap
    listings, diffs them against the store, and fetches new or replaced files in subjects it
@@ -70,7 +72,11 @@ and exams (3 of 15) change. A download link never changes when a file is replace
    `%LOCALAPPDATA%\reIS for Claude` (fall back to `os.homedir()` + `AppData/Local`). Never
    Documents or Desktop (iCloud/OneDrive), never the extension's own folder (wiped on every
    update and uninstall), never `CLAUDE_PLUGIN_ROOT`. Uninstall does not delete the store, so
-   the README says where it lives and **forget everything** removes it.
+   the README says where it lives and **forget everything** removes it. Forget must be safe
+   against writes in flight: no write may commit after forget starts, from any process,
+   including the scheduled refresh, so forgotten content can never reappear. The mechanism is the
+   builder's call (recommended: a generation marker that forget bumps first and that every write
+   checks right before its rename).
 8. **Shared-laptop risk accepted:** one store per machine, not keyed to the IS login.
 
 ## Approaches considered
@@ -101,6 +107,14 @@ and exams (3 of 15) change. A download link never changes when a file is replace
   are stored as originals only.
 - Native docx/pptx reading depends on the student's own Claude setup; Desktop chat has no file
   tools. Extracted text stays as the fallback for both.
+- **The plugin build has no document extractor.** It swaps `documentText.ts` for
+  `documentHandover.ts` (officeparser stays out, every plugin file under 5 MiB), so saving a
+  read file there stores bytes, not text. Step 4 first measures whether a PDF-only extractor fits
+  the plugin build under the cap. If it does, the plugin stores text too. If it does not, search
+  in the plugin build covers text-native files (md, txt, m, html, ipynb, drawio) plus file names
+  and listing metadata, Claude opens documents natively from the stored originals, and the plugin
+  README says so. The `.mcpb` and the user-scope bundle extract everything. (Claude's call; the
+  fallback narrows the promise for the plugin only.)
 
 ## Promises that change (product decision, not a refactor)
 
@@ -129,7 +143,8 @@ answer "not retained" (needs resubmitting).
 
 ## Still to measure or test before building
 
-- Total size of a real student's files (dry run of build my map).
+- Total size of a real student's files (learned by the first real **build my map**, since a dry
+  run cannot know it).
 - Windows: `LOCALAPPDATA` and `HOME` in Desktop's utility process; Store-installed Desktop
   redirects AppData.
 - `/mcp` reconnect: does the server pid change?
@@ -146,18 +161,19 @@ start-up path changed). These are headless tools, so there is no UI tree and no 
 
 | #   | Step                                                                                                                                                                                                   | State       |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| 1   | The store module only: folder resolver, atomic writes, rebuildable index, memory-only fallback, size budget, with the guard test allowing writes inside that folder and nowhere else; nothing calls it. | Not started |
+| 1   | The store module only: folder resolver, atomic writes, rebuildable index, memory-only fallback, size budget, with the guard test allowing writes inside that folder and nowhere else; a forget that no in-flight write can undo; nothing calls it. | Not started |
 | 2   | Persist what is already read: subjects, file listings (link plus modified date), full untruncated file text and the study-form profile go into the store; the **forget everything** tool; every "nothing is written to disk" text rewritten in the same PR. | Not started |
 | 3   | The overview tool: refreshes the cheap listings on first call, diffs them against the store, and returns the map, the profile, points, deadlines and "what changed", with a tool description that tells Claude to call it first. | Not started |
-| 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path.                                                                                       | Not started |
-| 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run first), return their paths in the overview.                                       | Not started |
+| 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | Not started |
+| 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run of counts and types first), return their paths in the overview.                                       | Not started |
 | 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz.                              | Not started |
-| 7   | Release: version bump, both builds, `mcp-v*` tag.                                                                                                                                                      | Not started |
+| 7   | Release: version bump, both builds, `mcp-v*` tag; ships only once the corrected directory-listing answer is published, or Dominik has said in writing that it ships with the stale "not retained" answer.                                                                                                                                                      | Not started |
 
 Merge order: 1, 2, then 3 and 4 (either order, they share `mcp/tools.ts` and `mcp/register.ts`, so the
 second rebases), 5, 6, 7.
 
-**Parked for Dominik** (hard lines, asked once, never block other steps): resubmitting the directory
-listing's data-handling answer ("not retained"), the release in step 7, and the Windows run of the
-store on a real machine before that release. Step 6 changes reisapp.cz, which is the `reis-page`
+**Parked for Dominik** (hard lines, asked once, never block steps 1 to 6): resubmitting the
+directory listing's data-handling answer ("not retained"), the release in step 7, and the Windows
+run of the store on a real machine before that release. Step 7 does wait on the first and the last
+of these. Step 6 changes reisapp.cz, which is the `reis-page`
 repo and needs its own PR there.
