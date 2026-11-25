@@ -1,8 +1,9 @@
 // reIS for Claude's map on disk: one shared folder per laptop that Desktop and
 // every Claude Code window read and write at once. Decided with Dominik
 // 2026-11-25 (docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md).
-// Nothing imports this yet (step 1 of 7); it never holds the password or the IS
-// sign-in (mcpStaysReadOnly.test.ts keeps those words out of the store files).
+// server.ts creates one and register.ts passes it to storeMap.ts (step 2 of 7).
+// It never holds the password or the IS sign-in (mcpStaysReadOnly.test.ts keeps
+// those words out of the store files).
 import * as realFs from 'node:fs/promises';
 import path from 'node:path';
 import type { StoreFs } from './storeFs';
@@ -38,6 +39,7 @@ export type StoreOptions = {
 };
 
 export type Notice = { persistent: false; reason: string };
+export type Store = ReturnType<typeof createStore>;
 
 export function createStore(opts: StoreOptions = {}) {
   const dir = path.resolve(opts.dir ?? resolveStoreDir(opts.resolve));
@@ -80,6 +82,9 @@ export function createStore(opts: StoreOptions = {}) {
   });
 
   return {
+    /** The folder this store uses (it may not exist until something is saved). */
+    dir,
+
     /** False once the folder could not be used and the store fell back to memory. */
     get persistent() {
       return persistent;
@@ -165,9 +170,10 @@ export function createStore(opts: StoreOptions = {}) {
       return { files: entries.length, bytes: totalBytes(entries) };
     },
 
-    /** Rewrite the index from the files on disk. */
+    /** Rewrite the index from the files on disk. A folder that does not exist yet is left alone. */
     rebuild(): Promise<void> {
       return locked(async () => {
+        if (!(await fs.stat(dir).catch(() => null))) return;
         const entries = await scan(fs, dir, now());
         await writeIndex(fs, dir, toIndex(entries), now()).catch(() => {});
       });

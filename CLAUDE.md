@@ -84,14 +84,21 @@ capability" is a valid answer that ends the turn.
 ### A fourth product, headless: reIS for Claude (`mcp/`)
 
 A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
-their laptop and exposes eleven read-only tools over the same `src/api` fetchers.
+their laptop and exposes eleven read-only tools over the same `src/api` fetchers,
+plus `mendelu_forget_everything`, which deletes its own local folder and nothing else.
 It has no UI tree, so the parity rule does not apply to it. It is also the only
 reIS code that handles a password: it comes from the keychain and is sent only
 to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
-`src/test/guards/mcpStaysReadOnly.test.ts`. A persistent on-disk map is decided
-but not built yet: its design, steps and the promises it will change are in
-`docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md`. Until a step
-lands, the "nothing is written to disk" promise still holds.
+`src/test/guards/mcpStaysReadOnly.test.ts`. It keeps a **map on disk**, on by
+default and local only: one folder per laptop (`~/Library/Application Support/reIS for
+Claude`, `%LOCALAPPDATA%\reIS for Claude`, `$XDG_DATA_HOME` or `~/.local/share`), written
+only through `mcp/store*.ts`, never holding the password or the session cookie. Step 2 of 7
+is in: subjects, folder listings, the full text of files read and the study programme are
+saved, a file's text is served again after a restart while its listing date is unchanged
+(`mcp/cache.ts` second tier, `mcp/storeMap.ts`), and `mendelu_forget_everything` deletes it.
+The overview, search, originals and refresh steps are not built yet. Design, steps and the
+promises it changed: `docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md`. The
+directory listing's data-handling answer still says "not retained" until Dominik resubmits it.
 
 A `src/api` change reaches it too. `npx vitest run mcp/` covers the tool
 shaping; `npm run mcp:smoke` only proves the server starts and lists its tools.

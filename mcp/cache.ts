@@ -1,8 +1,12 @@
 // Answers from IS kept in this process's memory, so Claude asking the same
 // thing twice (a subagent rereading a PDF, a grader checking the brief again)
 // does not ask IS twice. In 6 weeks of real use 71 of 73 same-session repeats
-// got an identical answer. Memory only: nothing is written to disk and all of
-// it is gone when the server stops (mcpStaysReadOnly.test.ts, PRIVACY.md).
+// got an identical answer. This memory is the first tier and is gone when the
+// server stops. The second tier is the store on disk (storeMap.ts): a file's
+// text it holds is served again after a restart while the folder listing still
+// shows the date it was read at; everything else goes back to IS, and what IS
+// answers is saved there. The tiers never hold the password or the IS
+// sign-in (mcpStaysReadOnly.test.ts, README.md, PRIVACY.md).
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -34,6 +38,22 @@ export const TTL_MS: Record<string, number> = {
 /** The plugin build hands over files of up to 10 MB whole; a few of them fit. */
 const MAX_BYTES = 64 * 1024 * 1024;
 
+/**
+ * The second tier (storeMap.ts). `load` runs on a memory miss, before IS is
+ * asked, and returns an answer the disk can vouch for or undefined; `stamp` is
+ * the listing date known now (a file read only; undefined before any listing).
+ * `save` gets what IS answered. Neither may throw into a tool.
+ */
+export type Persist = {
+  load(tool: string, args: Record<string, unknown>, stamp: string | undefined): Promise<unknown>;
+  save(
+    tool: string,
+    args: Record<string, unknown>,
+    value: unknown,
+    stamp: string | undefined
+  ): Promise<void>;
+};
+
 /** `stamp`: for a file read, the listing date known when the download started. */
 type Entry = { value: unknown; at: number; bytes: number; stamp?: string };
 type Pending = { promise: Promise<unknown>; stamp?: string };
@@ -59,7 +79,11 @@ function keyOf(tool: string, args: Record<string, unknown>): string {
 
 export type ToolCache = ReturnType<typeof createToolCache>;
 
-export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
+export function createToolCache({
+  now = Date.now,
+  maxBytes = MAX_BYTES,
+  persist,
+}: { now?: () => number; maxBytes?: number; persist?: Persist } = {}) {
   const entries = new Map<string, Entry>(); // insertion order = least recently used first
   const inflight = new Map<string, Pending>();
   /** downloadUrl -> the Modifikace (or upload) date its folder last showed. */
@@ -104,6 +128,13 @@ export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
   };
 
   return {
+    /** Forget everything held here, including reads still in flight (forget everything). */
+    clear() {
+      entries.clear();
+      inflight.clear();
+      fileStamps.clear();
+      total = 0;
+    },
     async run(tool: string, args: Record<string, unknown>, fetch: () => Promise<unknown>) {
       const ttl = TTL_MS[tool];
       if (!ttl) return fetch();
@@ -121,10 +152,23 @@ export function createToolCache({ now = Date.now, maxBytes = MAX_BYTES } = {}) {
         promise: Promise.resolve(),
         stamp: tool === READ ? fileStamps.get(String(args.url)) : undefined,
       };
-      mine.promise = fetch().then((value) => {
+      // fetch() starts at once when there is no second tier, as it always did.
+      const fromFetch = () => fetch().then((value) => ({ value, stored: false }));
+      const obtained = persist
+        ? persist
+            .load(tool, args, mine.stamp)
+            .catch(() => undefined)
+            .then((value) => (value !== undefined ? { value, stored: true } : fromFetch()))
+        : fromFetch();
+      mine.promise = obtained.then(async ({ value, stored }) => {
         if (tool === LIST) noteListing(value);
-        // Cut loose by a newer listing: hand it to its caller, keep nothing.
-        if (inflight.get(key) === mine) keep(key, value, mine.stamp);
+        // Cut loose by a newer listing or by clear(): hand it to its caller,
+        // keep and save nothing.
+        const current = inflight.get(key) === mine;
+        if (current) keep(key, value, mine.stamp);
+        if (current && !stored) {
+          await persist?.save(tool, args, value, mine.stamp).catch(() => {});
+        }
         return value;
       });
       inflight.set(key, mine);

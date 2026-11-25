@@ -3,12 +3,12 @@
 // decision, not a refactor. Decided with Dominik 2026-10-10; the reasoning is in
 // docs/superpowers/specs/2026-10-10-student-mcp-design.md.
 //
-// The disk promise changed on 2026-11-25 by Dominik's decision: the server may
-// keep a map of what it read in one per-laptop folder, through mcp/store.ts and
+// The disk promise changed on 2026-11-25 by Dominik's decision: the server keeps
+// a map of what it read in one per-laptop folder, through mcp/store*.ts and
 // nowhere else, and that store never holds the password or the IS sign-in. See
-// docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md. Until that map
-// is wired in (step 2 of 7) nothing the server runs imports the store, so at
-// runtime nothing is written to disk yet.
+// docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md. Step 2 of 7
+// wired it in: subjects, folder listings, file text and the study programme are
+// saved, and mendelu_forget_everything deletes them.
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -103,12 +103,22 @@ describe('reIS for Claude stays read-only and local', () => {
     }
   });
 
-  // Step 1 of the map: the store exists but nothing calls it, so the product
-  // still writes nothing. Step 2 removes this test when it wires the store in.
-  it('does not run the store yet', () => {
-    for (const file of closure.keys()) {
-      expect(rel(file), 'the server must not reach the store yet').not.toMatch(/mcp\/store/);
-    }
+  // Decided 2026-11-25: on by default, one folder per laptop, local only. The
+  // server starts one store (server.ts) and nothing else may open another.
+  it('opens the store in server.ts only, and the server reaches it', () => {
+    expect([...closure.keys()].map(rel)).toEqual(
+      expect.arrayContaining(['mcp/store.ts', 'mcp/storeMap.ts', 'mcp/forgetTool.ts'])
+    );
+    const openers = sources.filter(({ src }) => /createStore\(/.test(src)).map((s) => s.f);
+    expect(openers.sort()).toEqual(['server.ts', 'store.ts']);
+  });
+
+  // The profile keeps the study programme, not who the student is.
+  it('saves no name, student number, login or e-mail in the map', () => {
+    const map = sources.find((s) => s.f === 'storeMap.ts')?.src ?? '';
+    const fields = /const PROFILE_FIELDS = \[([^\]]+)\]/.exec(map)?.[1] ?? '';
+    expect(fields).toMatch(/studyForm/);
+    expect(fields).not.toMatch(/username|fullName|studentId|email|name/i);
   });
 
   it('POSTs only where the allow-list says, anywhere in the server graph', () => {
