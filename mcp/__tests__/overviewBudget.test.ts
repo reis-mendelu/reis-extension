@@ -151,7 +151,13 @@ describe('a bulk upload with a few open assignments', () => {
       })),
     };
     const changes = Object.entries(g.listings).flatMap(([code, files]) =>
-      files!.map((f): Change => ({ kind: 'file', what: 'new', code, url: f.downloadUrl, text: 'x' }))
+      files!.map((f): Change => ({
+        kind: 'file',
+        what: 'new',
+        code,
+        url: f.downloadUrl,
+        text: 'x',
+      }))
     );
     const { out, held } = fitOverview({
       g,
