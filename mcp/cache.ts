@@ -141,19 +141,23 @@ export function createToolCache({
       tool: string,
       args: Record<string, unknown>,
       fetch: () => Promise<unknown>,
-      ticket?: Ticket
+      ticket?: Ticket,
+      // `fresh`: ask IS even when a live answer is held or being fetched (the overview compares
+      // IS with what it last said, so a minute-old answer would hide a change). The new answer
+      // still replaces the held one; the TTLs for every other call are untouched.
+      { fresh = false }: { fresh?: boolean } = {}
     ) {
       const ttl = TTL_MS[tool];
       if (!ttl) return fetch();
       const key = keyOf(tool, args);
-      const hit = entries.get(key);
+      const hit = fresh ? undefined : entries.get(key);
       if (hit && now() - hit.at < ttl) {
         entries.delete(key); // move to the most recently used end
         entries.set(key, hit);
         return hit.value;
       }
       drop(key);
-      const pending = inflight.get(key);
+      const pending = fresh ? undefined : inflight.get(key);
       if (pending) return pending.promise;
       const mine: Pending = {
         promise: Promise.resolve(),
@@ -172,7 +176,9 @@ export function createToolCache({
         // Cut loose by a newer listing or begun before clear(): hand it to its
         // caller, note, keep and save nothing.
         const current = inflight.get(key) === mine && epoch === began.epoch;
-        if (tool === LIST && epoch === began.epoch) noteListing(value);
+        // Only the current listing says what date a file has: an older one that finished late must not
+        // put an earlier date back (a replaced file would then be served from its old saved text).
+        if (tool === LIST && current) noteListing(value);
         if (current) keep(key, value, mine.stamp);
         if (current && !stored) {
           await persist?.save(tool, args, value, mine.stamp, await began.token).catch(() => {});

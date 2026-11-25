@@ -46,7 +46,7 @@ const isToken = (t: unknown): t is NonNullable<Token> => isObject(t) && 'gen' in
  * the read then carries a different date. Same day, or no usable date, means
  * download again (the next read is saved under a later day and is trusted).
  */
-function readAfterModified(stamp: string, readAt: unknown): boolean {
+export function readAfterModified(stamp: string, readAt: unknown): boolean {
   const m = /^modified\s+(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/.exec(stamp);
   const read = new Date(String(readAt));
   if (!m || Number.isNaN(read.getTime())) return false;
@@ -54,6 +54,65 @@ function readAfterModified(stamp: string, readAt: unknown): boolean {
     const modified = `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`;
     // IS dates are Czech dates, whatever the laptop's clock says.
     return read.toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' }) > modified;
+  } catch {
+    return false;
+  }
+}
+
+/** What a kept text's decision needs, without its body. */
+type TextMeta = { url: unknown; stamp: unknown; savedAt: unknown; kind: unknown };
+
+/**
+ * The one rule for a kept text, shared by load() and the overview's "textSaved" hint so they
+ * cannot disagree: the record is for this link, was read against the date the listing shows
+ * now, was read on a later day than that date, and (in the plugin build) is plain text.
+ */
+function isKept(m: TextMeta, url: string, stamp: string, extractsText: boolean): boolean {
+  if (m.url !== url || m.stamp !== stamp) return false;
+  if (!readAfterModified(stamp, m.savedAt)) return false;
+  return extractsText || m.kind === 'text';
+}
+
+/** A whole record: the rule above plus the shape of the file it holds. Returns the file to hand back. */
+export function keptText(rec: unknown, url: string, stamp: string, extractsText: boolean) {
+  if (!isObject(rec)) return undefined;
+  const f = rec.file;
+  if (!isObject(f) || typeof f.text !== 'string' || typeof f.kind !== 'string') return undefined;
+  return isKept(
+    { url: rec.url, stamp: rec.stamp, savedAt: rec.savedAt, kind: f.kind },
+    url,
+    stamp,
+    extractsText
+  )
+    ? f
+    : undefined;
+}
+
+/**
+ * Whether the record at `path` would be served, decided from its first bytes only. A record
+ * is written as {savedAt, url, stamp, kind, file} in that order (see save), so the header
+ * ends before the document's text starts. A record that does not match (older, damaged, a
+ * very long link) is not saved: the hint errs on the side of "download again".
+ */
+const HEAD = 2048;
+const STR = String.raw`"(?:[^"\\]|\\.)*"`;
+const HEADER = new RegExp(
+  String.raw`^\{"savedAt":("[^"]*"),"url":(${STR}),"stamp":(${STR}|null)(?:,"kind":("[^"]*"))?`
+);
+export async function textIsKept(
+  store: Pick<Store, 'readHead'>,
+  path: string,
+  url: string,
+  stamp: string,
+  extractsText: boolean
+): Promise<boolean> {
+  const m = HEADER.exec((await store.readHead(path, HEAD)) ?? '');
+  if (!m) return false;
+  try {
+    const [savedAt, u, st, kind] = m
+      .slice(1)
+      .map((x) => (x ? (JSON.parse(x) as unknown) : undefined));
+    return isKept({ url: u, stamp: st, savedAt, kind }, url, stamp, extractsText);
   } catch {
     return false;
   }
@@ -100,13 +159,7 @@ export function createMapPersist(
       if (tool !== READ || !stamp || typeof args.url !== 'string') return undefined;
       try {
         const rec = JSON.parse((await store.readText(textPath(args.url))) ?? 'null') as unknown;
-        // The date the listing shows now must be the one the text was read at.
-        if (!isObject(rec) || rec.url !== args.url || rec.stamp !== stamp) return undefined;
-        if (!readAfterModified(stamp, rec.savedAt)) return undefined;
-        const f = rec.file;
-        if (!isObject(f) || typeof f.text !== 'string' || typeof f.kind !== 'string')
-          return undefined;
-        return extractsText || f.kind === 'text' ? f : undefined;
+        return keptText(rec, args.url, stamp, extractsText);
       } catch {
         return undefined;
       }
@@ -126,7 +179,8 @@ export function createMapPersist(
         if (!extractsText && value.kind !== 'text') return;
         await put(
           textPath(args.url),
-          { url: args.url, stamp: stamp || null, file: value },
+          // The order is the header's: textIsKept() reads these four from the first bytes.
+          { url: args.url, stamp: stamp || null, kind: value.kind, file: value },
           token as Token
         );
       }

@@ -54,7 +54,7 @@ const lang = z
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD.');
 
-async function study(ctx?: ToolCtx): Promise<{ studium: string; obdobi: string }> {
+export async function study(ctx?: ToolCtx): Promise<{ studium: string; obdobi: string }> {
   const p = await getUserParams();
   if (!p?.studium || !p.obdobi)
     throw new Error(
@@ -79,12 +79,42 @@ function omit(row: object, keys: string[]): Record<string, unknown> {
 
 type SubjectsLite = { subjects?: { data?: Record<string, Record<string, unknown>> } } | null;
 
-async function subjectsData(ctx?: ToolCtx): Promise<Record<string, Record<string, unknown>>> {
+export async function subjectsData(
+  ctx?: ToolCtx
+): Promise<Record<string, Record<string, unknown>>> {
   const { studium, obdobi } = await study(ctx);
   const res = (await fetchDualLanguageSubjects(studium, obdobi)) as SubjectsLite;
   // null is a failed fetch, not an empty enrolment: never report it as one.
   if (!res?.subjects?.data) throw new Error('IS Mendelu did not return your subjects. Try again.');
   return res.subjects.data;
+}
+
+/** One subject's Záznamník, shared with the overview (which already holds the subject list). */
+export async function pointsFor(subjectId: string, ctx?: ToolCtx) {
+  const { studium, obdobi } = await study(ctx);
+  const z = await fetchSubjectZaznamnik(studium, obdobi, subjectId);
+  // null is a failed fetch: never let it read as "no points yet".
+  if (!z) throw new Error('IS Mendelu did not return your points for this subject. Try again.');
+  return { continuousAssessment: z.ph.sections, tests: z.vt.tests };
+}
+
+/**
+ * The submission boxes as the tool shows them, shared with the overview. `keepIds` is for the
+ * overview alone: it needs IS's box id to tell same-name boxes apart, and the tool's own answer
+ * never shows it.
+ */
+export async function assignmentsData(ctx?: ToolCtx, keepIds = false) {
+  const { studium, obdobi } = await study(ctx);
+  const res = await fetchOdevzdavarny(studium, obdobi);
+  // null is a failed fetch: never let it read as "no assignments".
+  if (!res) throw new Error('IS Mendelu did not return your submission boxes. Try again.');
+  return {
+    ...res,
+    assignments: res.assignments.map((r) => ({
+      ...omit(r, keepIds ? ['uploadUrl'] : ['uploadUrl', 'odevzdavarnaId']),
+      ...submissionOf(r),
+    })),
+  };
 }
 
 export const TOOLS: ToolDef[] = [
@@ -203,11 +233,7 @@ export const TOOLS: ToolDef[] = [
       if (typeof subjectId !== 'string') {
         throw new Error(`${String(a.code)} is not enrolled this semester.`);
       }
-      const { studium, obdobi } = await study(ctx);
-      const z = await fetchSubjectZaznamnik(studium, obdobi, subjectId);
-      // null is a failed fetch: never let it read as "no points yet".
-      if (!z) throw new Error('IS Mendelu did not return your points for this subject. Try again.');
-      return { continuousAssessment: z.ph.sections, tests: z.vt.tests };
+      return pointsFor(subjectId, ctx);
     },
   },
   {
@@ -229,18 +255,6 @@ export const TOOLS: ToolDef[] = [
     description:
       'Your submission boxes (Odevzdávárny): subject, assignment, deadline, whether it is still open, files uploaded, points, and the teacher `instructions` (IS "Pokyny": what to hand in and how) when the box has any. Pass the instructions on when the student asks what to submit. IS takes a submission in two steps, upload then confirm, so each box has a `submission` field: only "handed_in" (section "submitted") means it is handed in. "uploaded_not_confirmed" is an open box with files that is NOT confirmed in IS: tell the student to confirm it in IS, never that it is handed in. Read-only: it never submits or confirms anything.',
     input: {},
-    run: async (_a, ctx) => {
-      const { studium, obdobi } = await study(ctx);
-      const res = await fetchOdevzdavarny(studium, obdobi);
-      // null is a failed fetch: never let it read as "no assignments".
-      if (!res) throw new Error('IS Mendelu did not return your submission boxes. Try again.');
-      return {
-        ...res,
-        assignments: res.assignments.map((r) => ({
-          ...omit(r, ['uploadUrl', 'odevzdavarnaId']),
-          ...submissionOf(r),
-        })),
-      };
-    },
+    run: (_a, ctx) => assignmentsData(ctx),
   },
 ];

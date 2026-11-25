@@ -76,7 +76,8 @@ await call('initialize', {
 toServer.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
 const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sort();
 console.log('tools:', tools.length, tools.join(', '));
-let failed = tools.length < 12 || !tools.includes('mendelu_search');
+let failed =
+  tools.length !== 14 || !tools.includes('mendelu_search') || !tools.includes('mendelu_overview');
 
 const json = async (name, args) => {
   const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
@@ -188,6 +189,18 @@ for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
   }
   if (name === 'mendelu_read_file') {
     if (!(await readRealFiles())) failed = true;
+    continue;
+  }
+  if (name === 'mendelu_overview') {
+    // Counts and the fixed first sentence of its note only: the overview carries points and names.
+    const t0 = Date.now();
+    const o = await json(name, {});
+    const files = o.subjects.reduce((n, s) => n + (Array.isArray(s.files) ? s.files.length : 0), 0);
+    const cut = o.subjects.filter((s) => s.moreFiles).length;
+    console.log(
+      `${name}: ${Date.now() - t0} ms, "${String(o.note).split(/[.,]/, 1)[0].slice(0, 60)}", ${o.subjects.length} subjects, ${files} files listed (${cut} lists cut), ${o.changed?.length ?? 0} changed lines, ${o.problems?.length ?? 0} problems`
+    );
+    if (o.problems?.length) failed = true;
     continue;
   }
   const r = await call('tools/call', { name, arguments: {} });

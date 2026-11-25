@@ -6,6 +6,7 @@ import { createToolCache, type ToolCache } from './cache';
 import type { Ticket } from './cacheTypes';
 import { createMapPersist } from './storeMap';
 import { FORGET_TOOL, forgetEverything } from './forgetTool';
+import { OVERVIEW_TOOL, runOverview } from './overviewTool';
 import { SEARCH_TOOL, runSearch } from './searchTool';
 // Aliased to ./documentHandover in the plugin build, like the import in files.ts.
 import { EXTRACTS_TEXT } from './documentText';
@@ -17,6 +18,9 @@ const READ_ONLY = {
   idempotentHint: true,
   openWorldHint: true,
 } as const;
+
+// It writes a record of what it reported, in reIS's own folder, and nothing in IS.
+const OVERVIEW = { ...READ_ONLY, idempotentHint: false } as const;
 
 // Local only: it deletes reIS's own folder and touches nothing else, IS included.
 const FORGET = {
@@ -82,6 +86,44 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
   const map = store && createMapPersist(store, { extractsText: EXTRACTS_TEXT });
   // The first tier lives as long as this server process does.
   const cache = createToolCache({ persist: map?.persist });
+  // First, so it heads the tool list: it is the front door (overviewTool.ts).
+  if (store && map) {
+    server.registerTool(
+      OVERVIEW_TOOL.name,
+      {
+        title: OVERVIEW_TOOL.title,
+        description: OVERVIEW_TOOL.description,
+        inputSchema: { response_format: responseFormat },
+        annotations: OVERVIEW,
+      },
+      async (args: Record<string, unknown>) => {
+        if (ctx.unavailable) {
+          return withNotice(toError(OVERVIEW_TOOL.name, new Error(ctx.unavailable)), ctx, store);
+        }
+        const ticket = await cache.ticket();
+        const format = args.response_format === 'json' ? 'json' : 'markdown';
+        let result;
+        try {
+          result = toolResult(
+            await runOverview({
+              store,
+              ctx: { ...ctx, noteStudy: (p) => map.saveProfile(p, ticket.token) },
+              run: (tool, a, fn) => cache.run(tool, a, fn, ticket, { fresh: true }),
+              token: ticket.token,
+              settled: map.settled,
+              extractsText: EXTRACTS_TEXT,
+              format,
+            }),
+            format
+          );
+        } catch (e) {
+          result = toError(OVERVIEW_TOOL.name, e);
+        }
+        await map.settled();
+        return withNotice(result, ctx, store);
+      }
+    );
+  }
   for (const t of TOOLS) {
     server.registerTool(
       t.name,
