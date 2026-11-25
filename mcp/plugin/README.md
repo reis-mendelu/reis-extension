@@ -20,13 +20,25 @@ The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Cla
 | `mendelu_success_rates` | Historical pass rates of subjects (public reIS statistics) |
 | `mendelu_grades` | Your grades and credits so far |
 | `mendelu_assignments` | Your submission boxes and their deadlines |
+| `mendelu_forget_everything` | Deletes everything reIS saved on your computer (see below). Claude calls it only when you ask |
 
 ## What it never does
 
 - It never registers you for anything, never submits anything, and never opens online tests.
 - It never sends anything to reIS. It talks to `is.mendelu.cz` (over HTTPS only) and to the public reIS statistics on `cdn.jsdelivr.net`, nothing else.
 - Your password is kept in Claude Code's secure storage and is sent only to `is.mendelu.cz` to sign in.
-- It writes nothing to your disk. Claude Code saves a file you ask Claude to read.
+- Your password is never written to disk by reIS, and neither is IS's sign-in cookie.
+- It saves a local copy of what Claude read, on by default and never leaving your computer (below). Separately, Claude Code saves a PDF or Office file you ask Claude to read, as before.
+
+## What it saves on your computer
+
+So Claude can start from what it read before instead of forgetting it with each Claude Code window, the plugin keeps: your subject list, each subject's file list (names, dates, download links), the text of plain-text files Claude reads (PDFs and Office files are handed to Claude Code whole, and the plugin does not keep a copy of them yet), and your study programme, form, year and semester. Never your password or the IS cookie; the study profile holds no name, student number or e-mail, but file names and plain-text contents are kept as they are, so anything written in them is kept too. It is plain files in one folder per computer account, shared with Claude Desktop if you use both:
+
+- macOS: `~/Library/Application Support/reIS for Claude`
+- Windows: `%LOCALAPPDATA%\reIS for Claude`
+- Linux: `$XDG_DATA_HOME/reIS for Claude`, or `~/.local/share/reIS for Claude`
+
+Ask Claude to "forget everything reIS saved" (`mendelu_forget_everything`) or delete the folder (with Claude Code closed: a file being downloaded at that moment would be saved again) to remove it. Uninstalling the plugin does not delete it.
 
 Whatever Claude reads goes to Claude like anything else you share in a chat. The full privacy policy is in [PRIVACY.md](PRIVACY.md).
 

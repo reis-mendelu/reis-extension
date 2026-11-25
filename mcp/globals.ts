@@ -45,5 +45,6 @@ globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) =>
   current(input, init)) as typeof fetch;
 
 // The in-memory web host: fetchWithAuth takes the plain-fetch path, which is the
-// session fetch above. Nothing persists between server runs.
+// session fetch above. This platform's own storage is memory only; what the server
+// keeps between runs is the map in store.ts, through no other path.
 setPlatform(createWebPlatform());
