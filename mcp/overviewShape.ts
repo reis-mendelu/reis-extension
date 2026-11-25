@@ -91,10 +91,15 @@ export function boxRows(value: unknown, now: number): BoxRow[] {
   return rows.map((r) => {
     const code = str(r.courseCode) || str(r.courseId);
     const name = str(r.name);
-    // Two boxes can share a name. IS lists open boxes before submitted ones, so a place in the
-    // list moves when one is handed in: tell them apart by their deadline, and by place only
-    // when that is the same too.
-    const base = (seen.get(label(r)) ?? 0) > 1 ? `${label(r)}|${str(r.deadline)}` : label(r);
+    // Two boxes can share a name. IS's own box id tells them apart and survives a hand-in, a
+    // moved deadline and a second box appearing. Without an id (an older answer), the deadline
+    // does, and the place in the list only when that is the same too.
+    const id = str(r.odevzdavarnaId);
+    const base = id
+      ? `${code}|#${id}`
+      : (seen.get(label(r)) ?? 0) > 1
+        ? `${label(r)}|${str(r.deadline)}`
+        : label(r);
     return {
       key: unique(base),
       code,

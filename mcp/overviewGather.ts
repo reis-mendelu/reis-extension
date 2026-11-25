@@ -3,7 +3,7 @@
 // ahead, a few requests at a time. It downloads no file. Each piece is read on
 // its own and a piece that fails is reported, never replaced by "nothing": the
 // diff then leaves that part of the record as it was.
-import { TOOLS, pointsFor, subjectsData, type ToolCtx } from './tools';
+import { TOOLS, assignmentsData, pointsFor, subjectsData, type ToolCtx } from './tools';
 import { listFolderFiles, type SubjectFile } from './files';
 import { boxRows, examRows, pointRows, weekRows, type BoxRow, type ExamRow } from './overviewShape';
 import { isoDay } from './shape';
@@ -102,7 +102,11 @@ export async function gather(run: Run, ctx: ToolCtx, now: Date): Promise<Gathere
   }
   tasks.push(() =>
     attempt('assignments', async () => {
-      g.boxes = boxRows(await viaTool('mendelu_assignments', {}), now.getTime());
+      // Not cached under the tool's name: this answer carries IS's box ids, the tool's never does.
+      g.boxes = boxRows(
+        await run('overview_assignments', {}, () => assignmentsData(ctx, true)),
+        now.getTime()
+      );
       g.world.boxes = g.boxes;
     })
   );

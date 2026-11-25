@@ -59,3 +59,20 @@ describe('boxRows keys for boxes with one name', () => {
     expect(byDeadline(after)).toEqual(byDeadline(before));
   });
 });
+
+describe('boxRows keys with IS box ids', () => {
+  const box = (id: string, deadline: string) => ({
+    courseCode: 'A-1',
+    name: 'Esej',
+    deadline,
+    odevzdavarnaId: id,
+  });
+  it('keeps a box on its key when its deadline moves, the list reorders or a twin appears', () => {
+    const [first] = boxRows({ assignments: [box('11', '1.1.2030 10:00')] }, 0);
+    const moved = boxRows(
+      { assignments: [box('22', '5.1.2030 10:00'), box('11', '9.1.2030 10:00')] },
+      0
+    );
+    expect(moved.find((r) => r.deadline === '9.1.2030 10:00')?.key).toBe(first?.key);
+  });
+});

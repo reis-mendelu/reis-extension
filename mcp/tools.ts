@@ -98,8 +98,12 @@ export async function pointsFor(subjectId: string, ctx?: ToolCtx) {
   return { continuousAssessment: z.ph.sections, tests: z.vt.tests };
 }
 
-/** The submission boxes as the tool shows them, shared with the overview. */
-export async function assignmentsData(ctx?: ToolCtx) {
+/**
+ * The submission boxes as the tool shows them, shared with the overview. `keepIds` is for the
+ * overview alone: it needs IS's box id to tell same-name boxes apart, and the tool's own answer
+ * never shows it.
+ */
+export async function assignmentsData(ctx?: ToolCtx, keepIds = false) {
   const { studium, obdobi } = await study(ctx);
   const res = await fetchOdevzdavarny(studium, obdobi);
   // null is a failed fetch: never let it read as "no assignments".
@@ -107,7 +111,7 @@ export async function assignmentsData(ctx?: ToolCtx) {
   return {
     ...res,
     assignments: res.assignments.map((r) => ({
-      ...omit(r, ['uploadUrl', 'odevzdavarnaId']),
+      ...omit(r, keepIds ? ['uploadUrl'] : ['uploadUrl', 'odevzdavarnaId']),
       ...submissionOf(r),
     })),
   };
