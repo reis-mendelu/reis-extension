@@ -46,7 +46,7 @@ describe('MenuPopoverContent — the pizzeria', () => {
     expect(
       within(panel).getByText(line('Po-Čt 8:00 - 15:00 výdej pizzy 10:30 - 14:30'))
     ).toBeInTheDocument();
-    expect(within(panel).getByText('02. PIZZA AMERICANA')).toBeInTheDocument();
+    expect(within(panel).getByText('02. Pizza americana')).toBeInTheDocument();
     expect(within(panel).getByText('80 Kč')).toBeInTheDocument();
   });
 

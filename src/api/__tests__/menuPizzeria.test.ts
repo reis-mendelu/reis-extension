@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parsePizzeria } from '../menuPizzeria';
+import { parsePizzeria, sentenceCase } from '../menuPizzeria';
 
 /**
  * The "Pizzerie" tab of SKM's jídelní lístek, a real capture (2026-11-25) of
@@ -30,9 +30,9 @@ describe('parsePizzeria — the Czech page', () => {
 
   it('lists every pizza with the STUDENT price (the "St." column)', () => {
     expect(pizzeria.pizzas).toHaveLength(24);
-    expect(pizzeria.pizzas[0]).toEqual({ name: '01. PIZZA POLLO', price: 86 });
-    expect(pizzeria.pizzas[1]).toEqual({ name: '02. PIZZA AMERICANA', price: 80 });
-    expect(pizzeria.pizzas.at(-1)).toEqual({ name: '25. BZL ŠUNKOVÁ', price: 92 });
+    expect(pizzeria.pizzas[0]).toEqual({ name: '01. Pizza pollo', price: 86 });
+    expect(pizzeria.pizzas[1]).toEqual({ name: '02. Pizza americana', price: 80 });
+    expect(pizzeria.pizzas.at(-1)).toEqual({ name: '25. BZL šunková', price: 92 });
   });
 
   it('drops the allergen numbers and collapses the double spaces', () => {
@@ -55,8 +55,31 @@ describe('parsePizzeria — the English page', () => {
   });
 
   it('finds the student price by its header, whatever the language', () => {
-    expect(pizzeria.pizzas[0]).toEqual({ name: '14. BZL POLLO', price: 99 });
-    expect(pizzeria.pizzas.find((p) => p.name === 'PIZZA POLLO')?.price).toBe(86);
+    expect(pizzeria.pizzas[0]).toEqual({ name: '14. BZL pollo', price: 99 });
+    expect(pizzeria.pizzas.find((p) => p.name === 'Pizza pollo')?.price).toBe(86);
+  });
+});
+
+describe('sentenceCase — SKM prints the pizzas in capitals', () => {
+  it('turns capitals into sentence case, past the list number', () => {
+    expect(sentenceCase('04. PIZZA ČTYŘI DRUHY SÝRŮ')).toBe('04. Pizza čtyři druhy sýrů');
+    expect(sentenceCase('PIZZA WITH HAM')).toBe('Pizza with ham');
+  });
+
+  it('keeps the BZL abbreviation', () => {
+    expect(sentenceCase('18. BZL HAWAI')).toBe('18. BZL hawai');
+  });
+
+  it('leaves a name that already has lowercase as SKM wrote it', () => {
+    expect(sentenceCase('Pizza Mendel')).toBe('Pizza Mendel');
+  });
+
+  it('no pizza in either real page is all capitals any more', () => {
+    for (const lang of ['cz', 'en'] as const) {
+      for (const p of parsePizzeria(page(lang))!.pizzas) {
+        expect(p.name).not.toBe(p.name.toLocaleUpperCase('cs'));
+      }
+    }
   });
 });
 

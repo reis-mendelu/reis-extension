@@ -14,8 +14,8 @@ export const PIZZERIA: PizzeriaMenu = {
     'Pá 8:00 - 13:00 výdej pizzy 10:30 - 13:00',
   ],
   pizzas: [
-    { name: '01. PIZZA POLLO', price: 86 },
-    { name: '02. PIZZA AMERICANA', price: 80 },
-    { name: '14. BZL POLLO', price: 99 },
+    { name: '01. Pizza pollo', price: 86 },
+    { name: '02. Pizza americana', price: 80 },
+    { name: '14. BZL pollo', price: 99 },
   ],
 };

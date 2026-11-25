@@ -101,7 +101,7 @@ describe('menuTabs — the pizzeria', () => {
   const PIZZERIA: PizzeriaMenu = {
     address: 'Zemědělská 1, Brno',
     hours: ['Po-Čt 8:00 - 15:00'],
-    pizzas: [{ name: '01. PIZZA POLLO', price: 86 }],
+    pizzas: [{ name: '01. Pizza pollo', price: 86 }],
   };
   const keysWith = (
     outlets: OutletDayMenu[],

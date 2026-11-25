@@ -65,11 +65,11 @@ describe('MenuSheet — the pizzeria', () => {
     render(<MenuSheet dayIso={DAY} onClose={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'Pizza' }));
     const panel = screen.getByTestId('menu-pizzeria');
-    expect(within(panel).getByText('01. PIZZA POLLO')).toBeInTheDocument();
+    expect(within(panel).getByText('01. Pizza pollo')).toBeInTheDocument();
     expect(within(panel).getByText('86 Kč')).toBeInTheDocument();
     expect(within(panel).getByText('99 Kč')).toBeInTheDocument();
     const hours = within(panel).getByText('Otevírací doba');
-    const first = within(panel).getByText('01. PIZZA POLLO');
+    const first = within(panel).getByText('01. Pizza pollo');
     expect(hours.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
