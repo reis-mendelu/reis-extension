@@ -1,6 +1,7 @@
 # reIS for Claude: a map on disk (design record)
 
-Status: agreed in conversation 2026-11-25, **not yet approved as a build plan, no code written.**
+Status: agreed in conversation 2026-11-25 and cut into build steps (see Steps). **No code written
+yet; step 1 starts on Dominik's "go".**
 Decided with Dominik. Follows PR #749 (in-memory tool cache), which he judged "pretty useless"
 once he tried it: the server process does not outlive a window reload, an app launch or a
 Claude Code session.
@@ -135,3 +136,28 @@ answer "not retained" (needs resubmitting).
 - Plugin name clash: this plugin is named `reis`, the team plugin is `reis@reis-team`.
 - Whether Claude reads a scanned PDF natively when the PDF page reader's helper (poppler) is
   missing on the student's machine.
+
+## Steps
+
+One session per step, one PR each into `test`, in this order. Steps 3 and 4 may run together once
+2 has merged. Each step is verified with `npm run check`, `npx vitest run mcp/`, and a live run
+against real IS (`npm run mcp:smoke -- --live <tool>`, plus `-- --desktop-host` where the server
+start-up path changed). These are headless tools, so there is no UI tree and no screenshots.
+
+| #   | Step                                                                                                                                                                                                   | State       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------- |
+| 1   | The store module only: folder resolver, atomic writes, rebuildable index, memory-only fallback, size budget, with the guard test allowing writes inside that folder and nowhere else; nothing calls it. | Not started |
+| 2   | Persist what is already read: subjects, file listings (link plus modified date), full untruncated file text and the study-form profile go into the store; the **forget everything** tool; every "nothing is written to disk" text rewritten in the same PR. | Not started |
+| 3   | The overview tool: refreshes the cheap listings on first call, diffs them against the store, and returns the map, the profile, points, deadlines and "what changed", with a tool description that tells Claude to call it first. | Not started |
+| 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path.                                                                                       | Not started |
+| 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run first), return their paths in the overview.                                       | Not started |
+| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz.                              | Not started |
+| 7   | Release: version bump, both builds, `mcp-v*` tag.                                                                                                                                                      | Not started |
+
+Merge order: 1, 2, then 3 and 4 (either order, they share `mcp/tools.ts` and `mcp/register.ts`, so the
+second rebases), 5, 6, 7.
+
+**Parked for Dominik** (hard lines, asked once, never block other steps): resubmitting the directory
+listing's data-handling answer ("not retained"), the release in step 7, and the Windows run of the
+store on a real machine before that release. Step 6 changes reisapp.cz, which is the `reis-page`
+repo and needs its own PR there.
