@@ -2,7 +2,7 @@
 // make forget() safe against a write in flight (storeGen.ts).
 import { atomicWrite, type StoreFs } from './storeFs';
 import {
-  forgetRunning,
+  isOpen,
   isPerPathFailure,
   pruneEmptyDirs,
   readGeneration,
@@ -75,7 +75,7 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
   async function dropEntry(p: string) {
     const g = await readGeneration(fs, dir, now);
     const indexFile = path.join(dir, INDEX_FILE);
-    if (g === null) {
+    if (!isOpen(g)) {
       // A forget() is running (or the token is unreadable): do not rewrite anything.
       await fs.rm(indexFile, { force: true }).catch(() => {});
       return;
@@ -114,10 +114,9 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
     } catch (e) {
       // Only a token that is readable and different proves forget() ran; a folder
       // that cannot be read at all must still fall back to memory.
-      // (null is also what a forget() still deleting looks like, which proves it too.)
+      // (A forget() still deleting proves it too: that reads as FORGETTING, not as a token.)
       const current = await readGeneration(fs, dir, now);
-      const proven =
-        g0 !== null && (current === null ? await forgetRunning(fs, dir, now) : current !== g0);
+      const proven = isOpen(g0) && current !== null && current !== g0;
       if (!proven) {
         if (!(await isPerPathFailure(fs, dir, e))) {
           degrade(e);
@@ -151,7 +150,7 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
    */
   async function rebuild(): Promise<void> {
     const g0 = await readGeneration(fs, dir, now);
-    if (g0 === null) return; // a forget() is deleting, or the token cannot be read
+    if (!isOpen(g0)) return; // a forget() is deleting, or the token cannot be read
     const moved = async () => !sameGeneration(await readGeneration(fs, dir, now), g0);
     const entries = await scan(fs, dir, now());
     if (await moved()) return;

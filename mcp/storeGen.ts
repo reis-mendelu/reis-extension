@@ -33,7 +33,7 @@ async function markerIsLive(fs: StoreFs, abs: string, now: () => number): Promis
 }
 
 /** True if a forget() in any process has begun deleting and has not finished (or crashed). */
-export async function forgetRunning(fs: StoreFs, dir: string, now: () => number): Promise<boolean> {
+async function forgetRunning(fs: StoreFs, dir: string, now: () => number): Promise<boolean> {
   let names: string[];
   try {
     names = await fs.readdir(dir);
@@ -55,13 +55,21 @@ export const isLiveMarker = async (fs: StoreFs, dir: string, name: string, now: 
   name.startsWith(FORGET_PREFIX) && (await markerIsLive(fs, path.join(dir, name), now));
 
 /**
+ * What readGeneration() returns while a forget() is deleting. It is not a token
+ * (those are hex), so it never equals one, and unlike null it says why: a caller
+ * that keeps the answer (a write waiting its turn, a download that started
+ * earlier) can refuse later without looking again, when the forget may be over.
+ */
+export const FORGETTING = 'forgetting';
+
+/**
  * The folder's token: '' when there is none yet (no folder, no file), null when
- * it exists but cannot be read, or when a forget() is in progress. null never
- * counts as "the same" (sameGeneration). The token is read first and the marker
- * second, which is what makes this sound: a forget() writes its marker before it
- * bumps the token and clears it after the last delete, so a token read after the
- * bump is followed by a marker read that sees the forget unfinished, or one that
- * finds it finished and the folder already empty.
+ * it exists but cannot be read, FORGETTING while a forget() is in progress. null
+ * and FORGETTING never count as "the same" (sameGeneration). The token is read
+ * first and the marker second, which is what makes this sound: a forget() writes
+ * its marker before it bumps the token and clears it after the last delete, so a
+ * token read after the bump is followed by a marker read that sees the forget
+ * unfinished, or one that finds it finished and the folder already empty.
  */
 export async function readGeneration(
   fs: StoreFs,
@@ -75,8 +83,11 @@ export async function readGeneration(
     const code = (e as NodeJS.ErrnoException)?.code;
     token = code === 'ENOENT' || code === 'ENOTDIR' ? '' : null;
   }
-  return token !== null && (await forgetRunning(fs, dir, now)) ? null : token;
+  return token !== null && (await forgetRunning(fs, dir, now)) ? FORGETTING : token;
 }
+
+/** A token a write can be bound to: it was readable and no forget() was deleting. */
+export const isOpen = (g: string | null): g is string => g !== null && g !== FORGETTING;
 
 export type ForgetMarker = { beat: () => Promise<void>; end: () => Promise<void> };
 
@@ -89,30 +100,37 @@ export async function beginForget(
   const file = path.join(dir, `${FORGET_PREFIX}${process.pid}-${randomBytes(6).toString('hex')}`);
   const body = Buffer.from(String(process.pid));
   await atomicWrite(fs, file, body, now());
+  // beat() and end() run one after another: a beat still in flight when end()
+  // is called must land before the marker is removed, not after.
   let ended = false;
+  let queue: Promise<unknown> = Promise.resolve();
+  const inOrder = (fn: () => Promise<void>) => (queue = queue.then(fn, fn));
   return {
     /**
      * Prove this forget() is alive. If another forget swept the marker (a long
      * pause made it look abandoned) put it back; any other failure is not worth
      * stopping the delete for.
      */
-    beat: async () => {
-      try {
-        await fs.utimes(file, new Date(now()), new Date(now()));
-      } catch (e) {
-        if ((e as NodeJS.ErrnoException).code === 'ENOENT' && !ended)
-          await atomicWrite(fs, file, body, now()).catch(() => {});
-      }
-    },
+    beat: () =>
+      inOrder(async () => {
+        if (ended) return;
+        try {
+          await fs.utimes(file, new Date(now()), new Date(now()));
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code === 'ENOENT')
+            await atomicWrite(fs, file, body, now()).catch(() => {});
+        }
+      }),
     /** The deletion is over (or gave up, and said so): readers may publish again. */
-    end: async () => {
-      ended = true;
-      await fs.rm(file, { force: true }).catch(() => {});
-    },
+    end: () =>
+      inOrder(async () => {
+        ended = true;
+        await fs.rm(file, { force: true }).catch(() => {});
+      }),
   };
 }
 
-export const sameGeneration = (a: string | null, b: string | null) => a !== null && a === b;
+export const sameGeneration = (a: string | null, b: string | null) => isOpen(a) && a === b;
 
 export async function bumpGeneration(fs: StoreFs, dir: string, at: number): Promise<void> {
   const token = Buffer.from(randomBytes(8).toString('hex'));
