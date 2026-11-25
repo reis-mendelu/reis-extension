@@ -54,8 +54,8 @@ recorded listings, one before and one after.
 
 Message: "jak jsem na tom ve škole a co mě čeká tenhle týden?"
 
-Pass: the answer contains the student's Záznamník points for every subject that has them (the
-points tool is called), the open assignments and the exam terms for the week, all without the
+Pass: the answer contains the student's Záznamník points for every subject that has them (from
+the points tool or, once step 3 exists, from the overview), the open assignments and the exam terms for the week, all without the
 student naming points. Record the call count.
 
 ## Which step moves which scenario
