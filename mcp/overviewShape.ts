@@ -83,12 +83,20 @@ export function pointRows(value: unknown): PointRow[] {
 /** Every box of the period, from what mendelu_assignments returns. */
 export function boxRows(value: unknown, now: number): BoxRow[] {
   const unique = uniqueKeys('|');
-  return list(isObject(value) ? value.assignments : []).map((r) => {
+  const rows = list(isObject(value) ? value.assignments : []);
+  const label = (r: Record<string, unknown>) =>
+    `${str(r.courseCode) || str(r.courseId)}|${str(r.name)}`;
+  const seen = new Map<string, number>();
+  for (const r of rows) seen.set(label(r), (seen.get(label(r)) ?? 0) + 1);
+  return rows.map((r) => {
     const code = str(r.courseCode) || str(r.courseId);
     const name = str(r.name);
-    // Two boxes can share a name: the second is told apart by its place in the list.
+    // Two boxes can share a name. IS lists open boxes before submitted ones, so a place in the
+    // list moves when one is handed in: tell them apart by their deadline, and by place only
+    // when that is the same too.
+    const base = (seen.get(label(r)) ?? 0) > 1 ? `${label(r)}|${str(r.deadline)}` : label(r);
     return {
-      key: unique(`${code}|${name}`),
+      key: unique(base),
       code,
       name,
       deadline: str(r.deadline),

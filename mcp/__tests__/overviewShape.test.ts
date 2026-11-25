@@ -47,3 +47,15 @@ describe('boxRows open flag', () => {
     expect(boxRows({ assignments: [box('9.12.2026 12:30')] }, now)[0]?.open).toBe(false);
   });
 });
+
+describe('boxRows keys for boxes with one name', () => {
+  it('does not move a key when the list order changes after a hand-in', () => {
+    const a = { courseCode: 'A-1', name: 'Esej', deadline: '1.1.2030 10:00' };
+    const b = { courseCode: 'A-1', name: 'Esej', deadline: '8.1.2030 10:00' };
+    const before = boxRows({ assignments: [a, b] }, 0);
+    const after = boxRows({ assignments: [b, a] }, 0);
+    const byDeadline = (rows: ReturnType<typeof boxRows>) =>
+      Object.fromEntries(rows.map((r) => [r.deadline, r.key]));
+    expect(byDeadline(after)).toEqual(byDeadline(before));
+  });
+});
