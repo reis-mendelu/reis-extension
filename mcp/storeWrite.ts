@@ -121,5 +121,19 @@ export function createDiskWriter({ fs, dir, now, maxBytes, maxPathLength, sleep,
     return 'kept';
   }
 
-  return { write };
+  /**
+   * Rewrite the index from the files on disk. A forget() while this runs must not
+   * be undone by the old file names it scanned: if the token moved, publish
+   * nothing, or take the index back if it already landed (it is only a cache).
+   */
+  async function rebuild(): Promise<void> {
+    const g0 = await readGeneration(fs, dir);
+    const moved = async () => !sameGeneration(await readGeneration(fs, dir), g0);
+    const entries = await scan(fs, dir, now());
+    if (await moved()) return;
+    await writeIndex(fs, dir, toIndex(entries), now()).catch(() => {});
+    if (await moved()) await fs.rm(path.join(dir, INDEX_FILE), { force: true }).catch(() => {});
+  }
+
+  return { write, rebuild };
 }

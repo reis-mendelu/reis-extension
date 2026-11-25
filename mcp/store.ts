@@ -167,10 +167,7 @@ export function createStore(opts: StoreOptions = {}) {
 
     /** Rewrite the index from the files on disk. */
     rebuild(): Promise<void> {
-      return locked(async () => {
-        const entries = await scan(fs, dir, now());
-        await writeIndex(fs, dir, toIndex(entries), now()).catch(() => {});
-      });
+      return locked(() => disk.rebuild());
     },
 
     /**
