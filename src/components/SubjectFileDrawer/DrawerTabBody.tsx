@@ -49,7 +49,8 @@ interface DrawerTabBodyProps {
    * Off for the phone sheet. It was switched off while that sheet pinned an
    * 'Otevřít v IS MENDELU' footer, so every tab showed two identical links;
    * #341 then dropped the footer (it opened the file structure whatever tab
-   * you were on), so the phone's tabs now have no IS link at all.
+   * you were on), so the phone's tabs now have no IS link at all — except the
+   * záznamník, which has no opt-out: its pair of IS links shows on both trees.
    */
   showIsBacklink?: boolean;
   /** Forwarded to ClassmatesTab — the phone routes taps to its own PersonSheet. */
@@ -181,8 +182,7 @@ export function DrawerTabBody({
         showStudyInfo={showStudyInfo}
       />
     );
-  if (tab === 'zaznamnik')
-    return <ZaznamnikTab courseCode={lesson?.courseCode || ''} showIsBacklink={showIsBacklink} />;
+  if (tab === 'zaznamnik') return <ZaznamnikTab courseCode={lesson?.courseCode || ''} />;
 
   return (
     <SuccessRateTab

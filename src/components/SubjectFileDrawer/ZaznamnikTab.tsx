@@ -17,15 +17,9 @@ const IS_BASE = 'https://is.mendelu.cz';
 
 interface ZaznamnikTabProps {
   courseCode: string;
-  /**
-   * Off on the phone, where the sheet pins a single IS link in its footer.
-   * Defaults to shown so the desktop drawer is untouched — the same contract
-   * every sibling tab uses.
-   */
-  showIsBacklink?: boolean;
 }
 
-export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTabProps) {
+export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
   const { data, isLoading, isFailed } = useZaznamnik(courseCode);
   const refetchZaznamnik = useAppStore((s) => s.refetchZaznamnik);
   const impersonating = useAppStore((s) => !!s.impersonation);
@@ -53,18 +47,14 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
     `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
 
   const backlinks =
-    showIsBacklink &&
-    (subjectInfo?.hasPrubezne || subjectInfo?.hasTest) &&
-    studium &&
-    obdobi &&
-    subjectId ? (
-      <div className="flex justify-center gap-2 pt-2 pb-2">
+    (subjectInfo?.hasPrubezne || subjectInfo?.hasTest) && studium && obdobi && subjectId ? (
+      <div className="flex flex-wrap justify-center gap-2 pt-2 pb-2">
         {subjectInfo!.hasPrubezne && (
           <a
             href={buildUrl('prubezne=1')}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold"
+            className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-primary normal-case font-bold"
           >
             <span>{t('zaznamnik.isContinuous')}</span>
             <ExternalLink size={14} />
@@ -75,7 +65,7 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
             href={buildUrl('test=1')}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold"
+            className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-primary normal-case font-bold"
           >
             <span>{t('zaznamnik.isTestResults')}</span>
             <ExternalLink size={14} />

@@ -6,6 +6,7 @@ import { scrapeNavMenu, fetchOtherLanguage, mergeDual } from './menuScraper';
 import { sendToIframe } from './iframeManager';
 import { Messages } from '../types/messages';
 import type { PageCategory } from '../data/pages/types';
+import { isDashboardPath } from '../utils/reisOff';
 
 export let scrapedNavMenu: PageCategory[] | null = null;
 let messageHandlerRegistered = false;
@@ -29,7 +30,7 @@ function injectAndInitialize() {
 
   const path = window.location.pathname;
   const isLandingPage = path === '/' || path === '' || path === '/index.pl';
-  const isDashboard = path === '/auth/' || path === '/auth/index.pl';
+  const isDashboard = isDashboardPath(path);
 
   if (!isLandingPage && !isDashboard) {
     document.documentElement.style.visibility = 'visible';
