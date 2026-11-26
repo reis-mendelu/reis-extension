@@ -12,7 +12,7 @@ const info = (code: string) => ({
 });
 
 describe('foldPastSemesterSubjects', () => {
-  it("adds a past subject with the period it came from, so its points can be fetched there", () => {
+  it('adds a past subject with the period it came from, so its points can be fetched there', () => {
     const target: Record<string, ReturnType<typeof info>> = {};
     foldPastSemesterSubjects(target, { PS: info('PS') }, '300');
     expect(target['PS']).toMatchObject({ subjectId: 'id-PS', periodId: '300' });
