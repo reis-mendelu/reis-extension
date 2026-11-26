@@ -114,4 +114,40 @@ describe('the shared download path', () => {
     expect([...outcomes.values()].map((o) => o.state)).toEqual(['downloaded']);
     expect(budget.used).toBe((await store.usage()).bytes);
   });
+
+  it('three downloads at once keep the budget count exact', async () => {
+    lib.files = [1, 2, 3].map((n) => ({
+      name: `cast${n}.zip`,
+      type: 'application/zip',
+      body: String(n).repeat(5_000 * n),
+    }));
+    const dir = await folder();
+    const store = createStore({ dir });
+    const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // Staggered downloads and one slow folder count: other files reserve while it runs.
+    const list = store.list.bind(store);
+    let calls = 0;
+    // The first file's count after its save is the slowest: it finishes after the others reserved.
+    vi.spyOn(store, 'list').mockImplementation(
+      async () => (await wait(++calls === 4 ? 400 : 5), list())
+    );
+    const ctx = {
+      fetch: (async (u: string) => {
+        await wait(60 * Number(/download=(\d+)/.exec(u)?.[1] ?? 0));
+        return fetchLib(u);
+      }) as unknown as typeof fetch,
+    };
+    const { planned } = await plan({ ctx, store, run: (_t, _a, fn) => fn() });
+    const token = { gen: (await store.generation()) ?? null, at: Date.now() };
+    const { outcomes, budget } = await downloadPlanned(
+      { store, ctx, token, saveText: async () => true, extractsText: false, concurrency: 3 },
+      planned
+    );
+    expect([...outcomes.values()].map((o) => o.state)).toEqual([
+      'downloaded',
+      'downloaded',
+      'downloaded',
+    ]);
+    expect(budget.used).toBe((await store.usage()).bytes);
+  });
 });

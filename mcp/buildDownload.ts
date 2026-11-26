@@ -137,7 +137,10 @@ export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
       }
       // What the folder holds after the save, not what it should: a copy under an older name whose
       // removal failed is still there and still counts.
-      budget.used += (await bytesIn(dir)) - cost;
+      // Awaited first: `used += await …` would read `used` before the wait and drop what other
+      // downloads reserved meanwhile.
+      const actual = await bytesIn(dir);
+      budget.used += actual - cost;
       outcomes.set(p, { state: 'downloaded', text: await keepText(p, bytes, h, filename) });
     } catch (e) {
       const m = (e instanceof Error ? e.message : String(e)).split('\n')[0]!.slice(0, 120);
