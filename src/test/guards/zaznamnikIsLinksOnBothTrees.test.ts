@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 const read = (p: string) => readFileSync(resolve(process.cwd(), 'src', p), 'utf8');
 
 describe('záznamník IS links', () => {
-  it('the tab body does not hand the záznamník the phone sheet\'s opt-out', () => {
+  it("the tab body does not hand the záznamník the phone sheet's opt-out", () => {
     expect(read('components/SubjectFileDrawer/DrawerTabBody.tsx')).toMatch(
       /<ZaznamnikTab courseCode=\{[^}]*\} \/>/
     );

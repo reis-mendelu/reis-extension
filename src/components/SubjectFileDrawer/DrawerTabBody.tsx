@@ -182,8 +182,7 @@ export function DrawerTabBody({
         showStudyInfo={showStudyInfo}
       />
     );
-  if (tab === 'zaznamnik')
-    return <ZaznamnikTab courseCode={lesson?.courseCode || ''} />;
+  if (tab === 'zaznamnik') return <ZaznamnikTab courseCode={lesson?.courseCode || ''} />;
 
   return (
     <SuccessRateTab

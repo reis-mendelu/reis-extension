@@ -47,10 +47,7 @@ export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
     `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
 
   const backlinks =
-    (subjectInfo?.hasPrubezne || subjectInfo?.hasTest) &&
-    studium &&
-    obdobi &&
-    subjectId ? (
+    (subjectInfo?.hasPrubezne || subjectInfo?.hasTest) && studium && obdobi && subjectId ? (
       <div className="flex flex-wrap justify-center gap-2 pt-2 pb-2">
         {subjectInfo!.hasPrubezne && (
           <a
