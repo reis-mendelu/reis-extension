@@ -121,13 +121,15 @@ describe('what the tools read survives a restart', () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  it('keeps subjects, the listing and the profile, and never a name or a login', async () => {
+  it('keeps subjects, the listing, the profile and the original, and never a name or a login', async () => {
     const { root, dir } = await tempDir();
     await ask(boot(dir));
     const kept = await files(dir);
     expect(kept.filter((f) => !f.startsWith('text/'))).toEqual([
       'index.json',
       'listings/EBC-PS.json',
+      expect.stringMatching(/^originals\/[0-9a-f]{32}\/\.reis-original\.json$/),
+      expect.stringMatching(/^originals\/[0-9a-f]{32}\/harmonogram\.txt$/),
       'profile.json',
       'subjects.json',
     ]);

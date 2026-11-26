@@ -32,7 +32,8 @@ export function student(profile: Record<string, unknown> | null) {
 export function fileRows(
   files: SubjectFile[],
   marks: Map<string, string>,
-  saved: (f: SubjectFile) => boolean
+  saved: (f: SubjectFile) => boolean,
+  localPath?: (f: SubjectFile) => string | undefined
 ) {
   return files.map((f) => {
     const label = labelOf(f);
@@ -42,6 +43,7 @@ export function fileRows(
       ...(f.name && f.name !== label.replace(/\.[^.]+$/, '') ? { title: f.name } : {}),
       modified: modifiedOf(f),
       ...(saved(f) ? { textSaved: 'yes' } : {}),
+      ...(localPath?.(f) ? { localPath: localPath(f) } : {}),
       ...(marks.has(f.downloadUrl) ? { changed: marks.get(f.downloadUrl) } : {}),
       url: f.downloadUrl,
     };

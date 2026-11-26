@@ -20,6 +20,10 @@ export type RenderInput = {
   profile: Record<string, unknown> | null;
   /** Whether mendelu_read_file would answer from the store without downloading. */
   saved: (f: SubjectFile) => boolean;
+  /** Where the file's original is kept, relative to `folder`; undefined when it is not. */
+  localPath?: (f: SubjectFile) => string | undefined;
+  /** The store folder, absolute: named once, so each file's path stays short. */
+  folder?: string;
   format: 'markdown' | 'json';
   now?: Date;
   /** Changed files this answer leaves out (see fitOverview): said in the note, never silent. */
@@ -46,7 +50,7 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
     let shown: ReturnType<typeof fileRows> | undefined;
     let more: string | undefined;
     if (files) {
-      const rows = fileRows(files, marks, input.saved);
+      const rows = fileRows(files, marks, input.saved, input.localPath);
       if (whole(s.code, rows.length)) shown = rows;
       else {
         // Too many to list here: keep the ones that matter now, point to the rest.
@@ -80,6 +84,7 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
       points: b.points,
     }));
   const closed = (g.boxes ?? []).length - open.length;
+  const anyPath = subjects.some((s) => s.files?.some((r) => r.localPath));
   const listed = open.slice(0, input.assignments ?? open.length);
 
   const { exams, hidden } = shownExams(g.exams ?? []);
@@ -106,6 +111,10 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
     changed: lines.length ? lines : undefined,
     problems: g.problems.length ? g.problems : undefined,
     student: student(input.profile),
+    savedFiles:
+      anyPath && input.folder
+        ? `Each file with a localPath is saved on this computer: its full path is ${input.folder} joined with its localPath.`
+        : undefined,
     upcoming: upcoming.items.length ? upcoming.items : undefined,
     moreUpcoming: upcoming.more
       ? `${upcoming.more} more, later: see openAssignments, exams and mendelu_ledger (action list)`
@@ -167,7 +176,7 @@ export function fitOverview(input: RenderInput): { out: object; held: Change[] }
     const changes = input.changes.filter((c) => !isRowed.has(c) || kept.has(c));
     const omitted = rowed.length - k;
     const out = build(
-      { ...input, changes, saved: () => false, omitted, ...bound },
+      { ...input, changes, saved: () => false, localPath: undefined, omitted, ...bound },
       (_, n) => n <= 0,
       marksOf(changes)
     );

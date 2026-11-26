@@ -6,11 +6,15 @@
 //   text/<hash>.json      one file's whole extracted text, with the link and date it was read at,
 //                         and the moment the read started
 //   profile.json          study programme, form, year and semester (nothing that says who the student is)
+//   originals/<hash>/     a file's original bytes and when they were read (storeOriginals.ts)
 // Saving never fails a tool: a folder that cannot be written is the store's
 // business (it falls back to memory), anything else is swallowed here.
 import { createHash } from 'node:crypto';
 import type { Store } from './store';
 import type { Persist } from './cacheTypes';
+import { readAfterModified } from './storeStamp';
+import { createOriginals } from './storeOriginals';
+import { takeOriginal } from './originalCarry';
 
 const SUBJECTS = 'mendelu_subjects';
 const LIST = 'mendelu_subject_files';
@@ -38,26 +42,6 @@ export const textPath = (url: string) =>
 /** The moment a request began and the folder's forget token then (see store.write's `after`). */
 type Token = { gen: string | null; at: number } | null | undefined;
 const isToken = (t: unknown): t is NonNullable<Token> => isObject(t) && 'gen' in t && 'at' in t;
-
-/**
- * IS's Modifikace is a date without a time, so a file replaced later the day it
- * was read would look unchanged. A stored text is therefore trusted only when
- * its read began on a later day than the date shown: any replacement after
- * the read then carries a different date. Same day, or no usable date, means
- * download again (the next read is saved under a later day and is trusted).
- */
-export function readAfterModified(stamp: string, readAt: unknown): boolean {
-  const m = /^modified\s+(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/.exec(stamp);
-  const read = new Date(String(readAt));
-  if (!m || Number.isNaN(read.getTime())) return false;
-  try {
-    const modified = `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`;
-    // IS dates are Czech dates, whatever the laptop's clock says.
-    return read.toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' }) > modified;
-  } catch {
-    return false;
-  }
-}
 
 /** What a kept text's decision needs, without its body. */
 type TextMeta = { url: unknown; stamp: unknown; savedAt: unknown; kind: unknown };
@@ -132,6 +116,7 @@ export function createMapPersist(
   let lastProfile = '';
   let lastGen: unknown;
   let profileWrite: Promise<unknown> = Promise.resolve();
+  const originals = createOriginals(store, now);
   /** True if the store kept it; false if it was cancelled, refused or failed. */
   const put = async (path: string, body: Json, token?: Token): Promise<boolean> => {
     try {
@@ -159,7 +144,10 @@ export function createMapPersist(
       if (tool !== READ || !stamp || typeof args.url !== 'string') return undefined;
       try {
         const rec = JSON.parse((await store.readText(textPath(args.url))) ?? 'null') as unknown;
-        return keptText(rec, args.url, stamp, extractsText);
+        const text = keptText(rec, args.url, stamp, extractsText);
+        // The plugin build hands documents over whole: a kept original is handed back by
+        // its path on this computer instead, never inlined again.
+        return text ?? (extractsText ? undefined : await originals.handBack(args.url, stamp));
       } catch {
         return undefined;
       }
@@ -173,7 +161,15 @@ export function createMapPersist(
       if (tool === LIST && typeof args.code === 'string') {
         await put(`listings/${args.code}.json`, { code: args.code, files: value }, token as Token);
       }
-      // The plugin build hands a document over whole (no text): its originals are step 5.
+      // The bytes the read downloaded ride along with its answer (originalCarry.ts): kept
+      // once, under the date the listing showed when the download began.
+      const original = tool === READ ? takeOriginal(value) : undefined;
+      if (original && stamp && typeof args.url === 'string') {
+        await originals
+          .save({ url: args.url, stamp, ...original, token: token as Token })
+          .catch(() => undefined);
+      }
+      // The plugin build hands a document over whole (no text): only its original is kept.
       if (tool === READ && typeof args.url === 'string' && isObject(value)) {
         if (typeof value.text !== 'string' || typeof value.kind !== 'string') return;
         if (!extractsText && value.kind !== 'text') return;

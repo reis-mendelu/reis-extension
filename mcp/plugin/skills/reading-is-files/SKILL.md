@@ -2,7 +2,7 @@
 description: Reads a lecture or subject file from IS Mendelu that mendelu_read_file handed over (PDF, DOCX, PPTX, XLSX, ODT). Use right after mendelu_read_file returns a file instead of text.
 ---
 
-`mendelu_read_file` returns the file itself, and Claude Code saves it to disk. Read it from the path it was saved to:
+`mendelu_read_file` returns the file itself, and Claude Code saves it to disk. Read it from the path it was saved to. When the file is already saved by reIS (it answers with a `localPath`, or `mendelu_overview` lists a `localPath` for it, relative to the folder named in `savedFiles`), read it from that path instead:
 
 - **PDF**: open it with the Read tool. For a long PDF, read the pages you need.
 - **DOCX, PPTX, XLSX, ODT**: these are zip archives of XML. List the archive, then print the parts that hold the text and read the text between the tags:

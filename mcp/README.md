@@ -31,6 +31,7 @@ Then ask Claude things like "what's due this week?" or "explain lecture 7 of PoÄ
 | `mendelu_assignments` | Your submission boxes and their deadlines |
 | `mendelu_search` | Searches the text of the course files reIS has saved, in every subject at once (case and diacritics do not matter), plus file names and dates. Works offline and asks IS nothing |
 | `mendelu_ledger` | The list of your upcoming tests, credit tests, defences, programme days and events, which Claude keeps for you: it saves every date it finds in a harmonogram, a project brief or a mail, and `mendelu_overview` then lists them soonest first with the days left (and marks one "recheck" when the file it came from was replaced). Asks IS nothing, writes nothing to IS or to your calendar |
+| `mendelu_build_my_map` | Saves every file of every subject's IS folder on your computer at once (originals, zips as they are, plus their text). First a dry run that downloads nothing and says how many files of which types each subject has (IS lists no sizes, so the total size is unknown until download); then the download, which skips files already saved and unchanged, stops at the size limit and says what it skipped. Only reads from IS |
 | `mendelu_forget_everything` | Deletes everything reIS saved on your computer (see below). Claude calls it only when you ask |
 
 ## What it never does
@@ -51,6 +52,7 @@ Saved, as plain files you can open:
 - the list of your subjects (code, name, IS id);
 - each subject's file list: file names, dates and download links;
 - the **whole text** of every file Claude reads (the answer Claude sees is cut at 25,000 characters; the saved copy is not);
+- the **original files** themselves, exactly as IS serves them (PDFs, slides, zips still zipped, data files): one each time Claude reads a file, and all of them at once when you ask Claude to build your map (`mendelu_build_my_map`). They sit in `originals/`, one folder per file named after a fingerprint of its download link, with the file's own name made safe (no folders, no characters a system would misread), and `mendelu_overview` gives Claude each one's path so it can open it directly. A file whose IS folder still shows the same modified date is not downloaded again;
 - your study programme, form, year and semester;
 - the **list of upcoming events** Claude keeps with `mendelu_ledger`: for each, its title, date and time, kind (test, defence, programme day â€¦), subject code, room, the rule that matters (for example minimum points), the unregistration deadline, and where the date came from (a file name and its date, a mail, or you); Claude writes it, reIS only stores it and never writes to your calendar;
 - a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates): it lets the next overview tell you only what is new, and your points are not saved in readable form, only a fingerprint.
@@ -65,9 +67,9 @@ Where (one folder per computer account, shared by Claude Desktop and Claude Code
 | Windows | `%LOCALAPPDATA%\reIS for Claude` |
 | Linux | `$XDG_DATA_HOME/reIS for Claude`, or `~/.local/share/reIS for Claude` |
 
-It takes up to 4 GB, then the oldest copies are removed (never the list of upcoming events, which cannot be fetched again). It is not tied to your IS login, so if you share a computer account with someone else, delete it before handing over. Uninstalling the extension does **not** delete it.
+It takes up to 4 GB, then the oldest copies are removed, original files first since they can be downloaded again (never the list of upcoming events, which cannot be fetched again). Building your map stops at that limit and lists the files it did not download. It is not tied to your IS login, so if you share a computer account with someone else, delete it before handing over. Uninstalling the extension does **not** delete it.
 
-**To delete it:** ask Claude to "forget everything reIS saved" (it runs `mendelu_forget_everything`, deletes the folder's contents, the list of upcoming events included, and says what it removed; a calendar you have is never touched), or delete the folder yourself (with Claude closed: a file being downloaded at that moment would be saved again). If the folder cannot be written, reIS says so and works from memory until Claude closes.
+**To delete it:** ask Claude to "forget everything reIS saved" (it runs `mendelu_forget_everything`, deletes the folder's contents, the original files and the list of upcoming events included, and says what it removed; a calendar you have is never touched), or delete the folder yourself (with Claude closed: a file being downloaded at that moment would be saved again). If the folder cannot be written, reIS says so and works from memory until Claude closes.
 
 ## Repeated questions
 

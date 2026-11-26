@@ -12,6 +12,8 @@
 // also keeps a record of what it reported (overview/seen.json: fingerprints, no grades).
 // Step 4b added mendelu_ledger: the upcoming events Claude saves (ledger/<id>.json, written
 // through storeLedger.ts like everything else), which asks IS nothing and touches no calendar.
+// Step 5 added the original files (originals/<hash>/<safe name>, written through
+// storeOriginals.ts) and mendelu_build_my_map, which only GETs IS listings and files.
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -115,6 +117,8 @@ describe('reIS for Claude stays read-only and local', () => {
         'mcp/storeMap.ts',
         'mcp/forgetTool.ts',
         'mcp/overviewTool.ts',
+        'mcp/storeOriginals.ts',
+        'mcp/buildTool.ts',
       ])
     );
     const openers = sources.filter(({ src }) => /createStore\(/.test(src)).map((s) => s.f);

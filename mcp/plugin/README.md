@@ -17,12 +17,13 @@ The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Cla
 | `mendelu_study_plan` | Your study plan and credits |
 | `mendelu_syllabus` | One subject's syllabus and requirements |
 | `mendelu_subject_files` | Files in a subject's IS document folder |
-| `mendelu_read_file` | One of those files, handed to Claude to read (PDF, DOCX, PPTX, XLSX, ODT, plain text), up to 10 MB |
+| `mendelu_read_file` | One of those files, handed to Claude to read (PDF, DOCX, PPTX, XLSX, ODT, plain text), up to 10 MB; a file already saved on your computer and unchanged in IS is handed over by its path instead |
 | `mendelu_success_rates` | Historical pass rates of subjects (public reIS statistics) |
 | `mendelu_grades` | Your grades and credits so far |
 | `mendelu_assignments` | Your submission boxes and their deadlines |
 | `mendelu_search` | Searches the plain-text files reIS has saved, in every subject at once (case and diacritics do not matter), plus the name, folder and date of every listed file, including PDFs and Office files. Works offline and asks IS nothing |
 | `mendelu_ledger` | The list of your upcoming tests, credit tests, defences, programme days and events, which Claude keeps for you: it saves every date it finds in a harmonogram, a project brief or a mail, and `mendelu_overview` then lists them soonest first with the days left (and marks one "recheck" when the file it came from was replaced). Asks IS nothing, writes nothing to IS or to your calendar |
+| `mendelu_build_my_map` | Saves every file of every subject's IS folder on your computer at once, as the original files (zips as they are), so Claude Code opens them by their path. First a dry run that downloads nothing and says how many files of which types each subject has (IS lists no sizes, so the total size is unknown until download); then the download, which skips files already saved and unchanged, stops at the size limit and says what it skipped. Only reads from IS |
 | `mendelu_forget_everything` | Deletes everything reIS saved on your computer (see below). Claude calls it only when you ask |
 
 ## What it never does
@@ -35,7 +36,7 @@ The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Cla
 
 ## What it saves on your computer
 
-So Claude can start from what it read before instead of forgetting it with each Claude Code window, the plugin keeps: your subject list, each subject's file list (names, dates, download links), the text of plain-text files Claude reads (PDFs and Office files are handed to Claude Code whole, and the plugin does not keep a copy of them yet), your study programme, form, year and semester, the list of upcoming events Claude keeps with `mendelu_ledger` (title, date, kind, subject, room, the rule that matters, where the date came from; Claude writes it, reIS never writes to a calendar), and a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates) (your points are not saved in readable form, only a fingerprint). Never your password or the IS cookie; the study profile holds no name, student number or e-mail, but file names and plain-text contents are kept as they are, so anything written in them is kept too. It is plain files in one folder per computer account, shared with Claude Desktop if you use both:
+So Claude can start from what it read before instead of forgetting it with each Claude Code window, the plugin keeps: your subject list, each subject's file list (names, dates, download links), the text of plain-text files Claude reads, the **original files** Claude reads or that you ask Claude to save all at once with `mendelu_build_my_map` (PDFs, Office files, zips still zipped, data files, exactly as IS serves them, in `originals/` with one folder per file and the file's name made safe; `mendelu_overview` gives Claude each one's path, so Claude Code opens it there instead of downloading it again), your study programme, form, year and semester, the list of upcoming events Claude keeps with `mendelu_ledger` (title, date, kind, subject, room, the rule that matters, where the date came from; Claude writes it, reIS never writes to a calendar), and a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates) (your points are not saved in readable form, only a fingerprint). Never your password or the IS cookie; the study profile holds no name, student number or e-mail, but file names and plain-text contents are kept as they are, so anything written in them is kept too. It is plain files in one folder per computer account, shared with Claude Desktop if you use both:
 
 - macOS: `~/Library/Application Support/reIS for Claude`
 - Windows: `%LOCALAPPDATA%\reIS for Claude`
@@ -43,7 +44,9 @@ So Claude can start from what it read before instead of forgetting it with each 
 
 **Search in the plugin.** `mendelu_search` looks through the text reIS has saved, so in the plugin it reads inside the plain-text files Claude has opened (`.txt`, `.md`, `.csv`, `.m`, `.ipynb`, `.drawio`, `.html`) and finds PDFs and Office files only by their name, folder, date and subject. The plugin stays small by not carrying a PDF reader (a pure-JavaScript one would not fit in its one 5 MiB file), so it does not keep the text of those files; Claude Code reads them itself when Claude opens one. The Claude Desktop extension (`.mcpb`) extracts and searches everything.
 
-Ask Claude to "forget everything reIS saved" (`mendelu_forget_everything`) or delete the folder (with Claude Code closed: a file being downloaded at that moment would be saved again) to remove it. Uninstalling the plugin does not delete it.
+It takes up to 4 GB; past that the oldest copies are removed, original files first (they can be downloaded again), and building the map stops at the limit and lists what it did not download.
+
+Ask Claude to "forget everything reIS saved" (`mendelu_forget_everything`, original files included) or delete the folder (with Claude Code closed: a file being downloaded at that moment would be saved again) to remove it. Uninstalling the plugin does not delete it.
 
 Whatever Claude reads goes to Claude like anything else you share in a chat. The full privacy policy is in [PRIVACY.md](PRIVACY.md).
 

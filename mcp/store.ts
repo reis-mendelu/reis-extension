@@ -83,6 +83,9 @@ export function createStore(opts: StoreOptions = {}) {
     /** The folder this store uses (it may not exist until something is saved). */
     dir,
 
+    /** The byte budget of the folder; a bulk download stops at it (buildMap.ts). */
+    maxBytes,
+
     /** False once the folder could not be used and the store fell back to memory. */
     get persistent() {
       return persistent;
@@ -152,6 +155,8 @@ export function createStore(opts: StoreOptions = {}) {
     read: reader.read,
 
     readHead: reader.readHead,
+
+    diskPath: reader.diskPath,
 
     async readText(rel: string): Promise<string | undefined> {
       return (await this.read(rel))?.toString('utf8');
