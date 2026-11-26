@@ -1,7 +1,7 @@
 # reIS for Claude: a map on disk (design record)
 
 Status: agreed in conversation 2026-11-25 and cut into build steps (see Steps). **Steps 1 and 2 are on
-`test` (#753, #756), steps 3 and 4 too (#759, #761), and 4b (#765), and step 5 (#766); step 6 is in review.**
+`test` (#753, #756), steps 3 and 4 too (#759, #761), and 4b (#765), and step 5 (#766), and step 6 (#768); step 7, the release, is prepared as a draft PR and waits for Dominik.**
 Decided with Dominik. Follows PR #749 (in-memory tool cache), which he judged "pretty useless"
 once he tried it: the server process does not outlive a window reload, an app launch or a
 Claude Code session.
@@ -186,8 +186,8 @@ start-up path changed). These are headless tools, so there is no UI tree and no 
 | 4   | The search tool over stored text: keyword search across all subjects, returning subject, file, snippet and path; first measures PDF text extraction in the plugin build (see Constraints).                                                                                       | On test |
 | 4b  | The upcoming-events ledger (decision 9): a ledger tool Claude writes dated events to, an "upcoming" section in the overview (soonest first, days left, attendance flag, stated or inferred), IS exam terms and assignment deadlines merged in by reIS, recheck marks when a source file is replaced, forget covers it. | On test   |
 | 5   | Originals and **build my map**: download originals into the store (sanitised names, zips as-is, size budget, dry run of counts and types first), return their paths in the overview.                                       | On test     |
-| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz. The prompt offers daily, weekly and on-demand digests as an email draft, with the one-week-ahead rule of decision 9 and a 14-day look for weekly, and a proposed calendar entry for every new or changed ledger event, asked before it is written. | In review |
-| 7   | Release: version bump, both builds, `mcp-v*` tag; ships only once the corrected directory-listing answer is published, or Dominik has said in writing that it ships with the stale "not retained" answer.                                                                                                                                                      | Not started |
+| 6   | The refresh tool for the daily routine (new or replaced files in known subjects within budget) and the documented scheduled-task prompt, in the README and on reisapp.cz. The prompt offers daily, weekly and on-demand digests as an email draft, with the one-week-ahead rule of decision 9 and a 14-day look for weekly, and a proposed calendar entry for every new or changed ledger event, asked before it is written. | On test     |
+| 7   | Release: version bump, both builds, `mcp-v*` tag; ships only once the corrected directory-listing answer is published, or Dominik has said in writing that it ships with the stale "not retained" answer.                                                                                                                                                      | Draft PR, not merged |
 
 Merge order: 1, 2, then 3 and 4 (either order, they share `mcp/tools.ts` and `mcp/register.ts`, so the
 second rebases), 4b, 5, 6, 7. Step 4b needs 3 (the overview carries its section) and 4 (Claude finds
