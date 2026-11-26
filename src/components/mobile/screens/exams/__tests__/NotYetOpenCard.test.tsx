@@ -60,6 +60,7 @@ describe('NotYetOpenCard', () => {
       <NotYetOpenCard
         row={row}
         now={NOW}
+        opensAt={new Date(2026, 11, 1, 8, 0)}
         expanded
         onToggle={vi.fn()}
         isProcessing={false}
@@ -77,10 +78,28 @@ describe('NotYetOpenCard', () => {
     expect(lines[1]).toHaveTextContent('Průběžný test 1');
   });
 
-  it('leaves the opening moment to the term rows and keeps only the term count in the header', () => {
+  it('names the earliest opening in the collapsed header, as "od", beside the term count', () => {
+    // "od" and not "otevírá se": a section's terms open on different days, and
+    // "from <earliest>" is true of every row; "opens at <earliest>" was right
+    // about one of them. The per-row label still says "otevírá se" once.
     renderCard();
-    // One mention, and it is the row's — the header no longer repeats it.
+    expect(screen.getByText('od 1. 12. 8:00')).toBeInTheDocument();
     expect(screen.getAllByText(/otevírá se/)).toHaveLength(1);
     expect(screen.getByText('1 termín')).toBeInTheDocument();
+  });
+
+  it('shows the opening in the header while collapsed, before anything is expanded', () => {
+    render(
+      <NotYetOpenCard
+        row={row}
+        now={NOW}
+        opensAt={new Date(2026, 11, 1, 8, 0)}
+        expanded={false}
+        onToggle={vi.fn()}
+        isProcessing={false}
+        onRegister={vi.fn()}
+      />
+    );
+    expect(screen.getByText('od 1. 12. 8:00')).toBeInTheDocument();
   });
 });
