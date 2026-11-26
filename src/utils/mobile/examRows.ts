@@ -94,11 +94,21 @@ function unregistered(exams: ExamSubject[], language: string, signups: boolean):
   return rows;
 }
 
-/** Slots still free on a term, or null when IS reported no capacity at all. */
-export function freeSeats(term: ExamTerm): { free: number; total: number } | null {
+/**
+ * Slots still free on a term, or null when IS reported no capacity at all. A
+ * reserve takes a seat (IS: "59/60(1)" is "již obsazený"), so it is subtracted.
+ */
+export function freeSeats(
+  term: ExamTerm
+): { free: number; total: number; reserve?: number } | null {
   const cap = term.capacity;
   if (!cap || typeof cap.total !== 'number') return null;
-  return { free: Math.max(0, cap.total - (cap.occupied ?? 0)), total: cap.total };
+  const reserve = cap.reserve ?? 0;
+  return {
+    free: Math.max(0, cap.total - (cap.occupied ?? 0) - reserve),
+    total: cap.total,
+    ...(reserve > 0 ? { reserve } : {}),
+  };
 }
 
 /**

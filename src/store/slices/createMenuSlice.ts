@@ -31,14 +31,14 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => {
     const keptLanguage = get().menuLanguage;
     set({ menuLoading: true, menuError: false, menuLanguage: lang });
     try {
-      const data = await fetchMenu(lang);
+      const { outlets, pizzeria } = await fetchMenu(lang);
       // Something started a newer request while this was in flight, so this
       // body is for a question nobody is asking any more. Dropping it matters
       // in both directions: committing it would show a menu the student has
       // moved on from AND clear `menuLoading` out from under the request that
       // is still pending. The newest request owns the flags from here.
       if (id !== latestRequest) return;
-      set({ menu: data, menuLoading: false, menuFetchedAt: Date.now() });
+      set({ menu: outlets, pizzeria, menuLoading: false, menuFetchedAt: Date.now() });
       await recheck();
     } catch {
       // The same, and this is the half that bites hardest: a stale rejection
@@ -88,6 +88,7 @@ export const createMenuSlice: AppSlice<MenuSlice> = (set, get) => {
 
   return {
     menu: null,
+    pizzeria: null,
     menuLoading: false,
     menuError: false,
     menuLanguage: null,

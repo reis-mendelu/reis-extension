@@ -5,8 +5,11 @@ import type { DocumentMeta } from './files';
 // their XML, so the server needs no PDF or Office parser (officeparser was
 // two thirds of the bundle). Checked 2026-10-26 with PDFs up to 9.4 MB.
 
+/** Whether this build extracts a document's text itself (the store may then serve and keep it). */
+export const EXTRACTS_TEXT = false;
+
 export const DOCUMENT_DESCRIPTION =
-  'Downloads one file from the IS document server and returns the file itself (PDF, DOCX, PPTX, XLSX, ODT, up to 10 MB) for you to read, or the text of a plain-text file. Only accepts a downloadUrl from mendelu_subject_files. Read-only.';
+  'Downloads one file from the IS document server and returns the file itself (PDF, DOCX, PPTX, XLSX, ODT, up to 10 MB) for you to read, or the text of a plain-text file. Only accepts a downloadUrl from mendelu_subject_files. If the file names a date the student must attend or act on (a test, credit test, defence, deadline, programme day), save each one with mendelu_ledger before you answer, and pass the file `url` and its `modified` date so a later replacement is noticed. Read-only.';
 
 /**
  * Claude Code drops a server whose message passes 16 MiB, and base64 adds a

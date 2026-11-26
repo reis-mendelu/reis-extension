@@ -48,7 +48,8 @@ describe('alternativeTerms', () => {
 
   it('is every term where the student is on none', () => {
     const open = { ...section, status: 'open' as const, registeredTerm: undefined };
-    expect(alternativeTerms(open).map((t) => t.id)).toEqual(['100', '200']);
+    // Every term, the bookable one (200) first.
+    expect(alternativeTerms(open).map((t) => t.id)).toEqual(['200', '100']);
   });
 });
 

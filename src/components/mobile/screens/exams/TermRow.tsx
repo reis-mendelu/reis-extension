@@ -174,13 +174,19 @@ export function TermRow({
             onClick={() => void toggle()}
             disabled={firing}
             aria-label={armed ? t('exams.unwatchAriaLabel') : t('exams.watchAriaLabel')}
-            className={`flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center rounded-lg border ${
+            className={`flex min-h-11 min-w-11 flex-shrink-0 items-center justify-center gap-1 rounded-lg border px-2 text-2sm ${
               armed
                 ? 'border-success/40 text-[var(--tone-success)]'
                 : 'border-warning/40 text-[var(--tone-warning)]'
             } ${firing ? 'opacity-60' : ''}`}
           >
             {armed ? <BellRing size={13} /> : <Bell size={13} />}
+            {/* The word, not only the icon: on a full term this is the only action,
+                and an icon alone read as a way to sign up. Under 360px the word
+                would squeeze the date ("po 30. 1…"), so it stays for screen readers only. */}
+            <span className="max-[359px]:sr-only">
+              {armed ? t('exams.watching') : t('exams.watch')}
+            </span>
           </button>
         )}
       </div>

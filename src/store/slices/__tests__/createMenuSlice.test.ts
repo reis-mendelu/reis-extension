@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAppStore } from '../../useAppStore';
+import { page } from '../../../test/fixtures/menuPage';
 
 vi.mock('../../../api/menu', () => ({ fetchMenu: vi.fn() }));
 import { fetchMenu as apiFetchMenu } from '../../../api/menu';
@@ -7,7 +8,7 @@ import { fetchMenu as apiFetchMenu } from '../../../api/menu';
 describe('createMenuSlice', () => {
   beforeEach(() => {
     vi.mocked(apiFetchMenu).mockReset();
-    vi.mocked(apiFetchMenu).mockResolvedValue([]);
+    vi.mocked(apiFetchMenu).mockResolvedValue(page([]));
     useAppStore.setState({
       menu: null,
       menuLoading: false,
@@ -39,7 +40,7 @@ describe('createMenuSlice', () => {
 describe('createMenuSlice — the store owns the request guard', () => {
   beforeEach(() => {
     vi.mocked(apiFetchMenu).mockReset();
-    vi.mocked(apiFetchMenu).mockResolvedValue([]);
+    vi.mocked(apiFetchMenu).mockResolvedValue(page([]));
     useAppStore.setState({
       menu: null,
       menuLoading: false,
@@ -57,7 +58,7 @@ describe('createMenuSlice — the store owns the request guard', () => {
     let release!: () => void;
     vi.mocked(apiFetchMenu).mockReturnValue(
       new Promise((resolve) => {
-        release = () => resolve([]);
+        release = () => resolve(page([]));
       })
     );
     const first = useAppStore.getState().fetchMenu();
@@ -103,5 +104,46 @@ describe('createMenuSlice — the store owns the request guard', () => {
     useAppStore.setState({ menu: null } as never);
     await useAppStore.getState().fetchMenu();
     expect(apiFetchMenu).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('createMenuSlice — the pizzeria rides on the same page', () => {
+  const PIZZERIA = {
+    address: 'Zemědělská 1, Brno',
+    hours: ['Po-Čt 8:00 - 15:00'],
+    pizzas: [{ name: '01. Pizza pollo', price: 86 }],
+  };
+  beforeEach(() => {
+    vi.mocked(apiFetchMenu).mockReset();
+    useAppStore.setState({
+      menu: null,
+      pizzeria: null,
+      menuLoading: false,
+      menuError: false,
+      menuLanguage: null,
+      demoMode: false,
+      language: 'cz',
+    } as never);
+  });
+
+  it('keeps the canteens in `menu` and the pizzeria beside them', async () => {
+    vi.mocked(apiFetchMenu).mockResolvedValue(page([], PIZZERIA));
+    await useAppStore.getState().fetchMenu();
+    expect(useAppStore.getState().menu).toEqual([]);
+    expect(useAppStore.getState().pizzeria).toEqual(PIZZERIA);
+  });
+
+  it('a page without the tab leaves no pizzeria', async () => {
+    vi.mocked(apiFetchMenu).mockResolvedValue(page([], null));
+    await useAppStore.getState().fetchMenu();
+    expect(useAppStore.getState().pizzeria).toBeNull();
+  });
+
+  it('a failed refresh keeps the pizzeria it replaces, like the menu', async () => {
+    vi.mocked(apiFetchMenu).mockResolvedValueOnce(page([], PIZZERIA));
+    await useAppStore.getState().fetchMenu();
+    vi.mocked(apiFetchMenu).mockRejectedValueOnce(new Error('offline'));
+    await useAppStore.getState().refreshMenuIfStale(0);
+    expect(useAppStore.getState().pizzeria).toEqual(PIZZERIA);
   });
 });

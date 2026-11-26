@@ -41,6 +41,12 @@ if (import.meta.env.DEV) {
       Language | undefined;
     const menuLanguage: Language = stored === 'en' ? 'en' : 'cz';
     if (useAppStore.getState().menu) return;
-    useAppStore.setState({ menu, menuLoading: false, menuError: false, menuLanguage });
+    useAppStore.setState({
+      menu,
+      pizzeria: canteenMenu.pizzeria,
+      menuLoading: false,
+      menuError: false,
+      menuLanguage,
+    });
   })();
 }

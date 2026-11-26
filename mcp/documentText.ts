@@ -9,8 +9,11 @@ import { clean, type DocumentMeta, type FileText } from './files';
 // pdfjs-dist 6.2.108. unpdf bundled its own pdfjs 6.1.200 (inside the
 // GHSA-hq66-cqwq-w95j range), and two pdfjs copies in one process collide.
 
+/** Whether this build extracts a document's text itself (the store may then serve and keep it). */
+export const EXTRACTS_TEXT = true;
+
 export const DOCUMENT_DESCRIPTION =
-  'Downloads one file from the IS document server and returns its text (PDF, DOCX, PPTX, XLSX, ODT, plain text). Only accepts a downloadUrl from mendelu_subject_files. Read-only.';
+  'Downloads one file from the IS document server and returns its text (PDF, DOCX, PPTX, XLSX, ODT, plain text). Only accepts a downloadUrl from mendelu_subject_files. If the file names a date the student must attend or act on (a test, credit test, defence, deadline, programme day), save each one with mendelu_ledger before you answer, and pass the file `url` and its `modified` date so a later replacement is noticed. Read-only.';
 
 /** Text extraction has no message-size ceiling of its own: the same cap as text files. */
 export const MAX_DOCUMENT_BYTES = 30 * 1024 * 1024;
