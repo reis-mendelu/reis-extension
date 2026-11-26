@@ -51,7 +51,20 @@ export function getSectionState(section: ExamSection, now: Date): SectionState {
  */
 export function alternativeTerms(section: ExamSection): ExamTerm[] {
   const mine = section.registeredTerm?.id;
-  return mine ? section.terms.filter((t) => t.id !== mine) : section.terms;
+  return bookableFirst(mine ? section.terms.filter((t) => t.id !== mine) : section.terms);
+}
+
+/**
+ * Terms a student can book right now before the rest. IS lists terms by date,
+ * so a student hunting for one to register for first scrolled past every full
+ * term. Each group keeps the date order; the input is not changed.
+ */
+export function bookableFirst(terms: ExamTerm[]): ExamTerm[] {
+  const bookable = (t: ExamTerm) =>
+    t.canRegisterNow === true &&
+    !t.full &&
+    !(t.capacity && t.capacity.occupied + (t.capacity.reserve ?? 0) >= t.capacity.total);
+  return [...terms.filter(bookable), ...terms.filter((t) => !bookable(t))];
 }
 
 /**
