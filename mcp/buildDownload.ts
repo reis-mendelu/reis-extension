@@ -25,8 +25,8 @@ export type DownloadDeps = {
   ctx: ToolCtx;
   /** The call's forget token: a forget() after the call began cancels every write and stops it. */
   token: { gen: string | null; at: number } | null;
-  /** Saves a file's text as mendelu_read_file would (storeMap's persist.save). */
-  saveText: (url: string, value: unknown, stamp: string) => Promise<unknown>;
+  /** Saves a file's text as mendelu_read_file would (storeMap's saveText); true once kept. */
+  saveText: (url: string, value: unknown, stamp: string) => Promise<boolean>;
   /** True where this build extracts document text (the .mcpb); the plugin keeps plain text only. */
   extractsText: boolean;
   maxFileBytes?: number;
@@ -71,7 +71,10 @@ export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
         at,
       })
     );
-    const room = budget.max - budget.used - recordOnly;
+    // A replaced file's stale copy goes when its new one is saved: only the growth is charged.
+    const stale = await originals.meta(p.file.downloadUrl);
+    const credit = stale ? originalCost(stale) : 0;
+    const room = budget.max - budget.used - recordOnly + credit;
     if (!stop && room <= 0) stop = 'budget';
     if (stop) return void outcomes.set(p, { state: 'skipped', reason: halted() });
     const url = p.file.downloadUrl;
@@ -86,7 +89,9 @@ export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
         bytes = await readCapped(res, limit);
       } catch (e) {
         if (!(e instanceof TooBigError)) throw e;
-        if (limit < maxFile) {
+        // IS said how big it is: past the per-file limit it is a size skip, never a budget stop.
+        const declared = Number(res.headers.get('content-length') ?? 0);
+        if (limit < maxFile && declared <= maxFile) {
           stop = 'budget';
           return void outcomes.set(p, { state: 'skipped', reason: halted() });
         }
@@ -99,11 +104,11 @@ export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
       const cost = originalCost(
         recordOf({ url, stamp: p.stamp, bytes, filename, mediaType: h.mediaType, at })
       );
-      if (budget.used + cost > budget.max) {
+      if (budget.used + cost - credit > budget.max) {
         stop = 'budget';
         return void outcomes.set(p, { state: 'skipped', reason: halted() });
       }
-      budget.used += cost;
+      budget.used += cost - credit;
       const saved = await originals.save({
         url,
         stamp: p.stamp,
@@ -113,7 +118,12 @@ export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
         token: d.token,
       });
       if (!saved) {
-        budget.used -= cost;
+        budget.used -= cost - credit;
+        // Refused because a forget ran meanwhile: say so, and stop the rest.
+        if (!sameGeneration(await d.store.generation(), d.token!.gen)) {
+          stop = 'forgotten';
+          return void outcomes.set(p, { state: 'skipped', reason: halted() });
+        }
         return void outcomes.set(p, {
           state: 'failed',
           reason: 'not saved: the path is too long for this computer, or everything was forgotten',
@@ -154,13 +164,17 @@ export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
       );
       if (budget.used + size > budget.max) return false;
       budget.used += size;
-      await d.saveText(p.file.downloadUrl, value, p.stamp);
-      return true;
+      const kept = await d.saveText(p.file.downloadUrl, value, p.stamp).catch(() => false);
+      if (!kept) budget.used -= size; // the store refused it: nothing to count or charge
+      return kept;
     } catch {
       return false; // the original is kept; the text can be read later with mendelu_read_file
     }
   }
 
   await pool(planned, d.concurrency ?? CONCURRENCY, one);
+  // A forget during the last download leaves no next file to notice it.
+  if (!stop && d.token?.gen && !sameGeneration(await d.store.generation(), d.token.gen))
+    stop = 'forgotten';
   return { outcomes, budget, stop };
 }

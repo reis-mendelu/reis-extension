@@ -123,6 +123,16 @@ describe('the digest prompt keeps its rules', () => {
       'unclear: add and flag, never overwrite',
       /\*\*Unclear:\*\*[^\n]*overwrite nothing[^\n]*stay marked recheck/i,
     ],
+    [
+      'unchanged compares every detail',
+      /\*\*Unchanged:\*\*[^\n]*room, rule[^\n]*Never set `source_modified` without the file's current details/,
+    ],
+    ['other source needs a clear match', /same subject, kind and day alone is not a match/i],
+    ['occurrence by occurrence', /work occurrence by occurrence/i],
+    [
+      'remove only after the whole file',
+      /remove only after reading the WHOLE file[^\n]*truncated[^\n]*keep the entry with its recheck mark/i,
+    ],
     ['removed rule', /\*\*Removed:\*\*[^\n]*`remove`/],
     ['moved event is an update', /never `add` a second entry for an event that moved/i],
     ['a week ahead', /at least a week ahead/i],

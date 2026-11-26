@@ -18,9 +18,16 @@ function restore<T>(
 /** `held`: the non-file changes this answer did not show. Edits `next` in place. */
 export function holdUnreported(next: Snapshot, prev: Snapshot | null, held: Change[]) {
   for (const c of held) {
-    if (!c.key) continue;
-    if (c.kind === 'points') restore(next.points[c.code], prev?.points[c.code], c.key);
-    else if (c.kind === 'box') restore(next.boxes, prev?.boxes, c.key);
-    else if (c.kind === 'exam') restore(next.exams, prev?.exams, c.key);
+    if (!c.key && c.kind !== 'subject') continue;
+    const key = c.key ?? '';
+    if (c.kind === 'points') restore(next.points[c.code], prev?.points[c.code], key);
+    else if (c.kind === 'box') restore(next.boxes, prev?.boxes, key);
+    else if (c.kind === 'exam') restore(next.exams, prev?.exams, key);
+    else if (c.kind === 'subject') {
+      // A new subject left out stays new; a vanished one stays recorded until it is reported.
+      restore(next.subjects, prev?.subjects, c.code);
+      restore(next.files, prev?.files, c.code);
+      restore(next.points, prev?.points, c.code);
+    }
   }
 }

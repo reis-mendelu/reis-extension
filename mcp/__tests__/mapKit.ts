@@ -108,7 +108,7 @@ export function boot(dir: string, opts: { unavailable?: string; maxBytes?: numbe
       metas.set(name, meta);
     },
   } as unknown as McpServer;
-  const store = createStore({ dir, ...(maxBytes ? { maxBytes } : {}) });
+  const store = createStore({ dir, ...(maxBytes !== undefined ? { maxBytes } : {}) });
   registerTools(server, { fetch: fetchFromIs, ...extra }, store);
   const call = (name: string, args: Record<string, unknown> = {}) => handlers.get(name)!(args);
   return { call, store, metas, handlers };

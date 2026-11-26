@@ -14,7 +14,7 @@ export const REFRESH_TOOL = {
   name: 'mendelu_refresh',
   title: 'Refresh for the digest: what changed since the last refresh',
   description:
-    'For the student\'s scheduled digest routine (daily or weekly), or when the student asks what is new since their last digest or refresh. For any other school question call mendelu_overview first. One call refreshes the cheap IS listings (subjects, course file listings, points, assignments, exams, timetable), compares them with what the LAST REFRESH saw (its own record, separate from the overview\'s), downloads the new or replaced files of subjects already known within the byte budget (never a whole library: a first refresh only records a baseline, and a new subject\'s files wait for mendelu_build_my_map), and returns: "changed" (each changed file with its `url`, `modified` date and what happened to its download, points rows, assignment deadlines, exam terms, new subjects, ledger entries whose source file changed), "recheck" (every ledger entry whose source file was replaced or is gone), "upcoming" (the next 14 days, soonest first, with days left and `attendance: yes` for events the student must come to) and "problems" (a subject IS did not answer for is reported, not fatal). Then read each new or replaced harmonogram, conditions or brief file with mendelu_read_file and save every date it states with mendelu_ledger. It only reads IS and writes only reIS\'s own folder: it never sends mail and never writes a calendar.',
+    'For the student\'s scheduled digest routine (daily or weekly), or when the student asks what is new since their last digest or refresh. For any other school question call mendelu_overview first. One call refreshes the cheap IS listings (subjects, course file listings, points, assignments, exams, timetable), compares them with what the LAST REFRESH saw (its own record, separate from the overview\'s), downloads the new or replaced files of subjects already known within the byte budget (never a whole library: a first refresh compares with the last mendelu_overview, or only records a baseline when there was none, and a new subject\'s files wait for mendelu_build_my_map), and returns: "changed" (each changed file with its `url`, `modified` date and what happened to its download, points rows, assignment deadlines, exam terms, new subjects, ledger entries whose source file changed), "recheck" (every ledger entry whose source file was replaced or is gone), "upcoming" (the next 14 days, soonest first, with days left and `attendance: yes` for events the student must come to) and "problems" (a subject IS did not answer for is reported, not fatal). Then read each new or replaced harmonogram, conditions or brief file with mendelu_read_file and save every date it states with mendelu_ledger. It only reads IS and writes only reIS\'s own folder: it never sends mail and never writes a calendar.',
 } as const;
 
 export function registerRefresh(
@@ -48,8 +48,7 @@ export function registerRefresh(
             run: (tool, a, fn) => cache.run(tool, a, fn, ticket, { fresh: true }),
             token: ticket.token,
             settled: map.settled,
-            saveText: (url, value, stamp) =>
-              map.persist.save('mendelu_read_file', { url }, value, stamp, ticket.token),
+            saveText: (url, value, stamp) => map.saveText(url, value, stamp, ticket.token),
             extractsText,
             format,
           }),

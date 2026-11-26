@@ -88,7 +88,7 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
     );
   }
   if (store && map) {
-    registerBuild(server, ctx, store, cache, map.persist, EXTRACTS_TEXT);
+    registerBuild(server, ctx, store, cache, map.saveText, EXTRACTS_TEXT);
     registerRefresh(server, ctx, store, cache, map, EXTRACTS_TEXT);
   }
   for (const t of TOOLS) {

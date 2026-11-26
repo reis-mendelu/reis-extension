@@ -77,4 +77,34 @@ describe('mendelu_refresh answer size', () => {
     }
     expect(seen.sort()).toEqual(names);
   }, 60_000);
+
+  it('hundreds of new subjects: bounded, and every one reported exactly once over refreshes', async () => {
+    const dir = await folder();
+    await refresh(boot(dir));
+    const codes = Array.from({ length: 150 }, (_, i) => `EBC-${'X'.repeat(110)}-${i}`);
+    world.subjects.push(...codes);
+    const seen: string[] = [];
+    for (let run = 0; run < 6; run++) {
+      const r = await boot(dir).call(R, { response_format: 'json' });
+      expect(r.content[0]!.text!.length).toBeLessThanOrEqual(LIMIT);
+      const parsed = JSON.parse(r.content[0]!.text!) as { changed?: { subjects?: string[] } };
+      for (const line of parsed.changed?.subjects ?? []) {
+        const m = /^New subject: (\S+)/.exec(line);
+        if (m) seen.push(m[1]!);
+      }
+    }
+    expect(seen.sort()).toEqual([...codes].sort());
+  }, 120_000);
+
+  it('says so when what it reported could not be saved', async () => {
+    const dir = await folder();
+    await refresh(boot(dir));
+    const s = boot(dir);
+    const write = s.store.write.bind(s.store);
+    vi.spyOn(s.store, 'write').mockImplementation((p, ...rest) =>
+      p === 'refresh/seen.json' ? Promise.resolve(false) : write(p, ...rest)
+    );
+    const r = (await refresh(s)) as unknown as { checkpoint?: string };
+    expect(r.checkpoint).toMatch(/may report these changes again/);
+  });
 });

@@ -162,9 +162,22 @@ async function refresh(d: RefreshDeps) {
   // A file not kept for a passing reason is not recorded: the next refresh reports and tries it again.
   const again = [...plannedFor].filter(([, p]) => retry(outcomes.get(p))).map(([c]) => c);
   // Points rows, boxes and exam terms the answer left out are kept as they were, so they come next time.
-  await recordLook(d.store, REFRESH_RECORD, prev, g.world, [...held, ...again], d.token, {
-    extra: { refreshedAt: now.toISOString() },
-    patch: (next) => holdUnreported(next, prev, held),
-  });
-  return out;
+  const saved = await recordLook(
+    d.store,
+    REFRESH_RECORD,
+    prev,
+    g.world,
+    [...held, ...again],
+    d.token,
+    {
+      extra: { refreshedAt: now.toISOString() },
+      patch: (next) => holdUnreported(next, prev, held),
+    }
+  );
+  if (saved) return out;
+  return {
+    ...out,
+    checkpoint:
+      'reIS could not save what this refresh reported, so the next refresh may report these changes again (or, on a first refresh, take the baseline again).',
+  };
 }

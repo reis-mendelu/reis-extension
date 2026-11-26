@@ -57,7 +57,7 @@ const LEVELS: Level[] = [
   { lines: 0, upcoming: 0, recheck: 0 },
 ];
 /** Points rows, assignment boxes and exam terms: a change left out is held and comes next time. */
-const HELD_KINDS = ['points', 'box', 'exam'] as const;
+const HELD_KINDS = ['points', 'box', 'exam', 'subject'] as const;
 
 function build(input: RefreshInput, rows: FileRow[], omitted: number, lvl: Level) {
   const held: Change[] = [];
@@ -76,15 +76,21 @@ function build(input: RefreshInput, rows: FileRow[], omitted: number, lvl: Level
     // Ledger lines: every entry they name is in "recheck" (or mendelu_ledger list) as well.
     return [...shownLines, `${left} more: see recheck, or mendelu_ledger (action list)`];
   };
-  const subjects = some(
-    input.changes
-      .filter((c) => c.kind === 'subject')
-      .map((c) =>
-        c.text.startsWith('New subject')
-          ? `${c.text} (its files are not downloaded by a refresh: call mendelu_build_my_map)`
-          : c.text
-      )
-  );
+  const allSubjects = input.changes.filter((c) => c.kind === 'subject');
+  const subjectLines = allSubjects
+    .slice(0, lvl.lines)
+    .map((c) =>
+      c.text.startsWith('New subject')
+        ? `${c.text} (its files are not downloaded by a refresh: call mendelu_build_my_map)`
+        : c.text
+    );
+  if (allSubjects.length > subjectLines.length) {
+    held.push(...allSubjects.slice(lvl.lines));
+    subjectLines.push(
+      `${allSubjects.length - subjectLines.length} more subject changes do not fit in this answer: the next mendelu_refresh reports them`
+    );
+  }
+  const subjects = some(subjectLines);
   const changed = {
     subjects,
     files: some(rows),
@@ -158,7 +164,12 @@ export function fitRefresh(input: RefreshInput): { out: object; held: Change[] }
   };
   const n = input.rows.length;
   if (small(lean(n, LEVELS[0]!).out)) return lean(n, LEVELS[0]!);
-  const lvl = LEVELS.find((l) => small(lean(0, l).out)) ?? LEVELS[LEVELS.length - 1]!;
+  const lvl = LEVELS.find((l) => small(lean(0, l).out));
+  // Never hand back an answer that would be cut mid-text; the caller records nothing then.
+  if (!lvl)
+    throw new Error(
+      'The refresh report does not fit in one answer even at its smallest. Nothing was recorded; try again.'
+    );
   let [lo, hi] = [0, n];
   while (lo < hi) {
     const mid = Math.ceil((lo + hi) / 2);

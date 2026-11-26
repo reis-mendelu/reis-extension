@@ -5,7 +5,6 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ToolCtx } from './tools';
 import type { Store } from './store';
 import type { ToolCache } from './cache';
-import type { Persist } from './cacheTypes';
 import { toolResult, toError } from './format';
 import { BUILD, responseFormat, withNotice } from './registerKit';
 import { buildMap } from './buildMap';
@@ -30,7 +29,7 @@ export function registerBuild(
   ctx: ToolCtx,
   store: Store,
   cache: ToolCache,
-  persist: Persist,
+  saveText: (url: string, value: unknown, stamp: string, token: unknown) => Promise<boolean>,
   extractsText: boolean
 ): void {
   server.registerTool(
@@ -55,8 +54,7 @@ export function registerBuild(
             ctx,
             run: (tool, a, fn) => cache.run(tool, a, fn, ticket),
             token: token && typeof token === 'object' && 'gen' in token ? token : null,
-            saveText: (url, value, stamp) =>
-              persist.save('mendelu_read_file', { url }, value, stamp, token),
+            saveText: (url, value, stamp) => saveText(url, value, stamp, token),
             extractsText,
             dryRun: args.dry_run !== false,
           }),
