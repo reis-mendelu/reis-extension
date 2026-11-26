@@ -1,5 +1,4 @@
 import { EventDetailCard } from '../../../CampusMap/EventDetailCard';
-import { GardenPlaceCard } from '../../../CampusMap/GardenPlaceCard';
 import { SocietyPinCard } from '../../../CampusMap/SocietyPinCard';
 import { SportPlaceCard } from '../../../CampusMap/SportPlaceCard';
 import { MapEventsSection } from '../../../CampusMap/MapEventsSection';
@@ -7,13 +6,10 @@ import { RoomDirections } from '../../../CampusMap/RoomDirections';
 import { LibraryCard } from './library/LibraryCard';
 import type { LibraryView } from './library/libraryOf';
 import type { MapEvent } from '../../../../types/events';
-import type { GardenPlace, SocietyPin, SportPlace } from '../../../../types/campusMap';
+import type { SocietyPin, SportPlace } from '../../../../types/campusMap';
 
 export interface MapPanelBodyProps {
   selectedEvent: MapEvent | null;
-  /** One of the botanical garden's places, tapped on the map. Optional so the
-   *  shells that never show one (and their tests) need not pass it. */
-  selectedGardenPlace?: GardenPlace | null;
   /** A society pin (`map_pins`), tapped on the map. Optional, as above. */
   selectedSocietyPin?: SocietyPin | null;
   /** A Sportera place, tapped on the map. Optional, as above. */
@@ -42,7 +38,6 @@ export interface MapPanelBodyProps {
  */
 export function MapPanelBody({
   selectedEvent,
-  selectedGardenPlace = null,
   selectedSocietyPin = null,
   selectedSportPlace = null,
   selectedLibrary = null,
@@ -57,13 +52,6 @@ export function MapPanelBody({
   }
   if (selectedLibrary) {
     return <LibraryCard view={selectedLibrary} flush={flush} />;
-  }
-  if (selectedGardenPlace) {
-    return (
-      <div className={flush ? 'px-5' : 'px-4'}>
-        <GardenPlaceCard place={selectedGardenPlace} flush={flush} />
-      </div>
-    );
   }
   if (selectedSocietyPin) {
     return (

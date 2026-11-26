@@ -29,7 +29,6 @@ import type {
   MapSelection,
   PoiProperties,
   RoomProperties,
-  GardenPlace,
 } from '../types/campusMap';
 import type { MapEvent } from '../types/events';
 
@@ -642,8 +641,6 @@ export interface MapSlice {
   /** The library's card (phone and iPad): its list, or one of its rooms. */
   selectMapLibrary: (featureId?: number) => void;
   selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;
-  /** Open one of the botanical garden's places. Keeps the garden drilled in. */
-  selectGardenPlace: (place: GardenPlace) => void;
   setMapSearchQuery: (q: string) => void;
   focusRoomByCode: (code: string) => void;
   focusPoiById: (id: number) => void;

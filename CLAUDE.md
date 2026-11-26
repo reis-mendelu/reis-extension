@@ -452,8 +452,7 @@ These are enforced by linting and project convention:
   own tooltip and marker elements and accepts a single `className`, so its
   labels are styled by class in `src/index.css` (`.room-label`,
   `.building-label`, `.place-label`, `.room-route-chip`, `.room-route-chip-pill`,
-  `.reis-hide-building-labels`, `.reis-hide-room-labels`,
-  `.reis-hide-garden-bubbles`).
+  `.reis-hide-building-labels`, `.reis-hide-room-labels`).
   Tailwind utilities cannot reach that DOM without `!important` fighting
   Leaflet's own `.leaflet-tooltip` background, border and shadow — which is more
   custom CSS, not less. The rule is about app chrome, where DaisyUI applies.

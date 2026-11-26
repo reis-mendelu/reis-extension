@@ -75,4 +75,15 @@ describe('drawRemotePlaces', () => {
     expect(dots).toHaveLength(garden.pois!.length);
     for (const d of dots) expect(d.getTooltip()?.options.permanent).toBeFalsy();
   });
+
+  it('draws no photo bubbles in the garden: no marker of any kind, only paths, shapes and dots', () => {
+    // Dominik removed the round photos pinned around the arboretum (Task List,
+    // "odstraň peek do arboreta bubliny"). A bubble was an L.Marker with a
+    // divIcon; the footpaths (Polyline) and collection dots (CircleMarker) are
+    // what stays. Pinned so a rebuilt bubble layer cannot sneak back in.
+    const { layers } = draw();
+    expect(layers.filter((l) => l instanceof L.Marker)).toHaveLength(0);
+    const garden = REMOTE.find((p) => p.shortName === GARDEN)!;
+    expect(layers.filter((l) => l instanceof L.CircleMarker)).toHaveLength(garden.pois!.length);
+  });
 });
