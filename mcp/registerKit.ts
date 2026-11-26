@@ -30,6 +30,14 @@ export const SEARCH = {
   openWorldHint: false,
 } as const;
 
+// Reads IS only (GET listings and files), and writes reIS's own folder: not read-only on this computer.
+export const BUILD = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
+
 export const responseFormat = z
   .enum(['markdown', 'json'])
   .default('markdown')

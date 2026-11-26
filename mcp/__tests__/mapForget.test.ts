@@ -55,7 +55,7 @@ describe('forget everything', () => {
     await ask(s);
     const r = await s.call('mendelu_forget_everything', { response_format: 'json' });
     const report = JSON.parse(textOf(r));
-    expect(report).toMatchObject({ forgotten: true, filesRemoved: 4 }); // subjects, listing, profile, one text
+    expect(report).toMatchObject({ forgotten: true, filesRemoved: 6 }); // subjects, listing, profile, one text, one original and its record
     expect(report.folder).toBe(dir);
     expect(await files(dir)).toEqual([]);
 

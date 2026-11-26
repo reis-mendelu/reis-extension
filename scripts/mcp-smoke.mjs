@@ -77,8 +77,10 @@ toServer.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initializ
 const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sort();
 console.log('tools:', tools.length, tools.join(', '));
 let failed =
-  tools.length !== 15 ||
-  !['mendelu_search', 'mendelu_overview', 'mendelu_ledger'].every((t) => tools.includes(t));
+  tools.length !== 16 ||
+  !['mendelu_search', 'mendelu_overview', 'mendelu_ledger', 'mendelu_build_my_map'].every((t) =>
+    tools.includes(t)
+  );
 
 const json = async (name, args) => {
   const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
@@ -104,7 +106,7 @@ async function ledgerList() {
 }
 if (!(await ledgerList())) failed = true;
 
-/** The one refusal a healthy server gives on purpose (files.ts readCapped). */
+/** The one refusal a healthy server gives on purpose (download.ts readCapped). */
 const TOO_BIG = 'too big to read here';
 /** mendelu_subject_files errors that mean "nothing to list", not a broken server. */
 const SKIPPABLE_LISTING = ['has no file folder', 'output cut at the limit'];
@@ -128,6 +130,8 @@ async function readRealFiles() {
     let files;
     try {
       files = await json('mendelu_subject_files', { code: s.subjectCode });
+      // With saved originals the answer is { savedFiles, files } (subjectFilesPaths.ts).
+      if (!Array.isArray(files)) files = files.files;
     } catch (e) {
       const m = e.message.split('\n')[0];
       // Expected: a subject with no IS folder (tools.ts), or a list too long to
@@ -206,6 +210,23 @@ for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
     continue;
   }
   if (name === 'mendelu_ledger') continue; // listed above, offline: see ledgerList
+  if (name === 'mendelu_build_my_map') {
+    // The DRY run only: the smoke never downloads a whole library. Counts only, never names.
+    const t0 = Date.now();
+    const b = await json(name, { dry_run: true });
+    const types = new Map();
+    for (const s of b.subjects ?? [])
+      for (const part of String(s.types).split(', ')) {
+        const m = /^(.+) (\d+)$/.exec(part);
+        if (m) types.set(m[1], (types.get(m[1]) ?? 0) + Number(m[2]));
+      }
+    console.log(
+      `${name} (dry run): ${Date.now() - t0} ms, ${b.subjects?.length ?? 0} subjects, ${b.files} files, ${b.alreadySaved} already saved, total size ${b.totalSize}; types: ${[...types].map(([t, n]) => `${t} ${n}`).join(', ')}${b.problems?.length ? `; ${b.problems.length} problems` : ''}`
+    );
+    if (b.dryRun !== true || !/UNKNOWN/.test(String(b.totalSize)) || b.problems?.length)
+      failed = true;
+    continue;
+  }
   if (name === 'mendelu_overview') {
     // Counts and the fixed first sentence of its note only: the overview carries points and names.
     const t0 = Date.now();

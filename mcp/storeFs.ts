@@ -76,12 +76,16 @@ export async function atomicWrite(
 /**
  * Runs `fn` while holding a lock no other process can hold: a file created exclusively
  * beside the data, removed afterwards. For a change that reads several files and writes
- * back (the ledger's cap and dedupe, an update of one entry), which two server processes
+ * back (the ledger's cap and dedupe, an original and its record), which two server processes
  * on one folder would otherwise interleave and lose one side of. Its name starts with the
- * temp prefix, so the store's scan and index skip it and a crashed holder's file is swept
- * as a stale temp. A lock still held after about ten seconds belongs to a crashed process
- * (these changes take milliseconds) and is taken over. When the folder cannot be used at
- * all, nobody else shares it, so `fn` runs without a lock.
+ * temp prefix, so the store's scan and index skip it.
+ *
+ * The holder refreshes the file's time every `beatMs` while `fn` runs, so a long write is
+ * never mistaken for a crash: a lock is stale only when its time has not moved for `staleMs`
+ * (its holder crashed), and is then taken over. The file holds the holder's own token and is
+ * removed at the end only if it still does, so a holder that was taken over never deletes
+ * the next holder's lock. When the folder cannot be used at all, nobody else shares it, so
+ * `fn` runs without a lock.
  */
 export async function withFileLock<T>(
   fs: StoreFs,
@@ -90,31 +94,56 @@ export async function withFileLock<T>(
   fn: () => Promise<T>,
   {
     sleep = sleepMs,
-    tries = 400,
     pause = 25,
-  }: { sleep?: (ms: number) => Promise<void>; tries?: number; pause?: number } = {}
+    staleMs = 10_000,
+    beatMs = 2_000,
+  }: {
+    sleep?: (ms: number) => Promise<void>;
+    pause?: number;
+    staleMs?: number;
+    beatMs?: number;
+  } = {}
 ): Promise<T> {
   const lock = path.join(dir, `${TEMP_PREFIX}lock-${name}`);
+  const token = `${process.pid}-${randomBytes(8).toString('hex')}`;
+  const content = () => fs.readFile(lock, 'utf8').catch(() => null);
   let held = false;
   try {
     await fs.mkdir(dir, { recursive: true, mode: 0o700 });
-    for (let attempt = 0; !held; attempt++) {
+    while (!held) {
       try {
-        await (await fs.open(lock, 'wx', 0o600)).close();
+        const handle = await fs.open(lock, 'wx', 0o600);
+        try {
+          await handle.writeFile(token);
+        } finally {
+          await handle.close();
+        }
         held = true;
       } catch (e) {
         if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
-        if (attempt >= tries)
-          await fs.rm(lock, { force: true }); // a crashed holder's
-        else await sleep(pause);
+        const seen = await content();
+        const st = await fs.stat(lock).catch(() => null);
+        // Untouched for staleMs: its holder is gone. Taken over only if it is still that file.
+        if (st && Date.now() - st.mtimeMs > staleMs) {
+          if ((await content()) === seen) await fs.rm(lock, { force: true });
+        } else await sleep(pause);
       }
     }
   } catch {
     // The folder cannot be used: the store is memory-only, so there is no other process to wait for.
   }
+  const beat = held
+    ? setInterval(() => {
+        void content().then((c) =>
+          c === token ? fs.utimes(lock, new Date(), new Date()).catch(() => {}) : undefined
+        );
+      }, beatMs)
+    : undefined;
+  beat?.unref?.();
   try {
     return await fn();
   } finally {
-    if (held) await fs.rm(lock, { force: true }).catch(() => {});
+    if (beat) clearInterval(beat);
+    if (held && (await content()) === token) await fs.rm(lock, { force: true }).catch(() => {});
   }
 }

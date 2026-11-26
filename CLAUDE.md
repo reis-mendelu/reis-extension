@@ -84,9 +84,10 @@ capability" is a valid answer that ends the turn.
 ### A fourth product, headless: reIS for Claude (`mcp/`)
 
 A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
-their laptop and exposes eleven read-only tools over the same `src/api` fetchers (fifteen in all with
-the four below: `mendelu_overview`, `mendelu_search`, `mendelu_ledger` and `mendelu_forget_everything`,
-which deletes its own local folder and nothing else; `scripts/mcp-smoke.mjs` asserts the count).
+their laptop and exposes eleven read-only tools over the same `src/api` fetchers (sixteen in all with
+the five below: `mendelu_overview`, `mendelu_search`, `mendelu_ledger`, `mendelu_build_my_map` and
+`mendelu_forget_everything`, which deletes its own local folder and nothing else; `scripts/mcp-smoke.mjs`
+asserts the count).
 It has no UI tree, so the parity rule does not apply to it. It is also the only
 reIS code that handles a password: it comes from the keychain and is sent only
 to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
@@ -97,7 +98,7 @@ only through `mcp/store*.ts`, never holding the password or the session cookie. 
 is in: subjects, folder listings, the full text of files read and the study programme are
 saved, a file's text is served again after a restart while its listing's Modifikace date is unchanged and the text was read on a later day than that date (IS gives no time of day, so a same-day edit cannot be told apart)
 (`mcp/cache.ts` second tier, `mcp/storeMap.ts`), and `mendelu_forget_everything` deletes it.
-Step 4 (`mendelu_search`, `mcp/search*.ts`: keyword search over the saved text and the listings, reading the store only) is in. In the plugin build it covers text-native files and file names only: no PDF text extractor fits the plugin's single 5 MiB bundle file (measured; a two-file pdfjs layout would fit but flips the plugin's hand-over design, so it is parked as Dominik's decision: see the design record). The overview (step 3) is in. Step 4b is in review: **`mendelu_ledger`**, the upcoming-events ledger (decision 9; `mcp/ledger*.ts`, `mcp/storeLedger.ts`, one `ledger/<id>.json` per event, never evicted by the size budget). Claude writes it (reIS extracts nothing, it has no model), the overview's "upcoming" merges it with IS's own exam terms and deadlines, a replaced source file marks its entries "recheck", and forget removes it; it asks IS nothing and reIS never writes a calendar. Originals and refresh steps are not built yet. Design, steps and the
+Step 4 (`mendelu_search`, `mcp/search*.ts`: keyword search over the saved text and the listings, reading the store only) is in. In the plugin build it covers text-native files and file names only: no PDF text extractor fits the plugin's single 5 MiB bundle file (measured; a two-file pdfjs layout would fit but flips the plugin's hand-over design, so it is parked as Dominik's decision: see the design record). The overview (step 3) is in. Step 4b is in: **`mendelu_ledger`**, the upcoming-events ledger (decision 9; `mcp/ledger*.ts`, `mcp/storeLedger.ts`, one `ledger/<id>.json` per event, never evicted by the size budget). Claude writes it (reIS extracts nothing, it has no model), the overview's "upcoming" merges it with IS's own exam terms and deadlines, a replaced source file marks its entries "recheck", and forget removes it; it asks IS nothing and reIS never writes a calendar. Step 5 is in review: the **original files** (`mcp/storeOriginals.ts`: `originals/<hash of the link>/<IS name made safe>` plus a record of the listing date it was read at, same staleness rule as the text, `mcp/storeStamp.ts`), kept once by every `mendelu_read_file` download and all at once by **`mendelu_build_my_map`** (`mcp/build*.ts`: a dry run of counts and types first, size UNKNOWN since IS lists none; then GET-only downloads in a small pool, resumable, stopping at the byte budget and reporting skips and failures). The budget evicts originals first, the overview gives each kept original a `localPath`, the plugin build hands a kept original back by path (never inlined), and forget removes them. The refresh step is not built yet. Design, steps and the
 promises it changed: `docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md`. The
 directory listing's data-handling answer still says "not retained" until Dominik resubmits it.
 

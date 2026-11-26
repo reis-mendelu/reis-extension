@@ -110,11 +110,18 @@ export const totalBytes = (entries: Entry[]) => entries.reduce((n, e) => n + e.b
  */
 const isProtected = (p: string) => p.startsWith('ledger/');
 
-/** Oldest first, ties by path; the one in `keep` and the ledger are never listed. */
+/**
+ * Original files (storeOriginals.ts) are the cheapest to lose: IS hands them out again, and
+ * the text kept of them still answers a search. They go first, oldest first, and only then
+ * the saved text, the listings and the overview's record.
+ */
+const tier = (p: string) => (p.startsWith('originals/') ? 0 : 1);
+
+/** Originals first, then oldest first, ties by path; the one in `keep` and the ledger are never listed. */
 const oldestFirst = (entries: Entry[], keep: string) =>
   entries
     .filter((e) => e.path !== keep && !isProtected(e.path))
-    .sort((a, b) => a.at - b.at || (a.path < b.path ? -1 : 1));
+    .sort((a, b) => tier(a.path) - tier(b.path) || a.at - b.at || (a.path < b.path ? -1 : 1));
 
 export function pickEvictions(entries: Entry[], max: number, keep: string): Entry[] {
   let total = totalBytes(entries);

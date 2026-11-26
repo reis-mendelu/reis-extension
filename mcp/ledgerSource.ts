@@ -5,7 +5,7 @@
 // "replaced" line, which is reported once and then gone.
 import type { Store } from './store';
 import type { LedgerEntry } from './ledgerEntry';
-import { textPath } from './storeMap';
+import { textPath } from './storeText';
 
 type Listed = {
   downloadUrl: string;

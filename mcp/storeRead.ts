@@ -54,6 +54,23 @@ export function createReader(
       }
     },
 
+    /**
+     * The absolute path of a file that is really in the folder, for a caller that hands a path
+     * to Claude. Undefined when it is not there, or when memory holds a newer copy or hides it
+     * (the folder gave out): a path is never claimed for what only memory has.
+     */
+    async diskPath(rel: string): Promise<string | undefined> {
+      const p = safeRelPath(rel);
+      await sync();
+      if (mem.get(p) || mem.isShadowed(p)) return undefined;
+      const full = insideDir(dir, p);
+      try {
+        return (await fs.stat(full)).isFile() ? full : undefined;
+      } catch {
+        return undefined;
+      }
+    },
+
     /** From the index: empty when it is missing or damaged (see rebuild). */
     async list(): Promise<Entry[]> {
       await sync();

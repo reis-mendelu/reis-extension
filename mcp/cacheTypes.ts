@@ -17,7 +17,25 @@ export type Persist = {
     stamp: string | undefined,
     token?: unknown
   ): Promise<unknown>;
+  /**
+   * Asked before a held answer is served again: false drops it (a saved file it points at was
+   * evicted), and the call goes on as a miss. Absent means always valid.
+   */
+  stillValid?(
+    tool: string,
+    args: Record<string, unknown>,
+    value: unknown,
+    stamp: string | undefined
+  ): Promise<boolean>;
 };
+
+/**
+ * What `save` may resolve to: the answer later calls in this process get instead of the
+ * one just saved (the plugin build: a kept file's path rather than its bytes again).
+ */
+export type Replacement = { replaceWith: unknown };
+export const isReplacement = (v: unknown): v is Replacement =>
+  !!v && typeof v === 'object' && 'replaceWith' in v && !!(v as Replacement).replaceWith;
 
 /**
  * Taken once when a tool call starts: how many times clear() had run, and the

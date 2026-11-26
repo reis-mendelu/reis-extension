@@ -6,11 +6,14 @@
 //   text/<hash>.json      one file's whole extracted text, with the link and date it was read at,
 //                         and the moment the read started
 //   profile.json          study programme, form, year and semester (nothing that says who the student is)
+//   originals/<hash>/     a file's original bytes and when they were read (storeOriginals.ts)
 // Saving never fails a tool: a folder that cannot be written is the store's
 // business (it falls back to memory), anything else is swallowed here.
-import { createHash } from 'node:crypto';
 import type { Store } from './store';
 import type { Persist } from './cacheTypes';
+import { keptText, textBody, textPath } from './storeText';
+import { createOriginals } from './storeOriginals';
+import { takeOriginal } from './originalCarry';
 
 const SUBJECTS = 'mendelu_subjects';
 const LIST = 'mendelu_subject_files';
@@ -31,92 +34,9 @@ export type Profile = Partial<Record<(typeof PROFILE_FIELDS)[number], string | n
 type Json = Record<string, unknown>;
 const isObject = (v: unknown): v is Json => !!v && typeof v === 'object' && !Array.isArray(v);
 
-/** A file's place in the store: its link, not its name, because IS names can repeat or clash. */
-export const textPath = (url: string) =>
-  `text/${createHash('sha256').update(url).digest('hex').slice(0, 32)}.json`;
-
 /** The moment a request began and the folder's forget token then (see store.write's `after`). */
 type Token = { gen: string | null; at: number } | null | undefined;
 const isToken = (t: unknown): t is NonNullable<Token> => isObject(t) && 'gen' in t && 'at' in t;
-
-/**
- * IS's Modifikace is a date without a time, so a file replaced later the day it
- * was read would look unchanged. A stored text is therefore trusted only when
- * its read began on a later day than the date shown: any replacement after
- * the read then carries a different date. Same day, or no usable date, means
- * download again (the next read is saved under a later day and is trusted).
- */
-export function readAfterModified(stamp: string, readAt: unknown): boolean {
-  const m = /^modified\s+(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/.exec(stamp);
-  const read = new Date(String(readAt));
-  if (!m || Number.isNaN(read.getTime())) return false;
-  try {
-    const modified = `${m[3]}-${m[2]!.padStart(2, '0')}-${m[1]!.padStart(2, '0')}`;
-    // IS dates are Czech dates, whatever the laptop's clock says.
-    return read.toLocaleDateString('en-CA', { timeZone: 'Europe/Prague' }) > modified;
-  } catch {
-    return false;
-  }
-}
-
-/** What a kept text's decision needs, without its body. */
-type TextMeta = { url: unknown; stamp: unknown; savedAt: unknown; kind: unknown };
-
-/**
- * The one rule for a kept text, shared by load() and the overview's "textSaved" hint so they
- * cannot disagree: the record is for this link, was read against the date the listing shows
- * now, was read on a later day than that date, and (in the plugin build) is plain text.
- */
-function isKept(m: TextMeta, url: string, stamp: string, extractsText: boolean): boolean {
-  if (m.url !== url || m.stamp !== stamp) return false;
-  if (!readAfterModified(stamp, m.savedAt)) return false;
-  return extractsText || m.kind === 'text';
-}
-
-/** A whole record: the rule above plus the shape of the file it holds. Returns the file to hand back. */
-export function keptText(rec: unknown, url: string, stamp: string, extractsText: boolean) {
-  if (!isObject(rec)) return undefined;
-  const f = rec.file;
-  if (!isObject(f) || typeof f.text !== 'string' || typeof f.kind !== 'string') return undefined;
-  return isKept(
-    { url: rec.url, stamp: rec.stamp, savedAt: rec.savedAt, kind: f.kind },
-    url,
-    stamp,
-    extractsText
-  )
-    ? f
-    : undefined;
-}
-
-/**
- * Whether the record at `path` would be served, decided from its first bytes only. A record
- * is written as {savedAt, url, stamp, kind, file} in that order (see save), so the header
- * ends before the document's text starts. A record that does not match (older, damaged, a
- * very long link) is not saved: the hint errs on the side of "download again".
- */
-const HEAD = 2048;
-const STR = String.raw`"(?:[^"\\]|\\.)*"`;
-const HEADER = new RegExp(
-  String.raw`^\{"savedAt":("[^"]*"),"url":(${STR}),"stamp":(${STR}|null)(?:,"kind":("[^"]*"))?`
-);
-export async function textIsKept(
-  store: Pick<Store, 'readHead'>,
-  path: string,
-  url: string,
-  stamp: string,
-  extractsText: boolean
-): Promise<boolean> {
-  const m = HEADER.exec((await store.readHead(path, HEAD)) ?? '');
-  if (!m) return false;
-  try {
-    const [savedAt, u, st, kind] = m
-      .slice(1)
-      .map((x) => (x ? (JSON.parse(x) as unknown) : undefined));
-    return isKept({ url: u, stamp: st, savedAt, kind }, url, stamp, extractsText);
-  } catch {
-    return false;
-  }
-}
 
 export function createMapPersist(
   store: Store,
@@ -132,6 +52,7 @@ export function createMapPersist(
   let lastProfile = '';
   let lastGen: unknown;
   let profileWrite: Promise<unknown> = Promise.resolve();
+  const originals = createOriginals(store, now);
   /** True if the store kept it; false if it was cancelled, refused or failed. */
   const put = async (path: string, body: Json, token?: Token): Promise<boolean> => {
     try {
@@ -158,11 +79,20 @@ export function createMapPersist(
       // Only a file's text is served from here: every listing still goes to IS.
       if (tool !== READ || !stamp || typeof args.url !== 'string') return undefined;
       try {
+        // The plugin build hands a kept original back by its path first, never inlined again;
+        // its saved text (plain-text files only) is the fallback. The .mcpb serves text only.
+        const path = extractsText ? undefined : await originals.handBack(args.url, stamp);
+        if (path) return path;
         const rec = JSON.parse((await store.readText(textPath(args.url))) ?? 'null') as unknown;
         return keptText(rec, args.url, stamp, extractsText);
       } catch {
         return undefined;
       }
+    },
+
+    async stillValid(tool, args, value, stamp) {
+      if (tool !== READ || !isObject(value) || value.kind !== 'saved file') return true;
+      return !!stamp && typeof args.url === 'string' && !!(await originals.kept(args.url, stamp));
     },
 
     async save(tool, args, value, stamp, token) {
@@ -173,16 +103,26 @@ export function createMapPersist(
       if (tool === LIST && typeof args.code === 'string') {
         await put(`listings/${args.code}.json`, { code: args.code, files: value }, token as Token);
       }
-      // The plugin build hands a document over whole (no text): its originals are step 5.
+      // The bytes the read downloaded ride along with its answer (originalCarry.ts): kept
+      // once, under the date the listing showed when the download began.
+      const original = tool === READ ? takeOriginal(value) : undefined;
+      const kept =
+        original && stamp && typeof args.url === 'string'
+          ? await originals
+              .save({ url: args.url, stamp, ...original, token: token as Token })
+              .catch(() => undefined)
+          : undefined;
+      // The plugin build handed the file over whole: once its original is kept, a repeat read
+      // in this process gets the saved path, not the bytes again. Unsaved: the bytes stay.
+      if (kept && !extractsText && isObject(value) && 'handover' in value) {
+        const path = await originals.handBack(args.url as string, stamp!);
+        return path ? { replaceWith: path } : undefined;
+      }
+      // The plugin build hands a document over whole (no text): only its original is kept.
       if (tool === READ && typeof args.url === 'string' && isObject(value)) {
         if (typeof value.text !== 'string' || typeof value.kind !== 'string') return;
         if (!extractsText && value.kind !== 'text') return;
-        await put(
-          textPath(args.url),
-          // The order is the header's: textIsKept() reads these four from the first bytes.
-          { url: args.url, stamp: stamp || null, kind: value.kind, file: value },
-          token as Token
-        );
+        await put(textPath(args.url), textBody(args.url, stamp, value), token as Token);
       }
     },
   };
