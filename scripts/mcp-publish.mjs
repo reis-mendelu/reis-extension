@@ -34,6 +34,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 import { fingerprintLine, mcpFingerprint, readFingerprint } from './lib/mcpFingerprint.mjs';
+import { gitMetadataIn, isOlder, latestVersionOf, releaseNotes } from './lib/mcpPublishParts.mjs';
 
 const REPO = 'reis-mendelu/reis-for-claude';
 const MCPB = join('dist-mcp', 'reis-for-claude.mcpb');
@@ -77,14 +78,7 @@ const listFiles = (dir) =>
     const p = join(dir, name);
     return statSync(p).isDirectory() ? listFiles(p) : [p];
   });
-// The plugin directory comes from another job's artifact: it is copied into a clone that
-// holds the token, so Git metadata in it (a .git/config with a core.fsmonitor command) must
-// never get that far. .claude-plugin is the plugin's own manifest folder and stays.
-const gitMeta = listFiles(PLUGIN).filter((p) =>
-  relative(PLUGIN, p)
-    .split(sep)
-    .some((part) => part.startsWith('.git'))
-);
+const gitMeta = gitMetadataIn(listFiles(PLUGIN), PLUGIN);
 if (gitMeta.length) fail(`the plugin build holds Git metadata, not publishing: ${gitMeta[0]}`);
 const outputs = [
   ...['manifest.json', 'icon.png', join('server', 'index.mjs')].map((f) => [
@@ -147,14 +141,8 @@ if (readFingerprint(body) === fp) {
 }
 // A re-run of an older app release must not put older code over a newer one,
 // on main (what the plugin auto-updates from) or as the "latest" download.
-const parts = (v) => v.split('.').map(Number);
-const older = (a, b) => {
-  const [x, y] = [parts(a), parts(b)];
-  for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] < y[i];
-  return false;
-};
-const latestVersion = /^mcp-v(\d+\.\d+\.\d+)$/.exec(tagName)?.[1];
-if (latestVersion && older(version, latestVersion))
+const latestVersion = latestVersionOf(tagName);
+if (latestVersion && isOlder(version, latestVersion))
   fail(
     `${tag} is older than the latest release ${tagName}; an older version is never published over a newer one.`
   );
@@ -201,17 +189,7 @@ if (staged.status === 1) {
 }
 
 // 2. The release: the .mcpb students download, and the fingerprint for next time.
-const notes = [
-  `reIS for Claude ${version} pro Claude Desktop.`,
-  '',
-  'Stáhni `reis-for-claude.mcpb`, otevři ho dvojklikem a v Claude Desktop klikni na Install. Návod: https://reisapp.cz/navody/reis-v-claude',
-  '',
-  'Download `reis-for-claude.mcpb`, double-click it and press Install in Claude Desktop. Guide: https://reisapp.cz/navody/reis-v-claude',
-  '',
-  `Built from ${from}.`,
-  '',
-  fingerprintLine(fp),
-].join('\n');
+const notes = releaseNotes({ version, from, fingerprintLine: fingerprintLine(fp) });
 run('gh', [
   'release',
   'create',
