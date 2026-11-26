@@ -23,6 +23,8 @@ on:
       - 'scripts/release/**'
       - 'scripts/release-ios.ts'
       - 'scripts/android-release.mjs'
+      - 'scripts/mcp-publish.mjs'
+      - 'scripts/lib/mcpFingerprint.mjs'
       - 'scripts/lib/playRelease.ts'
       - 'scripts/lib/iosSubmit.ts'
       - 'scripts/lib/iosRelease.ts'

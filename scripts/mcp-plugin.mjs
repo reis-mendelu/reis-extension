@@ -58,8 +58,9 @@ writeFileSync(
     readFileSync(join('mcp', 'routine', 'digest-prompt.md'), 'utf8'),
   ].join('\n')
 );
-// One version for both products: the .mcpb manifest's.
-const { version } = JSON.parse(readFileSync(join('mcp', 'manifest.json'), 'utf8'));
+// One version for every product: the app's (package.json), as on the .mcpb.
+// Claude Code updates a plugin only when this version changes.
+const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 const pluginJson = join(OUT, '.claude-plugin', 'plugin.json');
 writeFileSync(
   pluginJson,

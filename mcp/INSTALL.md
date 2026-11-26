@@ -6,8 +6,6 @@ Potřebuješ účet Claude ([claude.ai](https://claude.ai)) a počítač (macOS 
 
 ## Varianta A: Claude Desktop (doporučeno)
 
-> **Poznámka:** soubor `.mcpb` zatím nemá zveřejněnou verzi na stránce verzí. Dokud ji nezveřejníme, použij variantu B.
-
 1. Nainstaluj si [Claude Desktop](https://claude.ai/download) a přihlas se.
 2. Stáhni [`reis-for-claude.mcpb`](https://github.com/reis-mendelu/reis-for-claude/releases/latest/download/reis-for-claude.mcpb) (návod s obrázky: [reisapp.cz/navody/reis-v-claude](https://reisapp.cz/navody/reis-v-claude)).
 3. Dvakrát na něj klikni (nebo ho přetáhni do okna Claude Desktop) a potvrď **Install**.
@@ -25,6 +23,7 @@ Potřebuješ účet Claude ([claude.ai](https://claude.ai)) a počítač (macOS 
    ```
 
 3. Pokud Claude Code nabídne výběr rozsahu instalace, zvol uživatelský (User), pak zadej přihlašovací jméno a heslo do IS.
+4. Zapni automatické aktualizace: spusť `/plugin`, vyber **Marketplaces**, pak **reis** a **Enable auto-update**. Claude Code pak při startu sám stáhne novou verzi.
 
 ## Co to umí
 
@@ -38,7 +37,10 @@ Zadání je jeden text: [`mcp/routine/digest-prompt.md`](https://github.com/reis
 
 ## Aktualizace
 
-Dokud reIS for Claude není v adresáři Claude, aktualizuje se ručně: stáhni nový `.mcpb` a otevři ho znovu. Když vyjde nová verze, reIS ti to napíše pod odpověď; zjišťuje to jednou při startu dotazem na `api.github.com` bez přihlášení a bez dat z IS (GitHub vidí jen tvou IP adresu, jako každý web). Plugin pro Claude Code aktualizuješ dvěma kroky: `/plugin marketplace update reis` obnoví seznam a `claude plugin update reis@reis` (v terminálu) aktualizuje samotný plugin; poté restartuj Claude Code.
+Nová verze vychází spolu s aplikací reIS, kdykoli se reIS pro Claude změnil.
+
+- **Claude Desktop** soubor `.mcpb` sám neaktualizuje. Když vyjde nová verze, reIS ti to napíše pod odpověď; stáhni nový `.mcpb` stejným odkazem a otevři ho znovu. Že je venku nová verze, zjišťuje jednou při startu dotazem na `api.github.com` bez přihlášení a bez dat z IS (GitHub vidí jen tvou IP adresu, jako každý web).
+- **Claude Code** se aktualizuje sám, pokud máš zapnuté automatické aktualizace (krok 4 výše). Ručně: `/plugin marketplace update reis` a pak `claude plugin update reis@reis` v terminálu; poté restartuj Claude Code.
 
 ## Když něco nejde
 
@@ -61,14 +63,12 @@ reIS o tobě nedostane nic. Co Claude přečte, jde do tvého chatu s Claude jak
 
 Claude reads your IS Mendelu timetable, exams, grades, deadlines and subject files, and answers questions about them. It runs on your own computer and is strictly read-only.
 
-*Note: no `.mcpb` release has been published on the releases page yet; until one is, use the Claude Code route.*
-
 **Claude Desktop (recommended):** install [Claude Desktop](https://claude.ai/download), download `reis-for-claude.mcpb` from the [latest release](https://github.com/reis-mendelu/reis-for-claude/releases/latest/download/reis-for-claude.mcpb), double-click it (or drag it into Claude Desktop), enter your IS username and password, then ask "what exams do I have left?".
 
-**Claude Code:** with Node.js 20+ installed, run `/plugin marketplace add reis-mendelu/reis-for-claude`, then `/plugin install reis@reis`, and enter your IS login when asked.
+**Claude Code:** with Node.js 20+ installed, run `/plugin marketplace add reis-mendelu/reis-for-claude`, then `/plugin install reis@reis`, and enter your IS login when asked. Then turn on auto-update: `/plugin` → **Marketplaces** → **reis** → **Enable auto-update**.
 
 **What it saves on your computer:** a local copy of what Claude read, so it does not start from zero each time: your subject list, each subject's file list (names, dates, download links), the full text of files Claude opened (in Claude Code only plain-text files), the **original files** of your subjects exactly as IS serves them (PDFs, slides, zips still zipped, data files): the one Claude opens, and all of them when you ask with `mendelu_build_my_map` (a dry run first that downloads nothing and gives only counts and types; IS lists no sizes), which Claude then opens from disk, your study programme, form, year and semester, the list of upcoming events (tests, credit tests, defences, programme days) Claude keeps with `mendelu_ledger` (title, date, subject, room, the rule that matters, where the date came from; Claude writes it, reIS only stores it and never writes to a calendar), and a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates) (your points are not saved in readable form, only a fingerprint), and a second record like it for `mendelu_refresh`, the call of the daily digest, with the time of the last refresh (it downloads only new or replaced files of subjects already saved, within the limit). Never your password or IS's sign-in cookie; the study profile holds no name, student number or e-mail, but file names and contents are kept as they are, so anything written in them is kept too. On by default, never leaves your computer. One folder per computer account, shared by Claude Desktop and Claude Code: macOS `~/Library/Application Support/reIS for Claude`, Windows `%LOCALAPPDATA%\reIS for Claude`. Up to 4 GB, then the oldest copies go, original files first. Delete it by asking Claude to "forget everything reIS saved" (it runs `mendelu_forget_everything`, original files included) or by deleting the folder; uninstalling does not remove it.
 
 **Daily or weekly digest:** Claude can save a digest of what changed in IS and what is coming as a **draft in your own mail** (never sent), mentioning every event you have to come to at least a week ahead (a weekly digest looks 14 days ahead) and **proposing** calendar entries it writes only after you say yes. The prompt is [`mcp/routine/digest-prompt.md`](https://github.com/reis-mendelu/reis-extension/blob/main/mcp/routine/digest-prompt.md): in Claude Desktop paste it into a chat and ask Claude to schedule it (it runs on your computer, which must be on with Claude open); in Claude Code the plugin's `daily-digest` skill is the same prompt. Without a mail connector you get the digest as text. reIS itself never sends mail and never writes a calendar.
 
-Updates are manual for the `.mcpb` (download and open the new file; once per start it asks `api.github.com`, with no login or IS data (GitHub sees your IP address), whether a newer release exists, and says so under its answers); the plugin takes two steps: `/plugin marketplace update reis` refreshes the listing, then `claude plugin update reis@reis` (in a terminal) updates the plugin itself; restart Claude Code afterwards. Two-factor IS accounts are not supported yet.
+New versions come out with the reIS app whenever reIS for Claude changed. Claude Desktop does not update a `.mcpb` by itself: once per start it asks `api.github.com`, with no login or IS data (GitHub sees your IP address), whether a newer release exists and says so under its answers; download it from the same link and open it again. With auto-update on, Claude Code updates the plugin itself at startup (by hand: `/plugin marketplace update reis`, then `claude plugin update reis@reis` in a terminal, and restart). Two-factor IS accounts are not supported yet.

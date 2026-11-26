@@ -4,8 +4,6 @@ Your IS Mendelu data in Claude Desktop: timetable, exams, grades, deadlines and 
 
 ## Install
 
-> No `mcp-v*` release is published yet, so there is nothing to download until the first one is.
-
 For a step-by-step guide in Czech and English, see [INSTALL.md](INSTALL.md).
 
 1. Download `reis-for-claude.mcpb` from the [latest release](https://github.com/reis-mendelu/reis-for-claude/releases/latest/download/reis-for-claude.mcpb) (guide: [reisapp.cz/navody/reis-v-claude](https://reisapp.cz/navody/reis-v-claude)).
@@ -90,7 +88,7 @@ Asking IS is kept to what is cheap. A file's text is read from the saved copy as
 ## Limits
 
 - Accounts with two-factor sign-in are not supported yet.
-- Updates are manual until reIS for Claude is listed in Claude's directory: download the new release and open it again.
+- Claude Desktop does not update a `.mcpb` by itself: when a new release is out, reIS says so under its answers; download it and open it again. The Claude Code plugin updates itself once auto-update is on (see [INSTALL.md](INSTALL.md)). Releases come out with the reIS app, whenever reIS for Claude changed.
 
 ## Build
 
