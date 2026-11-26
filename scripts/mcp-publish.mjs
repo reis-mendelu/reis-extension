@@ -77,6 +77,15 @@ const listFiles = (dir) =>
     const p = join(dir, name);
     return statSync(p).isDirectory() ? listFiles(p) : [p];
   });
+// The plugin directory comes from another job's artifact: it is copied into a clone that
+// holds the token, so Git metadata in it (a .git/config with a core.fsmonitor command) must
+// never get that far. .claude-plugin is the plugin's own manifest folder and stays.
+const gitMeta = listFiles(PLUGIN).filter((p) =>
+  relative(PLUGIN, p)
+    .split(sep)
+    .some((part) => part.startsWith('.git'))
+);
+if (gitMeta.length) fail(`the plugin build holds Git metadata, not publishing: ${gitMeta[0]}`);
 const outputs = [
   ...['manifest.json', 'icon.png', join('server', 'index.mjs')].map((f) => [
     `mcpb/${f.split(sep).join('/')}`,
@@ -106,9 +115,16 @@ if (same.status === 0) {
     );
   if (isDraft) {
     // gh creates the release as a draft, uploads, then publishes: a draft is a
-    // run that stopped halfway. Drop it and publish again below.
-    run('gh', ['release', 'delete', tag, '--repo', REPO, '--yes']);
-    say(`reIS for Claude: removed the unfinished draft of ${tag}.`);
+    // run that stopped halfway. Drop it and publish again below. A dry run
+    // changes nothing, so it only says so.
+    if (dryRun) {
+      say(
+        `reIS for Claude: ${tag} is an unfinished draft; would remove it and publish again (dry run).`
+      );
+    } else {
+      run('gh', ['release', 'delete', tag, '--repo', REPO, '--yes']);
+      say(`reIS for Claude: removed the unfinished draft of ${tag}.`);
+    }
   } else if (!assets.some((a) => a.name === 'reis-for-claude.mcpb')) {
     if (dryRun) {
       say(`reIS for Claude: ${tag} lacks its .mcpb; would upload it (dry run).`);

@@ -341,7 +341,7 @@ jobs:
           # The plugin keeps its manifest in .claude-plugin/.
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
           path: |
             dist-mcp/manifest.json
             dist-mcp/icon.png

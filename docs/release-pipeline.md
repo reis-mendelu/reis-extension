@@ -130,7 +130,7 @@ unchanged plugin is not pushed again. A version older than the latest release
 is refused, so re-running an old release never replaces newer code. To ship it
 alone: `gh workflow run ship.yml -f tag=vX.Y.Z -f stores=mcp -f dry_run=false`.
 
-Between app releases, from a clean checkout, `npm run mcp:release` (with a
+Between app releases, from a clean checkout, run `npm ci`, then `npm run mcp:release` (with a
 `GH_TOKEN` that can write to the repository) publishes the same way, but only
 while `mcp-v<package.json version>` does not exist yet. Once that version is
 released, changed contents are refused, not published: they ship with the next
