@@ -3,7 +3,6 @@ import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { landmarkGroupLabels, placeTitle, roomLabel } from './mapHelpers';
 import { EventDetailCard } from './EventDetailCard';
-import { GardenPlaceCard } from './GardenPlaceCard';
 import { SocietyPinCard } from './SocietyPinCard';
 import { SportPlaceCard } from './SportPlaceCard';
 import landmarksJson from '../../data/map/landmarks.json';
@@ -30,8 +29,6 @@ export function DetailPanel() {
   if (!sel) return null;
 
   if (sel.kind === 'event') return <EventDetailCard event={sel.event} />;
-
-  if (sel.kind === 'gardenPlace') return <GardenPlaceCard place={sel.place} />;
 
   if (sel.kind === 'societyPin') return <SocietyPinCard pin={sel.pin} />;
 

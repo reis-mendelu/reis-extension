@@ -3,19 +3,13 @@ import { useAppStore } from '../../../../store/useAppStore';
 import type { MapSelection } from '../../../../types/campusMap';
 import { libraryOf } from './library/libraryOf';
 
-const CARD_KINDS = new Set<MapSelection['kind']>([
-  'event',
-  'gardenPlace',
-  'societyPin',
-  'sportPlace',
-  'library',
-]);
+const CARD_KINDS = new Set<MapSelection['kind']>(['event', 'societyPin', 'sportPlace', 'library']);
 const ROOM_KINDS = new Set<MapSelection['kind']>(['room', 'roomRef']);
 
 /**
  * How the phone's map sheet moves for a selection.
  *
- * A card (an event, a garden place, a society pin or venue) opens the sheet:
+ * A card (an event, a society pin or venue) opens the sheet:
  * on a phone it is the only surface that can show one, and a selection made at
  * peek would otherwise be invisible. Where the sheet was at that moment is kept
  * (`mapCardReturn`): Back returns there — the list, if the student came from
