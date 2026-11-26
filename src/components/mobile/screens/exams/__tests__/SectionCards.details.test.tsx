@@ -63,6 +63,7 @@ const cards = {
     <NotYetOpenCard
       row={row}
       now={NOW}
+      opensAt={NOW}
       expanded
       onToggle={vi.fn()}
       isProcessing={false}

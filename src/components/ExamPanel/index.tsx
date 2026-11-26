@@ -17,6 +17,7 @@ import { ExamsFreshness } from './ExamsFreshness';
 import { LoadFailed } from '../LoadFailed';
 import { SignupGroup } from './SignupGroup';
 import { useMarkExamTermsSeen } from '../../hooks/ui/useMarkExamTermsSeen';
+import { useRefreshAtExamOpening } from '../../hooks/ui/useRefreshAtExamOpening';
 
 interface RegisteredExam extends TimelineExam {
   subject: ExamSubject;
@@ -137,6 +138,10 @@ export function ExamPanel() {
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
+
+  // The mount/visibility refresh above covers arriving; this is for staying
+  // while a registration opens.
+  useRefreshAtExamOpening(true);
 
   const sectionCard = (subject: ExamSubject, section: ExamSection) => (
     <ExamSectionCard

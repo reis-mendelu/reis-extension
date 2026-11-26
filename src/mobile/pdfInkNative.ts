@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { getPlatform } from '../platform';
+import { isMacApp } from './macSave';
 import { PDF_CACHE_DIR, type PdfCacheFs } from './pdfCache';
 import type { OpenPdfWithInkDeps, PdfInkPlugin } from './pdfInk';
 
@@ -17,12 +18,18 @@ let availability: Promise<boolean> | null = null;
  * iPadOS 16 test is the plugin's, never a user-agent or viewport guess (a
  * WKWebView can call itself a Macintosh). Android is answered here without a
  * call: there is no Android half, by design.
+ *
+ * A Mac is answered `false` before the plugin is asked. The iPad app runs there
+ * as "Designed for iPad", so the plugin's idiom test says yes, but PencilKit
+ * takes Pencil and finger, never a mouse or trackpad: strokes would not
+ * register. A Mac gets the read-only pdf.js viewer instead.
  */
 export function isPdfInkAvailable(): Promise<boolean> {
   if (!availability) {
     availability = (async () => {
       if (getPlatform().kind !== 'capacitor' || Capacitor.getPlatform() !== 'ios') return false;
       try {
+        if (await isMacApp()) return false;
         return (await PdfInk.isAvailable()).available;
       } catch {
         return false;

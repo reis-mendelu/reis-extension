@@ -4,10 +4,12 @@ import { useAppStore } from '../../store/useAppStore';
 const ln = vi.hoisted(() => ({ checkPermissions: vi.fn(), requestPermissions: vi.fn() }));
 const downloads = vi.hoisted(() => ({ openNotificationSettings: vi.fn() }));
 const launch = vi.hoisted(() => vi.fn());
+const mac = vi.hoisted(() => ({ isMacApp: vi.fn(), openOnMac: vi.fn() }));
 const platform = vi.hoisted(() => ({ name: 'android' }));
 
 vi.mock('@capacitor/local-notifications', () => ({ LocalNotifications: ln }));
 vi.mock('../openInBrowser', () => ({ launchInSystemBrowser: launch }));
+vi.mock('../macSave', () => mac);
 vi.mock('@capacitor/core', async (importOriginal) => {
   const real = await importOriginal<typeof import('@capacitor/core')>();
   return {
@@ -21,6 +23,8 @@ import {
   askAfterFirstRegistration,
   askNotificationsIfNeverAsked,
   enableNotifications,
+  MAC_NOTIFICATIONS_LEGACY_URL,
+  MAC_NOTIFICATIONS_URL,
   refreshNotificationStatus,
 } from '../notificationPermission';
 
@@ -33,6 +37,8 @@ describe('notification permission', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     platform.name = 'android';
+    mac.isMacApp.mockResolvedValue(false);
+    mac.openOnMac.mockResolvedValue(true);
     useAppStore.setState({ systemNotifications: 'unknown' });
   });
 
@@ -99,6 +105,60 @@ describe('notification permission', () => {
     ln.checkPermissions.mockResolvedValue({ display: 'denied' });
     await enableNotifications();
     expect(launch).toHaveBeenCalledWith('app-settings:');
+    expect(mac.openOnMac).not.toHaveBeenCalled();
+  });
+
+  // The iPad app on a Mac answers `ios` too, and `app-settings:` there lands in
+  // System Settings > Accessibility > Touch Alternatives, not Notifications.
+  describe('on a Mac running the iPad app', () => {
+    beforeEach(() => {
+      platform.name = 'ios';
+      mac.isMacApp.mockResolvedValue(true);
+      ln.checkPermissions.mockResolvedValue({ display: 'denied' });
+    });
+
+    it('enable opens the Notifications pane, not app-settings:', async () => {
+      await enableNotifications();
+      expect(mac.openOnMac).toHaveBeenCalledTimes(1);
+      expect(mac.openOnMac).toHaveBeenCalledWith(MAC_NOTIFICATIONS_URL);
+      expect(launch).not.toHaveBeenCalled();
+    });
+
+    it('still asks the system first while it will show the dialog', async () => {
+      ln.checkPermissions
+        .mockResolvedValueOnce({ display: 'prompt' })
+        .mockResolvedValueOnce({ display: 'granted' });
+      ln.requestPermissions.mockResolvedValue({ display: 'granted' });
+      await enableNotifications();
+      expect(ln.requestPermissions).toHaveBeenCalled();
+      expect(mac.openOnMac).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the pre-Ventura pane id when macOS refuses the first', async () => {
+      mac.openOnMac.mockResolvedValueOnce(false);
+      await enableNotifications();
+      expect(mac.openOnMac).toHaveBeenNthCalledWith(2, MAC_NOTIFICATIONS_LEGACY_URL);
+      expect(launch).not.toHaveBeenCalled();
+    });
+
+    it('never falls back to app-settings: when macOS refuses both', async () => {
+      mac.openOnMac.mockResolvedValue(false);
+      await enableNotifications();
+      expect(mac.openOnMac).toHaveBeenCalledTimes(2);
+      expect(launch).not.toHaveBeenCalled();
+    });
+
+    it('survives the native call throwing', async () => {
+      mac.openOnMac.mockRejectedValue(new Error('unavailable'));
+      await expect(enableNotifications()).resolves.toBeUndefined();
+      expect(launch).not.toHaveBeenCalled();
+    });
+  });
+
+  it('Android never asks whether it is a Mac', async () => {
+    ln.checkPermissions.mockResolvedValue({ display: 'denied' });
+    await enableNotifications();
+    expect(mac.isMacApp).not.toHaveBeenCalled();
   });
 
   // Agreed 2026-11-17: the one system dialog comes when it means something,

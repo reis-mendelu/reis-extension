@@ -1,4 +1,5 @@
 import { BASE_URL } from '../api/client';
+import { openInRealIs } from './reisOff';
 import type { IsNotice, IsNoticeMute } from '../types/isNotices';
 import type { SpolekNotification } from '../services/spolky/types';
 
@@ -13,7 +14,8 @@ const ID_PREFIX = 'is:';
  * with the next read of IS, not with a date.
  *
  * The row's link is the notice's own link, or the IS home page where the
- * notice is when it has none.
+ * notice is when it has none. Either way a link to IS's home opens IS itself:
+ * the extension would otherwise inject reIS over it (`utils/reisOff.ts`).
  */
 export function isNoticeRows(
   notices: IsNotice[],
@@ -34,7 +36,7 @@ export function isNoticeRows(
         associationId: 'mendelu',
         title: n.title,
         body: n.text || n.title,
-        link: n.link ?? `${BASE_URL}/auth/index.pl`,
+        link: openInRealIs(n.link ?? `${BASE_URL}/auth/index.pl`),
         createdAt: n.from ?? todayIso,
         expiresAt: n.until?.slice(0, 10) ?? todayIso,
         startsAt: n.from?.slice(0, 10),
