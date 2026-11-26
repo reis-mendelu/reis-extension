@@ -54,6 +54,13 @@ by one, then wrote five ledger entries (one rejected because a field was over 40
 retried). One ledger entry carries an end date the persona invented (18 Dec; the file says only
 "weeks 12 and 13"), which the answer itself did not repeat.
 
+**S5 again on a built map: content pass, 32 calls.** To see whether the 20 calls came only from the
+empty store, the same question was run on a store that had the full build. It listed the same six
+events (plus the VWA project hand-in on 7 Dec, from a lecture slide, a stated date with its file named)
+with the inferred ones marked, but made 26 reading calls (9 searches, 11 file reads, the rest
+listings) and 6 ledger writes: the persona read each subject's files to be sure instead of trusting
+the first search. The call target is missed with or without a map.
+
 **S6: pass (integration tests), calendar half not run live.** `ledgerOverview.test.ts` and
 `refreshDigest.test.ts` pass: events 14, 7, 3 and 1 days out, the attendance flag, a past event
 gone, a replaced source listed as "recheck", and the digest prompt's rules (draft only, proposals
