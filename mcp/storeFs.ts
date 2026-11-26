@@ -9,7 +9,7 @@ import { TEMP_PREFIX } from './storePath';
 /** The slice of node:fs/promises the store uses; tests swap pieces to simulate failures. */
 export type StoreFs = Pick<
   typeof fsp,
-  'mkdir' | 'open' | 'rename' | 'rm' | 'rmdir' | 'readFile' | 'readdir' | 'stat' | 'utimes'
+  'mkdir' | 'open' | 'rename' | 'link' | 'rm' | 'rmdir' | 'readFile' | 'readdir' | 'stat' | 'utimes'
 >;
 
 const RETRY_CODES = new Set(['EPERM', 'EBUSY', 'EACCES']);
@@ -75,17 +75,24 @@ export async function atomicWrite(
 
 /**
  * Runs `fn` while holding a lock no other process can hold: a file created exclusively
- * beside the data, removed afterwards. For a change that reads several files and writes
- * back (the ledger's cap and dedupe, an original and its record), which two server processes
- * on one folder would otherwise interleave and lose one side of. Its name starts with the
- * temp prefix, so the store's scan and index skip it.
+ * (`wx`) beside the data, removed afterwards. For a change that reads several files and
+ * writes back (the ledger's cap and dedupe, an original and its record), which two server
+ * processes on one folder would otherwise interleave and lose one side of. Its name starts
+ * with the temp prefix, so the store's scan and index skip it.
  *
- * The holder refreshes the file's time every `beatMs` while `fn` runs, so a long write is
- * never mistaken for a crash: a lock is stale only when its time has not moved for `staleMs`
- * (its holder crashed), and is then taken over. The file holds the holder's own token and is
- * removed at the end only if it still does, so a holder that was taken over never deletes
- * the next holder's lock. When the folder cannot be used at all, nobody else shares it, so
- * `fn` runs without a lock.
+ * - The holder refreshes the file's time every `beatMs` while `fn` runs, so a long write is
+ *   never mistaken for a crash: a lock is stale only when its time has not moved for
+ *   `staleMs` (its holder crashed).
+ * - Taking over a stale lock is itself serialised by a second exclusive file, the takeover
+ *   guard. Only its holder moves the stale lock aside (an atomic rename, then a delete), and
+ *   it looks again first, so a fresh lock a faster waiter just made is never touched. A path
+ *   that was merely observed is never deleted. The guard is held for a few milliseconds; one
+ *   a crashed waiter left is cleared the same atomic way once it is stale.
+ * - The file holds the holder's own token and is removed at the end only if it still does,
+ *   so a holder that was taken over never deletes the next holder's lock.
+ *
+ * When the folder cannot be used at all, nobody else shares it, so `fn` runs without a lock.
+ * `onStale` is for tests: it runs after a waiter decided the lock is stale, before it acts.
  */
 export async function withFileLock<T>(
   fs: StoreFs,
@@ -97,36 +104,76 @@ export async function withFileLock<T>(
     pause = 25,
     staleMs = 10_000,
     beatMs = 2_000,
+    onStale,
   }: {
     sleep?: (ms: number) => Promise<void>;
     pause?: number;
     staleMs?: number;
     beatMs?: number;
+    onStale?: () => Promise<void>;
   } = {}
 ): Promise<T> {
   const lock = path.join(dir, `${TEMP_PREFIX}lock-${name}`);
+  const guard = `${lock}.takeover`;
   const token = `${process.pid}-${randomBytes(8).toString('hex')}`;
-  const content = () => fs.readFile(lock, 'utf8').catch(() => null);
+  const contentOf = (p: string) => fs.readFile(p, 'utf8').catch(() => null);
+  const mine = async (p: string) => (await contentOf(p)) === token;
+  const create = async (p: string) => {
+    const handle = await fs.open(p, 'wx', 0o600);
+    try {
+      await handle.writeFile(token);
+    } finally {
+      await handle.close();
+    }
+  };
+  const isStale = async (p: string) => {
+    const st = await fs.stat(p).catch(() => null);
+    return !!st && Date.now() - st.mtimeMs > staleMs;
+  };
+  /**
+   * Move a stale file aside and delete it. The rename is atomic, so of several takers only one
+   * moves any given file. If what it moved turns out fresh (made in the meantime), it is put
+   * back with link(), which never replaces a file that appeared at the path since.
+   */
+  const clear = async (p: string) => {
+    const aside = `${p}.stale-${token}`;
+    try {
+      await fs.rename(p, aside);
+    } catch {
+      return; // gone already: another taker moved it
+    }
+    if (!(await isStale(aside))) await fs.link(aside, p).catch(() => {});
+    await fs.rm(aside, { force: true }).catch(() => {});
+  };
+
   let held = false;
   try {
     await fs.mkdir(dir, { recursive: true, mode: 0o700 });
     while (!held) {
       try {
-        const handle = await fs.open(lock, 'wx', 0o600);
-        try {
-          await handle.writeFile(token);
-        } finally {
-          await handle.close();
-        }
+        await create(lock);
         held = true;
+        break;
       } catch (e) {
         if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
-        const seen = await content();
-        const st = await fs.stat(lock).catch(() => null);
-        // Untouched for staleMs: its holder is gone. Taken over only if it is still that file.
-        if (st && Date.now() - st.mtimeMs > staleMs) {
-          if ((await content()) === seen) await fs.rm(lock, { force: true });
-        } else await sleep(pause);
+      }
+      if (!(await isStale(lock))) {
+        await sleep(pause);
+        continue;
+      }
+      await onStale?.();
+      try {
+        await create(guard);
+      } catch (e) {
+        if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+        if (await isStale(guard)) await clear(guard);
+        else await sleep(pause);
+        continue;
+      }
+      try {
+        if (await isStale(lock)) await clear(lock); // looked at again, under the guard
+      } finally {
+        if (await mine(guard)) await fs.rm(guard, { force: true }).catch(() => {});
       }
     }
   } catch {
@@ -134,8 +181,8 @@ export async function withFileLock<T>(
   }
   const beat = held
     ? setInterval(() => {
-        void content().then((c) =>
-          c === token ? fs.utimes(lock, new Date(), new Date()).catch(() => {}) : undefined
+        void mine(lock).then((ok) =>
+          ok ? fs.utimes(lock, new Date(), new Date()).catch(() => {}) : undefined
         );
       }, beatMs)
     : undefined;
@@ -144,6 +191,6 @@ export async function withFileLock<T>(
     return await fn();
   } finally {
     if (beat) clearInterval(beat);
-    if (held && (await content()) === token) await fs.rm(lock, { force: true }).catch(() => {});
+    if (held && (await mine(lock))) await fs.rm(lock, { force: true }).catch(() => {});
   }
 }
