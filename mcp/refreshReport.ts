@@ -41,29 +41,49 @@ const MB = 1024 ** 2;
 const size = (b: number) =>
   b >= 1024 * MB ? `${(b / 1024 / MB).toFixed(1)} GB` : `${(b / MB).toFixed(1)} MB`;
 
-/** At most LINES lines, the rest counted in one more line. */
-const capped = (lines: string[]) =>
-  lines.length > LINES
-    ? [...lines.slice(0, LINES), `and ${lines.length - LINES} more like these`]
-    : lines;
 const some = <T>(xs: T[]) => (xs.length ? xs : undefined);
 
 const NEVER =
   "This refresh only read IS and wrote reIS's own folder: it sent no mail and wrote no calendar.";
 
-function build(input: RefreshInput, rows: FileRow[], omitted: number) {
-  const of = (kind: Change['kind']) =>
-    some(capped(input.changes.filter((c) => c.kind === kind).map((c) => c.text)));
+/** How much of each list one answer shows; tried in turn, largest first, until the answer fits. */
+type Level = { lines: number; upcoming: number; recheck: number };
+const LEVELS: Level[] = [
+  { lines: LINES, upcoming: 30, recheck: 30 },
+  { lines: 20, upcoming: 15, recheck: 15 },
+  { lines: 10, upcoming: 8, recheck: 8 },
+  { lines: 5, upcoming: 4, recheck: 4 },
+  { lines: 2, upcoming: 2, recheck: 2 },
+  { lines: 0, upcoming: 0, recheck: 0 },
+];
+/** Points rows, assignment boxes and exam terms: a change left out is held and comes next time. */
+const HELD_KINDS = ['points', 'box', 'exam'] as const;
+
+function build(input: RefreshInput, rows: FileRow[], omitted: number, lvl: Level) {
+  const held: Change[] = [];
+  const of = (kind: Change['kind']) => {
+    const all = input.changes.filter((c) => c.kind === kind);
+    const shownLines = all.slice(0, lvl.lines).map((c) => c.text);
+    const left = all.length - shownLines.length;
+    if (!left) return some(shownLines);
+    if ((HELD_KINDS as readonly string[]).includes(kind)) {
+      held.push(...all.slice(lvl.lines));
+      return [
+        ...shownLines,
+        `${left} more do not fit in this answer: the next mendelu_refresh reports them`,
+      ];
+    }
+    // Ledger lines: every entry they name is in "recheck" (or mendelu_ledger list) as well.
+    return [...shownLines, `${left} more: see recheck, or mendelu_ledger (action list)`];
+  };
   const subjects = some(
-    capped(
-      input.changes
-        .filter((c) => c.kind === 'subject')
-        .map((c) =>
-          c.text.startsWith('New subject')
-            ? `${c.text} (its files are not downloaded by a refresh: call mendelu_build_my_map)`
-            : c.text
-        )
-    )
+    input.changes
+      .filter((c) => c.kind === 'subject')
+      .map((c) =>
+        c.text.startsWith('New subject')
+          ? `${c.text} (its files are not downloaded by a refresh: call mendelu_build_my_map)`
+          : c.text
+      )
   );
   const changed = {
     subjects,
@@ -83,7 +103,11 @@ function build(input: RefreshInput, rows: FileRow[], omitted: number) {
     ? 'First refresh on this computer: this look is the baseline, so nothing is compared and nothing was downloaded. From the next refresh on, "changed" lists what is new since this one, and new or replaced files of subjects already known are downloaded. To save every course file now, call mendelu_build_my_map.'
     : `${any ? `${input.changes.length} change(s) in IS` : 'Nothing changed in IS'} since ${input.borrowed ? 'what mendelu_overview last reported (no earlier refresh on this computer)' : `the last refresh${since ? ` (${since})` : ''}`}. Downloaded ${downloaded} file(s)${skipped ? `, skipped ${skipped}` : ''}${failed ? `, ${failed} failed` : ''}.${input.stop === 'budget' ? ` It stopped at the byte budget (${size(input.budget.max)}): skipped files come again with the next refresh.` : ''}${input.stop === 'forgotten' ? ' Everything reIS saved was forgotten while it ran, so nothing more was kept.' : ''}`;
   const near = input.upcoming.filter((u) => u.daysLeft <= SOON_DAYS);
-  return {
+  const later = input.upcoming.length - near.length;
+  const nearLeft = Math.max(0, near.length - lvl.upcoming);
+  const recheckLeft = Math.max(0, input.recheck.length - lvl.recheck);
+  const problems = input.problems.slice(0, Math.max(lvl.lines, 3));
+  const out = {
     note: `${head} Read new or replaced harmonogram, conditions or brief files with mendelu_read_file (pass the url) and save every date they state with mendelu_ledger. ${NEVER}`,
     first: input.first || undefined,
     since: input.first ? undefined : (since ?? (input.borrowed ? 'last overview' : undefined)),
@@ -92,43 +116,54 @@ function build(input: RefreshInput, rows: FileRow[], omitted: number) {
     stoppedAtBudget: input.stop === 'budget',
     stored: `${size(input.budget.used)} of ${size(input.budget.max)}`,
     folder: shown(input.folder),
-    recheck: some(input.recheck.slice(0, 30)),
-    moreRecheck:
-      input.recheck.length > 30
-        ? `${input.recheck.length - 30} more: mendelu_ledger (action list)`
-        : undefined,
-    upcoming: some(near.slice(0, 30)),
+    recheck: some(input.recheck.slice(0, lvl.recheck)),
+    moreRecheck: recheckLeft
+      ? `${recheckLeft} more ledger entries to recheck do not fit here: mendelu_ledger (action list) lists them all`
+      : undefined,
+    upcoming: some(near.slice(0, lvl.upcoming)),
     moreUpcoming:
-      near.length > 30 || input.upcoming.length > near.length
-        ? `${Math.max(0, near.length - 30)} more in the next ${SOON_DAYS} days and ${input.upcoming.length - near.length} later: mendelu_ledger (action list), mendelu_overview`
+      nearLeft || later
+        ? `${nearLeft} more in the next ${SOON_DAYS} days${nearLeft ? ' do not fit here' : ''} and ${later} later: mendelu_ledger (action list) and mendelu_overview list them`
         : undefined,
-    problems: some(capped(input.problems)),
+    problems: some(problems),
+    moreProblems:
+      input.problems.length > problems.length
+        ? `${input.problems.length - problems.length} more problems`
+        : undefined,
   };
+  return { out, held };
 }
 
+/**
+ * The answer, and the changes it left out (`held`), which the caller must not record as reported.
+ * File rows go first (kept whole while they fit), then every other list shrinks a level at a time.
+ */
 export function fitRefresh(input: RefreshInput): { out: object; held: Change[] } {
   const sizeOf = (o: object) =>
     input.format === 'json' ? JSON.stringify(o, null, 2).length : toMarkdown(o).length;
   const small = (o: object) => sizeOf(o) <= CHARACTER_LIMIT - 300;
-  const lean = (k: number) => {
+  const lean = (k: number, lvl: Level) => {
     const kept = input.rows.slice(0, k);
-    const out = build(
+    const { out, held } = build(
       input,
       kept.map((r) => r.row),
-      input.rows.length - k
+      input.rows.length - k,
+      lvl
     );
-    const held = input.rows
+    const cut = input.rows
       .slice(k)
       .map((r) => r.change)
       .filter((c) => c.url);
-    return { out, held };
+    return { out, held: [...cut, ...held] };
   };
-  if (small(lean(input.rows.length).out)) return lean(input.rows.length);
-  let [lo, hi] = [0, input.rows.length];
+  const n = input.rows.length;
+  if (small(lean(n, LEVELS[0]!).out)) return lean(n, LEVELS[0]!);
+  const lvl = LEVELS.find((l) => small(lean(0, l).out)) ?? LEVELS[LEVELS.length - 1]!;
+  let [lo, hi] = [0, n];
   while (lo < hi) {
     const mid = Math.ceil((lo + hi) / 2);
-    if (small(lean(mid).out)) lo = mid;
+    if (small(lean(mid, lvl).out)) lo = mid;
     else hi = mid - 1;
   }
-  return lean(lo);
+  return lean(lo, lvl);
 }

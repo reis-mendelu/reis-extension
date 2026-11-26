@@ -72,10 +72,12 @@ export async function recordLook(
   world: World,
   held: Change[],
   token: unknown,
-  extra: Record<string, unknown> = {}
+  opts: { extra?: Record<string, unknown>; patch?: (next: Snapshot) => void } = {}
 ) {
   const latest = parseSnapshot(await store.readText(path)) ?? prev;
-  const next = { ...snapshotOf(holdBack(prev, world, held), latest), ...extra };
+  const snap = snapshotOf(holdBack(prev, world, held), latest);
+  opts.patch?.(snap);
+  const next = { ...snap, ...opts.extra };
   return store
     .write(path, JSON.stringify(next), isToken(token) ? { after: token.gen } : {})
     .catch(() => false);

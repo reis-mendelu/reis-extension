@@ -18,6 +18,7 @@ import { recheckReason } from './ledgerSource';
 import { whenOf } from './ledgerUpcoming';
 import { upcomingItems } from './overviewUpcoming';
 import { fitRefresh, type FileRow } from './refreshReport';
+import { holdUnreported } from './refreshHold';
 
 /** What the last refresh saw. Its own record: what the overview showed at noon is still in the digest. */
 export const REFRESH_RECORD = 'refresh/seen.json';
@@ -160,8 +161,10 @@ async function refresh(d: RefreshDeps) {
   });
   // A file not kept for a passing reason is not recorded: the next refresh reports and tries it again.
   const again = [...plannedFor].filter(([, p]) => retry(outcomes.get(p))).map(([c]) => c);
+  // Points rows, boxes and exam terms the answer left out are kept as they were, so they come next time.
   await recordLook(d.store, REFRESH_RECORD, prev, g.world, [...held, ...again], d.token, {
-    refreshedAt: now.toISOString(),
+    extra: { refreshedAt: now.toISOString() },
+    patch: (next) => holdUnreported(next, prev, held),
   });
   return out;
 }

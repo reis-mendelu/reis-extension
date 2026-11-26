@@ -112,6 +112,8 @@ describe('the digest prompt keeps its rules', () => {
   it.each([
     ['refresh first', /call `mendelu_refresh`/i],
     ['ledger from files', /save every dated event[^.]*`mendelu_ledger`/i],
+    ['match before add', /match each event to an existing entry before you add anything/i],
+    ['moved event is an update', /never `add` a second entry for an event that moved/i],
     ['a week ahead', /at least a week ahead/i],
     ['weekly 14 days', /weekly digest looks 14 days ahead/i],
     ['daily 14 days', /daily digest flags everything inside 14 days/i],

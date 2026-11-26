@@ -13,6 +13,8 @@ export type Change = {
   url?: string;
   /** For a file gone from IS: the link it had, so the ledger can tell which entries lost their source. */
   was?: string;
+  /** For points rows, assignment boxes and exam terms: the record key, so a change left out can be held back. */
+  key?: string;
   text: string;
 };
 
@@ -50,6 +52,7 @@ export function diffWorld(prev: Snapshot, world: World): Change[] {
       out.push({
         kind: 'exam',
         code: e.code,
+        key: e.key,
         text: `New exam term in ${e.code}: ${e.section} ${e.date} ${e.time}${e.room ? ` ${e.room}` : ''}`.trim(),
       });
     }
@@ -100,9 +103,9 @@ function pointChanges(code: string, before: Record<string, string>, points: Poin
   const out: Change[] = [];
   for (const p of points) {
     if (!own(before, p.key)) {
-      out.push({ kind: 'points', code, text: `New points row in ${code}: ${p.key}` });
+      out.push({ kind: 'points', code, key: p.key, text: `New points row in ${code}: ${p.key}` });
     } else if (before[p.key] !== hash(p.text)) {
-      out.push({ kind: 'points', code, text: `Points changed in ${code}: ${p.key}` });
+      out.push({ kind: 'points', code, key: p.key, text: `Points changed in ${code}: ${p.key}` });
     }
   }
   return out;
@@ -116,12 +119,14 @@ function boxChanges(before: NonNullable<Snapshot['boxes']>, boxes: BoxRow[]): Ch
       out.push({
         kind: 'box',
         code: b.code,
+        key: b.key,
         text: `New assignment box in ${b.code}: ${b.name}, deadline ${b.deadline || 'none'}`,
       });
     } else if (was.d !== b.deadline) {
       out.push({
         kind: 'box',
         code: b.code,
+        key: b.key,
         text: `Assignment deadline changed in ${b.code}: ${b.name}, ${was.d || 'none'} -> ${b.deadline || 'none'}`,
       });
     }
