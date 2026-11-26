@@ -97,7 +97,8 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
     const verdict = pastZaznamnikVerdict(get(), courseCode);
     const pending = get().pendingPastZaznamnik[courseCode] === true;
     if (verdict === 'wait') {
-      if (!pending) set((s) => ({ pendingPastZaznamnik: { ...s.pendingPastZaznamnik, [courseCode]: true } }));
+      if (!pending)
+        set((s) => ({ pendingPastZaznamnik: { ...s.pendingPastZaznamnik, [courseCode]: true } }));
       return;
     }
     if (pending) {
