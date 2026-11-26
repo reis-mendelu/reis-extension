@@ -90,6 +90,11 @@ export function createMapPersist(
       }
     },
 
+    async stillValid(tool, args, value, stamp) {
+      if (tool !== READ || !isObject(value) || value.kind !== 'saved file') return true;
+      return !!stamp && typeof args.url === 'string' && !!(await originals.kept(args.url, stamp));
+    },
+
     async save(tool, args, value, stamp, token) {
       if (tool === SUBJECTS) {
         await put('subjects.json', { subjects: value }, token as Token);

@@ -113,4 +113,45 @@ describe('a repeat read in the plugin build', () => {
     await read();
     expect(((await read()) as Record<string, unknown>).handover).toBeDefined();
   });
+
+  it('downloads again when the saved file a held answer names was evicted', async () => {
+    const store = open({ now: () => AT, maxBytes: 3000 });
+    const { persist } = createMapPersist(store, { extractsText: false, now: () => AT });
+    const cache = createToolCache({ persist, now: () => AT });
+    await cache.run('mendelu_subject_files', { code: 'X' }, async () => [
+      {
+        name: 'H',
+        file: 'h.pdf',
+        author: 'A',
+        date: '1. 10. 2025',
+        modified: '20. 11. 2025',
+        downloadUrl: URL_A,
+      },
+    ]);
+    let downloads = 0;
+    const read = () =>
+      cache.run('mendelu_read_file', { url: URL_A }, async () => {
+        downloads++;
+        const raw = bytes('%PDF-1.4 '.repeat(50));
+        return carry(
+          {
+            handover: {
+              filename: 'h.pdf',
+              mimeType: 'application/pdf',
+              base64: 'x',
+              bytes: raw.byteLength,
+            },
+          },
+          { bytes: raw, filename: 'h.pdf' }
+        );
+      });
+    await read();
+    expect(((await read()) as Record<string, unknown>).kind).toBe('saved file');
+    // Something else fills the budget: originals are evicted first.
+    await store.write('text/big.json', 'y'.repeat(2500));
+    expect(await createOriginals(store).kept(URL_A, STAMP)).toBeUndefined();
+    const third = (await read()) as Record<string, unknown>;
+    expect(downloads).toBe(2);
+    expect(third.handover).toBeDefined();
+  });
 });

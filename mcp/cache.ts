@@ -151,7 +151,10 @@ export function createToolCache({
       if (!ttl) return fetch();
       const key = keyOf(tool, args);
       const hit = fresh ? undefined : entries.get(key);
-      if (hit && now() - hit.at < ttl) {
+      // A held answer that names a saved file is served only while that file is still there.
+      const live = async (h: Entry) =>
+        (await persist?.stillValid?.(tool, args, h.value, h.stamp).catch(() => false)) ?? true;
+      if (hit && now() - hit.at < ttl && (await live(hit))) {
         entries.delete(key); // move to the most recently used end
         entries.set(key, hit);
         return hit.value;

@@ -17,6 +17,16 @@ export type Persist = {
     stamp: string | undefined,
     token?: unknown
   ): Promise<unknown>;
+  /**
+   * Asked before a held answer is served again: false drops it (a saved file it points at was
+   * evicted), and the call goes on as a miss. Absent means always valid.
+   */
+  stillValid?(
+    tool: string,
+    args: Record<string, unknown>,
+    value: unknown,
+    stamp: string | undefined
+  ): Promise<boolean>;
 };
 
 /**
