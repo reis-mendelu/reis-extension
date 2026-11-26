@@ -8,7 +8,7 @@ import { gather, type Gathered, type Run } from './overviewGather';
 import { diffWorld, holdBack } from './overviewDiff';
 import { parseSnapshot, snapshotOf } from './overviewRecord';
 import { fitOverview } from './overviewRender';
-import { textIsKept, textPath } from './storeMap';
+import { textIsKept, textPath } from './storeText';
 import { createOriginals, metaPath } from './storeOriginals';
 import { stampOf } from './cache';
 import { createLedger } from './storeLedger';

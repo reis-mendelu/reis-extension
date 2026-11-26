@@ -3,24 +3,22 @@
 // at once. It reads the subject list and the folder listings (the cheap requests the overview
 // makes too), then downloads only what the store does not already hold for the date IS shows.
 // Read-only toward IS: GET requests to dok_server only. It writes through the store alone.
-import { listFolderFiles, assertDokServerUrl, headersOf, readKindOf, textOfBytes } from './files';
+import { assertDokServerUrl, extOf, headersOf, readKindOf, textOfBytes } from './files';
+import { recordBytes, textBody } from './storeText';
 import { MAX_FILE_BYTES } from './files';
 // Aliased to ./documentHandover in the plugin build, like the import in files.ts.
 import { MAX_DOCUMENT_BYTES } from './documentText';
-import type { SubjectFile } from './files';
 import { readCapped, TooBigError } from './download';
-import { subjectsData, type ToolCtx } from './tools';
-import { stampOf } from './cache';
+import type { ToolCtx } from './tools';
 import type { Store } from './store';
-import { createOriginals } from './storeOriginals';
+import { createOriginals, originalCost, recordOf } from './storeOriginals';
 import { sameGeneration } from './storeGen';
+import { plan, pool } from './buildPlan';
 import type { Run } from './overviewGather';
 import { dryReport, buildReport, type Planned, type Outcome } from './buildReport';
 
 /** One original past this is not kept (a lecture recording in a folder); it is reported. */
 export const MAX_ORIGINAL_BYTES = 100 * 1024 * 1024;
-/** Room kept for each original's record (.reis-original.json), so the budget counts it too. */
-const RECORD_BYTES = 1024;
 /** Downloads at once: the overview reads four listings at a time through the same sign-in. */
 const CONCURRENCY = 3;
 
@@ -41,46 +39,6 @@ export type BuildDeps = {
   maxTextBytes?: number;
   concurrency?: number;
 };
-
-async function pool<T>(items: T[], n: number, work: (item: T) => Promise<void>) {
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) await work(items[next++]!);
-  };
-  await Promise.all(Array.from({ length: Math.min(n, items.length) }, worker));
-}
-
-/** The subjects and their listings, read the way the overview reads them. */
-async function plan(
-  d: BuildDeps
-): Promise<{ planned: Planned[]; problems: string[]; codes: string[] }> {
-  const data = await subjectsData(d.ctx);
-  const originals = createOriginals(d.store);
-  const planned: Planned[] = [];
-  const problems: string[] = [];
-  await pool(Object.entries(data), 4, async ([code, s]) => {
-    if (typeof s.folderUrl !== 'string') return;
-    const folderUrl = s.folderUrl;
-    let files: SubjectFile[];
-    try {
-      files = (await d.run('mendelu_subject_files', { code }, () =>
-        listFolderFiles(folderUrl)
-      )) as SubjectFile[];
-    } catch (e) {
-      problems.push(
-        `files of ${code}: ${(e instanceof Error ? e.message : String(e)).slice(0, 120)}`
-      );
-      return;
-    }
-    for (const f of files) {
-      const stamp = stampOf(f);
-      planned.push({ code, file: f, stamp, kept: !!(await originals.kept(f.downloadUrl, stamp)) });
-    }
-  });
-  planned.sort((a, b) => a.code.localeCompare(b.code));
-  // Every enrolled subject is reported, an empty folder (or none) as zero files.
-  return { planned, problems, codes: Object.keys(data).sort() };
-}
 
 export async function buildMap(d: BuildDeps) {
   const { planned, problems, codes } = await plan(d);
@@ -108,7 +66,21 @@ export async function buildMap(d: BuildDeps) {
     if (!stop && (d.token?.gen ?? null) === null) stop = 'folder';
     if (!stop && !sameGeneration(await d.store.generation(), d.token!.gen)) stop = 'forgotten';
     if (!stop && !d.store.persistent) stop = 'folder';
-    const room = budget.max - budget.used - RECORD_BYTES;
+    // What the record beside the original will take, before the body is known (its size field
+    // grows by a few digits at most, which the exact check after the download covers).
+    const at = d.token?.at ?? Date.now();
+    const listed = p.file.file ?? p.file.name;
+    const recordOnly = originalCost(
+      recordOf({
+        url: p.file.downloadUrl,
+        stamp: p.stamp,
+        bytes: 0,
+        filename: listed,
+        mediaType: 'x'.repeat(80),
+        at,
+      })
+    );
+    const room = budget.max - budget.used - recordOnly;
     if (!stop && room <= 0) stop = 'budget';
     if (stop) return void outcomes.set(p, { state: 'skipped', reason: halted() });
     const url = p.file.downloadUrl;
@@ -131,13 +103,16 @@ export async function buildMap(d: BuildDeps) {
         return void outcomes.set(p, { state: 'skipped', reason: `skipped: over ${mb} MB` });
       }
       // Several downloads run at once: whichever finishes past the budget is not kept.
-      const cost = bytes.byteLength + RECORD_BYTES;
+      const filename = h.filename ?? listed;
+      // Exactly what the store will hold: the body and its record as written.
+      const cost = originalCost(
+        recordOf({ url, stamp: p.stamp, bytes, filename, mediaType: h.mediaType, at })
+      );
       if (budget.used + cost > budget.max) {
         stop = 'budget';
         return void outcomes.set(p, { state: 'skipped', reason: halted() });
       }
       budget.used += cost;
-      const filename = h.filename ?? p.file.file ?? p.file.name;
       const saved = await originals.save({
         url,
         stamp: p.stamp,
@@ -167,7 +142,9 @@ export async function buildMap(d: BuildDeps) {
     h: ReturnType<typeof headersOf>,
     filename: string
   ): Promise<boolean> {
-    const kind = readKindOf(h.type, h.ext);
+    // No name in the headers: the listing's name says what the file is (lecture.pdf).
+    const ext = h.ext || extOf(filename);
+    const kind = readKindOf(h.type, ext);
     if (!kind || (kind === 'document' && !d.extractsText)) return false;
     // Never more than mendelu_read_file would extract: a 100 MB deck could exhaust the memory
     // of the host process, which no catch survives. The original is kept either way.
@@ -177,9 +154,13 @@ export async function buildMap(d: BuildDeps) {
       const value = await textOfBytes(bytes, kind, {
         filename,
         mediaType: h.mediaType,
-        ext: h.ext,
+        ext,
       });
-      const size = Buffer.byteLength(JSON.stringify(value));
+      // The whole record as storeMap writes it, not the text alone.
+      const size = recordBytes(
+        textBody(p.file.downloadUrl, p.stamp, value as never),
+        d.token?.at ?? Date.now()
+      );
       if (budget.used + size > budget.max) return false;
       budget.used += size;
       await d.saveText(p.file.downloadUrl, value, p.stamp);

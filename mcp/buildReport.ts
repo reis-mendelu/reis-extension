@@ -17,6 +17,15 @@ const GB = 1024 ** 3;
 const MB = 1024 ** 2;
 const size = (b: number) => (b >= GB ? `${(b / GB).toFixed(1)} GB` : `${(b / MB).toFixed(1)} MB`);
 
+/** Up to LISTED entries under `key`, and how many were left out under `moreKey`. */
+function capped<T>(items: T[], key: string, moreKey: string, what: string) {
+  if (!items.length) return {};
+  return {
+    [key]: items.slice(0, LISTED),
+    ...(items.length > LISTED ? { [moreKey]: `${items.length - LISTED} ${what}` } : {}),
+  };
+}
+
 /** A file's type as the listing names it: the extension of its own name. */
 export const typeOf = (f: SubjectFile) =>
   /\.([A-Za-z0-9]{1,10})$/.exec(f.file ?? '')?.[1]?.toLowerCase() ?? 'no extension';
@@ -55,13 +64,18 @@ export function dryReport(
     alreadySaved: saved,
     toDownload: planned.length - saved,
     budget: `${size(budget.used)} used of ${size(budget.max)}`,
-    subjects: [...bySubject(planned, codes)].map(([code, rows]) => ({
-      code,
-      files: rows.length,
-      alreadySaved: rows.filter((p) => p.kept).length,
-      types: typeLine(rows),
-    })),
-    problems: problems.length ? problems : undefined,
+    ...capped(
+      [...bySubject(planned, codes)].map(([code, rows]) => ({
+        code,
+        files: rows.length,
+        alreadySaved: rows.filter((p) => p.kept).length,
+        types: typeLine(rows),
+      })),
+      'subjects',
+      'moreSubjects',
+      'more subjects, counted in the totals above'
+    ),
+    ...capped(problems, 'problems', 'moreProblems', 'more problems'),
   };
 }
 
@@ -104,14 +118,19 @@ export function buildReport(
     failed: failed.length,
     stoppedAtBudget: run.stoppedAtBudget,
     stored: `${size(run.used)} of ${size(run.max)}`,
-    subjects: [...bySubject(planned, codes)].map(([code, rows]) => ({
-      code,
-      files: rows.length,
-      saved: count(rows, 'kept') + count(rows, 'downloaded'),
-      downloaded: count(rows, 'downloaded'),
-      skipped: count(rows, 'skipped'),
-      failed: count(rows, 'failed'),
-    })),
+    ...capped(
+      [...bySubject(planned, codes)].map(([code, rows]) => ({
+        code,
+        files: rows.length,
+        saved: count(rows, 'kept') + count(rows, 'downloaded'),
+        downloaded: count(rows, 'downloaded'),
+        skipped: count(rows, 'skipped'),
+        failed: count(rows, 'failed'),
+      })),
+      'subjects',
+      'moreSubjects',
+      'more subjects, counted in the totals above'
+    ),
     skippedFiles: skipped.length ? skipped.slice(0, LISTED) : undefined,
     moreSkipped: skipped.length > LISTED ? `${skipped.length - LISTED} more skipped` : undefined,
     failedFiles: failed.length ? failed.slice(0, LISTED) : undefined,
@@ -119,6 +138,6 @@ export function buildReport(
       failed.length > LISTED
         ? `${failed.length - LISTED} more failed; run mendelu_build_my_map again to retry them`
         : undefined,
-    problems: problems.length ? problems : undefined,
+    ...capped(problems, 'problems', 'moreProblems', 'more problems'),
   };
 }

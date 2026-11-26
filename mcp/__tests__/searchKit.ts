@@ -1,7 +1,7 @@
 // Shared by the search tests: writes into a store exactly what storeMap.ts writes
 // (subjects.json, listings/<CODE>.json, text/<hash>.json), made-up content only.
 import type { Store } from '../store';
-import { textPath } from '../storeMap';
+import { textPath } from '../storeText';
 
 export type Seed = {
   code: string;

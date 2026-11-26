@@ -16,7 +16,7 @@ const FOLDER = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=7';
 export const link = (n: number) =>
   `https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=1;id=7;download=${n}`;
 
-type FakeFile = { name: string; type: string; body: string; status?: number };
+type FakeFile = { name: string; type: string; body: string; status?: number; noName?: boolean };
 
 /** The fake IS: what is listed, what each download returns, and what reached it. */
 export const lib = {
@@ -24,6 +24,8 @@ export const lib = {
   modified: '20. 11. 2025',
   downloads: [] as string[],
   hold: null as null | Promise<void>,
+  /** Appended to every download link (a long link makes a long record). */
+  linkTail: '',
 };
 
 export const DEFAULT_FILES: FakeFile[] = [
@@ -38,6 +40,7 @@ beforeEach(() => {
   lib.modified = '20. 11. 2025';
   lib.downloads = [];
   lib.hold = null;
+  lib.linkTail = '';
   vi.mocked(fetchDualLanguageSubjects).mockImplementation((async () => ({
     subjects: {
       data: {
@@ -54,7 +57,7 @@ beforeEach(() => {
       author: 'A',
       date: '1. 10. 2025',
       modified: lib.modified,
-      files: [{ name: 'x', type: 'x', link: link(i + 1), filename: f.name }],
+      files: [{ name: 'x', type: 'x', link: link(i + 1) + lib.linkTail, filename: f.name }],
     })),
   })) as never);
 });
@@ -74,7 +77,7 @@ export const fetchLib = (async (url: RequestInfo | URL) => {
       get: (h: string) =>
         ({
           'content-type': f?.type ?? 'text/plain',
-          'content-disposition': `attachment; filename="${f?.name ?? 'x'}"`,
+          'content-disposition': f?.noName ? null : `attachment; filename="${f?.name ?? 'x'}"`,
         })[h.toLowerCase()] ?? null,
     },
     body: null,

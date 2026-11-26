@@ -77,6 +77,34 @@ export type OriginalMeta = {
 };
 
 type Token = { gen: string | null; at: number } | null | undefined;
+
+/** The record kept beside an original, exactly as written. */
+export function recordOf(o: {
+  url: string;
+  stamp: string;
+  bytes: Uint8Array | number;
+  filename?: string;
+  mediaType?: string;
+  at: number;
+}): OriginalMeta {
+  return {
+    savedAt: new Date(o.at).toISOString(),
+    url: o.url,
+    stamp: o.stamp,
+    file: safeFileName(o.filename),
+    bytes: typeof o.bytes === 'number' ? o.bytes : o.bytes.byteLength,
+    ...(o.mediaType ? { mediaType: o.mediaType } : {}),
+  };
+}
+
+/** What an original with this record costs the budget: its bytes plus the record's. */
+export const originalCost = (r: OriginalMeta) => r.bytes + Buffer.byteLength(JSON.stringify(r));
+
+/** A listing stamp's day as YYYYMMDD, for ordering two copies of one file; 0 when unknown. */
+const dayOf = (stamp: string) => {
+  const m = /(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/.exec(stamp);
+  return m ? Number(`${m[3]}${m[2]!.padStart(2, '0')}${m[1]!.padStart(2, '0')}`) : 0;
+};
 type Json = Record<string, unknown>;
 const isObject = (v: unknown): v is Json => !!v && typeof v === 'object' && !Array.isArray(v);
 
@@ -144,23 +172,21 @@ export function createOriginals(store: Store, now: () => number = Date.now) {
     const file = safeFileName(o.filename);
     const rel = `${dir}/${file}`;
     const after = o.token ? { after: o.token.gen } : {};
+    const record = recordOf({ ...o, at: o.token?.at ?? now() });
     // One save of a link at a time across every process on the folder, cleanup included:
-    // otherwise two saves under different names could each delete the other's bytes.
+    // otherwise two saves under different names could each delete the other's bytes, or an
+    // older body could end up under a newer record.
     return store.exclusive(`original-${dir.slice(ORIGINALS.length + 1)}`, async () => {
+      // A download that began against an older listing date never replaces a newer copy.
+      const held = await meta(o.url);
+      if (held && dayOf(held.stamp) > dayOf(o.stamp)) return undefined;
       if (!(await store.write(rel, o.bytes, after))) return undefined;
-      const record: OriginalMeta = {
-        savedAt: new Date(o.token?.at ?? now()).toISOString(),
-        url: o.url,
-        stamp: o.stamp,
-        file,
-        bytes: o.bytes.byteLength,
-        ...(o.mediaType ? { mediaType: o.mediaType } : {}),
-      };
       if (!(await store.write(metaPath(o.url), JSON.stringify(record), after))) return undefined;
       for (const e of await store.listFolder(dir))
         if (e.path !== rel && e.path !== metaPath(o.url))
           await store.remove(e.path).catch(() => {});
-      return rel;
+      // The record's write may have pushed the folder over its budget and evicted the body.
+      return (await store.readHead(rel, 1)) === undefined ? undefined : rel;
     });
   }
 

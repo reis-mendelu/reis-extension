@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { access } from 'node:fs/promises';
-import { createMapPersist, textPath } from '../storeMap';
+import { createMapPersist } from '../storeMap';
+import { textPath } from '../storeText';
 import { storeHarness } from './storeTestKit';
 
 const { h, open } = storeHarness();
