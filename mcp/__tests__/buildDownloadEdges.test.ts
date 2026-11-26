@@ -4,6 +4,7 @@
 // for what it adds. Made-up names only.
 import { it, describe, expect, vi, afterEach } from 'vitest';
 import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
 
 vi.mock('../../src/utils/userParams', () => ({
   getUserParams: vi.fn().mockResolvedValue({ studium: 'S', obdobi: 'O', studyForm: 'P' }),
@@ -18,7 +19,7 @@ vi.mock('../../src/api/odevzdavarny', () => ({ fetchOdevzdavarny: vi.fn() }));
 vi.mock('../../src/api/zaznamnik', () => ({ fetchSubjectZaznamnik: vi.fn() }));
 vi.mock('../../src/api/documents/service', () => ({ fetchFolderListing: vi.fn() }));
 
-import { lib, bootLib, tempDir } from './buildKit';
+import { lib, bootLib, tempDir, files } from './buildKit';
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -76,5 +77,19 @@ describe('the shared download path', () => {
     const tight = bootLib(dir, used + 2_000);
     const r = await tight.json(BUILD, { dry_run: false });
     expect(r).toMatchObject({ downloaded: 1, stoppedAtBudget: false });
+  });
+
+  it('a record left behind by an evicted body earns no credit for bytes that are gone', async () => {
+    lib.files = [{ name: 'data.zip', type: 'application/zip', body: 'z'.repeat(20_000) }];
+    const dir = await folder();
+    await bootLib(dir).json(BUILD, { dry_run: false });
+    const body = (await files(dir)).find((f) => f.endsWith('/data.zip'))!;
+    await rm(join(dir, body)); // the body went, its record stayed
+    const left = bootLib(dir);
+    await left.store.rebuild();
+    const used = (await left.store.usage()).bytes;
+    const tight = bootLib(dir, used + 2_000);
+    const r = await tight.json(BUILD, { dry_run: false });
+    expect(r).toMatchObject({ downloaded: 0, stoppedAtBudget: true });
   });
 });
