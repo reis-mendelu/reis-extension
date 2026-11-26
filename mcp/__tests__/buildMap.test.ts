@@ -172,4 +172,22 @@ describe('mendelu_build_my_map', () => {
     ).rejects.toThrow(/cannot save to its folder/);
     expect(lib.downloads).toEqual([]);
   });
+
+  it('keeps an original too big for text extraction, without its text, and carries on', async () => {
+    const store = createStore({ dir: await folder() });
+    lib.files[0]!.body = 'Zápočet: 12. týden. '.repeat(100); // harmonogram.txt, over the text cap
+    const saved: string[] = [];
+    const r = await buildMap({
+      store,
+      ctx: { fetch: fetchLib },
+      run: (_t, _a, fn) => fn(),
+      token: { gen: await store.generation(), at: Date.now() },
+      saveText: async (url) => void saved.push(url),
+      extractsText: true,
+      dryRun: false,
+      maxTextBytes: 500,
+    });
+    expect(r).toMatchObject({ downloaded: 4, failed: 0, textSaved: 1 });
+    expect(saved).toEqual([link(4)]); // poznamky.md only
+  });
 });

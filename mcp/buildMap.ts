@@ -4,6 +4,9 @@
 // makes too), then downloads only what the store does not already hold for the date IS shows.
 // Read-only toward IS: GET requests to dok_server only. It writes through the store alone.
 import { listFolderFiles, assertDokServerUrl, headersOf, readKindOf, textOfBytes } from './files';
+import { MAX_FILE_BYTES } from './files';
+// Aliased to ./documentHandover in the plugin build, like the import in files.ts.
+import { MAX_DOCUMENT_BYTES } from './documentText';
 import type { SubjectFile } from './files';
 import { readCapped, TooBigError } from './download';
 import { subjectsData, type ToolCtx } from './tools';
@@ -16,6 +19,8 @@ import { dryReport, buildReport, type Planned, type Outcome } from './buildRepor
 
 /** One original past this is not kept (a lecture recording in a folder); it is reported. */
 export const MAX_ORIGINAL_BYTES = 100 * 1024 * 1024;
+/** Room kept for each original's record (.reis-original.json), so the budget counts it too. */
+const RECORD_BYTES = 1024;
 /** Downloads at once: the overview reads four listings at a time through the same sign-in. */
 const CONCURRENCY = 3;
 
@@ -32,6 +37,8 @@ export type BuildDeps = {
   extractsText: boolean;
   dryRun: boolean;
   maxFileBytes?: number;
+  /** Largest file whose text is extracted; default the caps mendelu_read_file uses per kind. */
+  maxTextBytes?: number;
   concurrency?: number;
 };
 
@@ -98,7 +105,7 @@ export async function buildMap(d: BuildDeps) {
     if (!stop && (d.token?.gen ?? null) === null) stop = 'folder';
     if (!stop && !sameGeneration(await d.store.generation(), d.token!.gen)) stop = 'forgotten';
     if (!stop && !d.store.persistent) stop = 'folder';
-    const room = budget.max - budget.used;
+    const room = budget.max - budget.used - RECORD_BYTES;
     if (!stop && room <= 0) stop = 'budget';
     if (stop) return void outcomes.set(p, { state: 'skipped', reason: halted() });
     const url = p.file.downloadUrl;
@@ -121,11 +128,12 @@ export async function buildMap(d: BuildDeps) {
         return void outcomes.set(p, { state: 'skipped', reason: `skipped: over ${mb} MB` });
       }
       // Several downloads run at once: whichever finishes past the budget is not kept.
-      if (budget.used + bytes.byteLength > budget.max) {
+      const cost = bytes.byteLength + RECORD_BYTES;
+      if (budget.used + cost > budget.max) {
         stop = 'budget';
         return void outcomes.set(p, { state: 'skipped', reason: halted() });
       }
-      budget.used += bytes.byteLength;
+      budget.used += cost;
       const filename = h.filename ?? p.file.file ?? p.file.name;
       const saved = await originals.save({
         url,
@@ -136,7 +144,7 @@ export async function buildMap(d: BuildDeps) {
         token: d.token,
       });
       if (!saved) {
-        budget.used -= bytes.byteLength;
+        budget.used -= cost;
         return void outcomes.set(p, {
           state: 'failed',
           reason: 'not saved: the path is too long for this computer, or everything was forgotten',
@@ -158,6 +166,10 @@ export async function buildMap(d: BuildDeps) {
   ): Promise<boolean> {
     const kind = readKindOf(h.type, h.ext);
     if (!kind || (kind === 'document' && !d.extractsText)) return false;
+    // Never more than mendelu_read_file would extract: a 100 MB deck could exhaust the memory
+    // of the host process, which no catch survives. The original is kept either way.
+    const cap = d.maxTextBytes ?? (kind === 'document' ? MAX_DOCUMENT_BYTES : MAX_FILE_BYTES);
+    if (bytes.byteLength > cap) return false;
     try {
       const value = await textOfBytes(bytes, kind, {
         filename,

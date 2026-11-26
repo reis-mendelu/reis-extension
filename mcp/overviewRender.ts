@@ -42,7 +42,8 @@ const CAPS = [Infinity, 30, 20, 12, 8, 5, 3, 1, 0];
 /** `whole(code, n)`: whether a subject's n files are all listed or replaced by a pointer. */
 type Whole = (code: string, n: number) => boolean;
 
-function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
+/** `keep`: most rows a cut list still shows; changed files always, then saved ones. */
+function build(input: RenderInput, whole: Whole, marks: Map<string, string>, keep = Infinity) {
   const { g } = input;
   const subjects = g.subjects.map((s) => {
     const files = g.listings[s.code];
@@ -53,8 +54,14 @@ function build(input: RenderInput, whole: Whole, marks: Map<string, string>) {
       const rows = fileRows(files, marks, input.saved, input.localPath);
       if (whole(s.code, rows.length)) shown = rows;
       else {
-        // Too many to list here: keep the ones that matter now, point to the rest.
-        shown = rows.filter((r) => r.changed || r.textSaved);
+        // Too many to list here: keep the ones that matter now, point to the rest. Saved files
+        // only up to the cap: after mendelu_build_my_map every file is saved.
+        const saved = rows.filter((r) => !r.changed && (r.textSaved || r.localPath));
+        const kept = new Set([
+          ...rows.filter((r) => r.changed),
+          ...saved.slice(0, Math.max(0, keep - rows.filter((r) => r.changed).length)),
+        ]);
+        shown = rows.filter((r) => kept.has(r));
         more = `${files.length} files in all (${shown.length} shown): call mendelu_subject_files with code ${s.code} for the full list`;
       }
     }
@@ -149,11 +156,11 @@ export function fitOverview(input: RenderInput): { out: object; held: Change[] }
   const marks = marksOf(input.changes);
   // Room for the cut marker format.ts would add if it still did not fit.
   const small = (o: object) => sizeOf(o, input.format) <= CHARACTER_LIMIT - 300;
-  const fits = (whole: Whole) => {
-    const out = build(input, whole, marks);
+  const fits = (whole: Whole, keep: number) => {
+    const out = build(input, whole, marks, keep);
     return small(out) ? out : null;
   };
-  const cap = CAPS.find((c) => fits((_, n) => n <= c)) ?? 0;
+  const cap = CAPS.find((c) => fits((_, n) => n <= c, c)) ?? 0;
   const expanded = new Set<string>();
   const whole: Whole = (code, n) => n <= cap || expanded.has(code);
   // The cap cuts the longest lists first; with room left over, give them back smallest first.
@@ -162,9 +169,9 @@ export function fitOverview(input: RenderInput): { out: object; held: Change[] }
     .sort((a, b) => a[1]!.length - b[1]!.length);
   for (const [code] of left) {
     expanded.add(code);
-    if (!fits(whole)) expanded.delete(code);
+    if (!fits(whole, cap)) expanded.delete(code);
   }
-  const best = fits(whole);
+  const best = fits(whole, cap);
   if (best) return { out: best, held: [] };
   // Nothing fits even with every list cut: keep only the files that changed, as many as fit.
   // The rest are held back, so a bulk upload is reported over several calls, not cut off.
