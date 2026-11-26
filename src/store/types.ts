@@ -92,6 +92,10 @@ export interface ZaznamnikSlice {
   fetchZaznamnik: () => Promise<void>;
   /** Refetch one subject on demand — the failed state's retry. */
   refetchZaznamnik: (courseCode: string) => Promise<void>;
+  /** Subjects whose drawer opened before the store could say whether to fetch their past-semester points. */
+  pendingPastZaznamnik: Record<string, true>;
+  /** Opening a past-semester subject's Záznamník: fetch its points for its own period, once. */
+  loadPastZaznamnik: (courseCode: string) => Promise<void>;
   /** Points the teacher added since the last sync, per subject, until its záznamník is opened. */
   zaznamnikNewPoints: Record<string, NewPoint[]>;
   setZaznamnikNewPoints: (unseen: Record<string, NewPoint[]>) => void;

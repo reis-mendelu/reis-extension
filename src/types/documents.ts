@@ -13,6 +13,8 @@ export interface SubjectInfo {
   hasPrubezne?: boolean;
   hasTest?: boolean;
   autoHref?: string | null;
+  /** Only on a subject folded in from a past semester: the period (obdobi) it was taken in. */
+  periodId?: string;
 }
 
 export interface SubjectsData {
