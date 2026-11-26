@@ -220,8 +220,10 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
           // made every tab show two identical links. #341 dropped that footer
           // (it opened the file structure whatever the tab), so the tabs here
           // carry no IS link. The exceptions are the title, which links the
-          // syllabus as the extension's drawer title does (Dominik's call), and
-          // the classmates tab's no-cvičení state, whose answer is that link.
+          // syllabus as the extension's drawer title does (Dominik's call), the
+          // classmates tab's no-cvičení state, whose answer is that link, and
+          // the záznamník, whose IS links ignore this flag (an IS outage or a
+          // missing mark is when a student needs the original).
           showIsBacklink={false}
           // A classmate tap reaches the same PersonSheet the Lidé search
           // opens. Without this it landed in ClassmatePersonDrawer — a second
