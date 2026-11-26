@@ -98,7 +98,8 @@ export async function tempDir() {
 }
 
 /** One server process on `dir`: its own store, its own memory. */
-export function boot(dir: string, extra: { unavailable?: string } = {}) {
+export function boot(dir: string, opts: { unavailable?: string; maxBytes?: number } = {}) {
+  const { maxBytes, ...extra } = opts;
   const handlers = new Map<string, Handler>();
   const metas = new Map<string, Record<string, unknown>>();
   const server = {
@@ -107,7 +108,7 @@ export function boot(dir: string, extra: { unavailable?: string } = {}) {
       metas.set(name, meta);
     },
   } as unknown as McpServer;
-  const store = createStore({ dir });
+  const store = createStore({ dir, ...(maxBytes !== undefined ? { maxBytes } : {}) });
   registerTools(server, { fetch: fetchFromIs, ...extra }, store);
   const call = (name: string, args: Record<string, unknown> = {}) => handlers.get(name)!(args);
   return { call, store, metas, handlers };

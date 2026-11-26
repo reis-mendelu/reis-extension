@@ -77,10 +77,14 @@ toServer.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initializ
 const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sort();
 console.log('tools:', tools.length, tools.join(', '));
 let failed =
-  tools.length !== 16 ||
-  !['mendelu_search', 'mendelu_overview', 'mendelu_ledger', 'mendelu_build_my_map'].every((t) =>
-    tools.includes(t)
-  );
+  tools.length !== 17 ||
+  ![
+    'mendelu_search',
+    'mendelu_overview',
+    'mendelu_ledger',
+    'mendelu_build_my_map',
+    'mendelu_refresh',
+  ].every((t) => tools.includes(t));
 
 const json = async (name, args) => {
   const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
@@ -210,6 +214,12 @@ for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
     continue;
   }
   if (name === 'mendelu_ledger') continue; // listed above, offline: see ledgerList
+  if (name === 'mendelu_refresh') {
+    // Not run live: it downloads new files and moves the refresh record on, which would take
+    // "what changed" away from the student's own next digest. Covered by mcp/__tests__/refresh*.
+    console.log(`${name}: not run live (it would consume the next digest's changes)`);
+    continue;
+  }
   if (name === 'mendelu_build_my_map') {
     // The DRY run only: the smoke never downloads a whole library. Counts only, never names.
     const t0 = Date.now();

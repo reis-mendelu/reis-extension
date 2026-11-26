@@ -154,5 +154,17 @@ export function createMapPersist(
     lastGen = undefined;
   };
 
-  return { persist, saveProfile, settled, reset };
+  /**
+   * A file's text as mendelu_read_file saves it, for build and refresh: true only once the store
+   * has it, so a text the store refused is never counted (buildDownload.ts keepText).
+   */
+  const saveText = (url: string, value: unknown, stamp: string, token: unknown) =>
+    isObject(value) &&
+    typeof value.text === 'string' &&
+    typeof value.kind === 'string' &&
+    (extractsText || value.kind === 'text')
+      ? put(textPath(url), textBody(url, stamp, value as never), token as Token)
+      : Promise.resolve(false);
+
+  return { persist, saveProfile, settled, reset, saveText };
 }

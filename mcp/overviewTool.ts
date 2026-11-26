@@ -4,15 +4,12 @@
 // the store and the tool cache, and it is registered first (register.ts).
 import type { Store } from './store';
 import type { ToolCtx } from './tools';
-import { gather, type Gathered, type Run } from './overviewGather';
-import { diffWorld, holdBack } from './overviewDiff';
-import { parseSnapshot, snapshotOf } from './overviewRecord';
+import type { Gathered, Run } from './overviewGather';
+import { look, readRecord, recordLook } from './overviewLook';
 import { fitOverview } from './overviewRender';
 import { textIsKept, textPath } from './storeText';
 import { createOriginals, metaPath } from './storeOriginals';
 import { stampOf } from './cache';
-import { createLedger } from './storeLedger';
-import { ledgerChanges } from './ledgerChanges';
 
 // Why "overview": the failure it fixes is Claude not knowing where to look. The
 // description is the only thing a model that has never seen reIS reads before it
@@ -27,9 +24,6 @@ export const OVERVIEW_TOOL = {
 
 /** What the overview last told Claude. Lives in the store, so forget everything removes it. */
 export const RECORD = 'overview/seen.json';
-
-type Token = { gen: string | null; at: number };
-const isToken = (t: unknown): t is Token => !!t && typeof t === 'object' && 'gen' in t && 'at' in t;
 
 export type OverviewDeps = {
   store: Store;
@@ -64,25 +58,8 @@ export function runOverview(d: OverviewDeps) {
 }
 
 async function overview(d: OverviewDeps) {
-  const prev = parseSnapshot(await d.store.readText(RECORD));
-  const g = await gather(d.run, d.ctx, d.now ?? new Date());
-  // An empty answer where the record has subjects is IS not answering properly (a login
-  // page, a changed layout), not a student who dropped everything: say so, record nothing.
-  if (!g.subjects.length && prev && Object.keys(prev.subjects).length) {
-    throw new Error('IS Mendelu returned no subjects this time. Try again in a minute.');
-  }
-  for (const [code, rows] of Object.entries(g.world.points)) {
-    if (rows && !rows.length && Object.keys(prev?.points[code] ?? {}).length) {
-      delete g.world.points[code];
-      g.problems.push(
-        `points of ${code}: IS returned none this time, so the earlier record is kept`
-      );
-    }
-  }
-  const { entries: ledger } = await createLedger(d.store).list();
-  const diffed = prev ? diffWorld(prev, g.world) : [];
-  // A replaced or vanished source file puts its ledger entries in "changed", once, next to the file.
-  const changes = [...diffed, ...ledgerChanges(ledger, diffed)];
+  const { prev } = await readRecord(d.store, RECORD);
+  const { g, ledger, changes } = await look(d.store, d.run, d.ctx, d.now ?? new Date(), prev);
   await d.settled();
 
   let profile: Record<string, unknown> | null = null;
@@ -106,19 +83,8 @@ async function overview(d: OverviewDeps) {
     format: d.format,
     now: d.now,
   });
-  // Recorded only after the answer exists, so a failure in between reports the changes
-  // again instead of losing them; and only if no forget() ran since the call began (the
-  // token every other save of this call carries). Built on the record as it is now, so a
-  // part this call could not read does not undo what another process reported meanwhile.
   // What the answer had to leave out (a bulk upload) is not recorded: the next call reports it.
-  const latest = parseSnapshot(await d.store.readText(RECORD)) ?? prev;
-  await d.store
-    .write(
-      RECORD,
-      JSON.stringify(snapshotOf(holdBack(prev, g.world, held), latest)),
-      isToken(d.token) ? { after: d.token.gen } : {}
-    )
-    .catch(() => false);
+  await recordLook(d.store, RECORD, prev, g.world, held, d.token);
   return out;
 }
 

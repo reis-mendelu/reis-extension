@@ -36,13 +36,16 @@ computer: reIS receives none of it.
 
 - **Saved**, as plain files in one folder: your subject list (code, name, IS id); each
   subject's file list (names, dates, download links); the text of plain-text files Claude
-  reads; your study programme, form, year and semester; the list of upcoming events (tests, defences, programme days, events) that Claude saves with `mendelu_ledger`: title, date, kind, subject, room, the rule that matters, the unregistration deadline and where the date came from, written by Claude from what it read or what you told it, never by reIS from IS on its own and never written to a calendar; a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates), your points are not saved in readable form, only a fingerprint. The **original files**
+  reads; your study programme, form, year and semester; the list of upcoming events (tests, defences, programme days, events) that Claude saves with `mendelu_ledger`: title, date, kind, subject, room, the rule that matters, the unregistration deadline and where the date came from, written by Claude from what it read or what you told it, never by reIS from IS on its own and never written to a calendar; a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates), your points are not saved in readable form, only a fingerprint; a second record like it for
+  `mendelu_refresh`, the call of the daily digest, with the time of the last refresh. The **original files**
   of your subjects (PDFs, Office files, zips still zipped, data files, exactly as IS serves
   them): one each time Claude reads a file, and all of them when you ask Claude to build
   your map (`mendelu_build_my_map`, which asks first with a dry run that downloads nothing).
   They are in the `originals` folder inside the folder below, one folder per file, under the
   file's own name made safe; a file IS still shows with the same modified date is not
-  downloaded again, and Claude Code opens the saved copy by its path.
+  downloaded again, and Claude Code opens the saved copy by its path. `mendelu_refresh` downloads
+  only the new or replaced files of subjects already saved, within the size limit, into the
+  same folder.
 - **Never saved:** your IS password or IS's sign-in cookie. The study profile holds no
   name, student number or e-mail, but file names and the text of plain-text files are
   kept exactly as they are, so anything written in them is kept too. The password stays in Claude Code's secure storage and the IS session in
@@ -67,7 +70,9 @@ change anything in IS or in a Claude conversation that already holds it.
 ## What it never does
 
 It never registers you for anything, never submits anything, never changes anything in
-IS and never opens online tests.
+IS and never opens online tests. It never sends mail and never writes a calendar: the daily
+digest is a draft your own Claude saves in your mail through your own connector, and a
+calendar entry is written by your own Claude only after you say yes.
 
 ## Removing it
 

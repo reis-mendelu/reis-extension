@@ -16,7 +16,15 @@ const FOLDER = 'https://is.mendelu.cz/auth/dok_server/slozka.pl?id=7';
 export const link = (n: number) =>
   `https://is.mendelu.cz/auth/dok_server/slozka.pl?ds=1;id=7;download=${n}`;
 
-type FakeFile = { name: string; type: string; body: string; status?: number; noName?: boolean };
+type FakeFile = {
+  name: string;
+  type: string;
+  body: string;
+  status?: number;
+  noName?: boolean;
+  /** What IS declares as the size (content-length), when it declares one. */
+  length?: number;
+};
 
 /** The fake IS: what is listed, what each download returns, and what reached it. */
 export const lib = {
@@ -78,6 +86,7 @@ export const fetchLib = (async (url: RequestInfo | URL) => {
         ({
           'content-type': f?.type ?? 'text/plain',
           'content-disposition': f?.noName ? null : `attachment; filename="${f?.name ?? 'x'}"`,
+          'content-length': f?.length !== undefined ? String(f.length) : null,
         })[h.toLowerCase()] ?? null,
     },
     body: null,
@@ -94,7 +103,7 @@ export function bootLib(dir: string, maxBytes?: number) {
   const server = {
     registerTool: (name: string, _meta: unknown, h: Handler) => handlers.set(name, h),
   } as unknown as McpServer;
-  const store = createStore({ dir, ...(maxBytes ? { maxBytes } : {}) });
+  const store = createStore({ dir, ...(maxBytes !== undefined ? { maxBytes } : {}) });
   registerTools(server, { fetch: fetchLib }, store);
   const call = (name: string, args: Record<string, unknown> = {}) => handlers.get(name)!(args);
   const json = async (name: string, args: Record<string, unknown> = {}) => {

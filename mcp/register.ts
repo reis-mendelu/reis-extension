@@ -7,6 +7,7 @@ import { createMapPersist } from './storeMap';
 import { OVERVIEW_TOOL, runOverview } from './overviewTool';
 import { registerStoreTools } from './registerStore';
 import { registerBuild } from './buildTool';
+import { registerRefresh } from './refreshTool';
 import { OVERVIEW, READ_ONLY, responseFormat, withNotice } from './registerKit';
 // Aliased to ./documentHandover in the plugin build, like the import in files.ts.
 import { EXTRACTS_TEXT } from './documentText';
@@ -86,7 +87,10 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
       }
     );
   }
-  if (store && map) registerBuild(server, ctx, store, cache, map.persist, EXTRACTS_TEXT);
+  if (store && map) {
+    registerBuild(server, ctx, store, cache, map.saveText, EXTRACTS_TEXT);
+    registerRefresh(server, ctx, store, cache, map, EXTRACTS_TEXT);
+  }
   for (const t of TOOLS) {
     server.registerTool(
       t.name,

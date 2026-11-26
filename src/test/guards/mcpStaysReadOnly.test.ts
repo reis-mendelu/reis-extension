@@ -14,6 +14,9 @@
 // through storeLedger.ts like everything else), which asks IS nothing and touches no calendar.
 // Step 5 added the original files (originals/<hash>/<safe name>, written through
 // storeOriginals.ts) and mendelu_build_my_map, which only GETs IS listings and files.
+// Step 6 added mendelu_refresh, the call of the student's digest routine: the same GETs, its own
+// record (refresh/seen.json) through the store. The digest mail draft and any calendar entry are
+// written by the student's own Claude through their own connectors, never by reIS.
 import { describe, it, expect } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
@@ -119,6 +122,7 @@ describe('reIS for Claude stays read-only and local', () => {
         'mcp/overviewTool.ts',
         'mcp/storeOriginals.ts',
         'mcp/buildTool.ts',
+        'mcp/refreshTool.ts',
       ])
     );
     const openers = sources.filter(({ src }) => /createStore\(/.test(src)).map((s) => s.f);
@@ -148,6 +152,19 @@ describe('reIS for Claude stays read-only and local', () => {
         );
       }
       expect(src, f).not.toMatch(/fetch\(|googleapis|calendar\.google|webcal|\.ics\b|caldav/i);
+    }
+  });
+
+  // Decided 2026-11-25 (decisions 5 and 9): the digest is a draft the student's own Claude writes
+  // with their mail connector, and calendar entries are written by it only after the student says
+  // yes. reIS sends no mail and writes no calendar, so no mail or calendar API is in its graph.
+  it('never sends mail or writes a calendar: no mail or calendar API anywhere in the server graph', () => {
+    const files = [...closure.keys()].map(rel);
+    expect(files).toEqual(expect.arrayContaining(['mcp/refreshTool.ts', 'mcp/refreshRun.ts']));
+    for (const [file, src] of closure) {
+      expect(src, rel(file)).not.toMatch(
+        /googleapis\.com|gmail\.com\/|graph\.microsoft\.com|outlook\.(office|live)\.com|smtp|nodemailer|caldav|webcal:|\.ics\b|calendar\.google/i
+      );
     }
   });
 
