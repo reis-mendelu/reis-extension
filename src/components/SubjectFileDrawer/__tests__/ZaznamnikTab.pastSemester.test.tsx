@@ -27,6 +27,9 @@ const POINTS = {
   vt: { tests: [], fetchedAt: 0 },
 };
 
+/** What the drawer's opening does: the tab only reads the store. */
+const openDrawer = () => useAppStore.getState().loadPastZaznamnik('PS');
+
 describe('ZaznamnikTab for a subject from an earlier semester', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -49,24 +52,28 @@ describe('ZaznamnikTab for a subject from an earlier semester', () => {
     let release: (v: unknown) => void = () => {};
     fetchSubjectZaznamnik.mockReturnValue(new Promise((r) => (release = r)));
 
+    const opening = openDrawer();
     const { container } = render(<ZaznamnikTab courseCode="PS" />);
 
     expect(container.querySelector('.animate-pulse')).not.toBeNull();
     await waitFor(() => expect(fetchSubjectZaznamnik).toHaveBeenCalledWith('123', '300', '789'));
 
     release(POINTS);
+    await opening;
     await waitFor(() => expect(screen.getByText('Test 1')).toBeTruthy());
     expect(container.querySelector('.animate-pulse')).toBeNull();
   });
 
   it('offers a retry when the fetch fails', async () => {
     fetchSubjectZaznamnik.mockResolvedValue(null);
+    await openDrawer();
     render(<ZaznamnikTab courseCode="PS" />);
     await waitFor(() => expect(screen.getByTestId('zaznamnik-error')).toBeTruthy());
   });
 
   it("links to IS for the subject's own period, not the current one", async () => {
     fetchSubjectZaznamnik.mockResolvedValue(POINTS);
+    await openDrawer();
     render(<ZaznamnikTab courseCode="PS" />);
     await waitFor(() => expect(screen.getByText('Test 1')).toBeTruthy());
     const hrefs = screen.getAllByRole('link').map((a) => a.getAttribute('href'));
@@ -77,10 +84,7 @@ describe('ZaznamnikTab for a subject from an earlier semester', () => {
     }
   });
 
-  it('does not fetch for a current-semester subject: the sync does that', () => {
-    useAppStore.setState({
-      subjects: { data: { PS: { subjectId: '789', hasPrubezne: true } } },
-    } as never);
+  it('is read-only: rendering the tab starts no fetch', () => {
     render(<ZaznamnikTab courseCode="PS" />);
     expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
   });

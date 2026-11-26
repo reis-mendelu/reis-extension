@@ -21,7 +21,7 @@ interface ZaznamnikTabProps {
 }
 
 export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
-  const { data, isLoading, isFailed } = useZaznamnik(courseCode, { load: true });
+  const { data, isLoading, isFailed } = useZaznamnik(courseCode);
   const refetchZaznamnik = useAppStore((s) => s.refetchZaznamnik);
   const impersonating = useAppStore((s) => !!s.impersonation);
   const subjectInfo = useAppStore((s) => (courseCode ? s.subjects?.data[courseCode] : undefined));

@@ -92,4 +92,18 @@ describe('loadPastZaznamnik', () => {
 
     expect(fetchSubjectZaznamnik).toHaveBeenCalledWith('123', '300', '789');
   });
+
+  it('starts when a phone subject drawer opens, by the action that opens it', async () => {
+    fetchSubjectZaznamnik.mockResolvedValue(LOADED);
+
+    useAppStore.getState().pushSheet({ kind: 'subjectDrawer', courseCode: 'PS' });
+
+    await vi.waitFor(() => expect(fetchSubjectZaznamnik).toHaveBeenCalledWith('123', '300', '789'));
+    expect(useAppStore.getState().zaznamnikLoading['PS']).toBeDefined();
+  });
+
+  it('does not start for other sheets', () => {
+    useAppStore.getState().pushSheet({ kind: 'studyPlan' });
+    expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
+  });
 });

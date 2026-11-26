@@ -29,10 +29,10 @@ type Probe = Pick<
 >;
 
 /**
- * True when opening this subject's Záznamník should fetch its points: a past
- * subject with assessment, nothing stored for it (not even a failure), and IDB
- * hydration done (the points may already be cached there). The tab reads it as
- * "loading" so there is no blank frame before the fetch starts.
+ * True when opening a subject's drawer should fetch its Záznamník points: a
+ * past subject with assessment, nothing stored for it (not even a failure), and
+ * IDB hydration done (the points may already be cached there). The guard of
+ * loadPastZaznamnik, which the actions that open a drawer call.
  */
 export function needsPastZaznamnik(s: Probe, courseCode: string): boolean {
   if (s.impersonation || !s.studiumId || !s.obdobiId || !s.zaznamnikHydrated) return false;

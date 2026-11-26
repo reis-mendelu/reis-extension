@@ -1,4 +1,4 @@
-import type { AppSlice, MobileUiSlice } from '../types';
+import type { AppSlice, AppState, MobileSheet, MobileUiSlice } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { clampRailWidth, RAIL_PX } from '../../utils/mapRail';
 
@@ -11,6 +11,16 @@ import { clampRailWidth, RAIL_PX } from '../../utils/mapRail';
  * Purely-local disclosure state (which accordion is open) deliberately stays
  * in component useState — this slice is for state that crosses components.
  */
+/**
+ * Opening a subject's drawer starts the one-off fetch of a past-semester
+ * subject's points (the sync skips those). Here, in the action that opens the
+ * sheet, not in a component effect; `needsPastZaznamnik` keeps it a no-op for
+ * everything else and for a subject whose points are already stored.
+ */
+function opensSubject(sheet: MobileSheet, get: () => AppState): void {
+  if (sheet.kind === 'subjectDrawer') void get().loadPastZaznamnik(sheet.courseCode);
+}
+
 export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   mobileTab: 'calendar',
   lastNonProfileTab: 'calendar',
@@ -151,15 +161,20 @@ export const createMobileUiSlice: AppSlice<MobileUiSlice> = (set, get) => ({
   // store update so no frame ever renders both, and the sheet UNDERNEATH (the
   // subject drawer that opened the first card) is untouched, so back still
   // goes where it should.
-  pushSheet: (sheet) =>
+  pushSheet: (sheet) => {
     set((s) => ({
       mobileSheets:
         s.mobileSheets.at(-1)?.kind === sheet.kind
           ? [...s.mobileSheets.slice(0, -1), sheet]
           : [...s.mobileSheets, sheet],
-    })),
+    }));
+    opensSubject(sheet, get);
+  },
   popSheet: () => set((s) => ({ mobileSheets: s.mobileSheets.slice(0, -1) })),
-  replaceSheet: (sheet) => set((s) => ({ mobileSheets: [...s.mobileSheets.slice(0, -1), sheet] })),
+  replaceSheet: (sheet) => {
+    set((s) => ({ mobileSheets: [...s.mobileSheets.slice(0, -1), sheet] }));
+    opensSubject(sheet, get);
+  },
   closeAllSheets: () => set({ mobileSheets: [] }),
 
   setMapSheetState: (state) => set({ mapSheetState: state }),
