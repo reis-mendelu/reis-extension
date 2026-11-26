@@ -19,7 +19,7 @@ There is no Android half on purpose — Android keeps the pdf.js viewer. The gua
 - `ios/Sources/PdfInkPlugin/InkStore.swift` — load/save/delete; a corrupt file is renamed
   `*.ink.bad` rather than overwritten. Foundation only.
 - `ios/Sources/PdfInkPlugin/PdfInkViewController.swift` — the reader.
-- `ios/Sources/PdfInkPlugin/PdfInkPlugin.swift` — `isAvailable`, `open`.
+- `ios/Sources/PdfInkPlugin/PdfInkPlugin.swift` — `isAvailable` (false on a Mac: the iPad app "Designed for iPad" has no Pencil, and PencilKit ignores a mouse), `open`.
 - Covers over an answer: `CoverTool.swift` (the tape in the palette, iOS 18+), `TapeStyle.swift`
   (how a cover looks), `PageCover.swift`, `PageCovers.swift`, `CoverLayerView.swift`,
   `PdfInkViewController+Covers.swift`.
