@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import {
   MAX_TIMER_DELAY_MS,
@@ -16,17 +16,24 @@ import {
  * retries cover IS answering a moment late, and stop with the last one.
  *
  * Keyed on the opening's timestamp, not on the ticking `now`, so the timers are
- * armed once per opening. An opening further off than a timer can count is left
- * alone: the screen re-arms when the list changes, and that is long before.
+ * armed once per opening. An opening further off than a timer can count is not
+ * armed yet: a wake-up a day later re-runs the effect, so a view left open
+ * overnight still arms it once the opening is in range.
  */
 export function useRefreshAtExamOpening(active: boolean): void {
   const demo = useAppStore((s) => s.demoMode);
   const opening = useAppStore((s) => nextRegistrationOpening(s.exams.data, s.now.getTime()));
+  const [wake, setWake] = useState(0);
   useEffect(() => {
     if (!active || demo || opening === null) return;
+    const untilOpening = opening - Date.now();
+    if (untilOpening > MAX_TIMER_DELAY_MS) {
+      const id = setTimeout(() => setWake((n) => n + 1), MAX_TIMER_DELAY_MS);
+      return () => clearTimeout(id);
+    }
     const timers = OPENING_REFRESH_OFFSETS_MS.flatMap((offset) => {
       const delay = opening + offset - Date.now();
-      if (delay < 0 || delay > MAX_TIMER_DELAY_MS) return [];
+      if (delay < 0) return [];
       return [
         setTimeout(() => {
           if (Date.now() >= opening) useAppStore.getState().triggerExamsRefresh();
@@ -34,5 +41,6 @@ export function useRefreshAtExamOpening(active: boolean): void {
       ];
     });
     return () => timers.forEach(clearTimeout);
-  }, [active, demo, opening]);
+    // `wake` only re-runs the effect; it is not read.
+  }, [active, demo, opening, wake]);
 }

@@ -77,6 +77,15 @@ describe('useRefreshAtExamOpening', () => {
     expect(trigger).not.toHaveBeenCalled();
   });
 
+  it('arms a far-off opening once it comes within range, for a view left open for days', () => {
+    const trigger = arrange('01.12.2026 08:00', START.getTime() - 40 * 24 * 3600_000);
+    renderHook(() => useRefreshAtExamOpening(true));
+    // A day at a time, each its own act: the wake-up re-runs the effect between them.
+    for (let day = 0; day < 40; day++) act(() => vi.advanceTimersByTime(24 * 3600_000));
+    act(() => vi.advanceTimersByTime(1_500));
+    expect(trigger).toHaveBeenCalledTimes(1);
+  });
+
   it('does nothing while the screen is not in front, or in demo', () => {
     const trigger = arrange('01.12.2026 08:00', START.getTime() - 1_000);
     renderHook(() => useRefreshAtExamOpening(false));
