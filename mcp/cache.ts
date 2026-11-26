@@ -10,6 +10,7 @@
 // sign-in (mcpStaysReadOnly.test.ts, README.md, PRIVACY.md).
 
 import { isReplacement, type Persist, type Ticket } from './cacheTypes';
+import { keyOf } from './cacheKey';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -53,24 +54,6 @@ type Listed = { downloadUrl?: unknown; date?: unknown; modified?: unknown };
  */
 export const stampOf = (f: Listed) =>
   f.modified ? `modified ${String(f.modified)}` : `date ${String(f.date ?? '')}`;
-
-function stable(v: unknown): unknown {
-  if (Array.isArray(v)) return v.map(stable);
-  if (v && typeof v === 'object') {
-    return Object.fromEntries(
-      Object.keys(v)
-        .sort()
-        .map((k) => [k, stable((v as Record<string, unknown>)[k])])
-    );
-  }
-  return v;
-}
-
-/** The format only changes how a result is printed, not what IS said. */
-function keyOf(tool: string, args: Record<string, unknown>): string {
-  const { response_format: _format, ...rest } = args;
-  return `${tool} ${JSON.stringify(stable(rest))}`;
-}
 
 export type ToolCache = ReturnType<typeof createToolCache>;
 
@@ -154,12 +137,21 @@ export function createToolCache({
       // A held answer that names a saved file is served only while that file is still there.
       const live = async (h: Entry) =>
         (await persist?.stillValid?.(tool, args, h.value, h.stamp).catch(() => false)) ?? true;
-      if (hit && now() - hit.at < ttl && (await live(hit))) {
+      const seen = epoch;
+      // Served only if it is still the held answer after the check: a newer listing or clear()
+      // meanwhile has dropped it, and putting it back would resurrect an outdated file.
+      if (
+        hit &&
+        now() - hit.at < ttl &&
+        (await live(hit)) &&
+        entries.get(key) === hit &&
+        epoch === seen
+      ) {
         entries.delete(key); // move to the most recently used end
         entries.set(key, hit);
         return hit.value;
       }
-      drop(key);
+      if (fresh || entries.get(key) === hit) drop(key);
       const pending = fresh ? undefined : inflight.get(key);
       if (pending) return pending.promise;
       const mine: Pending = {
