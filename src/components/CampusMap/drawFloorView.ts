@@ -18,6 +18,7 @@ import { dimsOtherRooms } from './dimsOtherRooms';
 import { LABELS_PANE } from './mapPanes';
 import { roomPlanLabels } from './roomPlanLabel';
 import { venueRoomTitles } from './venueSearch';
+import { openRoomNamePopup } from './roomNamePopup';
 import type { BuildingsMeta, RoomFeature } from '../../types/campusMap';
 import type { CanvasRefs } from './useCanvasRefs';
 
@@ -132,34 +133,47 @@ export function drawFloorView(a: {
       isSel ? SELECTED_STYLE : effectiveBase
     );
     if (!struct) {
-      poly.on('click', () => {
+      poly.on('click', (e: L.LeafletMouseEvent) => {
         const s = useAppStore.getState();
         const tap = roomTapIntent(p.id, s.mapRoomTints, s.mapSelection?.kind === 'library');
         if (tap === 'claim') s.selectMapLibrary(p.id);
-        else if (tap === 'select') select.selectMapRoom(p);
+        else if (tap === 'select') {
+          select.selectMapRoom(p);
+          // The phone has no hover and no DetailPanel: a tap on ANY named room
+          // answers with a compact card. Desktop opens DetailPanel on this click.
+          if (isPhone) openRoomNamePopup(map, e.latlng, p, s.venuePins);
+        }
       });
       roomPolysRef.current.set(p.id, { poly, base: effectiveBase, plain: effectiveBase });
       if (p.name) {
         // Label sizable rooms permanently (MyMENDELU-style); tiny rooms only on
-        // hover, to avoid a wall of overlapping numbers.
+        // hover (desktop) or on tap (phone), to avoid a wall of overlapping
+        // numbers.
         const pb = poly.getBounds();
         const big = pb.getNorthEast().distanceTo(pb.getSouthWest()) > LABELLED_ROOM_SPAN_M;
         const { full, short } = roomPlanLabels(p, venueTitles);
         const shown = big ? short : full;
         labelledRoomsRef.current.push({ poly, p, big });
-        poly.bindTooltip(shown, {
-          permanent: big,
-          direction: 'center',
-          className: big ? 'room-label' : '',
-          // A permanent number is annotation and belongs under whatever is
-          // drawn on top of the map; the hover one was asked for, so it stays
-          // on top.
-          pane: big ? LABELS_PANE : 'tooltipPane',
-        });
+        // Not on the phone: there the tap opens the card above, and Leaflet
+        // fires a tooltip's mouseover on that same tap, so a small room would
+        // show its name twice.
+        if (big || !isPhone) {
+          poly.bindTooltip(shown, {
+            permanent: big,
+            direction: 'center',
+            className: big ? 'room-label' : '',
+            // A permanent number is annotation and belongs under whatever is
+            // drawn on top of the map; the hover one was asked for, so it stays
+            // on top.
+            pane: big ? LABELS_PANE : 'tooltipPane',
+          });
+        }
         // The permanent label keeps only the code ("B05"); hovering the room
         // shows IS's full name ("B05 – Strojový sál"). Read at hover time, so
         // a venue name that arrived after the draw is not swapped back out.
-        if (big) {
+        // Desktop only: on the phone the card carries the full name, and the
+        // emulated mouseover would swap the label's code for it.
+        if (big && !isPhone) {
           const now = () => roomPlanLabels(p, venueRoomTitles(useAppStore.getState().venuePins));
           poly.on('mouseover', () => poly.setTooltipContent(now().full));
           poly.on('mouseout', () => poly.setTooltipContent(now().short));

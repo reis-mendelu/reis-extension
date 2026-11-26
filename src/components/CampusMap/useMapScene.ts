@@ -27,6 +27,8 @@ export function useMapScene(refs: CanvasRefs, isPhone: boolean): void {
     if (!map) return;
     const layer = layerRef.current;
     layer.clearLayers();
+    // A room's name card is anchored to a room this redraw just removed.
+    map.closePopup();
     const select = useAppStore.getState();
     // Leaving floor-view by tapping the basemap keeps the camera; the "Celý
     // kampus" button still re-fits the campus. Cleared where the camera
