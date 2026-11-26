@@ -87,7 +87,7 @@ question sweeps seven subjects and the persona re-reads files to be sure): **fir
 map, at most 40 calls** (it reads the files and writes the ledger); **the same question again on
 the same store, at most 16** (the ledger already holds the file-derived events, nothing is
 written). These are regression ceilings set just above what was measured (37 and 15), not a goal
-the map has met; a lower number would need the overview to answer date questions by itself.
+the map has met; a lower number would need a persona that trusts the overview and the ledger instead of re-checking files.
 
 ### S6. Mentioned a week ahead, on every cadence
 
