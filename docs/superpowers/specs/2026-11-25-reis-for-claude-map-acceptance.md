@@ -222,3 +222,40 @@ zips, images and similar.
   for the persona to retry, but a longer limit or a note in the description would save a call.
 - Not run: Windows, Claude Desktop through the real MCP client, and the digest through a real mail
   and calendar connector.
+
+## The persona walk of a student's week by email (2026-11-26)
+
+Run after step 6, on a copy of the built map from the build above, by fresh Sonnet sub-agents that
+followed `mcp/routine/digest-prompt.md` word for word through the same stand-in client. There was
+no mail or calendar connector in the run (and none was touched): the draft went to a local file, the
+calendar half was reported as "could not read a calendar". Nothing was sent and no calendar was written.
+
+**Run 1, an empty ledger, daily then weekly.** Four tool calls in all. Both refreshes reported no
+changes (the build had already saved every file), so the drafts held one event, the registered
+project defence in 14 days, correctly without an "ověř" note because IS states it. The routine
+did what it says; the drafts were thin because the ledger was empty, which is what a student's
+first week would look like.
+
+**Run 2, a weekly digest over a ledger of five events saved by the S5 persona.** Seven calls. The
+draft (about 630 words, Czech) listed three events inside 14 days (two inferred credit-test windows
+and the registered defence) and three further out under a separate "later" heading, every inferred
+one marked "ověř u cvičícího" with its source file. It also checked the ledger against the files
+without being asked and flagged the entry whose end date the S5 persona had invented (the file
+says only "weeks 12 and 13"), a title that lists more topics than the file gives the student's
+group, and a window narrower than its file. It proposed no calendar entries and offered "navrhni
+všechny", because nothing had changed in that run.
+
+**What the walk found in the routine** (for a later prompt change; none blocks 0.2.0):
+
+- Step 5 proposes calendar entries only for events added or updated in that run when no calendar can
+  be read. A student whose ledger already holds events that were never put in the calendar gets no
+  proposals until something changes; with a calendar connector the first sentence of the step
+  applies and this does not arise.
+- Step 4 asks for "deadlines this week: assignment boxes not yet handed in", but the routine names
+  no tool that lists open boxes (`mendelu_assignments`), so both runs wrote that open boxes could not
+  be confirmed.
+- The refresh's "N later" counts IS terms the ledger does not hold, and its pointer to the ledger
+  for them is misleading.
+- A weekly digest reaches every event a week ahead only if it runs every seven days; the run
+  added a "later" group, which the prompt does not ask for.
+
