@@ -3,7 +3,7 @@
 // anything. The keys are what overviewDiff.ts compares, so they only use what a
 // teacher or the student can really change (never a timestamp or a capacity).
 import { isBoxOpen } from '../src/utils/submissionBoxes';
-import { pragueAsLocal } from './overviewUpcoming';
+import { pragueAsLocal } from './pragueTime';
 import type { Odevzdavarna } from '../src/api/odevzdavarny';
 
 type Json = Record<string, unknown>;

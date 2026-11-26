@@ -36,7 +36,7 @@ computer: reIS receives none of it.
 
 - **Saved**, as plain files in one folder: your subject list (code, name, IS id); each
   subject's file list (names, dates, download links); the text of plain-text files Claude
-  reads; your study programme, form, year and semester; a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates), your points are not saved in readable form, only a fingerprint. A PDF or Office file Claude reads
+  reads; your study programme, form, year and semester; the list of upcoming events (tests, defences, programme days, events) that Claude saves with `mendelu_ledger`: title, date, kind, subject, room, the rule that matters, the unregistration deadline and where the date came from, written by Claude from what it read or what you told it, never by reIS from IS on its own and never written to a calendar; a short record of what `mendelu_overview` last told Claude was new (each file's name and date, a fingerprint of each row of your points rather than the points themselves, assignment names and deadlines, exam term dates), your points are not saved in readable form, only a fingerprint. A PDF or Office file Claude reads
   is handed to Claude Code, which saves its own copy as before; the plugin does not keep
   one yet.
 - **Never saved:** your IS password or IS's sign-in cookie. The study profile holds no
@@ -48,7 +48,7 @@ computer: reIS receives none of it.
   `~/.local/share/reIS for Claude`. One folder per computer account, shared with the
   Claude Desktop extension if you use both, and not tied to the IS login: if you share a
   computer account, delete it before handing over. It takes up to 4 GB, then the oldest
-  copies are removed. If the folder cannot be written, the plugin says so and keeps
+  copies are removed (never the list of upcoming events, which cannot be fetched again). If the folder cannot be written, the plugin says so and keeps
   things in memory until Claude Code closes.
 - **Answers IS gave** are also kept in memory for between a minute and a day, so that
   Claude asking the same thing twice does not ask IS twice; they are gone when Claude
@@ -57,7 +57,7 @@ computer: reIS receives none of it.
 ## Deleting it
 
 Ask Claude to "forget everything reIS saved": the `mendelu_forget_everything` tool deletes
-the folder's contents and says what it removed. Or delete the folder yourself, with Claude closed (a file being downloaded at that moment would be saved again). It does not
+the folder's contents, the list of upcoming events included, and says what it removed. A calendar is never touched. Or delete the folder yourself, with Claude closed (a file being downloaded at that moment would be saved again). It does not
 change anything in IS or in a Claude conversation that already holds it.
 
 ## What it never does

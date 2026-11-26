@@ -1,47 +1,15 @@
-import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { TOOLS, type ToolCtx } from './tools';
 import { toolResult, toError } from './format';
 import { createToolCache, type ToolCache } from './cache';
 import type { Ticket } from './cacheTypes';
 import { createMapPersist } from './storeMap';
-import { FORGET_TOOL, forgetEverything } from './forgetTool';
 import { OVERVIEW_TOOL, runOverview } from './overviewTool';
-import { SEARCH_TOOL, runSearch } from './searchTool';
+import { registerStoreTools } from './registerStore';
+import { OVERVIEW, READ_ONLY, responseFormat, withNotice } from './registerKit';
 // Aliased to ./documentHandover in the plugin build, like the import in files.ts.
 import { EXTRACTS_TEXT } from './documentText';
 import type { Store } from './store';
-
-const READ_ONLY = {
-  readOnlyHint: true,
-  destructiveHint: false,
-  idempotentHint: true,
-  openWorldHint: true,
-} as const;
-
-// It writes a record of what it reported, in reIS's own folder, and nothing in IS.
-const OVERVIEW = { ...READ_ONLY, idempotentHint: false } as const;
-
-// Local only: it deletes reIS's own folder and touches nothing else, IS included.
-const FORGET = {
-  readOnlyHint: false,
-  destructiveHint: true,
-  idempotentHint: true,
-  openWorldHint: false,
-} as const;
-
-// Reads reIS's own folder only: it asks IS nothing, so it works with no login too.
-const SEARCH = {
-  readOnlyHint: true,
-  destructiveHint: false,
-  idempotentHint: true,
-  openWorldHint: false,
-} as const;
-
-const responseFormat = z
-  .enum(['markdown', 'json'])
-  .default('markdown')
-  .describe('"markdown" (default) for a readable summary, "json" for the raw data.');
 
 async function runTool(
   t: (typeof TOOLS)[number],
@@ -61,20 +29,6 @@ async function runTool(
   } catch (e) {
     return toError(t.name, e);
   }
-}
-
-/** One extra text item, so structuredContent and handed-over files stay as they are. */
-function withNotice<R extends { content: object[] }>(r: R, ctx: ToolCtx, store?: Store): R {
-  const folder = store?.notice();
-  const lines = [
-    ctx.updateNotice?.(),
-    folder &&
-      // The code only (EACCES): a message can carry a path with the account name.
-      `reIS could not save to its folder this session (${/^[A-Z0-9_]+$/.test(folder.reason) ? folder.reason : 'unexpected error'}), so it is working from memory only.`,
-  ].filter(Boolean);
-  return lines.length
-    ? ({ ...r, content: [...r.content, { type: 'text' as const, text: lines.join('\n') }] } as R)
-    : r;
 }
 
 /**
@@ -146,52 +100,11 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
       }
     );
   }
-  if (!store) return;
-  // Not behind the IS login check: deleting local files must work without one.
-  server.registerTool(
-    FORGET_TOOL.name,
-    {
-      title: FORGET_TOOL.title,
-      description: FORGET_TOOL.description,
-      inputSchema: { response_format: responseFormat },
-      annotations: FORGET,
-    },
-    async (args: Record<string, unknown>) => {
-      let result;
-      try {
-        result = toolResult(
-          await forgetEverything(store, () => {
-            cache.clear();
-            map?.reset();
-          }),
-          args.response_format === 'json' ? 'json' : 'markdown'
-        );
-      } catch (e) {
-        result = toError(FORGET_TOOL.name, e);
-      }
-      return withNotice(result, ctx, store);
-    }
-  );
-  // Search (step 4): not behind the IS login check, like forget.
-  server.registerTool(
-    SEARCH_TOOL.name,
-    {
-      title: SEARCH_TOOL.title,
-      description: SEARCH_TOOL.description,
-      inputSchema: { ...SEARCH_TOOL.input, response_format: responseFormat },
-      annotations: SEARCH,
-    },
-    async (args: Record<string, unknown>) => {
-      let result;
-      try {
-        result = toolResult(
-          await runSearch(store, args),
-          args.response_format === 'json' ? 'json' : 'markdown'
-        );
-      } catch (e) {
-        result = toError(SEARCH_TOOL.name, e);
-      }
-      return withNotice(result, ctx, store);
-    }
-  );
+  if (store)
+    registerStoreTools(server, ctx, store, {
+      clear: () => {
+        cache.clear();
+        map?.reset();
+      },
+    });
 }

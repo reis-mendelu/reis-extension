@@ -9,6 +9,8 @@ import { diffWorld, holdBack } from './overviewDiff';
 import { parseSnapshot, snapshotOf } from './overviewRecord';
 import { fitOverview } from './overviewRender';
 import { textIsKept, textPath } from './storeMap';
+import { createLedger } from './storeLedger';
+import { ledgerChanges } from './ledgerChanges';
 
 // Why "overview": the failure it fixes is Claude not knowing where to look. The
 // description is the only thing a model that has never seen reIS reads before it
@@ -17,7 +19,7 @@ export const OVERVIEW_TOOL = {
   name: 'mendelu_overview',
   title: 'Overview of my school situation, and what changed',
   description:
-    'START HERE. Call this FIRST, before any other mendelu_ tool, for any question about the student\'s school situation: how they are doing, their points, what is due, exams, the timetable, what is new, or where something is. One call returns: (1) "changed": what is new in IS since the last time it was called (new, replaced or removed course files, new or changed points, new assignment boxes or deadlines, new exam terms, new subjects), each shown ONCE; (2) the student\'s study programme and form; (3) every enrolled subject with the student\'s points in it and its course files (name, date modified, a `url` to give to mendelu_read_file, and `textSaved: yes` when that file\'s text is already kept on this computer); (4) "upcoming": what is coming, soonest first, with days left and `attendance: yes` for events the student must attend in person (registered exam and credit terms) next to assignment deadlines; tell the student about anything within a week; (5) the open assignments with deadlines, the exam terms and the lessons of the next 7 days. It downloads no file and changes nothing in IS. ' +
+    'START HERE. Call this FIRST, before any other mendelu_ tool, for any question about the student\'s school situation: how they are doing, their points, what is due, exams, the timetable, what is new, or where something is. One call returns: (1) "changed": what is new in IS since the last time it was called (new, replaced or removed course files, new or changed points, new assignment boxes or deadlines, new exam terms, new subjects), each shown ONCE; (2) the student\'s study programme and form; (3) every enrolled subject with the student\'s points in it and its course files (name, date modified, a `url` to give to mendelu_read_file, and `textSaved: yes` when that file\'s text is already kept on this computer); (4) "upcoming": what is coming, soonest first, with days left, `attendance: yes` for events the student must attend in person, and `inNext14Days`: the registered exam and credit terms and assignment deadlines from IS, plus every event saved in the ledger (`source: ledger`, with its `id`; `basis: inferred` dates carry a `confirm` note, and `recheck` means the file the date came from changed: read it again and fix the entry); tell the student about anything within a week, and about every `recheck` and `confirm`. When you read a course file, conditions, harmonogram or mail that names a date the student must attend or act on, SAVE it with mendelu_ledger before answering; (5) the open assignments with deadlines, the exam terms and the lessons of the next 7 days. It downloads no file and changes nothing in IS. ' +
     'IMPORTANT: many answers are only inside a course file, not in IS\'s exam list or timetable: a credit-test date, test topics, passing conditions, a reference sheet, a project brief usually sit in a file such as a course schedule ("harmonogram") or conditions PDF. When a question is about such a thing, open the likely files from this map with mendelu_read_file (pass the file\'s `url`) BEFORE saying IS has no answer, and say which file the answer came from. If a subject\'s file list is cut ("N files in all"), call mendelu_subject_files with that code. When the answer depends on the student\'s study form (P = full-time, K = combined), use `student.form` rather than guessing. A subject with no points listed has none in IS yet. If the first line says this is the first overview, there is nothing to compare yet. Pass "json" as response_format only if you need raw data.',
 } as const;
 
@@ -75,7 +77,10 @@ async function overview(d: OverviewDeps) {
       );
     }
   }
-  const changes = prev ? diffWorld(prev, g.world) : [];
+  const { entries: ledger } = await createLedger(d.store).list();
+  const diffed = prev ? diffWorld(prev, g.world) : [];
+  // A replaced or vanished source file puts its ledger entries in "changed", once, next to the file.
+  const changes = [...diffed, ...ledgerChanges(ledger, diffed)];
   await d.settled();
 
   let profile: Record<string, unknown> | null = null;
@@ -92,6 +97,7 @@ async function overview(d: OverviewDeps) {
     changes,
     profile,
     saved,
+    ledger,
     format: d.format,
     now: d.now,
   });

@@ -77,7 +77,8 @@ toServer.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initializ
 const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sort();
 console.log('tools:', tools.length, tools.join(', '));
 let failed =
-  tools.length !== 14 || !tools.includes('mendelu_search') || !tools.includes('mendelu_overview');
+  tools.length !== 15 ||
+  !['mendelu_search', 'mendelu_overview', 'mendelu_ledger'].every((t) => tools.includes(t));
 
 const json = async (name, args) => {
   const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
@@ -89,6 +90,19 @@ const json = async (name, args) => {
   if (name !== 'mendelu_read_file') throw new Error(`${name}: output cut at the limit`);
   return { kind: /"kind": "([^"]+)"/.exec(text)?.[1], truncated: text.length };
 };
+
+/**
+ * mendelu_ledger only LISTS here: the smoke runs on the real store folder, so it never adds,
+ * changes or removes an entry. Counts only, never titles. Asks IS nothing, so it runs offline too.
+ */
+async function ledgerList() {
+  const l = await json('mendelu_ledger', { action: 'list' });
+  console.log(
+    `mendelu_ledger: ${l.count} upcoming event(s) saved${l.pastHidden ? ', some past' : ''}${l.unreadable ? `, ${l.unreadable}` : ''}`
+  );
+  return Array.isArray(l.entries) && !l.unreadable;
+}
+if (!(await ledgerList())) failed = true;
 
 /** The one refusal a healthy server gives on purpose (files.ts readCapped). */
 const TOO_BIG = 'too big to read here';
@@ -191,6 +205,7 @@ for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
     if (!(await readRealFiles())) failed = true;
     continue;
   }
+  if (name === 'mendelu_ledger') continue; // listed above, offline: see ledgerList
   if (name === 'mendelu_overview') {
     // Counts and the fixed first sentence of its note only: the overview carries points and names.
     const t0 = Date.now();
@@ -198,7 +213,7 @@ for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
     const files = o.subjects.reduce((n, s) => n + (Array.isArray(s.files) ? s.files.length : 0), 0);
     const cut = o.subjects.filter((s) => s.moreFiles).length;
     console.log(
-      `${name}: ${Date.now() - t0} ms, "${String(o.note).split(/[.,]/, 1)[0].slice(0, 60)}", ${o.subjects.length} subjects, ${files} files listed (${cut} lists cut), ${o.changed?.length ?? 0} changed lines, ${o.problems?.length ?? 0} problems`
+      `${name}: ${Date.now() - t0} ms, "${String(o.note).split(/[.,]/, 1)[0].slice(0, 60)}", ${o.subjects.length} subjects, ${files} files listed (${cut} lists cut), ${o.upcoming?.length ?? 0} upcoming, ${o.changed?.length ?? 0} changed lines, ${o.problems?.length ?? 0} problems`
     );
     if (o.problems?.length) failed = true;
     continue;

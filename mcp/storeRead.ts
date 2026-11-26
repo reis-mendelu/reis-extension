@@ -5,7 +5,7 @@
 import type { StoreFs } from './storeFs';
 import type { createMemory } from './storeMemory';
 import { readIndex, scan, toEntries, toIndex, totalBytes, type Entry } from './storeIndex';
-import { insideDir, safeRelPath } from './storePath';
+import { TEMP_PREFIX, insideDir, safeRelPath } from './storePath';
 
 type Memory = ReturnType<typeof createMemory>;
 
@@ -58,6 +58,27 @@ export function createReader(
     async list(): Promise<Entry[]> {
       await sync();
       return toEntries(mem.overlay((await readIndex(fs, dir)) ?? toIndex([])));
+    },
+
+    /**
+     * The files directly inside one folder, read from the folder itself, not the index: two
+     * processes committing at once can each overwrite the other's index entry, so a file that
+     * is on disk may be missing from it. What memory holds is laid over the result.
+     */
+    async listFolder(folder: string): Promise<Entry[]> {
+      await sync();
+      const found = toIndex([]);
+      try {
+        for (const item of await fs.readdir(insideDir(dir, safeRelPath(folder)), {
+          withFileTypes: true,
+        }))
+          if (item.isFile() && !item.name.startsWith(TEMP_PREFIX))
+            found[`${folder}/${item.name}`] = { bytes: 0, at: 0 };
+      } catch {
+        // no such folder yet: nothing saved there on disk
+      }
+      const prefix = `${folder}/`;
+      return toEntries(mem.overlay(found)).filter((e) => e.path.startsWith(prefix));
     },
 
     /** Count and size of the content files themselves, not the index. */
