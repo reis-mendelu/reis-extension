@@ -28,17 +28,30 @@ type Probe = Pick<
   | 'subjects'
 >;
 
+export type PastZaznamnikVerdict = 'fetch' | 'wait' | 'skip';
+
 /**
- * True when opening a subject's drawer should fetch its Záznamník points: a
- * past subject with assessment, nothing stored for it (not even a failure), and
- * IDB hydration done (the points may already be cached there). The guard of
- * loadPastZaznamnik, which the actions that open a drawer call.
+ * What opening a subject's drawer should do about its past-semester points.
+ * `wait` is an input that is still on its way (IndexedDB hydration, the ids,
+ * the subject list, the past subject itself folded in by a sync): the request
+ * is remembered and asked again when it lands. `skip` is final: a current
+ * subject, nothing to ask IS for, already stored or loading.
  */
-export function needsPastZaznamnik(s: Probe, courseCode: string): boolean {
-  if (s.impersonation || !s.studiumId || !s.obdobiId || !s.zaznamnikHydrated) return false;
+export function pastZaznamnikVerdict(s: Probe, courseCode: string): PastZaznamnikVerdict {
+  if (s.impersonation) return 'skip';
+  if (!s.studiumId || !s.obdobiId || !s.zaznamnikHydrated) return 'wait';
   const subject = s.subjects?.data?.[courseCode];
-  if (!subject?.subjectId || !subject.periodId || subject.periodId === s.obdobiId) return false;
+  if (!subject) return 'wait';
+  if (!subject.subjectId || !subject.periodId || subject.periodId === s.obdobiId) return 'skip';
   // Same filter the sync applies: no flag, nothing to ask IS for.
-  if (!subject.hasPrubezne && !subject.hasTest) return false;
-  return s.zaznamnik[courseCode] === undefined && !s.zaznamnikLoading[courseCode];
+  if (!subject.hasPrubezne && !subject.hasTest) return 'skip';
+  // Hydrated, so "undefined" means nothing is stored (not even a failure).
+  return s.zaznamnik[courseCode] === undefined && !s.zaznamnikLoading[courseCode]
+    ? 'fetch'
+    : 'skip';
+}
+
+/** True when the points of this past subject should be fetched right now. */
+export function needsPastZaznamnik(s: Probe, courseCode: string): boolean {
+  return pastZaznamnikVerdict(s, courseCode) === 'fetch';
 }

@@ -68,6 +68,7 @@ import type { Session } from '@supabase/supabase-js';
 import { FILES_SYNC_CHANNEL, type FilesSyncMessage } from './slices/files/broadcastFilesSync';
 import { setDemoModeFlag, isDemoMode } from '../errors/demoMode';
 import { currentSchool } from '../utils/school';
+import { watchPendingPastZaznamnik } from './pastZaznamnikWatch';
 
 /** Society events, pins and venues are Supabase rows shown in Novinky and on the map. */
 const societyContent = () => currentSchool.has('novinky') || currentSchool.has('campusMap');
@@ -372,3 +373,6 @@ export const initializeStore = async () => {
 // Subscribing rather than writing from the slice means `setState({ demoMode })`
 // in a test propagates too.
 useAppStore.subscribe((state) => setDemoModeFlag(state.demoMode));
+
+// A drawer opened before the points' inputs existed asks again once they do.
+watchPendingPastZaznamnik(useAppStore);

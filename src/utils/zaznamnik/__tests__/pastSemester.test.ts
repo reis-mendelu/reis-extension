@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { needsPastZaznamnik, zaznamnikPeriod } from '../pastSemester';
+import { needsPastZaznamnik, pastZaznamnikVerdict, zaznamnikPeriod } from '../pastSemester';
 
 const PAST = { subjectId: '789', periodId: '300', hasPrubezne: true };
 
@@ -52,5 +52,27 @@ describe('needsPastZaznamnik', () => {
   });
   it('is false while a fetch for it is already running', () => {
     expect(needsPastZaznamnik(state({ zaznamnikLoading: { PS: true } }), 'PS')).toBe(false);
+  });
+});
+
+describe('pastZaznamnikVerdict', () => {
+  it('is fetch when everything it needs is there', () => {
+    expect(pastZaznamnikVerdict(state(), 'PS')).toBe('fetch');
+  });
+  // The drawer can open (a notification, a cold start) before these arrive;
+  // "wait" is what lets the store ask again once they do.
+  it('waits for what is still on its way: hydration, the ids, the subject list, the subject', () => {
+    expect(pastZaznamnikVerdict(state({ zaznamnikHydrated: false }), 'PS')).toBe('wait');
+    expect(pastZaznamnikVerdict(state({ studiumId: null }), 'PS')).toBe('wait');
+    expect(pastZaznamnikVerdict(state({ obdobiId: null }), 'PS')).toBe('wait');
+    expect(pastZaznamnikVerdict(state({ subjects: null }), 'PS')).toBe('wait');
+    expect(pastZaznamnikVerdict(state({ subjects: { data: {} } }), 'PS')).toBe('wait');
+  });
+  it('skips what no later arrival can change', () => {
+    expect(pastZaznamnikVerdict(state({ impersonation: { x: 1 } }), 'PS')).toBe('skip');
+    const current = { data: { PS: { ...PAST, periodId: '456' } } };
+    expect(pastZaznamnikVerdict(state({ subjects: current }), 'PS')).toBe('skip');
+    expect(pastZaznamnikVerdict(state({ zaznamnik: { PS: null } }), 'PS')).toBe('skip');
+    expect(pastZaznamnikVerdict(state({ zaznamnikLoading: { PS: true } }), 'PS')).toBe('skip');
   });
 });

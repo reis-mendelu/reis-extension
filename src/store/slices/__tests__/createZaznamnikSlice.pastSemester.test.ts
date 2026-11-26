@@ -107,3 +107,68 @@ describe('loadPastZaznamnik', () => {
     expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
   });
 });
+
+// The drawer opens before its inputs exist (a notification on a cold start):
+// the request is remembered and started when the store has what it needs.
+describe('loadPastZaznamnik opened too early', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useAppStore.setState({
+      impersonation: null,
+      studiumId: null,
+      obdobiId: null,
+      zaznamnikHydrated: false,
+      subjects: null,
+      zaznamnik: {},
+      zaznamnikLoading: {},
+      pendingPastZaznamnik: {},
+    } as never);
+  });
+
+  const PAST = { subjectId: '789', periodId: '300', hasPrubezne: true };
+
+  it('fetches once hydration and the subject list have arrived', async () => {
+    fetchSubjectZaznamnik.mockResolvedValue(LOADED);
+    await useAppStore.getState().loadPastZaznamnik('PS');
+    expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
+
+    // Hydration, the ids and the subjects land one after the other.
+    useAppStore.setState({ zaznamnikHydrated: true } as never);
+    useAppStore.setState({ studiumId: '123', obdobiId: '456' } as never);
+    expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
+    useAppStore.setState({ subjects: { data: { PS: PAST } } } as never);
+
+    await vi.waitFor(() => expect(useAppStore.getState().zaznamnik['PS']).toEqual(LOADED));
+    expect(fetchSubjectZaznamnik).toHaveBeenCalledTimes(1);
+    expect(fetchSubjectZaznamnik).toHaveBeenCalledWith('123', '300', '789');
+    expect(useAppStore.getState().pendingPastZaznamnik).toEqual({});
+  });
+
+  it('drops the request when the subject turns out to be a current one', async () => {
+    await useAppStore.getState().loadPastZaznamnik('EBC');
+    useAppStore.setState({
+      zaznamnikHydrated: true,
+      studiumId: '123',
+      obdobiId: '456',
+      subjects: { data: { EBC: { subjectId: '111', hasPrubezne: true } } },
+    } as never);
+    expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
+    expect(useAppStore.getState().pendingPastZaznamnik).toEqual({});
+  });
+
+  it('keeps waiting while the subject itself has not arrived', async () => {
+    await useAppStore.getState().loadPastZaznamnik('PS');
+    useAppStore.setState({
+      zaznamnikHydrated: true,
+      studiumId: '123',
+      obdobiId: '456',
+      subjects: { data: {} },
+    } as never);
+    expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
+    expect(useAppStore.getState().pendingPastZaznamnik).toEqual({ PS: true });
+    // The sync folds the past semester in and the subject list is reloaded.
+    fetchSubjectZaznamnik.mockResolvedValue(LOADED);
+    useAppStore.setState({ subjects: { data: { PS: PAST } } } as never);
+    await vi.waitFor(() => expect(fetchSubjectZaznamnik).toHaveBeenCalledTimes(1));
+  });
+});

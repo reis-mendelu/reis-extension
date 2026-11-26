@@ -7,7 +7,7 @@ import {
   NEW_POINTS_META_KEY,
   type NewPointsBySubject,
 } from '../../services/sync/zaznamnikNewPoints';
-import { needsPastZaznamnik, zaznamnikPeriod } from '../../utils/zaznamnik/pastSemester';
+import { pastZaznamnikVerdict, zaznamnikPeriod } from '../../utils/zaznamnik/pastSemester';
 
 const isEmpty = (z: SubjectZaznamnik | null | undefined): boolean =>
   !z || (z.ph.sections.length === 0 && z.vt.tests.length === 0);
@@ -16,6 +16,7 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
   zaznamnik: {},
   zaznamnikHydrated: false,
   zaznamnikLoading: {},
+  pendingPastZaznamnik: {},
   zaznamnikNewPoints: {},
   setZaznamnikNewPoints: (unseen) => set({ zaznamnikNewPoints: unseen }),
   markZaznamnikSeen: async (courseCode) => {
@@ -88,10 +89,23 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
       set((s) => ({ zaznamnikLoading: { ...s.zaznamnikLoading, [courseCode]: false } }));
     }
   },
-  // The Záznamník tab of a past-semester subject: the sync skips those, so the
-  // points are fetched here, once, when the tab is opened (see needsPastZaznamnik).
+  // Opening a past-semester subject's drawer: the sync skips those, so its
+  // points are fetched here. Opened before its inputs exist (a notification on
+  // a cold start), the request is remembered, and watchPendingPastZaznamnik
+  // asks again when they land.
   loadPastZaznamnik: async (courseCode) => {
-    if (!needsPastZaznamnik(get(), courseCode)) return;
-    await get().refetchZaznamnik(courseCode);
+    const verdict = pastZaznamnikVerdict(get(), courseCode);
+    const pending = get().pendingPastZaznamnik[courseCode] === true;
+    if (verdict === 'wait') {
+      if (!pending) set((s) => ({ pendingPastZaznamnik: { ...s.pendingPastZaznamnik, [courseCode]: true } }));
+      return;
+    }
+    if (pending) {
+      set((s) => {
+        const { [courseCode]: _done, ...rest } = s.pendingPastZaznamnik;
+        return { pendingPastZaznamnik: rest };
+      });
+    }
+    if (verdict === 'fetch') await get().refetchZaznamnik(courseCode);
   },
 });
