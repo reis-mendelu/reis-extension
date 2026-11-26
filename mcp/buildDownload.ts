@@ -10,7 +10,7 @@ import { MAX_DOCUMENT_BYTES } from './documentText';
 import { readCapped, TooBigError } from './download';
 import type { ToolCtx } from './tools';
 import type { Store } from './store';
-import { createOriginals, originalCost, originalDir, ORIGINALS, recordOf } from './storeOriginals';
+import { createOriginals, originalCost, originalDir, recordOf } from './storeOriginals';
 import { sameGeneration } from './storeGen';
 import { pool } from './buildPlan';
 import type { Planned, Outcome } from './buildReport';
@@ -41,12 +41,11 @@ export type Stop = 'budget' | 'forgotten' | 'folder' | undefined;
 export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
   const budget = { max: d.store.maxBytes, used: (await d.store.usage()).bytes };
   const originals = createOriginals(d.store);
-  // What each file's folder really holds on disk now (a record can outlive its evicted body).
-  const held = new Map<string, number>();
-  for (const e of await d.store.list()) {
-    const dir = e.path.slice(0, e.path.lastIndexOf('/'));
-    if (dir.startsWith(`${ORIGINALS}/`)) held.set(dir, (held.get(dir) ?? 0) + e.bytes);
-  }
+  /** What a file's folder really holds now: a record can outlive a body the budget evicted. */
+  const bytesIn = async (dir: string) =>
+    (await d.store.list())
+      .filter((e) => e.path.startsWith(`${dir}/`))
+      .reduce((n, e) => n + e.bytes, 0);
   const maxFile = d.maxFileBytes ?? MAX_ORIGINAL_BYTES;
   const outcomes = new Map<Planned, Outcome>();
   let stop: Stop;
@@ -79,7 +78,8 @@ export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
     );
     // A replaced file's stale copy goes when its new one is saved: only the growth is charged,
     // and only for bytes really on disk in its folder, never for a record whose body was evicted.
-    const credit = held.get(originalDir(p.file.downloadUrl)) ?? 0;
+    const dir = originalDir(p.file.downloadUrl);
+    const credit = await bytesIn(dir);
     const room = budget.max - budget.used - recordOnly + credit;
     if (!stop && room <= 0) stop = 'budget';
     if (stop) return void outcomes.set(p, { state: 'skipped', reason: halted() });
@@ -135,6 +135,9 @@ export async function downloadPlanned(d: DownloadDeps, planned: Planned[]) {
           reason: 'not saved: the path is too long for this computer, or everything was forgotten',
         });
       }
+      // What the folder holds after the save, not what it should: a copy under an older name whose
+      // removal failed is still there and still counts.
+      budget.used += (await bytesIn(dir)) - cost;
       outcomes.set(p, { state: 'downloaded', text: await keepText(p, bytes, h, filename) });
     } catch (e) {
       const m = (e instanceof Error ? e.message : String(e)).split('\n')[0]!.slice(0, 120);

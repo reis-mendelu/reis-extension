@@ -19,7 +19,10 @@ vi.mock('../../src/api/odevzdavarny', () => ({ fetchOdevzdavarny: vi.fn() }));
 vi.mock('../../src/api/zaznamnik', () => ({ fetchSubjectZaznamnik: vi.fn() }));
 vi.mock('../../src/api/documents/service', () => ({ fetchFolderListing: vi.fn() }));
 
-import { lib, bootLib, tempDir, files } from './buildKit';
+import { lib, bootLib, tempDir, files, fetchLib } from './buildKit';
+import { createStore } from '../store';
+import { plan } from '../buildPlan';
+import { downloadPlanned } from '../buildDownload';
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -91,5 +94,24 @@ describe('the shared download path', () => {
     const tight = bootLib(dir, used + 2_000);
     const r = await tight.json(BUILD, { dry_run: false });
     expect(r).toMatchObject({ downloaded: 0, stoppedAtBudget: true });
+  });
+
+  it('a copy under an older name that could not be removed still counts in the budget', async () => {
+    lib.files = [{ name: 'stare.zip', type: 'application/zip', body: 'z'.repeat(20_000) }];
+    const dir = await folder();
+    await bootLib(dir).json(BUILD, { dry_run: false });
+    lib.files = [{ name: 'nove.zip', type: 'application/zip', body: 'y'.repeat(20_000) }];
+    lib.modified = '21. 11. 2025';
+    const store = createStore({ dir });
+    vi.spyOn(store, 'remove').mockRejectedValue(new Error('EBUSY'));
+    const ctx = { fetch: fetchLib };
+    const { planned } = await plan({ ctx, store, run: (_t, _a, fn) => fn() });
+    const token = { gen: (await store.generation()) ?? null, at: Date.now() };
+    const { outcomes, budget } = await downloadPlanned(
+      { store, ctx, token, saveText: async () => true, extractsText: false },
+      planned
+    );
+    expect([...outcomes.values()].map((o) => o.state)).toEqual(['downloaded']);
+    expect(budget.used).toBe((await store.usage()).bytes);
   });
 });
