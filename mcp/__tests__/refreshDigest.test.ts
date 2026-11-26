@@ -113,6 +113,17 @@ describe('the digest prompt keeps its rules', () => {
     ['refresh first', /call `mendelu_refresh`/i],
     ['ledger from files', /save every dated event[^.]*`mendelu_ledger`/i],
     ['match before add', /match each event to an existing entry before you add anything/i],
+    ['each entry used once', /use each candidate for at most one event/i],
+    ['unchanged first', /\*\*Unchanged:\*\*[^\n]*same date and time/i],
+    [
+      'move only when one candidate fits each way',
+      /\*\*Moved:\*\*[^\n]*ONLY when each is the only one left/,
+    ],
+    [
+      'unclear: add and flag, never overwrite',
+      /\*\*Unclear:\*\*[^\n]*overwrite nothing[^\n]*stay marked recheck/i,
+    ],
+    ['removed rule', /\*\*Removed:\*\*[^\n]*`remove`/],
     ['moved event is an update', /never `add` a second entry for an event that moved/i],
     ['a week ahead', /at least a week ahead/i],
     ['weekly 14 days', /weekly digest looks 14 days ahead/i],
