@@ -1549,6 +1549,7 @@
       "groupNotYetOpen": "Ještě neotevřené",
       "groupSignup": "Zápisy na cvičení",
       "opensAtLabel": "otevírá se",
+      "opensFrom": "od {when}",
       "refresh": "Obnovit zkoušky",
       "refreshing": "Aktualizuji…",
       "registeredCountOne": "{count} přihlášený",

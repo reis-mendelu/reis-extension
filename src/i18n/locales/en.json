@@ -1549,6 +1549,7 @@
       "groupNotYetOpen": "Not open yet",
       "groupSignup": "Practical sign-ups",
       "opensAtLabel": "opens",
+      "opensFrom": "from {when}",
       "refresh": "Refresh exams",
       "refreshing": "Updating…",
       "registeredCountOne": "{count} registered",

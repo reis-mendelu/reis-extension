@@ -32,6 +32,7 @@ import { ConfirmSheet } from '../sheets/ConfirmSheet';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
 import { CriticalUpdateHint } from '../CriticalUpdateHint';
 import { useMarkExamTermsSeen } from '../../../hooks/ui/useMarkExamTermsSeen';
+import { useRefreshAtExamOpening } from '../../../hooks/ui/useRefreshAtExamOpening';
 
 function ExamsSkeleton() {
   const { t } = useTranslation();
@@ -222,6 +223,9 @@ export function ExamsScreen() {
   // Novinky's "Nový termín" rows go once the list itself is on screen: not
   // behind the skeleton, the error, or a sheet.
   useMarkExamTermsSeen(examsInFront && !loading && !failed);
+  // The tab's own refresh happens on arrival (setMobileTab); this one is for
+  // sitting here while a registration opens.
+  useRefreshAtExamOpening(examsInFront);
 
   if (loading) {
     return shell(<ExamsSkeleton />);
@@ -275,11 +279,12 @@ export function ExamsScreen() {
                 count={notYetOpen.length}
                 tone="notYetOpen"
               >
-                {notYetOpen.map(({ row }) => (
+                {notYetOpen.map(({ row, earliest }) => (
                   <NotYetOpenCard
                     key={row.section.id}
                     row={row}
                     now={now}
+                    opensAt={earliest}
                     expanded={expandedId === row.section.id}
                     onToggle={() => toggle(row.section.id)}
                     isProcessing={processingSectionId === row.section.id}
