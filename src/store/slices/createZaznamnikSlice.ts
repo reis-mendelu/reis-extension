@@ -7,6 +7,7 @@ import {
   NEW_POINTS_META_KEY,
   type NewPointsBySubject,
 } from '../../services/sync/zaznamnikNewPoints';
+import { needsPastZaznamnik, zaznamnikPeriod } from '../../utils/zaznamnik/pastSemester';
 
 const isEmpty = (z: SubjectZaznamnik | null | undefined): boolean =>
   !z || (z.ph.sections.length === 0 && z.vt.tests.length === 0);
@@ -60,7 +61,8 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
   // another programme's subject ids.
   refetchZaznamnik: async (courseCode) => {
     const { impersonation, studiumId, obdobiId, subjects, zaznamnikLoading } = get();
-    const subjectId = subjects?.data?.[courseCode]?.subjectId;
+    const subject = subjects?.data?.[courseCode];
+    const subjectId = subject?.subjectId;
     if (impersonation || !studiumId || !obdobiId || !subjectId) return;
     // One retry at a time: a second would race the first to the store.
     if (zaznamnikLoading[courseCode]) return;
@@ -69,12 +71,27 @@ export const createZaznamnikSlice: AppSlice<ZaznamnikSlice> = (set, get) => ({
       // Lazy: keeps the IS parsers out of the store's static graph. The sync
       // layer persists; the slice only puts the answer on screen.
       const { refetchSubjectZaznamnik } = await import('../../services/sync/syncZaznamnik');
-      const fresh = await refetchSubjectZaznamnik(studiumId, obdobiId, courseCode, subjectId);
+      const fresh = await refetchSubjectZaznamnik(
+        studiumId,
+        // A past subject's points live under the period it was taken in.
+        zaznamnikPeriod(subject, obdobiId),
+        courseCode,
+        subjectId
+      );
       get().setZaznamnikBatch({ [courseCode]: fresh });
     } catch (err) {
       logError('ZaznamnikSlice.refetchZaznamnik', err);
+      // A throw is a failure like a null answer: without it a past subject's
+      // tab would stay "loading" (undefined), and the merge guard keeps real data.
+      get().setZaznamnikBatch({ [courseCode]: null });
     } finally {
       set((s) => ({ zaznamnikLoading: { ...s.zaznamnikLoading, [courseCode]: false } }));
     }
+  },
+  // The Záznamník tab of a past-semester subject: the sync skips those, so the
+  // points are fetched here, once, when the tab is opened (see needsPastZaznamnik).
+  loadPastZaznamnik: async (courseCode) => {
+    if (!needsPastZaznamnik(get(), courseCode)) return;
+    await get().refetchZaznamnik(courseCode);
   },
 });

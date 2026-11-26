@@ -15,6 +15,7 @@ import { syncOdevzdavarny } from '../services/sync/syncOdevzdavarny';
 import { fetchSeminarGroupIds, fetchClassmates } from '../api/classmates';
 import { mergePastSubjects } from '../services/sync/mergePastSubjects';
 import { syncPastSemesters } from '../services/sync/syncPastSemesters';
+import { foldPastSemesterSubjects } from '../services/sync/pastSemesterSubjects';
 
 import { getUserParams } from '../utils/userParams';
 import {
@@ -335,11 +336,7 @@ export async function syncAllData() {
             `past_semester_${studium}_${period.id}`
           )) as { subjects: { data: typeof subjects.value.subjects.data } } | undefined;
           if (cached?.subjects?.data) {
-            for (const [code, info] of Object.entries(cached.subjects.data)) {
-              if (!subjects.value.subjects.data[code]) {
-                subjects.value.subjects.data[code] = info;
-              }
-            }
+            foldPastSemesterSubjects(subjects.value.subjects.data, cached.subjects.data, period.id);
           }
         }
       }

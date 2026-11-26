@@ -26,6 +26,7 @@ const SubjectInfoSchema = z
     hasPrubezne: z.boolean().optional(),
     hasTest: z.boolean().optional(),
     autoHref: z.string().nullable().optional(),
+    periodId: z.string().optional(),
   })
   .passthrough();
 
