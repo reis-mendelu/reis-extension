@@ -64,6 +64,29 @@ describe('the ledger store', () => {
     expect((await l.list()).entries).toHaveLength(2);
   });
 
+  // Found in the real-connector walk: two credit tests of one subject, listed in one file with only a
+  // week given, share subject, kind, day and file. They are two events; their titles tell them apart.
+  it('keeps two events of one subject, kind, day and file apart by their title', async () => {
+    const l = ledgerOn(open());
+    const file = {
+      source_kind: 'course_file',
+      source_url: 'https://is.example/f?download=1',
+      source_file: 'harmonogram.pdf',
+      source_modified: '16.09.2026',
+    };
+    const a = await l.add(ev({ title: 'Zápočet HW skills', time: undefined, ...file }), TODAY);
+    const b = await l.add(ev({ title: 'Zápočet Netacad', time: undefined, ...file }), TODAY);
+    expect([a.created, b.created]).toEqual([true, true]);
+    expect((await l.list()).entries).toHaveLength(2);
+    // The same title in other case and spacing is still the same event.
+    const again = await l.add(
+      ev({ title: ' zápočet  HW SKILLS ', time: undefined, ...file }),
+      TODAY
+    );
+    expect(again.created).toBe(false);
+    expect((await l.list()).entries).toHaveLength(2);
+  });
+
   it('stops at the cap, and says how to make room', async () => {
     const l = ledgerOn(open(), 3);
     for (const d of ['10', '11', '12']) await l.add(ev({ date: `2026-12-${d}` }), TODAY);

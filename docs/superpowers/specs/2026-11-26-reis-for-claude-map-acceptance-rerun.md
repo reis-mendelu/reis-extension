@@ -115,3 +115,42 @@ všechny", because nothing had changed in that run.
 - A weekly digest reaches every event a week ahead only if it runs every seven days; the run
   added a "later" group, which the prompt does not ask for.
 
+## The week by email with the real connectors (2026-11-26)
+
+The first walk had no mail or calendar connector, so it was run again with the student's real
+Gmail and Google Calendar connectors, by a fresh sub-agent: an empty store, the S5 question and a
+full build, then the weekly digest from the routine, word for word. It **created one draft** in the
+founder's own mailbox (subject ending "TEST, smazat", addressed to itself; it was not sent and no
+send tool was called) and **read** the University calendar for 26 Nov 2026 to 31 Jan 2027; it wrote
+nothing to any calendar. Reports carry subject codes, kinds and dates only.
+
+**It worked end to end.** The agent found each ledger event's hand-made entry in the calendar
+(three credit tests and a test, by day, time and room), found the project hand-in missing, found
+the defence and the Management credit test already present and matching, proposed an update of the
+four entries (add the ledger id, the source file, a week-ahead reminder) and one new all-day entry,
+and wrote nothing until a "yes". Nothing was proposed twice.
+
+**A bug it found, fixed in this PR.** Three Počítačové sítě credit tests (hardware skills, the
+final Netacad test, the PTSA test) share a subject, kind, week and source file, so the ledger took
+the second and third `add` for the first and overwrote it: only the last survived and the agent
+merged them by hand. The ledger's same-event key now includes the title (case, accents and spacing
+ignored); `storeLedger.test.ts` has a test that fails without it.
+
+**What the draft got wrong as a mail read on a phone** (prompt changes for later, none blocks 0.2.0):
+
+- A reply to a draft in your own mailbox never reaches Claude, and the draft does not say so: it
+  has to tell the student to answer "ano" in the chat with Claude. A draft also sits in Drafts with
+  no notification, so the student may never see it.
+- The calendar-proposals section is five dense blocks (about 75 lines). One line per proposal, with
+  the detail only on request, would read better on a phone; weekdays next to dates, the unregister
+  deadlines and a short "what to do this week" list were missing.
+- It said "you already have all of these in the calendar" while one event was new, and told the
+  student to answer with numbers while the proposals were lettered.
+- Step 5 proposes calendar entries only for ledger events, so IS-sourced items (registered exam
+  terms, assignment deadlines) are never offered; hand-made entries carry no ledger id, so matching
+  falls back on subject, kind and day, which a window event has no single value for; a reminder "an
+  hour before" and a room make no sense for an all-day deadline or a window.
+- An image-only conditions file (a PNG) cannot be read, and the routine has no fallback for it.
+- The mail connector writes plain text only, and `create_draft` returns no id: finding the draft
+  again means listing the whole Drafts folder.
+
