@@ -1,7 +1,24 @@
 import L from 'leaflet';
 import { roomPlanLabels } from './roomPlanLabel';
 import { venueRoomTitles } from './venueSearch';
+import { parseSafeInset } from '../../utils/mobile/safeArea';
 import type { RoomProperties, SocietyPin } from '../../types/campusMap';
+
+/** Room the phone's search bar takes at the top of the map, below the status
+ *  bar: its 1rem margin plus its own height, with a little air. */
+const SEARCH_BAR_CLEARANCE_PX = 96;
+
+/**
+ * How far from the top edge the card may be panned to. The search bar sits
+ * `1rem + --safe-top` down (MapScreen), so on a notched phone the clearance has
+ * to grow by the inset or a tap near the top pans the card behind the bar. Read
+ * at tap time: one computed-style read per tap, and the inset may have changed
+ * since the map was built (rotation).
+ */
+export function popupTopClearancePx(): number {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue('--safe-top');
+  return SEARCH_BAR_CLEARANCE_PX + parseSafeInset(raw);
+}
 
 /**
  * The compact card a tap on a floor-plan room opens on the phone tree: the
@@ -44,8 +61,8 @@ export function openRoomNamePopup(
     closeButton: false,
     maxWidth: 220,
     // The popup opens above the tap; a room near the top edge would otherwise
-    // open it under the search bar (about 90px tall with its margin).
-    autoPanPaddingTopLeft: L.point(16, 96),
+    // open it under the search bar.
+    autoPanPaddingTopLeft: L.point(16, popupTopClearancePx()),
     autoPanPaddingBottomRight: L.point(16, 16),
   })
     .setLatLng(at)

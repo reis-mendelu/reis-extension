@@ -158,4 +158,20 @@ describe('a tap on a floor-plan room', () => {
     tap(refs, 11);
     expect(popupText()).toBeNull();
   });
+
+  it('keeps the card below the search bar, which sits lower by the notch (--safe-top)', () => {
+    const padTop = () => {
+      const refs = draw(true);
+      tap(refs, 11);
+      const popup = (map as unknown as { _popup: L.Popup })._popup;
+      return (popup.options.autoPanPaddingTopLeft as L.Point).y;
+    };
+    expect(padTop()).toBe(96);
+    document.documentElement.style.setProperty('--safe-top', '47px');
+    try {
+      expect(padTop()).toBe(96 + 47);
+    } finally {
+      document.documentElement.style.removeProperty('--safe-top');
+    }
+  });
 });
