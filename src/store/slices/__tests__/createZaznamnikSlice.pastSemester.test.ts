@@ -150,10 +150,26 @@ describe('loadPastZaznamnik opened too early', () => {
       zaznamnikHydrated: true,
       studiumId: '123',
       obdobiId: '456',
-      subjects: { data: { EBC: { subjectId: '111', hasPrubezne: true } } },
+      subjects: { data: { EBC: { subjectId: '111', periodId: '456', hasPrubezne: true } } },
     } as never);
     expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
     expect(useAppStore.getState().pendingPastZaznamnik).toEqual({});
+  });
+
+  it('keeps waiting for the periodId of a subject a sync has not folded in yet', async () => {
+    useAppStore.setState({
+      zaznamnikHydrated: true,
+      studiumId: '123',
+      obdobiId: '456',
+      subjects: { data: { PS: { subjectId: '789', hasPrubezne: true } } },
+    } as never);
+    fetchSubjectZaznamnik.mockResolvedValue(LOADED);
+    await useAppStore.getState().loadPastZaznamnik('PS');
+    expect(fetchSubjectZaznamnik).not.toHaveBeenCalled();
+    expect(useAppStore.getState().pendingPastZaznamnik).toEqual({ PS: true });
+    // The next sync stores it with the period it was taken in.
+    useAppStore.setState({ subjects: { data: { PS: PAST } } } as never);
+    await vi.waitFor(() => expect(fetchSubjectZaznamnik).toHaveBeenCalledWith('123', '300', '789'));
   });
 
   it('keeps waiting while the subject itself has not arrived', async () => {

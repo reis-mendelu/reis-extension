@@ -67,6 +67,9 @@ describe('pastZaznamnikVerdict', () => {
     expect(pastZaznamnikVerdict(state({ obdobiId: null }), 'PS')).toBe('wait');
     expect(pastZaznamnikVerdict(state({ subjects: null }), 'PS')).toBe('wait');
     expect(pastZaznamnikVerdict(state({ subjects: { data: {} } }), 'PS')).toBe('wait');
+    // A cache from before periodId existed: the next sync folds it in.
+    const noPeriod = { data: { PS: { subjectId: '789', hasPrubezne: true } } };
+    expect(pastZaznamnikVerdict(state({ subjects: noPeriod }), 'PS')).toBe('wait');
   });
   it('skips what no later arrival can change', () => {
     expect(pastZaznamnikVerdict(state({ impersonation: { x: 1 } }), 'PS')).toBe('skip');

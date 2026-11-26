@@ -33,7 +33,7 @@ export type PastZaznamnikVerdict = 'fetch' | 'wait' | 'skip';
 /**
  * What opening a subject's drawer should do about its past-semester points.
  * `wait` is an input that is still on its way (IndexedDB hydration, the ids,
- * the subject list, the past subject itself folded in by a sync): the request
+ * the subject list, the past subject itself, or its periodId, folded in by a sync): the request
  * is remembered and asked again when it lands. `skip` is final: a current
  * subject, nothing to ask IS for, already stored or loading.
  */
@@ -42,7 +42,13 @@ export function pastZaznamnikVerdict(s: Probe, courseCode: string): PastZaznamni
   if (!s.studiumId || !s.obdobiId || !s.zaznamnikHydrated) return 'wait';
   const subject = s.subjects?.data?.[courseCode];
   if (!subject) return 'wait';
-  if (!subject.subjectId || !subject.periodId || subject.periodId === s.obdobiId) return 'skip';
+  if (!subject.subjectId) return 'skip';
+  // A current subject has no periodId and neither has a past one that a sync
+  // has not folded in yet (a cache from before periodId existed), and the two
+  // cannot be told apart: wait, and the next subject list settles it. The
+  // pending entry of a current subject costs one string until the app closes.
+  if (!subject.periodId) return 'wait';
+  if (subject.periodId === s.obdobiId) return 'skip';
   // Same filter the sync applies: no flag, nothing to ask IS for.
   if (!subject.hasPrubezne && !subject.hasTest) return 'skip';
   // Hydrated, so "undefined" means nothing is stored (not even a failure).
