@@ -155,7 +155,7 @@ call log. Results:
 
 - **S1: pass, 5 calls** (overview, two reads, schedule, one ledger write). The date (Wed 9 Dec 2026
   13:00) is named as inferred, with both files and the harmonogram sentence quoted. On a built map it
-  is two calls: overview plus one search.
+  is two calls: overview plus one search (hub-run, not a persona).
 - **S2: pass.** Integration test, and live: a second build downloaded 0 of 138 files.
 - **S3: pass.** Integration tests; live, a second overview said nothing had changed.
 - **S4: pass, 1 call** (baseline 10 and 15): points, open assignments, exam terms and the week.
@@ -166,7 +166,7 @@ call log. Results:
   and for a question that sweeps seven subjects it looks unreachable for a careful persona. Left as
   written, for Dominik to keep or re-base.
 - **S6: pass** on the integration tests; the digest, run with the real Gmail (one draft, not sent) and a
-  read-only University calendar, matched every ledger event to its hand-made entry and proposed
-  updates only. That walk found a ledger bug (three credit tests of one subject merged into one
+  read-only University calendar, matched existing entries, found the project hand-in missing, and
+  proposed four updates and one new all-day entry. That walk found a ledger bug (three credit tests of one subject merged into one
   entry), fixed in #771.
 - **The first real build:** 138 files, 124.6 MB, 87 seconds, 0 failed.
