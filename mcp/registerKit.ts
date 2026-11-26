@@ -38,6 +38,9 @@ export const BUILD = {
   openWorldHint: true,
 } as const;
 
+// Like build, and not idempotent: it writes a record of what it reported, so a second call says less.
+export const REFRESH = { ...BUILD, idempotentHint: false } as const;
+
 export const responseFormat = z
   .enum(['markdown', 'json'])
   .default('markdown')
