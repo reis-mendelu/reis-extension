@@ -95,14 +95,14 @@ second, and writes nothing until the student agrees.
 
 ## Which step moves which scenario
 
-| Scenario | Today                                                        | Moved by         |
-| -------- | ------------------------------------------------------------ | ---------------- |
-| S1       | passes with a cooperative persona, 9 calls (see Baseline)    | steps 2, 3, 4, 5 |
-| S2       | fails: nothing is kept past the process                      | step 2           |
-| S3       | fails: no overview and no change record exist                | step 3           |
-| S4       | passes, 10 calls (one points call per subject)               | step 3           |
-| S5       | not run yet: no ledger exists                                | steps 4, 4b      |
-| S6       | fails: nothing reminds, the server is passive                | steps 4b, 6      |
+| Scenario | Before the map                                               | Moved by         | Re-run 2026-11-26 (build of `test` at #768)        |
+| -------- | ------------------------------------------------------------ | ---------------- | -------------------------------------------------- |
+| S1       | passes with a cooperative persona, 9 calls (see Baseline)    | steps 2, 3, 4, 5 | pass, 5 calls (2 after a built map)                |
+| S2       | fails: nothing is kept past the process                      | step 2           | pass (test + live: second build downloaded 0 of 138) |
+| S3       | fails: no overview and no change record exist                | step 3           | pass (integration tests)                           |
+| S4       | passes, 10 calls (one points call per subject)               | step 3           | pass, 1 call                                       |
+| S5       | not run yet: no ledger exists                                | steps 4, 4b      | content pass; call target missed (20 calls)        |
+| S6       | fails: nothing reminds, the server is passive                | steps 4b, 6      | pass (integration tests); calendar half not run live |
 
 S1 and S4 are regression checks with a call-count target until a harder persona reproduces the
 real failure. S2 and S3 are the ones the build must turn from red to green.
@@ -145,3 +145,7 @@ the first run because it also read the study plan, grades and three syllabi.
 soubory") did not reproduce in either run, with or without the sentence. S1 and S4 stay regression
 checks with call-count targets after steps 3 and 4: **S1 at most 5 calls, S4 at most 8**. The
 map's measurable gains here are fewer calls and no per-subject points loop, plus S2 and S3.
+
+## Re-run on the finished map
+
+Recorded in `2026-11-26-reis-for-claude-map-acceptance-rerun.md`: S1 pass (5 calls), S2 pass, S3 pass, S4 pass (1 call), S5 content pass with the call target missed (20 calls), S6 pass on the integration tests; the first real build (138 files, 124.6 MB); and the persona walk of a student's week by email.
