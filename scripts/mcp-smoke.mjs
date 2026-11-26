@@ -130,6 +130,8 @@ async function readRealFiles() {
     let files;
     try {
       files = await json('mendelu_subject_files', { code: s.subjectCode });
+      // With saved originals the answer is { savedFiles, files } (subjectFilesPaths.ts).
+      if (!Array.isArray(files)) files = files.files;
     } catch (e) {
       const m = e.message.split('\n')[0];
       // Expected: a subject with no IS folder (tools.ts), or a list too long to

@@ -51,7 +51,9 @@ async function pool<T>(items: T[], n: number, work: (item: T) => Promise<void>) 
 }
 
 /** The subjects and their listings, read the way the overview reads them. */
-async function plan(d: BuildDeps): Promise<{ planned: Planned[]; problems: string[] }> {
+async function plan(
+  d: BuildDeps
+): Promise<{ planned: Planned[]; problems: string[]; codes: string[] }> {
   const data = await subjectsData(d.ctx);
   const originals = createOriginals(d.store);
   const planned: Planned[] = [];
@@ -76,13 +78,14 @@ async function plan(d: BuildDeps): Promise<{ planned: Planned[]; problems: strin
     }
   });
   planned.sort((a, b) => a.code.localeCompare(b.code));
-  return { planned, problems };
+  // Every enrolled subject is reported, an empty folder (or none) as zero files.
+  return { planned, problems, codes: Object.keys(data).sort() };
 }
 
 export async function buildMap(d: BuildDeps) {
-  const { planned, problems } = await plan(d);
+  const { planned, problems, codes } = await plan(d);
   const budget = { max: d.store.maxBytes, used: (await d.store.usage()).bytes };
-  if (d.dryRun) return dryReport(planned, problems, budget);
+  if (d.dryRun) return dryReport(planned, problems, budget, codes);
   if (!d.store.persistent)
     throw new Error(
       'reIS cannot save to its folder on this computer right now, so nothing was downloaded. Close any program holding files in that folder and try again.'
@@ -187,7 +190,7 @@ export async function buildMap(d: BuildDeps) {
   }
 
   await pool(planned, d.concurrency ?? CONCURRENCY, one);
-  return buildReport(planned, outcomes, problems, {
+  return buildReport(planned, outcomes, problems, codes, {
     ...budget,
     stoppedAtBudget: stop === 'budget',
     forgotten: stop === 'forgotten',

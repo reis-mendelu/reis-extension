@@ -164,10 +164,17 @@ export function createMapPersist(
       // The bytes the read downloaded ride along with its answer (originalCarry.ts): kept
       // once, under the date the listing showed when the download began.
       const original = tool === READ ? takeOriginal(value) : undefined;
-      if (original && stamp && typeof args.url === 'string') {
-        await originals
-          .save({ url: args.url, stamp, ...original, token: token as Token })
-          .catch(() => undefined);
+      const kept =
+        original && stamp && typeof args.url === 'string'
+          ? await originals
+              .save({ url: args.url, stamp, ...original, token: token as Token })
+              .catch(() => undefined)
+          : undefined;
+      // The plugin build handed the file over whole: once its original is kept, a repeat read
+      // in this process gets the saved path, not the bytes again. Unsaved: the bytes stay.
+      if (kept && !extractsText && isObject(value) && 'handover' in value) {
+        const path = await originals.handBack(args.url as string, stamp!);
+        return path ? { replaceWith: path } : undefined;
       }
       // The plugin build hands a document over whole (no text): only its original is kept.
       if (tool === READ && typeof args.url === 'string' && isObject(value)) {

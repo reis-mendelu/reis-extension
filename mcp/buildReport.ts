@@ -23,13 +23,15 @@ export const typeOf = (f: SubjectFile) =>
 
 const labelOf = (f: SubjectFile) => f.file || f.name;
 
-function bySubject(planned: Planned[]) {
-  const out = new Map<string, Planned[]>();
+/** Every subject in `codes`, in order, with its files; a subject with none keeps an empty row. */
+function bySubject(planned: Planned[], codes: string[] = []) {
+  const out = new Map<string, Planned[]>(codes.map((c) => [c, []]));
   for (const p of planned) out.set(p.code, [...(out.get(p.code) ?? []), p]);
   return out;
 }
 
 const typeLine = (rows: Planned[]) => {
+  if (!rows.length) return 'no files';
   const counts = new Map<string, number>();
   for (const p of rows) counts.set(typeOf(p.file), (counts.get(typeOf(p.file)) ?? 0) + 1);
   return [...counts]
@@ -41,7 +43,8 @@ const typeLine = (rows: Planned[]) => {
 export function dryReport(
   planned: Planned[],
   problems: string[],
-  budget: { max: number; used: number }
+  budget: { max: number; used: number },
+  codes: string[] = []
 ) {
   const saved = planned.filter((p) => p.kept).length;
   return {
@@ -52,7 +55,7 @@ export function dryReport(
     alreadySaved: saved,
     toDownload: planned.length - saved,
     budget: `${size(budget.used)} used of ${size(budget.max)}`,
-    subjects: [...bySubject(planned)].map(([code, rows]) => ({
+    subjects: [...bySubject(planned, codes)].map(([code, rows]) => ({
       code,
       files: rows.length,
       alreadySaved: rows.filter((p) => p.kept).length,
@@ -66,6 +69,7 @@ export function buildReport(
   planned: Planned[],
   outcomes: Map<Planned, Outcome>,
   problems: string[],
+  codes: string[],
   run: { max: number; used: number; stoppedAtBudget: boolean; forgotten: boolean; folder: string }
 ) {
   const state = (p: Planned) => outcomes.get(p)?.state ?? 'kept';
@@ -100,7 +104,7 @@ export function buildReport(
     failed: failed.length,
     stoppedAtBudget: run.stoppedAtBudget,
     stored: `${size(run.used)} of ${size(run.max)}`,
-    subjects: [...bySubject(planned)].map(([code, rows]) => ({
+    subjects: [...bySubject(planned, codes)].map(([code, rows]) => ({
       code,
       files: rows.length,
       saved: count(rows, 'kept') + count(rows, 'downloaded'),

@@ -11,21 +11,28 @@ import { OVERVIEW, READ_ONLY, responseFormat, withNotice } from './registerKit';
 // Aliased to ./documentHandover in the plugin build, like the import in files.ts.
 import { EXTRACTS_TEXT } from './documentText';
 import type { Store } from './store';
+import { withLocalPaths } from './subjectFilesPaths';
 
 async function runTool(
   t: (typeof TOOLS)[number],
   args: Record<string, unknown>,
   ctx: ToolCtx,
   cache: ToolCache,
-  ticket: Ticket
+  ticket: Ticket,
+  store?: Store
 ) {
   // Before the tool runs: fetchers catch a failed request and say "try
   // again", which would hide that the login is missing.
   if (ctx.unavailable) return toError(t.name, new Error(ctx.unavailable));
+  const format = args.response_format === 'json' ? 'json' : 'markdown';
   try {
+    const value = await cache.run(t.name, args, () => t.run(args, ctx), ticket);
+    // The saved originals' paths, on this answer only (the cache keeps the plain listing).
     return toolResult(
-      await cache.run(t.name, args, () => t.run(args, ctx), ticket),
-      args.response_format === 'json' ? 'json' : 'markdown'
+      store && t.name === 'mendelu_subject_files'
+        ? await withLocalPaths(store, value, format)
+        : value,
+      format
     );
   } catch (e) {
     return toError(t.name, e);
@@ -96,7 +103,7 @@ export function registerTools(server: McpServer, ctx: ToolCtx, store?: Store): v
         const toolCtx: ToolCtx = map
           ? { ...ctx, noteStudy: (p) => map.saveProfile(p, ticket.token) }
           : ctx;
-        const result = await runTool(t, args, toolCtx, cache, ticket);
+        const result = await runTool(t, args, toolCtx, cache, ticket, store);
         await map?.settled();
         return withNotice(result, ctx, store);
       }

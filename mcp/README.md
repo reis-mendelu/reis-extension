@@ -24,7 +24,7 @@ Then ask Claude things like "what's due this week?" or "explain lecture 7 of PoÄ
 | `mendelu_subjects` | Subjects you are enrolled in this semester |
 | `mendelu_study_plan` | Your study plan and credits |
 | `mendelu_syllabus` | One subject's syllabus and requirements |
-| `mendelu_subject_files` | Files in a subject's IS document folder |
+| `mendelu_subject_files` | Files in a subject's IS document folder, with the path of each one already saved on your computer |
 | `mendelu_read_file` | The text of one of those files: PDF, DOCX, PPTX, XLSX, ODT, ODP, ODS and plain text (not the old .doc/.ppt/.xls), up to 30 MB |
 | `mendelu_success_rates` | Historical pass rates of subjects (public reIS statistics) |
 | `mendelu_grades` | Your grades and credits so far |

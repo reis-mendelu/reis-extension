@@ -16,7 +16,7 @@ The plugin's server runs on [Node.js](https://nodejs.org) 20 or later, which Cla
 | `mendelu_subjects` | Subjects you are enrolled in this semester |
 | `mendelu_study_plan` | Your study plan and credits |
 | `mendelu_syllabus` | One subject's syllabus and requirements |
-| `mendelu_subject_files` | Files in a subject's IS document folder |
+| `mendelu_subject_files` | Files in a subject's IS document folder, with the path of each one already saved on your computer |
 | `mendelu_read_file` | One of those files, handed to Claude to read (PDF, DOCX, PPTX, XLSX, ODT, plain text), up to 10 MB; a file already saved on your computer and unchanged in IS is handed over by its path instead |
 | `mendelu_success_rates` | Historical pass rates of subjects (public reIS statistics) |
 | `mendelu_grades` | Your grades and credits so far |

@@ -144,19 +144,24 @@ export function createOriginals(store: Store, now: () => number = Date.now) {
     const file = safeFileName(o.filename);
     const rel = `${dir}/${file}`;
     const after = o.token ? { after: o.token.gen } : {};
-    if (!(await store.write(rel, o.bytes, after))) return undefined;
-    const record: OriginalMeta = {
-      savedAt: new Date(o.token?.at ?? now()).toISOString(),
-      url: o.url,
-      stamp: o.stamp,
-      file,
-      bytes: o.bytes.byteLength,
-      ...(o.mediaType ? { mediaType: o.mediaType } : {}),
-    };
-    if (!(await store.write(metaPath(o.url), JSON.stringify(record), after))) return undefined;
-    for (const e of await store.listFolder(dir))
-      if (e.path !== rel && e.path !== metaPath(o.url)) await store.remove(e.path).catch(() => {});
-    return rel;
+    // One save of a link at a time across every process on the folder, cleanup included:
+    // otherwise two saves under different names could each delete the other's bytes.
+    return store.exclusive(`original-${dir.slice(ORIGINALS.length + 1)}`, async () => {
+      if (!(await store.write(rel, o.bytes, after))) return undefined;
+      const record: OriginalMeta = {
+        savedAt: new Date(o.token?.at ?? now()).toISOString(),
+        url: o.url,
+        stamp: o.stamp,
+        file,
+        bytes: o.bytes.byteLength,
+        ...(o.mediaType ? { mediaType: o.mediaType } : {}),
+      };
+      if (!(await store.write(metaPath(o.url), JSON.stringify(record), after))) return undefined;
+      for (const e of await store.listFolder(dir))
+        if (e.path !== rel && e.path !== metaPath(o.url))
+          await store.remove(e.path).catch(() => {});
+      return rel;
+    });
   }
 
   return { kept, keptPath, handBack, save, meta };

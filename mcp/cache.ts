@@ -9,7 +9,7 @@
 // answers is saved there. The tiers never hold the password or the IS
 // sign-in (mcpStaysReadOnly.test.ts, README.md, PRIVACY.md).
 
-import type { Persist, Ticket } from './cacheTypes';
+import { isReplacement, type Persist, type Ticket } from './cacheTypes';
 
 const MIN = 60_000;
 const HOUR = 60 * MIN;
@@ -181,7 +181,12 @@ export function createToolCache({
         if (tool === LIST && current) noteListing(value);
         if (current) keep(key, value, mine.stamp);
         if (current && !stored) {
-          await persist?.save(tool, args, value, mine.stamp, await began.token).catch(() => {});
+          const saved = await persist
+            ?.save(tool, args, value, mine.stamp, await began.token)
+            .catch(() => undefined);
+          // A lighter answer for later calls (a saved file's path instead of its bytes).
+          if (isReplacement(saved) && inflight.get(key) === mine && epoch === began.epoch)
+            keep(key, saved.replaceWith, mine.stamp);
         }
         return value;
       });
