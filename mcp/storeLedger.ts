@@ -24,9 +24,21 @@ const KEEP_PAST_DAYS = 30;
 const byDate = (a: LedgerEntry, b: LedgerEntry) =>
   `${a.date} ${a.time ?? '00:00'} ${a.id}`.localeCompare(`${b.date} ${b.time ?? '00:00'} ${b.id}`);
 
-/** Where an event stands in the store, for the dedupe: the same thing read twice is one entry. */
+/** A title as the dedupe reads it: case, accents and spacing do not make another event. */
+const titleKey = (t: string) =>
+  t
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+/**
+ * Where an event stands in the store, for the dedupe: the same thing read twice is one entry. The
+ * title is part of it, because one file can name several tests of a subject in the same week.
+ */
 const sameEvent = (e: LedgerEntry) =>
-  [e.code ?? '', e.kind, e.date, e.time ?? '', e.sourceUrl ?? ''].join('|');
+  [e.code ?? '', e.kind, e.date, e.time ?? '', e.sourceUrl ?? '', titleKey(e.title)].join('|');
 
 type Raw = Record<string, unknown>;
 const queues = new WeakMap<Store, Promise<unknown>>();
@@ -87,7 +99,7 @@ export function createLedger(
   return {
     list,
 
-    /** Saves a new event, or updates the one already saved for the same subject, kind, day, time and file. */
+    /** Saves a new event, or updates the one already saved for the same subject, kind, day, time, file and title. */
     add: (args: Raw, today: string) =>
       serial(async () => {
         const gen = await store.generation();

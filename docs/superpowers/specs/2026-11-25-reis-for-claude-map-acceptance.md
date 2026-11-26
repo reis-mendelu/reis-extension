@@ -148,4 +148,4 @@ map's measurable gains here are fewer calls and no per-subject points loop, plus
 
 ## Re-run on the finished map
 
-Recorded in `2026-11-26-reis-for-claude-map-acceptance-rerun.md`: S1 pass (5 calls), S2 pass, S3 pass, S4 pass (1 call), S5 content pass with the call target missed (20 calls), S6 pass on the integration tests; the first real build (138 files, 124.6 MB); and the persona walk of a student's week by email.
+Recorded in `2026-11-26-reis-for-claude-map-acceptance-rerun.md`: S1 pass (5 calls), S2 pass, S3 pass, S4 pass (1 call), S5 content pass with the call target missed (20 calls), S6 pass on the integration tests; the first real build (138 files, 124.6 MB); the persona walk of a student's week by email, once without connectors and once with the real Gmail (one draft, not sent) and a read-only University calendar, which found and fixed a ledger bug (three credit tests of one subject merged into one entry).
