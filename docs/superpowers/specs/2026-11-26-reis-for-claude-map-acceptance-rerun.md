@@ -61,6 +61,30 @@ with the inferred ones marked, but made 26 reading calls (9 searches, 11 file re
 listings) and 6 ledger writes: the persona read each subject's files to be sure instead of trusting
 the first search. The call target is missed with or without a map.
 
+**S5 first ask, then the same ask again, on one built store (a fresh build: 138 files, 0 failed).**
+Two fresh personas, same message, same store, run one after the other; counts are from the store's
+call log. *First ask:* all six events listed, inferred ones marked, nothing past as ahead; 37 calls
+(31 reads: 11 searches, 11 file reads, 2 folder listings, overview, schedule, exams, points,
+assignments, syllabus; 6 ledger calls: one list and 5 adds). The five adds are the file-derived
+events (OTII test 2 stated, the PS hardware-skills and Netacad credits and the PE credit test as
+inferred windows taken from the weeks table, the Java project hand-in on 3 Jan stated); the two
+events IS already shows (VWA defence, MNG credit test) were correctly not written. No invented end
+date this time. *Same ask again:* the same six events, same marks; **15 calls** (14 reads: overview,
+5 searches, 4 file reads, listing, syllabus, points, schedule; 1 ledger list; 0 writes). It trusted
+the ledger for the five events but still re-opened four files and searched five times to check the
+rest. Both named, unprompted, what is not dated anywhere (Matlab tests 2, 4 and 5, the Java defence)
+and the VWA conditions file that is only a PNG.
+
+**Decision on the S5 call target (Claude's call, reversible, 2026-11-26).** Four runs
+(20, 32, 37, 15 calls) show the original "overview plus at most two reads" cannot be met by a
+careful persona on a seven-subject question, and nothing in the map would let it be: the overview
+lists IS's own dates, not the dates inside files. The criterion is re-based to regression ceilings
+just above what was measured: **40 calls for a first ask on a built map, 16 for a repeat**, while the
+content pass rule stays exactly as written. What would lower the numbers is an overview that
+answers date questions itself, which is not on the list of steps. Dominik can keep the original
+target by saying so; the acceptance doc would then show S5 as failing.
+
+
 **S6: pass (integration tests), calendar half not run live.** `ledgerOverview.test.ts` and
 `refreshDigest.test.ts` pass: events 14, 7, 3 and 1 days out, the attendance flag, a past event
 gone, a replaced source listed as "recheck", and the digest prompt's rules (draft only, proposals

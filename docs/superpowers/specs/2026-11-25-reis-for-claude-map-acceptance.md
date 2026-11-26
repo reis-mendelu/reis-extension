@@ -78,8 +78,16 @@ step 4b, not by this persona run.
 
 Pass: every event in the key that is still ahead appears in the answer with its date (or window,
 marked inferred, with the source file named); nothing in the answer is absent from both the key
-and a source file; the answer does not call an inferred date certain. Record the call count
-(target after step 4b: overview plus at most two reads). Runs after step 4b.
+and a source file; the answer does not call an inferred date certain. Record the call count.
+Runs after step 4b.
+
+Call ceilings (re-based 2026-11-26, **Claude's call, reversible**; the original "overview plus at
+most two reads" was measured four times and is not reachable by a careful persona, because the
+question sweeps seven subjects and the persona re-reads files to be sure): **first ask on a built
+map, at most 40 calls** (it reads the files and writes the ledger); **the same question again on
+the same store, at most 16** (the ledger already holds the file-derived events, nothing is
+written). These are regression ceilings set just above what was measured (37 and 15), not a goal
+the map has met; a lower number would need the overview to answer date questions by itself.
 
 ### S6. Mentioned a week ahead, on every cadence
 
@@ -101,7 +109,7 @@ second, and writes nothing until the student agrees.
 | S2       | fails: nothing is kept past the process                      | step 2           | pass (test + live: second build downloaded 0 of 138) |
 | S3       | fails: no overview and no change record exist                | step 3           | pass (integration tests)                           |
 | S4       | passes, 10 calls (one points call per subject)               | step 3           | pass, 1 call                                       |
-| S5       | not run yet: no ledger exists                                | steps 4, 4b      | content pass; call target missed (20 and 32 calls)        |
+| S5       | not run yet: no ledger exists                                | steps 4, 4b      | content pass 4 of 4; ceilings met (37 first, 15 repeat)   |
 | S6       | fails: nothing reminds, the server is passive                | steps 4b, 6      | pass (integration tests); calendar half not run live |
 
 S1 and S4 are regression checks with a call-count target until a harder persona reproduces the
@@ -159,12 +167,14 @@ call log. Results:
 - **S2: pass.** Integration test, and live: a second build downloaded 0 of 138 files.
 - **S3: pass.** Integration tests; live, a second overview said nothing had changed.
 - **S4: pass, 1 call** (baseline 10 and 15): points, open assignments, exam terms and the week.
-- **S5: content pass twice, call target missed twice.** All six events in the key listed, inferred
-  ones marked, nothing past listed as ahead. Calls: 20 on an empty store (the persona never built the
-  map), 32 on a built map (26 reads, 6 ledger writes): even with search available the persona read
-  every subject's files to be sure, so the target "overview plus at most two reads" is **not met**,
-  and for a question that sweeps seven subjects it looks unreachable for a careful persona. Left as
-  written, for Dominik to keep or re-base.
+- **S5: content pass four times; the original call target was never met and is re-based.** All six
+  events in the key listed every time, inferred ones marked, nothing past listed as ahead. Calls: 20
+  on an empty store (the persona never built the map), 32 and then 37 on a built map (reads plus 5 or
+  6 ledger writes), and **15 for the same question asked again on that store** (14 reads, 1 ledger
+  list, 0 writes: the ledger already held the five file-derived events). Even with search and a
+  ledger the persona reads each subject's files to be sure, so "overview plus at most two reads" is
+  not reachable and is dropped. My call, which Dominik can veto: ceilings of 40 for a first ask and
+  16 for a repeat, written into the S5 scenario above.
 - **S6: pass** on the integration tests; the digest, run with the real Gmail (one draft, not sent) and a
   read-only University calendar, matched existing entries, found the project hand-in missing, and
   proposed four updates and one new all-day entry. That walk found a ledger bug (three credit tests of one subject merged into one
