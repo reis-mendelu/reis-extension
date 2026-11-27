@@ -90,12 +90,13 @@ async function waitForNetwork(): Promise<boolean> {
 }
 
 async function live(): Promise<{ captures: Capture[]; problems: string[] }> {
-  if (!(await waitForNetwork()))
-    return { captures: [], problems: ['no network: IS did not answer for 5 minutes'] };
   const creds = readCredentials();
   if (!creds)
     return { captures: [], problems: [`no login in the Keychain under "${KEYCHAIN_SERVICE}"`] };
-  const is = await readIs(creds);
+  // IS down (or no network yet) still lets WebISKAM, a separate system, be read.
+  const is = (await waitForNetwork())
+    ? await readIs(creds)
+    : { captures: [], problems: ['IS: did not answer for 5 minutes (no network, or IS down)'] };
   log(`IS: ${is.captures.length} pages, ${is.problems.length} problems`);
   let iskam: { captures: Capture[]; problem: string | null };
   try {
