@@ -14,7 +14,7 @@ const [a, b] = LIBRARY_ROOMS;
 const A = a!.featureId;
 const B = b!.featureId;
 // Monday 16 November 2026, 09:30. The library sells 07–19; with an hour's notice 11:00 is the first row.
-const NOW = new Date(2026, 10, 16, 9, 30);
+const NOW = new Date('2026-11-16T09:30:00+01:00');
 const DAY = '2026-11-16';
 const free = (from: number, to: number): Block => ({
   status: 'free',
@@ -52,7 +52,7 @@ describe('gridRows', () => {
 
   it('has no rows left after the last bookable hour', () => {
     expect(
-      gridRows({ [A]: [free(7, 19)] }, DAY, new Date(2026, 10, 16, 17, 30), new Set(), [])
+      gridRows({ [A]: [free(7, 19)] }, DAY, new Date('2026-11-16T17:30:00+01:00'), new Set(), [])
     ).toEqual([]);
   });
 });

@@ -126,7 +126,7 @@ describe('LibraryCard', () => {
   });
 
   it('says a day is over instead of showing an empty table', () => {
-    vi.setSystemTime(new Date(2026, 10, 16, 17, 30));
+    vi.setSystemTime(new Date('2026-11-16T17:30:00+01:00'));
     render(<LibraryCard view={{ featureId: null }} />);
     fireEvent.click(screen.getByRole('button', { name: 'Dnes' }));
     expect(screen.getByRole('status')).toHaveTextContent('Na tento den už nejde rezervovat.');
@@ -152,7 +152,7 @@ describe('LibraryCard', () => {
   });
 
   it('after the last bookable hour opens on the next open day, skipping the holiday', () => {
-    vi.setSystemTime(new Date(2026, 10, 16, 19, 30));
+    vi.setSystemTime(new Date('2026-11-16T19:30:00+01:00'));
     render(<LibraryCard view={{ featureId: null }} />);
     expect(screen.getByRole('button', { name: 'St 18' }).getAttribute('aria-pressed')).toBe('true');
   });

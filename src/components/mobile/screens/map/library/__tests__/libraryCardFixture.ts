@@ -5,7 +5,7 @@ import { LIBRARY_ROOMS } from '../../../../../../data/map/libraryRooms';
 import type { Block } from '../../../../../../mobile/library/availability';
 
 // Monday 16 November 2026, 09:30. Tuesday 17 November is a public holiday.
-export const NOW = new Date(2026, 10, 16, 9, 30);
+export const NOW = new Date('2026-11-16T09:30:00+01:00');
 export const day = (d: number, from: number, to: number): Block => ({
   status: 'free',
   start: `2026-11-${d}T${String(from).padStart(2, '0')}:00`,
