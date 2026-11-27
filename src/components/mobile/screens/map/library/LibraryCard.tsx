@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { useScreenSignal } from '../../../../../hooks/useScreenSignal';
-import { cardPick, useLibraryStore } from '../../../../../mobile/library/libraryStore';
+import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
+import { cardPick } from '../../../../../mobile/library/libraryDay';
 import { DAILY_CAP } from '../../../../../mobile/library/slots';
 import { bookedOn } from '../../../../../mobile/library/bookingService';
 import {
@@ -11,33 +12,37 @@ import {
   lessonHours,
   weekdaysFrom,
 } from '../../../../../mobile/library/libraryDay';
+import { withOwnBookings } from '../../../../../mobile/library/libraryHours';
 import {
-  hourCells,
-  rangeOf,
-  roomsFreeFor,
-  toggleHour,
-  withOwnBookings,
-} from '../../../../../mobile/library/libraryHours';
+  gridRows,
+  growHours,
+  tapCell,
+  type CellState,
+  type GridPick,
+} from '../../../../../mobile/library/libraryGrid';
 import { MyBookings } from './MyBookings';
 import { DayChips } from './DayChips';
-import { HourGrid } from './HourGrid';
-import { FreeRooms } from './FreeRooms';
+import { LibraryGrid } from './LibraryGrid';
+import { SavedNote } from './SavedNote';
+import { openLibrary } from './openLibrary';
 import type { LibraryView } from './libraryOf';
 
 /**
  * The library as one place in the map's panel (phone sheet and iPad rail).
- * Time first: a day, then the hours, then the rooms free for all of them, then
- * book (Dominik, 2026-11-16: "what I care about is which study room is open at
- * that time"). As little text as the screen can carry: where it is, and the
- * answer; no legends.
+ * A day, then a table of rooms and hours: tap a free cell, tap the "+" for more
+ * hours, tap the check. Nobody reads text on it (Dominik, 2026-11-27), so the
+ * only words are the place, the day and the rooms' names.
  */
 export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolean }) {
   useScreenSignal('screen_library');
   const { t, language } = useTranslation();
   const raw = useLibraryStore((s) => s.blocks);
   const status = useLibraryStore((s) => s.status);
+  const savedAt = useLibraryStore((s) => s.savedAt);
+  const fetchedAt = useLibraryStore((s) => s.fetchedAt);
   const storeDay = useLibraryStore((s) => s.day);
   const storePicked = useLibraryStore((s) => s.picked);
+  const storeRoom = useLibraryStore((s) => s.room);
   const lessons = useAppStore((s) => s.schedule.data);
   const mine = useAppStore((s) => s.customEvents);
   // The student's own bookings count as taken: the library shows a fresh one
@@ -52,25 +57,50 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   const days = fromToday.includes(day) ? fromToday : weekdaysFrom(day);
   const holiday = holidayOf(day, language);
   const known = anyAnswer(blocks);
-  const cells = known ? hourCells(blocks, day, now, lessonHours(lessons, day)) : [];
+  const rows = known ? gridRows(blocks, day, now, lessonHours(lessons, day), mine) : [];
   const left = Math.max(0, DAILY_CAP - bookedOn(mine, day));
-  const fits = (hours: number[]) => roomsFreeFor(blocks, day, now, hours).length > 0;
-  // A pick that lost its last free room (booked meanwhile), or no longer fits
-  // what is left of the daily cap (an extension used it), starts over.
-  const sel = picked.length && picked.length <= left && fits(picked) ? picked : [];
-  const span = rangeOf(sel);
-  // Hours already gone are not drawn: at lunchtime they were half the grid, and the
-  // answer sat below them.
-  const open = cells.filter((c) => c.state !== 'past');
-  const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
+  const stateOf = (room: number, hour: number): CellState =>
+    rows.find((r) => r.hour === hour)?.cells[room] ?? 'taken';
+  // A pick that lost a cell (booked meanwhile), or no longer fits what is left of
+  // the daily cap (an extension used it), is dropped.
+  const stored: GridPick | null =
+    storeRoom !== null && picked.length ? { room: storeRoom, hours: picked } : null;
+  const pick =
+    stored &&
+    stored.hours.length <= left &&
+    stored.hours.every((h) => stateOf(stored.room, h) === 'free')
+      ? stored
+      : null;
+  // A pick that stopped being valid is dropped from the store, not only hidden: a
+  // later read that frees those cells again must not bring the old pick back.
+  // Includes a pick from a day that has passed: `cardPick` hides it, the store still holds it.
+  const lost = storeRoom !== null && storePicked.length > 0 && pick === null;
+  useEffect(() => {
+    if (lost) useLibraryStore.getState().clearPick();
+  }, [lost]);
 
-  // Each day and each pick starts at the top of the panel, not where the
-  // previous scroll left it.
+  const onTap = (room: number, hour: number) => {
+    const next = tapCell(pick, room, hour, stateOf, left);
+    // The day is pinned with the pick, so a pick never moves to another day.
+    useLibraryStore.setState({ day, room: next?.room ?? null, picked: next?.hours ?? [] });
+    // The first cell of a room closes the map in on it, so the student sees where it is.
+    if (next && next.room !== pick?.room) openLibrary(next.room);
+  };
+
+  // Each day starts at the top of the panel, not where the previous scroll left it.
   const top = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const scroller = top.current?.closest<HTMLElement>('.overflow-y-auto');
     if (scroller) scroller.scrollTop = 0;
   }, [day]);
+  // A pick made low in the grid stays in view above the footer, and clear of the sticky head.
+  const pickKey = pick ? `${pick.room}:${pick.hours.join(',')}` : '';
+  useEffect(() => {
+    if (pickKey)
+      top.current
+        ?.querySelector<HTMLElement>('[data-picked]')
+        ?.scrollIntoView?.({ block: 'nearest' });
+  }, [pickKey]);
 
   return (
     <div ref={top} data-testid="library-card" className={`space-y-3 ${flush ? 'px-5' : 'px-4'}`}>
@@ -92,49 +122,39 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
           {t('mobile.library.offline')}
         </p>
       ) : !known ? (
-        // The library takes 10–20 s to answer. A line of text alone read as
+        // The library can take 10–20 s to answer. A line of text alone read as
         // nothing happening; the grid's shape says what is coming.
         <div className="space-y-2">
           <p role="status" className="flex items-center gap-2 text-sm text-base-content/70">
             <span className="loading loading-spinner loading-xs" aria-hidden="true" />
             {t('mobile.library.loading')}
           </p>
-          <div className="grid grid-cols-4 gap-1.5" aria-hidden="true">
-            {Array.from({ length: 12 }, (_, i) => (
-              <div key={i} className="skeleton h-11 rounded-xl" />
+          <div className="grid grid-cols-6 gap-1" aria-hidden="true">
+            {Array.from({ length: 24 }, (_, i) => (
+              <div key={i} className="skeleton h-11 rounded-lg" />
             ))}
           </div>
         </div>
-      ) : open.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p role="status" className="text-sm text-base-content/70">
           {t('mobile.library.dayOver')}
         </p>
       ) : (
         <>
-          {left > 0 && (
-            // Always in the same place and always two lines tall (`min-h-10`), whichever
-            // text it holds, so the grid does not move under the finger between the first
-            // tap and the second. A student who needs three hours books one without it
-            // (nothing else says hours can be added). Once the pick has used up what is
-            // left of the day it says so instead of inviting a tap that would do nothing.
-            <p className="min-h-10 text-sm text-base-content/70">
-              {span
-                ? t(sel.length >= left ? 'mobile.library.pickedMax' : 'mobile.library.pickedHint', {
-                    time: `${hh(span.from)}–${hh(span.to)}`,
-                    n: sel.length,
-                  })
-                : t('mobile.library.pickHint', { cap: left })}
-            </p>
-          )}
-          <HourGrid
-            cells={open}
-            picked={sel}
-            onTap={(h) =>
-              // The day is pinned with the pick, so a pick never moves to another day.
-              useLibraryStore.setState({ day, picked: toggleHour(sel, h, fits, left) })
-            }
+          <SavedNote
+            at={savedAt ?? fetchedAt}
+            saved={savedAt !== null}
+            loading={status === 'loading'}
           />
-          {cells.some((c) => c.state === 'unknown') && (
+          <LibraryGrid
+            rows={rows}
+            pick={pick}
+            grow={growHours(pick, stateOf, left)}
+            chosen={view.featureId}
+            flush={flush}
+            onTap={onTap}
+          />
+          {rows.some((r) => Object.values(r.cells).includes('unknown')) && (
             <p role="status" className="text-xs text-base-content/70">
               {t('mobile.library.someUnknown')}
             </p>
@@ -143,14 +163,6 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
             <p className="text-xs text-base-content/70">
               {t('mobile.library.capReached', { cap: DAILY_CAP })}
             </p>
-          )}
-          {span && (
-            <FreeRooms
-              rooms={roomsFreeFor(blocks, day, now, sel)}
-              day={day}
-              span={span}
-              chosen={view.featureId}
-            />
           )}
         </>
       )}

@@ -17,6 +17,7 @@ import { MapRailOpenButton } from './MapRailOpenButton';
 import { RoomPlaceNote } from './RoomPlaceNote';
 import { useForRoomSelection } from './useForRoomSelection';
 import { libraryOf } from './library/libraryOf';
+import { LibraryBar } from './library/LibraryBar';
 
 /**
  * The map panel on a tablet: a sidebar, not a sheet.
@@ -213,6 +214,7 @@ export function MapRail() {
           flush
         />
       </div>
+      {selectedLibrary && <LibraryBar flush />}
     </aside>
   );
 }

@@ -7,11 +7,14 @@ vi.mock('../transport', () => ({
   nativeBookingsHttp: native.http,
 }));
 
-import { cardPick, useLibraryStore, STALE_MS } from '../libraryStore';
+import { useLibraryStore, STALE_MS } from '../libraryStore';
+import { cardPick } from '../libraryDay';
 import { useAppStore } from '../../../store/useAppStore';
 import { clearDiagnostics, getDiagnostics } from '../../../utils/diagnostics/diagnosticLog';
 import type { BookingsHttp } from '../bookingsBase';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
+import { SAVED_KEY } from '../libraryCache';
+import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 
 const ok: BookingsHttp = vi.fn(async (req) => ({
   status: 200,
@@ -30,8 +33,10 @@ const ok: BookingsHttp = vi.fn(async (req) => ({
 }));
 const now = new Date(2026, 10, 10, 6, 0);
 
-beforeEach(() => {
+beforeEach(async () => {
   useLibraryStore.getState().reset();
+  // Each test starts without a saved answer on the device.
+  await IndexedDBService.delete('meta', SAVED_KEY);
   vi.mocked(ok).mockClear();
   native.http.mockReset();
   native.http.mockImplementation(ok);
@@ -176,5 +181,39 @@ describe('cardPick', () => {
   });
   it('uses the shown day before one was picked, keeping a pick', () => {
     expect(cardPick({ day: null, picked: [10] }, now)).toEqual({ day: '2026-11-18', picked: [10] });
+  });
+});
+
+describe('libraryStore: the pick and the one-time notice', () => {
+  it('holds one room and its hours, and an empty run is no pick', () => {
+    const s = useLibraryStore.getState();
+    s.setPick(57632, [14, 15]);
+    expect(useLibraryStore.getState()).toMatchObject({ room: 57632, picked: [14, 15] });
+    s.setPick(57632, []);
+    expect(useLibraryStore.getState()).toMatchObject({ room: null, picked: [] });
+  });
+
+  it('a new day, clearPick and reset all drop the pick', () => {
+    const s = useLibraryStore.getState();
+    s.setPick(57632, [14]);
+    s.setDay('2026-11-12');
+    expect(useLibraryStore.getState()).toMatchObject({ room: null, picked: [] });
+    s.setPick(57632, [14]);
+    s.clearPick();
+    expect(useLibraryStore.getState().room).toBeNull();
+    s.setPick(57632, [14]);
+    s.reset();
+    expect(useLibraryStore.getState().room).toBeNull();
+  });
+
+  it('remembers on the device that the notice was shown, and a later start reads it back', async () => {
+    useLibraryStore.setState({ noticeSeen: false });
+    useLibraryStore.getState().markNoticeSeen();
+    expect(useLibraryStore.getState().noticeSeen).toBe(true);
+    await vi.waitFor(async () => {
+      useLibraryStore.setState({ noticeSeen: false });
+      await useLibraryStore.getState().loadNotice();
+      expect(useLibraryStore.getState().noticeSeen).toBe(true);
+    });
   });
 });

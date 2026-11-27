@@ -1,13 +1,19 @@
-import { useAppStore } from '../../store/useAppStore';
 import { create } from 'zustand';
 import { fetchAllBlocks, type Block } from './availability';
-import { isoDay, shownDay } from './libraryDay';
-import { canBookLibrary, nativeBookingsHttp } from './transport';
-import { isDemoMode } from '../../errors/demoMode';
+import { nativeBookingsHttp } from './transport';
 import { logError } from '../../utils/reportError';
-import type { MapSelection } from '../../types/campusMap';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
+import {
+  readNoticeSeen,
+  readSaved,
+  writeNoticeSeen,
+  writeSaved,
+  SAVED_MAX_MS,
+} from './libraryCache';
+import { withBusy, withoutBusy } from './libraryHours';
+import { isoDay } from './libraryDay';
+import { startLibraryWatch } from './libraryWatch';
 
 export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'offline';
 
@@ -23,13 +29,27 @@ export interface LibraryState {
   blocks: Record<number, Block[] | null>;
   status: LibraryStatus;
   fetchedAt: number | null;
+  /** Set while `blocks` is the last answer from the device, taken at this time, and no new one has come. */
+  savedAt: number | null;
   load(http?: BookingsHttp, now?: Date): Promise<void>;
   /** The card's day (`YYYY-MM-DD`), null until the student picks one. */
   day: string | null;
   /** The picked run of hours on that day: the map colours rooms by it. */
   picked: number[];
+  /** The room the picked hours are in; null while nothing is picked. */
+  room: number | null;
   setDay(day: string): void;
-  setPicked(hours: number[]): void;
+  /** One pick: a room and its consecutive hours. An empty run is no pick. */
+  setPick(room: number, hours: number[]): void;
+  clearPick(): void;
+  /**
+   * Whether this student has already been told, once, what the library receives
+   * (name, e-mail, student number, faculty). The first booking shows the confirm
+   * sheet with that sentence; after it, a tap on the check books.
+   */
+  noticeSeen: boolean;
+  loadNotice(): Promise<void>;
+  markNoticeSeen(): void;
   /**
    * A booking, extension or cancel is running. Held here, not in the form that
    * started it: leaving the form (another room on the iPad, Android Back) must
@@ -46,9 +66,6 @@ export interface LibraryState {
   reset(): void;
 }
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const dayOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-
 let seq = 0;
 /**
  * Counts the booking and cancel results that changed what the library holds
@@ -62,15 +79,27 @@ let writes = 0;
  * The library's free hours, per room. A store of its own, NOT a slice of
  * useAppStore, for the reason `iskamStore` gives: the extension builds that one
  * and library booking must not reach it (desktopHasNoLibraryBooking.test.ts).
- * Memory only — a list of free hours is stale in minutes and worth keeping
- * nowhere.
+ * Memory, plus the last answer on the device (`libraryCache`) to show while a read
+ * is out: a list of free hours is stale in minutes, so that copy is only ever shown
+ * marked with when it was taken.
  */
 export const useLibraryStore = create<LibraryState>((set, get) => ({
   blocks: {},
   status: 'idle',
   fetchedAt: null,
+  savedAt: null,
   day: null,
   picked: [],
+  room: null,
+  noticeSeen: false,
+  async loadNotice() {
+    if (await readNoticeSeen()) set({ noticeSeen: true });
+  },
+  markNoticeSeen() {
+    if (get().noticeSeen) return;
+    set({ noticeSeen: true });
+    writeNoticeSeen();
+  },
   writing: false,
   startWrite: () => {
     if (get().writing) return false;
@@ -81,22 +110,14 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   markFree(featureId, day, hours) {
     writes++;
     const list = get().blocks[featureId];
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const gone = new Set(hours.map((h) => `${day}T${pad(h)}:00`));
     set({
       fetchedAt: null,
-      ...(list
-        ? {
-            blocks: {
-              ...get().blocks,
-              [featureId]: list.filter((b) => !(b.status === 'busy' && gone.has(b.start))),
-            },
-          }
-        : {}),
+      ...(list ? { blocks: { ...get().blocks, [featureId]: withoutBusy(list, day, hours) } } : {}),
     });
   },
-  setDay: (day) => set({ day, picked: [] }),
-  setPicked: (picked) => set({ picked }),
+  setDay: (day) => set({ day, picked: [], room: null }),
+  setPick: (room, picked) => set(picked.length ? { room, picked } : { room: null, picked: [] }),
+  clearPick: () => set({ room: null, picked: [] }),
 
   async load(http = nativeBookingsHttp, now = new Date()) {
     const { status, fetchedAt } = get();
@@ -104,6 +125,13 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     if (status === 'ready' && fetchedAt !== null && now.getTime() - fetchedAt < STALE_MS) return;
     const mine = ++seq;
     set({ status: 'loading' });
+    if (!get().noticeSeen) void get().loadNotice();
+    // The last answer on this device is shown while the library thinks.
+    const restored = readSaved(now.getTime()).then((saved) => {
+      const nothingYet = !Object.values(get().blocks).some(Array.isArray);
+      if (saved && nothingYet && mine === seq && get().status === 'loading')
+        set({ blocks: saved.blocks, savedAt: saved.savedAt });
+    });
     const to = new Date(now);
     to.setDate(to.getDate() + DAYS_AHEAD);
     const startedAt = Date.now();
@@ -111,8 +139,8 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const all = await fetchAllBlocks(
       http,
       LIBRARY_ROOMS.map((r) => r.staffMemberId),
-      dayOf(now),
-      dayOf(to)
+      isoDay(now),
+      isoDay(to)
     );
     const results = LIBRARY_ROOMS.map(
       (r) => [r.featureId, all?.[r.staffMemberId] ?? null] as const
@@ -123,6 +151,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const took = Date.now() - startedAt;
     if (took >= SLOW_READ_MS)
       logError('Library.slowRead', new Error(`availability took ${Math.round(took / 1000)} s`));
+    await restored;
     if (mine !== seq) return;
     if (writes !== writesAtStart) {
       // Not used, and not left on "loading" (every later read would return early):
@@ -132,62 +161,40 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     }
     const blocks = Object.fromEntries(results);
     const any = results.some(([, b]) => b !== null);
+    const kept = get().savedAt;
+    if (!any && kept !== null && now.getTime() - kept < SAVED_MAX_MS) {
+      // No answer, but a saved one still young enough is on screen: keep it, read again next time.
+      set({ status: 'idle', fetchedAt: null });
+      return;
+    }
     set({
       blocks,
       status: any ? 'ready' : 'offline',
       fetchedAt: any ? now.getTime() : null,
+      savedAt: null,
     });
+    if (any) writeSaved(blocks, now.getTime());
   },
 
   markTaken(featureId, day, hour) {
     writes++;
     const list = get().blocks[featureId];
-    if (!list) return;
-    const taken: Block = {
-      status: 'busy',
-      start: `${day}T${pad(hour)}:00`,
-      end: `${day}T${pad(hour + 1)}:00`,
-    };
-    set({ blocks: { ...get().blocks, [featureId]: [...list, taken] } });
+    if (list) set({ blocks: { ...get().blocks, [featureId]: withBusy(list, day, hour) } });
   },
 
   reset() {
     seq++;
-    set({ blocks: {}, status: 'idle', fetchedAt: null, day: null, picked: [] });
+    set({
+      blocks: {},
+      status: 'idle',
+      fetchedAt: null,
+      savedAt: null,
+      day: null,
+      picked: [],
+      room: null,
+    });
   },
 }));
 
-// The card also opens from a tap on a library room of the floor plan, a search
-// result or a deep link, in shared map code that cannot reach into the phone
-// tree; the read follows the map's selection here instead of in a component
-// effect (CLAUDE.md), behind the same gate as every other way in.
-const libraryRoomIn = (sel: MapSelection | null): boolean => {
-  if (sel?.kind === 'library') return true;
-  const id =
-    sel?.kind === 'room' ? sel.room.id : sel?.kind === 'roomRef' ? sel.entry.placeId : null;
-  return LIBRARY_ROOMS.some((r) => r.featureId === id);
-};
-useAppStore.subscribe((s, prev) => {
-  // Arriving on the map tab starts the read too: about one in five map visitors
-  // opens the card, and the seconds before they tap the pin are the library's
-  // answering time. Not at app start: 99 in 100 of those would never look.
-  const arrived = s.mobileTab === 'map' && prev.mobileTab !== 'map';
-  const picked = s.mapSelection !== prev.mapSelection && libraryRoomIn(s.mapSelection);
-  if (!arrived && !picked) return;
-  if (canBookLibrary() && !isDemoMode()) void useLibraryStore.getState().load();
-});
-
-/**
- * The day and picked hours the card and the map's colours both use. A stored
- * day that has passed (the app left open overnight, or a booking's day) gives
- * way to the next open day, and its pick goes with it, so the card and the
- * map never disagree about which day is shown.
- */
-export function cardPick(
-  s: Pick<LibraryState, 'day' | 'picked'>,
-  now: Date
-): { day: string; picked: number[] } {
-  if (!s.day) return { day: shownDay(now), picked: s.picked };
-  if (s.day >= isoDay(now)) return { day: s.day, picked: s.picked };
-  return { day: shownDay(now), picked: [] };
-}
+// The card also opens from the map's selection; see libraryWatch.
+startLibraryWatch(() => void useLibraryStore.getState().load());

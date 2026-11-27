@@ -20,6 +20,8 @@ import { floorText } from '../../../CampusMap/floorText';
 import { useSafeBottom } from '../../../../hooks/ui/useSafeBottom';
 import { peekHeightPx } from '../../../../utils/mobile/safeArea';
 import type { Detent } from '../../primitives/sheetDrag';
+import { LibraryBar } from './library/LibraryBar';
+import { useLibraryStore } from '../../../../mobile/library/libraryStore';
 
 /** The expanded height as a fraction of the viewport, matching `h-[70vh]`. */
 const EXPANDED_VH = 0.7;
@@ -61,6 +63,7 @@ export function MapSheet() {
   // The library's room list, or one of its rooms (also when tapped on the plan).
   const selectedLibrary = libraryOf(selection);
   const selectedCard = selectedEvent || selectedSocietyPin || selectedSportPlace || selectedLibrary;
+  const booking = useLibraryStore((s) => !!selectedLibrary && s.room !== null && s.day !== null);
   // The phone shows a venue's menu category as a page of its own (VenueCard).
   const venueMenuSection = useAppStore((s) => s.venueMenuSection);
   const setVenueMenuSection = useAppStore((s) => s.setVenueMenuSection);
@@ -322,7 +325,11 @@ export function MapSheet() {
           />
           {/* pb-24 clears the floating BottomNav, which is positioned against
               the SCREEN and draws over the sheet. */}
-          <div className="flex-1 overflow-y-auto pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-2">
+          <div
+            className={`flex-1 overflow-y-auto pt-2 ${
+              booking ? 'pb-2' : 'pb-[calc(6rem_+_var(--safe-bottom,0px))]'
+            }`}
+          >
             <MapPanelBody
               selectedEvent={selectedEvent}
               selectedSocietyPin={selectedSocietyPin}
@@ -330,6 +337,8 @@ export function MapSheet() {
               selectedLibrary={selectedLibrary}
             />
           </div>
+          {/* A library pick's footer carries its own clearance for the nav bar. */}
+          {booking && <LibraryBar />}
         </>
       )}
     </div>
