@@ -8,16 +8,28 @@ import { useLibraryBook } from '../../../sheets/useLibraryBook';
 import { LibraryConfirm } from '../../../sheets/LibraryConfirm';
 
 /**
- * What is picked, and the one button that books it. Sticks under the grid's
- * column heads while a pick exists, so it never covers a cell or a "+". The first booking on a device goes through the
- * confirm (a sheet on the phone, inline on the iPad), which says what the library
- * receives; after it a tap on the check books straight away, and the "i" says it
- * again for anyone who wants to read it.
+ * What is picked, and the one labelled button that books it. A footer of the
+ * panel, below the scrolling grid and above the floating nav bar: it takes its
+ * own room, so it never covers a cell or a "+". The first booking on a device goes
+ * through the confirm (a sheet on the phone, inline on the iPad), which says what
+ * the library receives; after it a tap on the button books straight away, and the
+ * "i" says it again for anyone who wants to read it.
  */
-export function LibraryBar({
+export function LibraryBar({ flush }: { flush?: boolean }) {
+  const room = useLibraryStore((s) => s.room);
+  const day = useLibraryStore((s) => s.day);
+  const picked = useLibraryStore((s) => s.picked);
+  if (room === null || day === null || !picked.length) return null;
+  const pick = { featureId: room, day, from: picked[0]!, to: picked[picked.length - 1]! + 1 };
+  return <PickBar pick={pick} flush={flush} />;
+}
+
+function PickBar({
   pick,
+  flush,
 }: {
   pick: { featureId: number; day: string; from: number; to: number };
+  flush?: boolean;
 }) {
   const { t } = useTranslation();
   const wide = useWideViewport();
@@ -38,7 +50,11 @@ export function LibraryBar({
   return (
     <div
       data-testid="library-bar"
-      className="space-y-2 rounded-2xl bg-base-100 px-3 py-2 shadow-md ring-1 ring-base-content/15"
+      className={`shrink-0 space-y-2 border-t border-base-content/15 pt-3 ${
+        flush
+          ? 'bg-base-100 px-5 pb-4'
+          : 'bg-base-200 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))]'
+      }`}
     >
       {inline && <LibraryConfirm pick={pick} onClose={() => setInline(false)} />}
       {info && !inline && (
@@ -47,41 +63,43 @@ export function LibraryBar({
       {!inline && (
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
-            <p className="truncate text-md font-semibold text-base-content">{name}</p>
-            <p className="text-sm tabular-nums text-base-content/70">
+            <div className="flex items-center gap-1">
+              <p className="truncate text-md font-semibold text-base-content">{name}</p>
+              <button
+                type="button"
+                aria-label={t('mobile.library.infoLabel')}
+                aria-pressed={info}
+                onClick={() => setInfo(!info)}
+                className="btn btn-ghost btn-circle btn-xs shrink-0 text-base-content/60"
+              >
+                <Info size={16} aria-hidden="true" />
+              </button>
+            </div>
+            <p className="whitespace-nowrap text-sm tabular-nums text-base-content/70">
               {t('mobile.library.pickLine', { time: when, n })}
             </p>
           </div>
           <button
             type="button"
-            aria-label={t('mobile.library.infoLabel')}
-            aria-pressed={info}
-            onClick={() => setInfo(!info)}
-            className="btn btn-ghost btn-circle btn-sm text-base-content/60"
-          >
-            <Info size={18} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
             aria-label={t('mobile.library.clearPick')}
             disabled={sending}
             onClick={() => useLibraryStore.getState().clearPick()}
-            className="btn btn-ghost btn-circle"
+            className="btn btn-ghost btn-circle btn-sm"
           >
             <X size={20} aria-hidden="true" />
           </button>
           <button
             type="button"
-            aria-label={t('mobile.library.confirm')}
             disabled={sending || writing}
             onClick={book}
-            className="btn btn-primary btn-circle"
+            className="btn border-0 bg-primary text-primary-content hover:bg-primary/90"
           >
             {sending ? (
               <span className="loading loading-spinner loading-sm" aria-hidden="true" />
             ) : (
-              <Check size={22} aria-hidden="true" />
+              <Check size={20} aria-hidden="true" />
             )}
+            {t('mobile.library.confirm')}
           </button>
         </div>
       )}

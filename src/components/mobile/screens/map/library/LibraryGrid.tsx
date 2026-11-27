@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { CircleCheck, Plus, User, Users } from 'lucide-react';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { LIBRARY_ROOMS, type LibraryRoom } from '../../../../../data/map/libraryRooms';
@@ -32,7 +31,6 @@ export function LibraryGrid({
   grow,
   chosen,
   flush,
-  bar,
   onTap,
 }: {
   rows: GridRow[];
@@ -43,8 +41,6 @@ export function LibraryGrid({
   chosen: number | null;
   /** In the iPad's rail (a white panel) rather than the phone's sheet (the page tone). */
   flush?: boolean;
-  /** What is picked and the button that books it. It sticks under the column heads, so it never covers a cell. */
-  bar?: ReactNode;
   onTap: (room: number, hour: number) => void;
 }) {
   const { t, language } = useTranslation();
@@ -78,7 +74,6 @@ export function LibraryGrid({
             </div>
           ))}
         </div>
-        {bar && <div className="mt-1">{bar}</div>}
       </div>
       {rows.map((row) => (
         <div key={row.hour} className={`grid ${COLS} items-center gap-1`}>

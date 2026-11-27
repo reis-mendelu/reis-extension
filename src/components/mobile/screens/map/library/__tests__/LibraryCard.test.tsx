@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { screen, fireEvent, within } from '@testing-library/react';
 
 const wide = vi.hoisted(() => ({ value: false }));
 vi.mock('../../../../../../hooks/ui/useWideViewport', () => ({
@@ -12,11 +12,11 @@ vi.mock('../../../../../../mobile/library/transport', () => ({
   nativeBookingsHttp: vi.fn(),
 }));
 
-import { LibraryCard } from '../LibraryCard';
 import { libraryOf } from '../libraryOf';
 import { useAppStore } from '../../../../../../store/useAppStore';
 import { useLibraryStore } from '../../../../../../mobile/library/libraryStore';
 import type { RoomProperties } from '../../../../../../types/campusMap';
+import { renderPanel } from './renderPanel';
 import { NOW, bar, cell, ind1, ind2, plus, seedCard, team1 } from './libraryCardFixture';
 
 beforeEach(() => {
@@ -47,7 +47,7 @@ describe('libraryOf', () => {
 
 describe('LibraryCard', () => {
   it('is a table: where it is, five days, a column per room, a row per hour still bookable', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     expect(screen.getByText('Budova A, −1. patro')).toBeTruthy();
     const chips = within(screen.getAllByRole('group')[0]!).getAllByRole('button');
     expect(chips.map((c) => c.textContent)).toEqual(['Dnes', 'Út 17', 'St 18', 'Čt 19', 'Pá 20']);
@@ -62,7 +62,7 @@ describe('LibraryCard', () => {
   });
 
   it('draws only what can be tapped as a button: taken hours and rooms that did not answer are not', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     // Individuální 1 is free from 13:00; at 12:00 it is not.
     expect(screen.queryByRole('button', { name: 'Individuální 1, 12:00' })).toBeNull();
     expect(cell('Individuální 1', '13:00')).toBeTruthy();
@@ -72,7 +72,7 @@ describe('LibraryCard', () => {
   });
 
   it('a tap picks one room and hour, shows it in the bar and offers a plus on each side', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Individuální 1', '14:00'));
     expect(within(bar()!).getByText('Individuální 1')).toBeTruthy();
     expect(within(bar()!).getByText('14:00–15:00 · 1 h')).toBeTruthy();
@@ -81,7 +81,7 @@ describe('LibraryCard', () => {
   });
 
   it('a plus adds that hour, an end hour takes it off, another room starts over', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Individuální 1', '14:00'));
     fireEvent.click(plus('15:00'));
     expect(within(bar()!).getByText('14:00–16:00 · 2 h')).toBeTruthy();
@@ -96,7 +96,7 @@ describe('LibraryCard', () => {
   });
 
   it('closes the map in on the room when the pick moves into it', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));
     expect(useAppStore.getState().mapSelection).toEqual({
       kind: 'library',
@@ -119,7 +119,7 @@ describe('LibraryCard', () => {
         },
       ],
     } as never);
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '15:00'));
     expect(within(bar()!).getByText('15:00–16:00 · 1 h')).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Přidat hodinu/ })).toBeNull();
@@ -127,7 +127,7 @@ describe('LibraryCard', () => {
 
   it('says a day is over instead of showing an empty table', () => {
     vi.setSystemTime(new Date('2026-11-16T17:30:00+01:00'));
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Dnes' }));
     expect(screen.getByRole('status')).toHaveTextContent('Na tento den už nejde rezervovat.');
   });
@@ -138,13 +138,13 @@ describe('LibraryCard', () => {
         status: 'success',
       },
     } as never);
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     expect(screen.getByText('15:00').parentElement!.textContent).toContain('výuka');
     expect(cell('Týmová 1', '15:00')).toBeTruthy();
   });
 
   it('says a public holiday is why the library is closed', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Út 17' }));
     expect(screen.getByRole('status')).toHaveTextContent(
       'Den boje za svobodu a demokracii: knihovna má zavřeno.'
@@ -153,19 +153,19 @@ describe('LibraryCard', () => {
 
   it('after the last bookable hour opens on the next open day, skipping the holiday', () => {
     vi.setSystemTime(new Date('2026-11-16T19:30:00+01:00'));
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     expect(screen.getByRole('button', { name: 'St 18' }).getAttribute('aria-pressed')).toBe('true');
   });
 
   it('says it is loading, and calls nothing free, before the library answers', () => {
     useLibraryStore.setState({ blocks: {}, status: 'loading', fetchedAt: null });
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     expect(screen.getByRole('status')).toHaveTextContent('Načítám volné hodiny z knihovny…');
   });
 
   it('says so when the library cannot be reached', () => {
     useLibraryStore.setState({ status: 'offline', blocks: {} });
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     expect(screen.getByRole('status')).toHaveTextContent('Zkontroluj připojení');
   });
 
@@ -183,7 +183,7 @@ describe('LibraryCard', () => {
         },
       ],
     } as never);
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     expect(screen.getByText('Máš rezervováno')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Individuální 1, 14:00' })).toBeNull();
     // Taken and unread cells say so to a screen reader too.
@@ -201,11 +201,11 @@ describe('LibraryCard', () => {
 
   it('drops a stored day once it has passed, and gives a later day its own chip', () => {
     useLibraryStore.setState({ day: '2026-11-13' });
-    const { unmount } = render(<LibraryCard view={{ featureId: null }} />);
+    const { unmount } = renderPanel();
     expect(screen.getByRole('button', { name: 'Dnes' }).getAttribute('aria-pressed')).toBe('true');
     unmount();
     useLibraryStore.setState({ day: '2026-11-23' });
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     expect(screen.getByRole('button', { name: 'Po 23' }).getAttribute('aria-pressed')).toBe('true');
   });
 });

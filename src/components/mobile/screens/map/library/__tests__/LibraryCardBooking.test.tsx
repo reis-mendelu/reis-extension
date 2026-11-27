@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, within, act } from '@testing-library/react';
+import { screen, fireEvent, within, act } from '@testing-library/react';
 
 const wide = vi.hoisted(() => ({ value: false }));
 vi.mock('../../../../../../hooks/ui/useWideViewport', () => ({
@@ -15,9 +15,9 @@ vi.mock('../../../../../../mobile/library/transport', () => ({
 const booking = vi.hoisted(() => ({ bookAndRecord: vi.fn() }));
 vi.mock('../../../../../../mobile/library/bookingActions', () => booking);
 
-import { LibraryCard } from '../LibraryCard';
 import { useAppStore } from '../../../../../../store/useAppStore';
 import { useLibraryStore } from '../../../../../../mobile/library/libraryStore';
+import { renderPanel } from './renderPanel';
 import { NOW, bar, cell, ind1, plus, seedCard, team1 } from './libraryCardFixture';
 
 beforeEach(() => {
@@ -31,7 +31,7 @@ afterEach(() => vi.useRealTimers());
 
 describe('LibraryCard: booking', () => {
   it('the first booking on a phone goes through the confirm sheet, with the data sentence', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));
     fireEvent.click(plus('15:00'));
     fireEvent.click(within(bar()!).getByRole('button', { name: 'Rezervovat' }));
@@ -48,7 +48,7 @@ describe('LibraryCard: booking', () => {
   it('after that the check books straight away, with no sheet', async () => {
     booking.bookAndRecord.mockResolvedValue({ kind: 'ok' });
     useLibraryStore.setState({ noticeSeen: true });
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));
     fireEvent.click(plus('15:00'));
     fireEvent.click(within(bar()!).getByRole('button', { name: 'Rezervovat' }));
@@ -64,7 +64,7 @@ describe('LibraryCard: booking', () => {
   it('keeps the pick when the booking did not go through', async () => {
     booking.bookAndRecord.mockResolvedValue({ kind: 'taken' });
     useLibraryStore.setState({ noticeSeen: true });
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));
     fireEvent.click(within(bar()!).getByRole('button', { name: 'Rezervovat' }));
     await vi.waitFor(() => expect(booking.bookAndRecord).toHaveBeenCalled());
@@ -73,7 +73,7 @@ describe('LibraryCard: booking', () => {
 
   it('the “i” says what the library receives, any time', () => {
     useLibraryStore.setState({ noticeSeen: true });
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));
     expect(screen.queryByText(/Knihovna dostane/)).toBeNull();
     fireEvent.click(within(bar()!).getByRole('button', { name: 'Co knihovna dostane' }));
@@ -81,7 +81,7 @@ describe('LibraryCard: booking', () => {
   });
 
   it('the X clears the pick', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));
     fireEvent.click(within(bar()!).getByRole('button', { name: 'Zrušit výběr' }));
     expect(bar()).toBeNull();
@@ -90,7 +90,7 @@ describe('LibraryCard: booking', () => {
 
   it('on the iPad the first booking confirms inline in the bar, not in a sheet', () => {
     wide.value = true;
-    render(<LibraryCard view={{ featureId: null }} flush />);
+    renderPanel(true);
     fireEvent.click(cell('Týmová 1', '14:00'));
     fireEvent.click(within(bar()!).getByRole('button', { name: 'Rezervovat' }));
     expect(useAppStore.getState().mobileSheets).toEqual([]);
@@ -98,7 +98,7 @@ describe('LibraryCard: booking', () => {
   });
 
   it('drops a pick whose cell was taken meanwhile', () => {
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));
     expect(bar()).toBeTruthy();
     const before = useLibraryStore.getState().blocks[team1!.featureId];
@@ -118,7 +118,7 @@ describe('LibraryCard: booking', () => {
     let finish: (r: { kind: 'ok' }) => void = () => undefined;
     booking.bookAndRecord.mockReturnValue(new Promise((res) => (finish = res)));
     useLibraryStore.setState({ noticeSeen: true });
-    render(<LibraryCard view={{ featureId: null }} />);
+    renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));
     fireEvent.click(within(bar()!).getByRole('button', { name: 'Rezervovat' }));
     // While the library answers, the student picks another room.

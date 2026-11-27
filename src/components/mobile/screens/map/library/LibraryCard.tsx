@@ -15,7 +15,6 @@ import { withOwnBookings } from '../../../../../mobile/library/libraryHours';
 import {
   gridRows,
   growHours,
-  spanOf,
   tapCell,
   type CellState,
   type GridPick,
@@ -23,7 +22,6 @@ import {
 import { MyBookings } from './MyBookings';
 import { DayChips } from './DayChips';
 import { LibraryGrid } from './LibraryGrid';
-import { LibraryBar } from './LibraryBar';
 import { SavedNote } from './SavedNote';
 import { openLibrary } from './openLibrary';
 import type { LibraryView } from './libraryOf';
@@ -71,7 +69,6 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
     stored.hours.every((h) => stateOf(stored.room, h) === 'free')
       ? stored
       : null;
-  const span = spanOf(pick);
   // A pick that stopped being valid is dropped from the store, not only hidden: a
   // later read that frees those cells again must not bring the old pick back.
   const lost = stored !== null && pick === null;
@@ -140,11 +137,6 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
             grow={growHours(pick, stateOf, left)}
             chosen={view.featureId}
             flush={flush}
-            bar={
-              pick && span ? (
-                <LibraryBar pick={{ featureId: pick.room, day, from: span.from, to: span.to }} />
-              ) : undefined
-            }
             onTap={onTap}
           />
           {rows.some((r) => Object.values(r.cells).includes('unknown')) && (
