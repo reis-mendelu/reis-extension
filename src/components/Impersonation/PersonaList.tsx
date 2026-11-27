@@ -71,9 +71,10 @@ export function PersonaList(props: Props) {
 
   // Same double-tap guard as the banner: exit re-reads nine stores.
   const me = async () => {
-    // Nothing applied yet: Já still cancels a fetch in flight (persona or picker).
-    if (!active) return cancel();
-    if (leaving) return;
+    // Já always ends a fetch in flight (persona or picker), so its row is
+    // freed at once; with nothing applied yet that is all it has to do.
+    cancel();
+    if (!active || leaving) return;
     setLeaving(true);
     try {
       await stop();

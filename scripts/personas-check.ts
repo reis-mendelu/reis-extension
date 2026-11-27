@@ -13,21 +13,13 @@ import { personaStats, personaVerdict, type PersonaRow } from './lib/personaStat
  * to one group. Run it before shipping a persona change and at each semester
  * start. Its requests are a first-year's worth per persona, one at a time.
  */
+/** Exits once what was written has drained: a piped table is never cut short. */
+const exitAfterOutput = (code: number) => process.stdout.write('', () => process.exit(code));
+
 async function main() {
-  process.stderr.write('[personas] logging in to IS…\n');
-  await installNodeRuntime(await isLogin());
-  // After the runtime: @/api modules need its DOM and fetch at import time.
-  const { loadOptions, loadYear1Groups } = await import('@/api/impersonation/options');
-  const { fetchImpersonation } = await import('@/api/impersonation/fetchImpersonation');
-  const { currentPeriod, periodLabel } = await import('@/api/impersonation/intake');
-  const { PERSONAS, personaRequest, resolvePersona } = await import('@/features/personas');
-  const { ImpersonationError } = await import('@/api/impersonation/types');
-
-  process.stderr.write('[personas] loading programmes…\n');
-  const options = await loadOptions();
-  const period = periodLabel(currentPeriod(new Date()));
-  const rows: (PersonaRow & { groups: number[] })[] = [];
-
+  // Before the login: the persona list is plain data (features/personas.ts
+  // imports no fetcher), so a mistyped id costs no browser and no IS request.
+  const { PERSONAS } = await import('@/features/personas');
   // `--detail zf`: every subject's lessons of that persona, to tell a broken
   // group filter from a subject that really meets at several times.
   const detailAt = process.argv.indexOf('--detail');
@@ -36,8 +28,22 @@ async function main() {
     process.stderr.write(
       `--detail: no persona "${detail}" (${PERSONAS.map((p) => p.id).join(', ')})\n`
     );
-    process.exit(2);
+    return exitAfterOutput(2);
   }
+
+  process.stderr.write('[personas] logging in to IS…\n');
+  await installNodeRuntime(await isLogin());
+  // After the runtime: @/api modules need its DOM and fetch at import time.
+  const { loadOptions, loadYear1Groups } = await import('@/api/impersonation/options');
+  const { fetchImpersonation } = await import('@/api/impersonation/fetchImpersonation');
+  const { currentPeriod, periodLabel } = await import('@/api/impersonation/intake');
+  const { personaRequest, resolvePersona } = await import('@/features/personas');
+  const { ImpersonationError } = await import('@/api/impersonation/types');
+
+  process.stderr.write('[personas] loading programmes…\n');
+  const options = await loadOptions();
+  const period = periodLabel(currentPeriod(new Date()));
+  const rows: (PersonaRow & { groups: number[] })[] = [];
 
   for (const p of PERSONAS) {
     if (detail && p.id !== detail) continue;
@@ -103,8 +109,9 @@ async function main() {
   console.table(table);
   const failed = table.filter((r) => r.verdict !== 'ok').length;
   process.stdout.write(failed ? `\n❌ ${failed} persona(s) failed\n` : '\n✅ all personas ok\n');
-  // The app's fetchers keep keep-alive sockets and happy-dom timers alive.
-  process.exit(failed ? 1 : 0);
+  // The app's fetchers keep keep-alive sockets and happy-dom timers alive, so
+  // the process is ended explicitly, after the table has drained.
+  exitAfterOutput(failed ? 1 : 0);
 }
 
 function printDetail(

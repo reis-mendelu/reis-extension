@@ -5,6 +5,7 @@ import { overlayState } from '../../overlay/overlayState';
 import { identityOverlay } from '../../overlay/identityOverlay';
 import { failRateCodes } from './failRateCodes';
 import { saveImpersonation } from './impersonationStorage';
+import { logError } from '../../../utils/reportError';
 
 type Set = (partial: Partial<AppState>) => void;
 type Get = () => AppState;
@@ -28,7 +29,13 @@ export async function applyImpersonation(
 ): Promise<boolean> {
   const stale = () => opts.epoch !== undefined && !isCurrentImpersonationEpoch(opts.epoch);
   if (stale()) return false;
-  await saveImpersonation(active);
+  try {
+    await saveImpersonation(active);
+  } catch (e) {
+    // Every caller gets the same answer: not applied, nothing half-done.
+    logError('Impersonation.save', e);
+    return false;
+  }
   if (stale()) return false;
   set(
     overlayWrite({
@@ -53,3 +60,5 @@ export async function applyImpersonation(
 let epoch = 0;
 export const nextImpersonationEpoch = () => ++epoch;
 export const isCurrentImpersonationEpoch = (e: number) => e === epoch;
+/** The current token without taking a new one: the boot restore yields to any request after it. */
+export const currentImpersonationEpoch = () => epoch;

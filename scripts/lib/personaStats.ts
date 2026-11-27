@@ -7,11 +7,18 @@ export interface PersonaStats {
   subjects: number;
   lectures: number;
   seminars: number;
-  /** The most distinct weekly seminar slots (weekday + start) of any one subject. */
+  /**
+   * The most RECURRING weekly seminar slots (weekday + start, on two dates or
+   * more) of any one subject. A one-off block day is not counted.
+   */
   maxSeminarSlots: number;
   /** Plan subjects of this semester with no lesson at all in the timetable. */
   subjectsWithoutLessons: number;
-  /** Subjects the group is taught that the plan semester does not list (added from the timetable). */
+  /**
+   * Taught subjects the persona does not attend by its plan semester (added
+   * from the timetable). Electives of that semester beyond the minimum count
+   * here too; `taughtSubjects` does not add those.
+   */
   timetableOnly: number;
 }
 
@@ -25,9 +32,11 @@ export interface PersonaRow {
 }
 
 /**
- * A first-year group has one seminar per subject a week. More than this many
- * distinct weekly slots for one subject means the timetable gave every group's
- * seminars (no group, or a group IS ignored), which "seminars > 0" alone passes.
+ * A first-year group mostly has one seminar per subject a week; two is a real
+ * week too (TAVKA1: a weekly slot and a virtual one on another day). More
+ * recurring slots than that for one subject means the timetable gave every
+ * group's seminars (no group, or a group IS ignored), which "seminars > 0"
+ * alone passes. Blind spot: a subject with exactly two parallels and no group.
  */
 const MAX_SLOTS_FOR_ONE_GROUP = 2;
 
@@ -40,17 +49,21 @@ export function personaStats(r: ImpersonationResult): PersonaStats {
     0
   );
   const codes = Object.keys(r.subjects.data);
-  const slots = new Map<string, Set<string>>();
+  const slots = new Map<string, Map<string, Set<string>>>();
   let lectures = 0;
   let seminars = 0;
   for (const l of r.schedule) {
     if (l.isSeminar === 'true') {
       seminars++;
-      const set = slots.get(l.courseCode) ?? new Set<string>();
-      set.add(`${weekday(l.date)}-${l.startTime}`);
-      slots.set(l.courseCode, set);
+      const bySlot = slots.get(l.courseCode) ?? new Map<string, Set<string>>();
+      const key = `${weekday(l.date)}-${l.startTime}`;
+      bySlot.set(key, (bySlot.get(key) ?? new Set<string>()).add(l.date));
+      slots.set(l.courseCode, bySlot);
     } else lectures++;
   }
+  const recurring = [...slots.values()].map(
+    (m) => [...m.values()].filter((d) => d.size > 1).length
+  );
   const taught = new Set(r.schedule.map((l) => l.courseCode));
   const planned = new Set(
     r.plan.cz.blocks.flatMap((b) =>
@@ -63,7 +76,7 @@ export function personaStats(r: ImpersonationResult): PersonaStats {
     subjects: codes.length,
     lectures,
     seminars,
-    maxSeminarSlots: Math.max(0, ...[...slots.values()].map((s) => s.size)),
+    maxSeminarSlots: Math.max(0, ...recurring),
     subjectsWithoutLessons: codes.filter((c) => !taught.has(c)).length,
     timetableOnly: [...taught].filter((c) => !planned.has(c)).length,
   };

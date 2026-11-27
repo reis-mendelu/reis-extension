@@ -38,23 +38,23 @@ export function oneSeminarParallel(lessons: BlockLesson[]): BlockLesson[] {
   const byCode = new Map<string, BlockLesson[]>();
   for (const l of lessons)
     if (l.isSeminar === 'true') byCode.set(l.courseCode, [...(byCode.get(l.courseCode) ?? []), l]);
-  const drop = new Set<string>();
-  for (const [code, seminars] of byCode) {
-    const perDate = new Map<string, Set<string>>();
-    for (const l of seminars) {
-      const keys = perDate.get(l.date) ?? new Set<string>();
-      keys.add(slotKey(l));
-      perDate.set(l.date, keys);
-    }
-    const colliding = [...perDate.values()].filter((k) => k.size > 1);
+  const drop = new Set<BlockLesson>();
+  for (const seminars of byCode.values()) {
+    const byDate = new Map<string, BlockLesson[]>();
+    for (const l of seminars) byDate.set(l.date, [...(byDate.get(l.date) ?? []), l]);
+    const colliding = [...byDate.values()].filter((ls) => new Set(ls.map(slotKey)).size > 1);
     if (colliding.length < 2) continue;
-    const keys = new Set(colliding.flatMap((k) => [...k]));
-    const first = seminars
-      .filter((l) => keys.has(slotKey(l)))
-      .sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`))[0];
-    for (const k of keys) if (first && k !== slotKey(first)) drop.add(`${code}|${k}`);
+    // The parallel a student would be in: the earliest that collides. A date it
+    // does not run on keeps its own earliest, so no colliding date ends empty.
+    const byTime = (a: BlockLesson, b: BlockLesson) =>
+      `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`);
+    const chosen = slotKey(colliding.flat().sort(byTime)[0]!);
+    for (const ls of colliding) {
+      const keep = ls.some((l) => slotKey(l) === chosen)
+        ? chosen
+        : slotKey([...ls].sort(byTime)[0]!);
+      for (const l of ls) if (slotKey(l) !== keep) drop.add(l);
+    }
   }
-  return lessons.filter(
-    (l) => l.isSeminar !== 'true' || !drop.has(`${l.courseCode}|${slotKey(l)}`)
-  );
+  return lessons.filter((l) => !drop.has(l));
 }

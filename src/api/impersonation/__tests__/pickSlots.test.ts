@@ -94,4 +94,24 @@ describe('oneSeminarParallel (year 1, programme + group query)', () => {
     const block = ['08:00', '10:00', '12:00'].map((t) => sem('Y', '20261120', t, 'Q02'));
     expect(oneSeminarParallel([...weekly, ...block])).toEqual([...weekly, ...block]);
   });
+
+  it('every colliding date keeps a seminar, the chosen parallel where it runs', () => {
+    const lessons = [
+      sem('Z', '20260929', '09:00', 'A412'),
+      sem('Z', '20260929', '11:00', 'A412'),
+      sem('Z', '20261013', '09:00', 'A412'),
+      sem('Z', '20261013', '11:00', 'A412'),
+      // A week the 09:00 parallel does not run: its earliest stays.
+      sem('Z', '20261027', '13:00', 'A414'),
+      sem('Z', '20261027', '15:00', 'A414'),
+      // A date with no collision keeps what it has.
+      sem('Z', '20261103', '11:00', 'A412'),
+    ];
+    expect(oneSeminarParallel(lessons).map((l) => `${l.date} ${l.startTime}`)).toEqual([
+      '20260929 09:00',
+      '20261013 09:00',
+      '20261027 13:00',
+      '20261103 11:00',
+    ]);
+  });
 });

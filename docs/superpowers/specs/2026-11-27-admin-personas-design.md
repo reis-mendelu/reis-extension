@@ -148,7 +148,9 @@ credentials never leave the laptop). Run before shipping and at each semester st
   takes a new request token; a fetch that lands under an older one is cached but not applied, so
   "Já" or another persona tapped meanwhile wins. The token is checked again after the save, so an
   exit that began meanwhile also ends clean on disk. Other persona rows are held while one
-  fetches; "Já" never is, and with nothing applied yet it cancels the fetch in flight.
+  fetches; "Já" never is, and it always cancels a fetch in flight (freeing that row at once).
+  Closing the picker cancels a one-off still starting. The boot restore yields to anything
+  the admin does while it reads IndexedDB. A failed save applies nothing.
 - **reis_admin only, also mid-fetch:** a fetch that lands after an admin logout saves and applies
   nothing (the logout clears the cache last, once the role is gone).
 - **Background refresh** (> 24 h) runs on a switch only, never at boot, reuses the cached
@@ -162,8 +164,9 @@ credentials never leave the laptop). Run before shipping and at each semester st
 - **What the live check found, fixed in `fetchImpersonation` (year 1, shared with the picker):**
   - ZF B-RASZ: a subject's seminar parallels carrying no group in IS (ZABAH: four Tuesday
     parallels for every group) all came back. Where a subject's seminars collide on two dates or
-    more, the colliding slots keep their earliest (`oneSeminarParallel`); slots that never
-    collide, and a one-off block day, stay. LDF had the same shape (126 → 113).
+    more, each colliding date keeps one: the earliest colliding parallel where it runs, else
+    that date's earliest (`oneSeminarParallel`). Dates without a collision, and a one-off block
+    day, stay. LDF had the same shape (126 → 113).
     The picker's "Všechny skupiny" (no group) asks for every parallel on purpose and is never
     narrowed.
   - AF B-ZIN: four subjects came back with seminars but no lecture (lectures tagged to no

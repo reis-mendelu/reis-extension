@@ -36,7 +36,10 @@ describe('personaStats', () => {
         lesson('A', true, '20260922', '11:00'),
         lesson('A', true, '20260929', '11:00'), // same weekly slot
         lesson('B', true, '20260923', '13:00'),
+        lesson('B', true, '20260930', '13:00'),
         lesson('B', true, '20260924', '13:00'), // another weekday: a 2nd slot
+        lesson('B', true, '20261001', '13:00'),
+        lesson('B', true, '20261120', '08:00'), // a one-off block day: not counted
       ],
       ['A', 'B', 'C']
     );
@@ -45,7 +48,7 @@ describe('personaStats', () => {
       planSubjects: 2,
       subjects: 3,
       lectures: 2,
-      seminars: 4,
+      seminars: 7,
       maxSeminarSlots: 2,
       subjectsWithoutLessons: 1,
       timetableOnly: 1,

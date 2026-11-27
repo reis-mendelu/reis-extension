@@ -58,4 +58,14 @@ describe('ImpersonationBanner', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Já' }));
     expect(stop).toHaveBeenCalledOnce();
   });
+
+  it('names the persona by its own code, as the list does, when IS resolved a variant', () => {
+    const zf = {
+      ...active,
+      selection: { ...active.selection, shortCode: 'B-RSZ', personaId: 'zf' },
+    };
+    useAppStore.setState(overlayWrite({ impersonation: zf }));
+    render(<ImpersonationBanner variant="row" />);
+    expect(screen.getByRole('status').textContent).toContain('Správa zeleně · B-RASZ');
+  });
 });

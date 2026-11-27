@@ -114,4 +114,21 @@ describe('PersonaList', () => {
     expect(cancel).toHaveBeenCalledOnce();
     expect(stop).not.toHaveBeenCalled();
   });
+
+  it('Já with a persona active and another fetching ends both: the list is not left locked', () => {
+    const cancel = vi.fn();
+    const stop = vi.fn(async () => {});
+    useAppStore.setState(
+      overlayWrite({
+        impersonation: active('finance'),
+        personaRows: { it: 'loading' },
+        cancelPersonaSwitch: cancel,
+        stopImpersonation: stop,
+      })
+    );
+    render(<PersonaList variant="compact" onOther={() => {}} />);
+    fireEvent.click(screen.getByRole('radio', { name: /Já/ }));
+    expect(cancel).toHaveBeenCalledOnce();
+    expect(stop).toHaveBeenCalledOnce();
+  });
 });

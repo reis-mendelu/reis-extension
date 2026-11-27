@@ -15,7 +15,11 @@ import { blankOverlayState } from '../overlay/overlayState';
 import { readRememberedViewer } from './context/rememberedViewer';
 import { loadImpersonation, clearImpersonation } from './impersonation/impersonationStorage';
 import { clearPersonaCache, hasPersonaCache } from './impersonation/personaCache';
-import { applyImpersonation, nextImpersonationEpoch } from './impersonation/applyImpersonation';
+import {
+  applyImpersonation,
+  currentImpersonationEpoch,
+  nextImpersonationEpoch,
+} from './impersonation/applyImpersonation';
 import { hasAdminSession } from '../../services/admin/hasAdminSession';
 import { logError } from '../../utils/reportError';
 
@@ -45,13 +49,6 @@ const codeOf = (e: unknown): ImpersonationErrorCode =>
   e instanceof ImpersonationError ? e.code : 'timetable';
 
 /**
- * "View as a student" for reIS admins: another programme's plan, subjects and
- * timetable, fetched live from IS through the admin's own session and laid over
- * the store, and that student's faculty, programme and Erasmus status in place
- * of the admin's (design 2026-11-27 §2). The overlay guard keeps every other writer off those keys while
- * this is active; the admin's real data keeps syncing into IndexedDB underneath.
- */
-/**
  * A boot with no admin session ends the cached personas too, even with none
  * active: they belong to the admin session (design 2026-11-27 §3). The admin
  * session is looked up only when a persona is cached, so a student's boot asks
@@ -62,6 +59,13 @@ async function dropPersonasWithoutAdmin(role: string | null): Promise<void> {
   if (role !== null || !(await hasAdminSession())) await clearPersonaCache().catch(() => {});
 }
 
+/**
+ * "View as a student" for reIS admins: another programme's plan, subjects and
+ * timetable, fetched live from IS through the admin's own session and laid over
+ * the store, and that student's faculty, programme and Erasmus status in place
+ * of the admin's (design 2026-11-27 §2). The overlay guard keeps every other writer off those keys while
+ * this is active; the admin's real data keeps syncing into IndexedDB underneath.
+ */
 export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get) => ({
   impersonation: null,
   impersonationPickerOpen: false,
@@ -75,7 +79,11 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
     set({ impersonationPickerOpen: true });
     void get().loadImpersonationOptions();
   },
-  closeImpersonationPicker: () => set({ impersonationPickerOpen: false }),
+  // Closing it while a one-off starts cancels that one-off: it must not land later.
+  closeImpersonationPicker: () => {
+    if (get().impersonationStarting) nextImpersonationEpoch();
+    set({ impersonationPickerOpen: false, impersonationStarting: false });
+  },
 
   // Called from the entry's click handler on both trees — never from an effect.
   loadImpersonationOptions: async () => {
@@ -168,6 +176,8 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
   // clears it. A session whose role lookup failed (offline) keeps it for the
   // next boot without applying it.
   restoreImpersonation: async () => {
+    // Anything the admin does while this reads IndexedDB (Já, a persona) wins.
+    const epoch = currentImpersonationEpoch();
     const saved = await loadImpersonation().catch(() => null);
     if (!saved) return dropPersonasWithoutAdmin(get().adminRole);
     const drop = async (why?: 'expired') => {
@@ -176,11 +186,13 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
       // No admin session (or not a reis_admin): the persona cache goes too.
       else await clearPersonaCache().catch(() => {});
     };
-    if (saved.selection.periodLabel !== periodLabel(currentPeriod(new Date())))
-      return drop('expired');
+    if (saved.selection.periodLabel !== periodLabel(currentPeriod(new Date()))) {
+      await drop('expired');
+      return dropPersonasWithoutAdmin(get().adminRole);
+    }
     const role = get().adminRole;
     if (role === 'reis_admin') {
-      await applyImpersonation(set, get, saved);
+      await applyImpersonation(set, get, saved, { epoch });
       return;
     }
     if (role !== null || !(await hasAdminSession())) return drop();

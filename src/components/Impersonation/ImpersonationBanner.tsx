@@ -45,7 +45,7 @@ export function ImpersonationBanner({ variant }: { variant: 'row' | 'floating' }
       <span className="font-semibold">
         {persona ? (
           // The list's own name for it, so banner and list read the same.
-          `${persona.label[language]} · ${selection.shortCode}`
+          `${persona.label[language]} · ${persona.shortCode}`
         ) : (
           <>
             {t('impersonation.bannerLabel', {

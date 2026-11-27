@@ -108,6 +108,14 @@ const resultFor = (sel: ImpersonationSelection, code: string): ImpersonationResu
 const s = () => useAppStore.getState();
 const codes = () => s().schedule.data.map((l) => l.courseCode);
 const flush = () => new Promise((r) => setTimeout(r, 0));
+/**
+ * Lets a background refresh run to its end: a fetch, then several IndexedDB
+ * round-trips (fake-indexeddb answers on later macrotasks). Two flushes were
+ * enough on an idle machine and not under load.
+ */
+const settle = async () => {
+  for (let i = 0; i < 30; i++) await flush();
+};
 
 beforeEach(async () => {
   vi.useFakeTimers({ now: new Date(2026, 8, 26, 12), toFake: ['Date'] });
@@ -183,8 +191,7 @@ describe('persona switch', () => {
     expect(codes()).toEqual(['B-F-1']); // the cache, at once
     await s().switchToPersona('finance'); // a second tap while the refresh runs
     release();
-    await flush();
-    await flush();
+    await settle();
     expect(fetchImpersonation).toHaveBeenCalledOnce();
     expect(codes()).toEqual(['B-F-2']);
     const saved = (await IndexedDBService.get('meta', 'persona:finance')) as {
@@ -205,8 +212,7 @@ describe('persona switch', () => {
     await s().switchToPersona('finance');
     await s().stopImpersonation();
     release();
-    await flush();
-    await flush();
+    await settle();
     expect(s().impersonation).toBeNull();
     expect(codes()).toEqual(['REAL-1']);
   });
@@ -277,8 +283,8 @@ describe('persona cache lifetime', () => {
   it('admin logout clears every persona, active or not', async () => {
     await s().switchToPersona('finance');
     await s().switchToPersona('it');
-    await s().stopImpersonation();
     await s().adminLogout();
+    expect(s().impersonation).toBeNull();
     expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
     expect(await IndexedDBService.get('meta', 'persona:it')).toBeUndefined();
   });
@@ -349,8 +355,7 @@ describe('persona races (review 2026-11-27)', () => {
     const leaving = s().stopImpersonation();
     release();
     await leaving;
-    await flush();
-    await flush();
+    await settle();
     expect(s().impersonation).toBeNull();
     expect(await IndexedDBService.get('meta', 'impersonation')).toBeUndefined();
   });
@@ -362,8 +367,7 @@ describe('persona races (review 2026-11-27)', () => {
     await s().switchToPersona('finance');
     useAppStore.setState({ impersonationPickerOpen: true });
     release();
-    await flush();
-    await flush();
+    await settle();
     expect(codes()).toEqual(['B-F-2']);
     expect(s().impersonationPickerOpen).toBe(true);
   });
@@ -379,10 +383,61 @@ describe('persona races (review 2026-11-27)', () => {
     vi.setSystemTime(new Date(2026, 8, 28));
     fetchImpersonation.mockRejectedValueOnce(new ImpersonationError('timetable'));
     expect(await s().switchToPersona('finance')).toBe(true);
-    await flush();
-    await flush();
+    await settle();
     expect(s().personaRows.finance).toBe('timetable');
     expect(s().impersonation?.selection.personaId).toBe('finance');
     expect(codes()).toEqual(['B-F-1']);
+  });
+
+  it('an expired saved persona at a boot with no admin session takes the cache too', async () => {
+    await s().switchToPersona('finance');
+    useAppStore.setState(overlayWrite({ impersonation: null, adminRole: null }));
+    vi.setSystemTime(new Date(2027, 2, 1));
+    await s().restoreImpersonation();
+    expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
+  });
+
+  it('Já during the boot restore wins over the saved persona', async () => {
+    await s().switchToPersona('finance');
+    useAppStore.setState(overlayWrite({ impersonation: null }));
+    const restoring = s().restoreImpersonation();
+    s().cancelPersonaSwitch();
+    await restoring;
+    expect(s().impersonation).toBeNull();
+  });
+
+  it('a failed save of the active impersonation leaves the switch undone, not thrown', async () => {
+    await s().switchToPersona('finance');
+    await s().stopImpersonation();
+    const set = IndexedDBService.set.bind(IndexedDBService);
+    const spy = vi
+      .spyOn(IndexedDBService, 'set')
+      .mockImplementation(async (store, key, value) =>
+        key === 'impersonation'
+          ? Promise.reject(new Error('quota'))
+          : set(store, key, value as never)
+      );
+    await expect(s().switchToPersona('finance')).resolves.toBe(false);
+    expect(s().impersonation).toBeNull();
+    spy.mockRestore();
+  });
+
+  it('closing the picker while a one-off starts cancels it', async () => {
+    const release = gatedFetch('B-F-9');
+    const starting = s().startImpersonation({
+      programId: '2',
+      shortCode: 'B-F',
+      name: 'Finance',
+      faculty: 'PEF',
+      year: 1,
+      group: 1,
+      rozvrh: ROZVRH,
+    });
+    await flush();
+    s().closeImpersonationPicker();
+    expect(s().impersonationStarting).toBe(false);
+    release();
+    expect(await starting).toBe(false);
+    expect(s().impersonation).toBeNull();
   });
 });
