@@ -24,31 +24,48 @@ export type ViewerSource = Pick<
   'userFaculty' | 'isErasmus' | 'userProgramme' | 'impersonation'
 >;
 
+type Impersonated = { faculty: string; shortCode?: string | null } | null | undefined;
+
 /**
- * Who the audience rule is applied to: the one rule for useViewer (React) and
- * for Novinky built outside React (utils/novinky/buildFeed, src/mobile).
+ * Who the audience rule is applied to: the one rule behind useViewer (React)
+ * and viewerOf (Novinky built outside React: utils/novinky/buildFeed, src/mobile).
  *
  * While a reis_admin impersonates, it is the impersonated student's faculty and
  * programme, so the map, Novinky and partners show what that student would see.
  * The picker cannot impersonate an Erasmus student, so `erasmus` is false then.
  * `userParams` is NOT overlaid by impersonation, which is why this reads the
  * selection itself. Programmes are compared in base form ('B-OI-ZBOI' is
- * 'B-OI'), as audience tokens are written.
+ * 'B-OI'), as audience tokens are written; the store already keeps the base.
  */
-export function viewerOf(s: ViewerSource): Viewer {
-  const selection = s.impersonation?.selection;
-  return selection?.faculty
-    ? viewerFrom(selection.faculty, false, baseProgramme(selection.shortCode))
-    : viewerFrom(s.userFaculty, s.isErasmus, baseProgramme(s.userProgramme));
+function resolveViewer(
+  own: { faculty: string | null; erasmus: boolean; programme: string | null },
+  impersonated: Impersonated
+): Viewer {
+  return impersonated?.faculty
+    ? viewerFrom(impersonated.faculty, false, baseProgramme(impersonated.shortCode))
+    : viewerFrom(own.faculty, own.erasmus, baseProgramme(own.programme));
 }
 
+/** The viewer from a store snapshot: for code outside React. */
+export const viewerOf = (s: ViewerSource): Viewer =>
+  resolveViewer(
+    { faculty: s.userFaculty, erasmus: s.isErasmus, programme: s.userProgramme },
+    s.impersonation?.selection
+  );
+
 export function useViewer(): Viewer {
-  const userFaculty = useAppStore((s) => s.userFaculty);
-  const isErasmus = useAppStore((s) => s.isErasmus);
-  const userProgramme = useAppStore((s) => s.userProgramme);
-  const impersonation = useAppStore((s) => s.impersonation);
+  const faculty = useAppStore((s) => s.userFaculty);
+  const erasmus = useAppStore((s) => s.isErasmus);
+  const programme = useAppStore((s) => s.userProgramme);
+  // Two strings, not the impersonation object: a new `result` is not a new viewer.
+  const impFaculty = useAppStore((s) => s.impersonation?.selection.faculty ?? null);
+  const impCode = useAppStore((s) => s.impersonation?.selection.shortCode ?? null);
   return useMemo(
-    () => viewerOf({ userFaculty, isErasmus, userProgramme, impersonation }),
-    [userFaculty, isErasmus, userProgramme, impersonation]
+    () =>
+      resolveViewer(
+        { faculty, erasmus, programme },
+        impFaculty ? { faculty: impFaculty, shortCode: impCode } : null
+      ),
+    [faculty, erasmus, programme, impFaculty, impCode]
   );
 }
