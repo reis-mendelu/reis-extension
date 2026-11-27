@@ -10,6 +10,9 @@ vi.mock('../../../utils/userParams', () => ({
   })),
 }));
 
+vi.mock('../../../api/featureUsage', () => ({ trackFeatureSignal: vi.fn(async () => true) }));
+
+import { trackFeatureSignal } from '../../../api/featureUsage';
 import { bookAndRecord, extendBooking } from '../bookingActions';
 import { useLibraryStore } from '../libraryStore';
 import { useAppStore } from '../../../store/useAppStore';
@@ -37,6 +40,7 @@ const http = (create: { status: number; data: unknown }): BookingsHttp =>
 const now = new Date(2026, 10, 10, 6, 0);
 
 beforeEach(() => {
+  vi.mocked(trackFeatureSignal).mockClear();
   useAppStore.setState({ customEvents: [] });
   useLibraryStore.getState().reset();
 });
@@ -82,6 +86,72 @@ describe('bookAndRecord', () => {
     });
     expect(r.kind).toBe('taken');
     expect(useAppStore.getState().customEvents).toHaveLength(0);
+  });
+
+  it('counts the install once a booking went through, and not a refused one', async () => {
+    useLibraryStore.setState({ blocks: { [room.featureId]: [] } });
+    const refused = http({ status: 400, data: { message: 'Staff not available' } });
+    await bookAndRecord({
+      http: refused,
+      room,
+      day: '2026-11-10',
+      from: 15,
+      to: 16,
+      lang: 'cz',
+      now,
+    });
+    expect(trackFeatureSignal).not.toHaveBeenCalled();
+    const made = http({
+      status: 200,
+      data: { appointment: { id: 'A1', selfServiceAppointmentId: 'S1' } },
+    });
+    await bookAndRecord({ http: made, room, day: '2026-11-10', from: 15, to: 16, lang: 'cz', now });
+    expect(trackFeatureSignal).toHaveBeenCalledExactlyOnceWith('library_booking_made');
+  });
+});
+
+describe('bookAndRecord, counting a partial answer', () => {
+  it('does not count hours that only looked booked after a timeout', async () => {
+    useLibraryStore.setState({ blocks: { [room.featureId]: [] } });
+    let reads = 0;
+    let creates = 0;
+    const h: BookingsHttp = vi.fn(async (req) => {
+      if (req.url.endsWith('GetStaffAvailability')) {
+        // After the writes, 15:00 is gone: the library took it, though it never said so.
+        const gone = ++reads > 1;
+        return {
+          status: 200,
+          data: {
+            staffAvailabilityResponse: [
+              {
+                availabilityItems: [
+                  ['07:00', gone ? '15:00' : '19:00'],
+                  ...(gone ? [['16:00', '19:00']] : []),
+                ].map(([a, b]) => ({
+                  status: 'BOOKINGSAVAILABILITYSTATUS_AVAILABLE',
+                  startDateTime: { dateTime: `2026-11-10T${a}:00` },
+                  endDateTime: { dateTime: `2026-11-10T${b}:00` },
+                })),
+              },
+            ],
+          },
+        };
+      }
+      return ++creates === 1
+        ? { status: 200, data: {} }
+        : { status: 400, data: { message: 'Staff not available' } };
+    });
+    const r = await bookAndRecord({
+      http: h,
+      room,
+      day: '2026-11-10',
+      from: 15,
+      to: 17,
+      lang: 'cz',
+      now,
+    });
+    expect(r.kind).toBe('partial');
+    expect(trackFeatureSignal).not.toHaveBeenCalled();
   });
 });
 

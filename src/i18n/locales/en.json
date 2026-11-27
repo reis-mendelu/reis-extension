@@ -1324,6 +1324,7 @@
       "signalScreenDocuments": "Documents opened",
       "signalScreenIsic": "ISIC opened (mobile app only)",
       "signalScreenLibrary": "Library card opened (mobile app only)",
+      "signalLibraryBookingMade": "Study room booked from the Library card (mobile app only)",
       "signalScreenInternships": "Internships (Stáže) opened",
       "signalInternshipClickEy": "Click on “Cesta s EY”",
       "signalAppUpdateOpened": "Click on “New reIS version”",
