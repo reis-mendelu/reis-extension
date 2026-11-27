@@ -42,7 +42,8 @@ body { font-size: 16px; line-height: 1.45; }
 
 .mainpage div, .mainpage p, .mainpage form { max-width: 100% !important; box-sizing: border-box; }
 .mainpage div.small { width: auto !important; }
-.mainpage .rada-ikon { display: flex !important; flex-wrap: wrap; }
+.mainpage .rada-ikon { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)) !important; width: calc(100vw - 30px); box-sizing: border-box; gap: 4px; }
+.mainpage .rada-ikon .app-ikona { width: auto !important; min-width: 0; }
 .mainpage .paginator { flex-wrap: wrap; row-gap: 4px; }
 .mainpage .sekce-nadpis { font-size: 14px; }
 
