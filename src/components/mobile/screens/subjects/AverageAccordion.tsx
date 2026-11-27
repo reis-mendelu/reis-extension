@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Trophy } from 'lucide-react';
 import { useTranslation } from '../../../../hooks/useTranslation';
+import { useAppStore } from '../../../../store/useAppStore';
+import { PersonaUnavailable } from '../../../Impersonation/PersonaUnavailable';
 import { percentileStanding } from '../../../../api/studyComparison';
 import type { StudyStats, StudyComparison } from '../../../../types/studyPlan';
 
@@ -38,6 +40,8 @@ function AverageRow({ label, value }: { label: string; value: string }) {
 export function AverageAccordion({ studyStats, comparison }: AverageAccordionProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  // A persona has no averages or submission boxes in IS; vanishing read as "none yet". One note for both: the boxes card sits beside this one.
+  const impersonating = useAppStore((s) => s.impersonation != null);
 
   const hasAverages =
     !!studyStats &&
@@ -46,6 +50,8 @@ export function AverageAccordion({ studyStats, comparison }: AverageAccordionPro
     );
   const standing = comparison ? percentileStanding(comparison.percentile) : null;
 
+  if (impersonating)
+    return <PersonaUnavailable what="averagesAndBoxes" className="flex-shrink-0" />;
   if (!hasAverages && !standing) return null;
 
   return (

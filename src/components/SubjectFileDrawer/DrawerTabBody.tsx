@@ -12,6 +12,7 @@ import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { LoadFailed } from '../LoadFailed';
+import { PersonaUnavailable } from '../Impersonation/PersonaUnavailable';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 import type { Classmate } from '../../types/classmates';
@@ -96,6 +97,17 @@ export function DrawerTabBody({
   const courseCode = lesson?.courseCode ?? '';
   const filesFailed = useAppStore((s) => !!courseCode && !!s.filesError[courseCode]);
   const refreshFilesForSubject = useAppStore((s) => s.refreshFilesForSubject);
+  const impersonating = useAppStore((s) => s.impersonation != null);
+
+  // Files are code-keyed, so a subject the persona shares with the admin would
+  // still list them; only an empty folder is our gap, not a real one.
+  if (tab === 'files' && impersonating && (!files || files.length === 0)) {
+    return (
+      <div className="p-4">
+        <PersonaUnavailable what="files" />
+      </div>
+    );
+  }
 
   if (tab === 'files') {
     const isEmpty = !files || files.length === 0;

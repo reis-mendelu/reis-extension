@@ -15,6 +15,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
 import { LoadFailed } from '../LoadFailed';
+import { PersonaUnavailable } from '../Impersonation/PersonaUnavailable';
 import { SignupGroup } from './SignupGroup';
 import { useMarkExamTermsSeen } from '../../hooks/ui/useMarkExamTermsSeen';
 import { useRefreshAtExamOpening } from '../../hooks/ui/useRefreshAtExamOpening';
@@ -49,6 +50,8 @@ export function ExamPanel() {
   // Mounted only as the extension's Zkoušky view: on screen = Novinky's new terms seen.
   useMarkExamTermsSeen(true);
   const { exams, showSkeleton, showFailed, sections, signupSections } = useExamsData();
+  // A persona has no exams in IS; the admin's own sync state says nothing about it.
+  const impersonating = useAppStore((s) => s.impersonation != null);
   const studium = params?.studium || '';
   const obdobi = params?.obdobi || '';
   const href =
@@ -183,9 +186,13 @@ export function ExamPanel() {
           </div>
         )}
 
-        {!showSkeleton && <PanelTopBar href={href} />}
+        {(impersonating || !showSkeleton) && <PanelTopBar href={href} />}
 
-        {showSkeleton ? (
+        {impersonating ? (
+          <div className="p-4">
+            <PersonaUnavailable what="exams" />
+          </div>
+        ) : showSkeleton ? (
           <div className="flex items-center justify-center h-32 opacity-50">
             <span className="loading loading-spinner mr-2" /> {t('exams.loading')}
           </div>
