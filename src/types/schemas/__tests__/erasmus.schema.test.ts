@@ -16,7 +16,6 @@ const realData: ErasmusCountryData = {
       reportId: 'r1',
       student: {
         name: 'Jan Novák',
-        email: 'jan@example.com',
         faculty: 'PEF',
         coordinator: 'Dr. X',
       },

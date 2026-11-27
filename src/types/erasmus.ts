@@ -1,6 +1,6 @@
 export interface ErasmusReport {
   reportId: string;
-  student: { name: string; email: string; faculty: string; coordinator: string };
+  student: { name: string; faculty: string; coordinator: string };
   host: {
     name: string;
     country: string;

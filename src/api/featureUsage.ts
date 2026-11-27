@@ -92,6 +92,12 @@ export const FEATURE_SIGNALS = [
   'critical_update_shown',
   /** Its Update button, or the one on an empty screen, tapped: did the explanation get students to update? */
   'critical_update_opened',
+  /**
+   * The "Data pro projekt" line on an open odevzdávárna card tapped (both trees;
+   * shown to Otevřená informatika and Aplikovaná informatika students on EBC-VWA
+   * and EBC-PJ, 2026-11-28): how many installs went for the datasets.
+   */
+  'project_data_opened',
 ] as const;
 
 /** Each label must also be in the database whitelist (featureSignalWhitelist.test.ts). */

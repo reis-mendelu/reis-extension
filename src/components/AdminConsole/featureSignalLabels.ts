@@ -28,4 +28,5 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   reis_for_claude_guide_opened: 'signalReisForClaudeGuideOpened',
   critical_update_shown: 'signalCriticalUpdateShown',
   critical_update_opened: 'signalCriticalUpdateOpened',
+  project_data_opened: 'signalProjectDataOpened',
 };

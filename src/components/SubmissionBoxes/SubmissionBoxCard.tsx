@@ -3,6 +3,7 @@ import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { boxDeadline, boxState, type BoxState } from '../../utils/submissionBoxes';
 import { daysUntil, useBoxLabels } from './useBoxLabels';
 import { BoxInstructions } from './BoxInstructions';
+import { ProjectDataLink } from './ProjectDataLink';
 
 const STATUS_TONE: Record<BoxState, string | undefined> = {
   empty: undefined,
@@ -87,6 +88,7 @@ export function SubmissionBoxCard({ box, now, testId, isNew }: SubmissionBoxCard
         </span>
       </a>
       {box.instructions && <BoxInstructions text={box.instructions} />}
+      <ProjectDataLink courseCode={box.courseCode} />
     </div>
   );
 }
