@@ -205,11 +205,14 @@ export function ExamsScreen() {
         title={t('mobile.exams.title')}
         below={registeredPill}
         action={
-          <RefreshButton
-            label={t('mobile.exams.refresh')}
-            refreshing={examsRefreshing}
-            onRefresh={triggerExamsRefresh}
-          />
+          // The admin's own exams: nothing a persona's screen can refresh.
+          impersonating ? undefined : (
+            <RefreshButton
+              label={t('mobile.exams.refresh')}
+              refreshing={examsRefreshing}
+              onRefresh={triggerExamsRefresh}
+            />
+          )
         }
       />
       {body}

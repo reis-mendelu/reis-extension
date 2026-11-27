@@ -34,6 +34,8 @@ it('shows the persona note instead of the empty state while impersonating', () =
   expect(screen.getByTestId('persona-unavailable')).toHaveTextContent('Zkoušky');
   expect(screen.queryByText('Žádné zkoušky v dohledu')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Chybí tu něco? Nahlásit' })).toBeNull();
+  // Its freshness line and IS link are about the admin's own exams.
+  expect(screen.queryByRole('link', { name: /IS MENDELU/ })).toBeNull();
 });
 
 /** The sync state is the admin's own, not the persona's: it decides nothing here. */
@@ -49,4 +51,5 @@ it('keeps the normal empty state otherwise', () => {
   render(<ExamPanel />);
   expect(screen.getByText('Žádné zkoušky v dohledu')).toBeInTheDocument();
   expect(screen.queryByTestId('persona-unavailable')).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /IS MENDELU/ })).toBeInTheDocument();
 });

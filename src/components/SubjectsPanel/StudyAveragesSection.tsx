@@ -49,7 +49,8 @@ export function StudyAveragesSection({
   // Expanded by default (no information lost for anyone who hasn't touched
   // it) — collapsing is an opt-out, not the default state.
   const [expanded, setExpanded] = useState(true);
-  // A persona has no averages or submission boxes in IS; vanishing read as "none yet". One note for both: the boxes card sits beside this one.
+  // A persona has no averages or submission boxes in IS; vanishing read as
+  // "none yet". One note for both: the boxes card sits beside this one.
   const impersonating = useAppStore((s) => s.impersonation != null);
   if (impersonating) return <PersonaUnavailable what="averagesAndBoxes" className={className} />;
   if (!studyStats) return null;

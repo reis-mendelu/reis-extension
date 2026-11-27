@@ -83,6 +83,14 @@ describe('Files tab', () => {
     expect(screen.queryByTestId('file-list-skeleton')).not.toBeInTheDocument();
   });
 
+  /** Files are the subject's, not the student's: a shared subject keeps its list. */
+  it('still lists the files of a subject the persona shares with the admin', () => {
+    setImpersonating(true);
+    renderTab('files', { files: [{ name: 'Přednášky' } as unknown as ParsedFile] });
+    expect(screen.getByTestId('file-list')).toBeInTheDocument();
+    expect(screen.queryByTestId('persona-unavailable')).not.toBeInTheDocument();
+  });
+
   it('keeps the normal empty state otherwise', () => {
     renderTab('files');
     expect(screen.queryByTestId('persona-unavailable')).not.toBeInTheDocument();

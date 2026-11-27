@@ -2,6 +2,7 @@ import { it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { ExamsScreen } from '../ExamsScreen';
 import { useAppStore } from '../../../../store/useAppStore';
+import cs from '../../../../i18n/locales/cs.json';
 import { setImpersonating } from '../../../Impersonation/__tests__/personaTestState';
 
 /**
@@ -40,6 +41,8 @@ it('shows the persona note under the header while impersonating', () => {
   );
   expect(screen.queryByText('Žádné zkoušky')).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Chybí tu něco? Nahlásit' })).toBeNull();
+  // The refresh would refetch the admin's own exams.
+  expect(screen.queryByRole('button', { name: cs.mobile.exams.refresh })).toBeNull();
 });
 
 /** The sync state is the admin's own, not the persona's: it decides nothing here. */
@@ -55,4 +58,7 @@ it('keeps the normal empty state otherwise', () => {
   render(<ExamsScreen />);
   expect(screen.getByText('Žádné zkoušky')).toBeInTheDocument();
   expect(screen.queryByTestId('persona-unavailable')).not.toBeInTheDocument();
+  expect(screen.getAllByRole('button', { name: cs.mobile.exams.refresh }).length).toBeGreaterThan(
+    0
+  );
 });

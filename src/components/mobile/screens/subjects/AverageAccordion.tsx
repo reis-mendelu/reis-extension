@@ -40,7 +40,8 @@ function AverageRow({ label, value }: { label: string; value: string }) {
 export function AverageAccordion({ studyStats, comparison }: AverageAccordionProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  // A persona has no averages or submission boxes in IS; vanishing read as "none yet". One note for both: the boxes card sits beside this one.
+  // A persona has no averages or submission boxes in IS; vanishing read as
+  // "none yet". One note for both: the boxes card sits beside this one.
   const impersonating = useAppStore((s) => s.impersonation != null);
 
   const hasAverages =

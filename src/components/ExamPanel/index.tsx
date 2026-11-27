@@ -177,7 +177,7 @@ export function ExamPanel() {
   return (
     <>
       <div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden relative">
-        {armedTerms.size > 0 && (
+        {armedTerms.size > 0 && !impersonating && (
           <div className="bg-warning/10 border-b border-warning/20 px-4 py-2.5 flex flex-wrap items-center justify-center gap-2">
             <Zap size={16} className="text-warning animate-pulse shrink-0" />
             <span className="text-xs font-semibold text-[var(--tone-warning)] text-center">
@@ -186,7 +186,8 @@ export function ExamPanel() {
           </div>
         )}
 
-        {(impersonating || !showSkeleton) && <PanelTopBar href={href} />}
+        {/* Its freshness and refresh are the admin's own exams, not the persona's. */}
+        {!showSkeleton && !impersonating && <PanelTopBar href={href} />}
 
         {impersonating ? (
           <div className="p-4">
