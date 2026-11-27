@@ -14,8 +14,7 @@
 import { execFileSync } from 'node:child_process';
 import { copyFileSync, existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join, resolve } from 'node:path';
 import { recordDay, type Capture } from './archive';
 import { readDump, readIs } from './isRead';
 import { KEYCHAIN_SERVICE, readCredentials } from './keychain';
@@ -26,7 +25,8 @@ const DRIVE = resolve(
   'Library/CloudStorage/GoogleDrive-darksoothingshadow@gmail.com/My Drive'
 );
 const ARCHIVE = join(DRIVE, 'IS snímky');
-const HERE = dirname(fileURLToPath(import.meta.url));
+/** run.ts runs bundled (start.mjs), always from the repo root: npm sets the cwd. */
+const README = resolve('scripts/snapshots/ARCHIVE-README.md');
 
 const argv = process.argv.slice(2);
 const flag = (name: string) => argv.includes(name);
@@ -131,7 +131,7 @@ async function main(): Promise<number> {
   };
   const { captures, problems } = from ? { captures: readDump(from), problems: [] } : await live();
   const { changed } = recordDay(out, { date, time, captures, problems });
-  copyFileSync(join(HERE, 'ARCHIVE-README.md'), join(out, 'README.md'));
+  copyFileSync(README, join(out, 'README.md'));
   log(`${captures.length} pages read, ${changed.length} changed → ${out}`);
   for (const p of problems) log(`problem: ${p}`);
   if (problems.length && !from) notify(problems.join(' · '));

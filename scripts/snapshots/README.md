@@ -49,3 +49,9 @@ follows `test`. Log: `~/Library/Logs/reIS snapshots.log`.
 IS: add its name to `KEEP` in `isPages.ts` (it must be in `scripts/lib/isHtmlPages.ts`).
 WebISKAM: add its path to `WEBISKAM_PAGES` in `webiskam.ts`. Pick it from the archive's
 `webiskam/_menu.txt`, and never add a link marked "acts".
+
+## Why `npm run snapshots` bundles first
+
+`start.mjs` bundles `run.ts` with esbuild and runs the bundle. The IS fetchers in `src/` read
+build-time values (`import.meta.env`) that only a bundler fills in; under plain `tsx` the first live
+run died on `VITE_REIS_SCHOOL`. Offline runs never load those fetchers, so they cannot catch this.

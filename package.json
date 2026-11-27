@@ -29,7 +29,7 @@
     "typecheck:nuia": "tsc -p tsconfig.app.json --noUncheckedIndexedAccess --noEmit",
     "nuia:gate": "node scripts/nuia-gate.mjs",
     "scrape:real": "tsx --tsconfig tsconfig.app.json scripts/scrape-real-data.ts",
-    "snapshots": "tsx --tsconfig tsconfig.app.json scripts/snapshots/run.ts",
+    "snapshots": "node scripts/snapshots/start.mjs",
     "sanitise:snapshot": "tsx --tsconfig tsconfig.app.json scripts/sanitise-snapshot.mjs",
     "dev:web": "vite --config vite.web.config.ts",
     "dev:web:admin": "VITE_DEV_SOCIETY= vite --config vite.web.config.ts",
