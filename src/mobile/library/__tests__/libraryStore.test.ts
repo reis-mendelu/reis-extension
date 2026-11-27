@@ -178,3 +178,37 @@ describe('cardPick', () => {
     expect(cardPick({ day: null, picked: [10] }, now)).toEqual({ day: '2026-11-18', picked: [10] });
   });
 });
+
+describe('libraryStore: the pick and the one-time notice', () => {
+  it('holds one room and its hours, and an empty run is no pick', () => {
+    const s = useLibraryStore.getState();
+    s.setPick(57632, [14, 15]);
+    expect(useLibraryStore.getState()).toMatchObject({ room: 57632, picked: [14, 15] });
+    s.setPick(57632, []);
+    expect(useLibraryStore.getState()).toMatchObject({ room: null, picked: [] });
+  });
+
+  it('a new day, clearPick and reset all drop the pick', () => {
+    const s = useLibraryStore.getState();
+    s.setPick(57632, [14]);
+    s.setDay('2026-11-12');
+    expect(useLibraryStore.getState()).toMatchObject({ room: null, picked: [] });
+    s.setPick(57632, [14]);
+    s.clearPick();
+    expect(useLibraryStore.getState().room).toBeNull();
+    s.setPick(57632, [14]);
+    s.reset();
+    expect(useLibraryStore.getState().room).toBeNull();
+  });
+
+  it('remembers on the device that the notice was shown, and a later start reads it back', async () => {
+    useLibraryStore.setState({ noticeSeen: false });
+    useLibraryStore.getState().markNoticeSeen();
+    expect(useLibraryStore.getState().noticeSeen).toBe(true);
+    await vi.waitFor(async () => {
+      useLibraryStore.setState({ noticeSeen: false });
+      await useLibraryStore.getState().loadNotice();
+      expect(useLibraryStore.getState().noticeSeen).toBe(true);
+    });
+  });
+});
