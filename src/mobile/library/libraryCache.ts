@@ -54,3 +54,26 @@ export function writeNoticeSeen(): void {
     logError('Library.markNotice', err)
   );
 }
+
+/** The `meta` key: when this device last opened the library card. Never sent anywhere. */
+export const LAST_OPENED_KEY = 'library_last_opened';
+/** A device that opened the library within this long gets its read warmed at app start. */
+export const WARM_FOR_MS = 14 * 24 * 60 * 60 * 1000;
+
+export async function markOpened(at: number): Promise<void> {
+  try {
+    await IndexedDBService.set('meta', LAST_OPENED_KEY, at);
+  } catch (err) {
+    logError('Library.markOpened', err);
+  }
+}
+
+export async function openedRecently(now: number): Promise<boolean> {
+  try {
+    const at = await IndexedDBService.get('meta', LAST_OPENED_KEY);
+    return typeof at === 'number' && now - at >= 0 && now - at < WARM_FOR_MS;
+  } catch (err) {
+    logError('Library.openedRecently', err);
+    return false;
+  }
+}

@@ -3,6 +3,8 @@ import { canBookLibrary } from './transport';
 import { isDemoMode } from '../../errors/demoMode';
 import type { MapSelection } from '../../types/campusMap';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
+import { markOpened, openedRecently } from './libraryCache';
+import { FIRST_HOUR, LAST_HOUR } from './slots';
 
 // The card also opens from a tap on a library room of the floor plan, a search
 // result or a deep link, in shared map code that cannot reach into the phone
@@ -14,13 +16,37 @@ const libraryRoomIn = (sel: MapSelection | null): boolean => {
     sel?.kind === 'room' ? sel.room.id : sel?.kind === 'roomRef' ? sel.entry.placeId : null;
   return LIBRARY_ROOMS.some((r) => r.featureId === id);
 };
+/**
+ * App start: a device that opened the library card in the last two weeks gets
+ * the read going now, on a weekday in the library's hours, so the answer is
+ * ready (or on its way) when the student next looks. The library takes 10-16 s
+ * at times; the request carries nothing about the student, and a device that
+ * never used the card asks nothing.
+ */
+export async function warmUp(load: () => void, now = new Date()): Promise<void> {
+  if (!canBookLibrary() || isDemoMode()) return;
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Prague',
+    weekday: 'short',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+  const hour = Number(get('hour'));
+  const weekend = get('weekday') === 'Sat' || get('weekday') === 'Sun';
+  if (weekend || hour < FIRST_HOUR || hour > LAST_HOUR) return;
+  if (await openedRecently(now.getTime())) load();
+}
+
 export function startLibraryWatch(load: () => void): void {
+  void warmUp(load);
   useAppStore.subscribe((s, prev) => {
     // Arriving on the map tab starts the read too: about one in five map visitors
     // opens the card, and the seconds before they tap the pin are the library's
     // answering time. Not at app start: 99 in 100 of those would never look.
     const arrived = s.mobileTab === 'map' && prev.mobileTab !== 'map';
     const picked = s.mapSelection !== prev.mapSelection && libraryRoomIn(s.mapSelection);
+    if (picked) void markOpened(Date.now());
     if (!arrived && !picked) return;
     if (canBookLibrary() && !isDemoMode()) load();
   });
