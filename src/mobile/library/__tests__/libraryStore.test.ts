@@ -1,5 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// The app's gate and its native transport: on in the phone and iPad apps, which is what this is.
+const native = vi.hoisted(() => ({ http: vi.fn() }));
+vi.mock('../transport', () => ({
+  canBookLibrary: () => true,
+  nativeBookingsHttp: native.http,
+}));
+
 import { cardPick, useLibraryStore, STALE_MS } from '../libraryStore';
+import { useAppStore } from '../../../store/useAppStore';
+import { clearDiagnostics, getDiagnostics } from '../../../utils/diagnostics/diagnosticLog';
 import type { BookingsHttp } from '../bookingsBase';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 
@@ -23,6 +33,91 @@ const now = new Date(2026, 10, 10, 6, 0);
 beforeEach(() => {
   useLibraryStore.getState().reset();
   vi.mocked(ok).mockClear();
+  native.http.mockReset();
+  native.http.mockImplementation(ok);
+  clearDiagnostics();
+  useAppStore.setState({ mobileTab: 'calendar', mapSelection: null } as never);
+});
+afterEach(() => vi.useRealTimers());
+
+describe('libraryStore: reading before the card opens', () => {
+  it('starts the read when the student arrives on the map tab, so it is under way when they tap the pin', async () => {
+    useAppStore.getState().setMobileTab('map');
+    await vi.waitFor(() => expect(native.http).toHaveBeenCalledTimes(1));
+    // Moving between other tabs, or staying on the map, asks nothing more.
+    useAppStore.getState().setMobileTab('calendar');
+    expect(native.http).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not read for tabs that are not the map', () => {
+    useAppStore.getState().setMobileTab('subjects');
+    expect(native.http).not.toHaveBeenCalled();
+  });
+});
+
+describe('libraryStore: a read that was out while a booking finished', () => {
+  const answer = (from: number): BookingsHttp =>
+    vi.fn(async (req) => ({
+      status: 200,
+      data: {
+        staffAvailabilityResponse: (req.data as { staffIds: string[] }).staffIds.map((staffId) => ({
+          staffId,
+          availabilityItems: [
+            {
+              status: 'BOOKINGSAVAILABILITYSTATUS_AVAILABLE',
+              startDateTime: { dateTime: `2026-11-10T${String(from).padStart(2, '0')}:00:00` },
+              endDateTime: { dateTime: '2026-11-10T19:00:00' },
+            },
+          ],
+        })),
+      },
+    }));
+
+  it('does not let the older answer replace the booking, and reads again instead of sticking on loading', async () => {
+    const id = LIBRARY_ROOMS[0]!.featureId;
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const first = answer(7);
+    const second = answer(8);
+    let calls = 0;
+    const http: BookingsHttp = async (req) => {
+      calls++;
+      if (calls === 1) {
+        await gate;
+        return first(req);
+      }
+      return second(req);
+    };
+    const reading = useLibraryStore.getState().load(http, now);
+    // A booking of ours commits while that read is still out.
+    useLibraryStore.getState().markTaken(id, '2026-11-10', 15);
+    release();
+    await reading;
+    const s = useLibraryStore.getState();
+    // The first answer (free from 07:00) predates the booking and was dropped; the second was used.
+    expect(calls).toBe(2);
+    expect(s.status).toBe('ready');
+    expect(s.blocks[id]![0]!.start).toBe('2026-11-10T08:00');
+  });
+});
+
+describe('libraryStore: a slow answer is remembered on the device', () => {
+  it('keeps a line in the local diagnostic log when the library took 8 s or more', async () => {
+    vi.useFakeTimers();
+    const slow: BookingsHttp = async (req) => {
+      await new Promise((r) => setTimeout(r, 9_000));
+      return ok(req);
+    };
+    const p = useLibraryStore.getState().load(slow, now);
+    await vi.advanceTimersByTimeAsync(9_000);
+    await p;
+    expect(getDiagnostics().some((e) => e.ctx === 'Library.slowRead')).toBe(true);
+  });
+
+  it('keeps nothing for a normal answer', async () => {
+    await useLibraryStore.getState().load(ok, now);
+    expect(getDiagnostics().some((e) => e.ctx === 'Library.slowRead')).toBe(false);
+  });
 });
 
 describe('libraryStore.load', () => {

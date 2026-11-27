@@ -59,6 +59,10 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   // what is left of the daily cap (an extension used it), starts over.
   const sel = picked.length && picked.length <= left && fits(picked) ? picked : [];
   const span = rangeOf(sel);
+  // Hours already gone are not drawn: at lunchtime they were half the grid, and the
+  // answer sat below them.
+  const open = cells.filter((c) => c.state !== 'past');
+  const hh = (h: number) => `${String(h).padStart(2, '0')}:00`;
 
   // Each day and each pick starts at the top of the panel, not where the
   // previous scroll left it.
@@ -101,10 +105,29 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
             ))}
           </div>
         </div>
+      ) : open.length === 0 ? (
+        <p role="status" className="text-sm text-base-content/70">
+          {t('mobile.library.dayOver')}
+        </p>
       ) : (
         <>
+          {left > 0 && (
+            // Always in the same place and always two lines tall (`min-h-10`), whichever
+            // text it holds, so the grid does not move under the finger between the first
+            // tap and the second. A student who needs three hours books one without it
+            // (nothing else says hours can be added). Once the pick has used up what is
+            // left of the day it says so instead of inviting a tap that would do nothing.
+            <p className="min-h-10 text-sm text-base-content/70">
+              {span
+                ? t(sel.length >= left ? 'mobile.library.pickedMax' : 'mobile.library.pickedHint', {
+                    time: `${hh(span.from)}–${hh(span.to)}`,
+                    n: sel.length,
+                  })
+                : t('mobile.library.pickHint', { cap: left })}
+            </p>
+          )}
           <HourGrid
-            cells={cells}
+            cells={open}
             picked={sel}
             onTap={(h) =>
               // The day is pinned with the pick, so a pick never moves to another day.

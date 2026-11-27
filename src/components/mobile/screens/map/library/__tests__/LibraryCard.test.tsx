@@ -21,7 +21,7 @@ import type { Block } from '../../../../../../mobile/library/availability';
 import type { RoomProperties } from '../../../../../../types/campusMap';
 
 // Monday 16 November 2026, 09:30. Tuesday 17 November is a public holiday.
-const NOW = new Date(2026, 10, 16, 9, 30);
+const NOW = new Date('2026-11-16T09:30:00+01:00');
 const day = (d: number, from: number, to: number): Block => ({
   status: 'free',
   start: `2026-11-${d}T${String(from).padStart(2, '0')}:00`,
@@ -81,8 +81,58 @@ describe('LibraryCard', () => {
     const chips = within(screen.getAllByRole('group')[0]!).getAllByRole('button');
     expect(chips.map((c) => c.textContent)).toEqual(['Dnes', 'Út 17', 'St 18', 'Čt 19', 'Pá 20']);
     expect(screen.queryByRole('listitem')).toBeNull();
-    // No explainers.
-    expect(screen.queryByText(/uplynuly|obsazeno|Klepni/)).toBeNull();
+    // No legends. The one line of instruction is covered by its own test.
+    expect(screen.queryByText(/uplynuly|obsazeno/)).toBeNull();
+  });
+
+  it('says once that several hours can be picked, and never draws hours that are gone', () => {
+    render(<LibraryCard view={{ featureId: null }} />);
+    // 09:30: 07–10 are over (the 10:00 hour starts inside the library's hour of notice).
+    expect(screen.queryByRole('button', { name: /^(07|08|09|10):00/ })).toBeNull();
+    expect(hour('11:00')).toBeTruthy();
+    expect(screen.getByText(/Klepni na hodinu.*další.*nejvýš 4 h/)).toBeTruthy();
+    fireEvent.click(hour('14:00'));
+    fireEvent.click(hour('15:00'));
+    // The pick reads as a stretch with its length; the instruction has done its job.
+    expect(screen.getByText(/^14:00–16:00 · 2 h\./)).toBeTruthy();
+    expect(screen.queryByText(/Klepni na hodinu/)).toBeNull();
+  });
+
+  it('keeps the line the same height in every state, so the hour buttons never move under a finger', () => {
+    render(<LibraryCard view={{ featureId: null }} />);
+    const line = () => screen.getByText(/^(Klepni na hodinu|\d\d:00–)/);
+    expect(line().className).toContain('min-h-10');
+    fireEvent.click(hour('14:00'));
+    expect(line().className).toContain('min-h-10');
+  });
+
+  it('stops offering more hours once the day’s allowance is used up by the pick', () => {
+    // Three hours already booked today: one is left.
+    useAppStore.setState({
+      customEvents: [
+        {
+          id: 'library:A9',
+          title: 'Studovna v knihovně',
+          date: '20261116',
+          startTime: '11:00',
+          endTime: '14:00',
+          room: 'Týmová 1',
+          libraryBooking: { featureId: team1!.featureId, selfServiceIds: ['S9'] },
+        },
+      ],
+    } as never);
+    render(<LibraryCard view={{ featureId: null }} />);
+    fireEvent.click(hour('15:00'));
+    expect(screen.getByText(/^15:00–16:00 · 1 h\. Víc dnes nejde/)).toBeTruthy();
+    expect(screen.queryByText(/sousední/)).toBeNull();
+  });
+
+  it('says a day is over instead of showing an empty grid', () => {
+    vi.setSystemTime(new Date('2026-11-16T17:30:00+01:00'));
+    render(<LibraryCard view={{ featureId: null }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Dnes' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Na tento den už nejde rezervovat.');
+    expect(screen.queryByText(/Klepni na hodinu/)).toBeNull();
   });
 
   it('shows the rooms free for the picked hours, smallest first', () => {
@@ -145,7 +195,7 @@ describe('LibraryCard', () => {
   });
 
   it('after the last bookable hour opens on the next open day, skipping the holiday', () => {
-    vi.setSystemTime(new Date(2026, 10, 16, 19, 30));
+    vi.setSystemTime(new Date('2026-11-16T19:30:00+01:00'));
     render(<LibraryCard view={{ featureId: null }} />);
     expect(screen.getByRole('button', { name: 'St 18' }).getAttribute('aria-pressed')).toBe('true');
   });
