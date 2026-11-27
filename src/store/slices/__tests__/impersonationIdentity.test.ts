@@ -115,6 +115,15 @@ describe('every exit brings the real identity back', () => {
     expect(identity()).toEqual(OWN);
   });
 
+  // Offline: loadContext cannot re-read IS, so only the record on disk can
+  // bring the admin back.
+  it('the banner while IS does not answer', async () => {
+    await useAppStore.getState().startImpersonation(PERSONA_REQ);
+    getUserParams.mockResolvedValue(null);
+    await useAppStore.getState().stopImpersonation();
+    expect(identity()).toEqual(OWN);
+  });
+
   it('admin logout', async () => {
     await useAppStore.getState().startImpersonation(PERSONA_REQ);
     await useAppStore.getState().adminLogout();

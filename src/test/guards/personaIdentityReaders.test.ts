@@ -41,7 +41,8 @@ const KEPT_REAL: Record<string, string> = {
 const FOLLOW_PERSONA: Record<string, RegExp> = {
   // The Explore tab's "my faculty" filter; it hands the faculty to the drawer.
   'components/ErasmusPanel/index.tsx': /useAppStore\(\(s\) => s\.userFaculty\)/,
-  // The faculty's Erasmus coordinator and the filter chip.
+  // The faculty's Erasmus coordinator and the filter chip: a prop, which
+  // index.tsx fills from the store (checked below).
   'components/ErasmusPanel/ErasmusDrawer.tsx': /faculty: string \| null/,
   // The canteen tabs.
   'utils/menuTabs.ts': /userFaculty/,
@@ -68,6 +69,10 @@ describe('persona identity readers', () => {
       .filter((f) => codeLines(read(f)).some((l) => PARAMS_IDENTITY.test(l)))
       .sort();
     expect(readers).toEqual([...SOURCE, ...Object.keys(KEPT_REAL)].sort());
+  });
+
+  it('ErasmusPanel hands the drawer the store’s faculty', () => {
+    expect(read('components/ErasmusPanel/index.tsx')).toMatch(/faculty=\{faculty\}/);
   });
 
   it.each(Object.keys(KEPT_REAL))('%s still reads the real params', (file) => {
