@@ -8,11 +8,14 @@ import { logError } from '../../utils/reportError';
 import type { MapSelection } from '../../types/campusMap';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
+import { IndexedDBService } from '../../services/storage/IndexedDBService';
 
 export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'offline';
 
 /** Availability older than this is read again when the library is opened. */
 export const STALE_MS = 2 * 60 * 1000;
+/** The `meta` key: the student has seen the data-sharing sentence once. Wiped on sign-out, so the next student sees it. */
+const NOTICE_KEY = 'library_notice_seen';
 /** A read this slow is kept in the device's diagnostic log (see `load`). */
 export const SLOW_READ_MS = 8_000;
 /** How many days ahead the room card offers. */
@@ -28,8 +31,20 @@ export interface LibraryState {
   day: string | null;
   /** The picked run of hours on that day: the map colours rooms by it. */
   picked: number[];
+  /** The room the picked hours are in; null while nothing is picked. */
+  room: number | null;
   setDay(day: string): void;
-  setPicked(hours: number[]): void;
+  /** One pick: a room and its consecutive hours. An empty run is no pick. */
+  setPick(room: number, hours: number[]): void;
+  clearPick(): void;
+  /**
+   * Whether this student has already been told, once, what the library receives
+   * (name, e-mail, student number, faculty). The first booking shows the confirm
+   * sheet with that sentence; after it, a tap on the check books.
+   */
+  noticeSeen: boolean;
+  loadNotice(): Promise<void>;
+  markNoticeSeen(): void;
   /**
    * A booking, extension or cancel is running. Held here, not in the form that
    * started it: leaving the form (another room on the iPad, Android Back) must
@@ -71,6 +86,22 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   fetchedAt: null,
   day: null,
   picked: [],
+  room: null,
+  noticeSeen: false,
+  async loadNotice() {
+    try {
+      if ((await IndexedDBService.get('meta', NOTICE_KEY)) === true) set({ noticeSeen: true });
+    } catch (err) {
+      logError('Library.loadNotice', err);
+    }
+  },
+  markNoticeSeen() {
+    if (get().noticeSeen) return;
+    set({ noticeSeen: true });
+    IndexedDBService.set('meta', NOTICE_KEY, true).catch((err) =>
+      logError('Library.markNotice', err)
+    );
+  },
   writing: false,
   startWrite: () => {
     if (get().writing) return false;
@@ -95,8 +126,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
         : {}),
     });
   },
-  setDay: (day) => set({ day, picked: [] }),
-  setPicked: (picked) => set({ picked }),
+  setDay: (day) => set({ day, picked: [], room: null }),
+  setPick: (room, picked) => set(picked.length ? { room, picked } : { room: null, picked: [] }),
+  clearPick: () => set({ room: null, picked: [] }),
 
   async load(http = nativeBookingsHttp, now = new Date()) {
     const { status, fetchedAt } = get();
@@ -104,6 +136,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     if (status === 'ready' && fetchedAt !== null && now.getTime() - fetchedAt < STALE_MS) return;
     const mine = ++seq;
     set({ status: 'loading' });
+    if (!get().noticeSeen) void get().loadNotice();
     const to = new Date(now);
     to.setDate(to.getDate() + DAYS_AHEAD);
     const startedAt = Date.now();
@@ -153,7 +186,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   reset() {
     seq++;
-    set({ blocks: {}, status: 'idle', fetchedAt: null, day: null, picked: [] });
+    set({ blocks: {}, status: 'idle', fetchedAt: null, day: null, picked: [], room: null });
   },
 }));
 

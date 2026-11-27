@@ -3,7 +3,8 @@ import { Sheet } from '../primitives/Sheet';
 import { SheetHeader } from '../primitives/SheetHeader';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { useAppStore } from '../../../store/useAppStore';
-import { LibraryConfirm, type LibraryPick } from './LibraryConfirm';
+import { LibraryConfirm } from './LibraryConfirm';
+import type { LibraryPick } from './useLibraryBook';
 
 /**
  * The phone's confirm: the same summary the iPad shows in its side panel, in a

@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { holidayOf, lessonHours, shownDay, weekdaysFrom } from '../libraryDay';
-import {
-  canExtend,
-  hourCells,
-  rangeOf,
-  roomsFreeFor,
-  toggleHour,
-  withOwnBookings,
-} from '../libraryHours';
+import { canExtend, withOwnBookings } from '../libraryHours';
+import { gridRows } from '../libraryGrid';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 import type { Block } from '../availability';
 import { libraryRoomOf } from '../ownBooking';
@@ -23,7 +17,7 @@ const free = (day: string, from: number, to: number): Block => ({
   start: `${day}T${String(from).padStart(2, '0')}:00`,
   end: `${day}T${String(to).padStart(2, '0')}:00`,
 });
-const [ind1, ind2, team1] = LIBRARY_ROOMS;
+const [ind1, ind2] = LIBRARY_ROOMS;
 
 describe('shownDay', () => {
   it('is today while an hour of today can still be booked', () => {
@@ -41,82 +35,6 @@ describe('weekdaysFrom / holidayOf', () => {
     expect(weekdaysFrom(MON)).toEqual([MON, '2026-11-17', WED, '2026-11-19', '2026-11-20']);
     expect(holidayOf('2026-11-17', 'cz')).toBe('Den boje za svobodu a demokracii');
     expect(holidayOf(WED, 'cz')).toBeNull();
-  });
-});
-
-describe('hourCells', () => {
-  it('counts the free rooms per hour, and tells gone from taken', () => {
-    const blocks = {
-      [ind1!.featureId]: [free(MON, 13, 19)],
-      [ind2!.featureId]: [free(MON, 14, 16)],
-    };
-    const c = hourCells(blocks, MON, at(11, 30), new Set([14]));
-    expect(c.find((x) => x.hour === 9)).toEqual({ hour: 9, state: 'past', free: 0, lesson: false });
-    expect(c.find((x) => x.hour === 13)).toEqual({
-      hour: 13,
-      state: 'free',
-      free: 1,
-      lesson: false,
-    });
-    expect(c.find((x) => x.hour === 14)).toEqual({
-      hour: 14,
-      state: 'free',
-      free: 2,
-      lesson: true,
-    });
-    expect(c.find((x) => x.hour === 16)?.free).toBe(1);
-  });
-  it('calls an hour no room has free taken', () => {
-    const c = hourCells({ [ind1!.featureId]: [free(WED, 9, 10)] }, WED, at(19), new Set());
-    expect(c.find((x) => x.hour === 8)?.state).toBe('taken');
-  });
-});
-
-describe('roomsFreeFor', () => {
-  it('lists the rooms free for the whole stretch, smallest first', () => {
-    const blocks = {
-      [team1!.featureId]: [free(WED, 9, 12)],
-      [ind1!.featureId]: [free(WED, 9, 10)],
-      [ind2!.featureId]: [free(WED, 8, 12)],
-    };
-    expect(roomsFreeFor(blocks, WED, at(9), [9])).toEqual([
-      ind1!.featureId,
-      ind2!.featureId,
-      team1!.featureId,
-    ]);
-    expect(roomsFreeFor(blocks, WED, at(9), [9, 10, 11])).toEqual([
-      ind2!.featureId,
-      team1!.featureId,
-    ]);
-    expect(roomsFreeFor(blocks, WED, at(9), [])).toEqual([]);
-  });
-});
-
-describe('toggleHour', () => {
-  const fits = (hs: number[]) => hs.every((h) => [9, 10, 11, 12, 15].includes(h));
-  it('starts a pick, grows it by a neighbour and shrinks it from an end', () => {
-    let sel = toggleHour([], 10, fits, 4);
-    expect(sel).toEqual([10]);
-    sel = toggleHour(sel, 11, fits, 4);
-    sel = toggleHour(sel, 9, fits, 4);
-    expect(sel).toEqual([9, 10, 11]);
-    expect(toggleHour(sel, 9, fits, 4)).toEqual([10, 11]);
-  });
-  it('starts over on an hour that does not touch the pick, and ignores one no room fits', () => {
-    expect(toggleHour([10, 11], 15, fits, 4)).toEqual([15]);
-    expect(toggleHour([10], 13, fits, 4)).toEqual([10]);
-  });
-  it('only grows while one room has the whole stretch free, and within the cap', () => {
-    const oneRoom = (hs: number[]) => hs.length <= 2;
-    expect(toggleHour([9, 10], 11, oneRoom, 4)).toEqual([9, 10]);
-    expect(toggleHour([9, 10], 11, fits, 2)).toEqual([9, 10]);
-  });
-  it('keeps the middle of a pick', () => {
-    expect(toggleHour([9, 10, 11], 10, fits, 4)).toEqual([9, 10, 11]);
-  });
-  it('reads a pick as one span', () => {
-    expect(rangeOf([14, 15])).toEqual({ from: 14, to: 16 });
-    expect(rangeOf([])).toBeNull();
   });
 });
 
@@ -148,11 +66,11 @@ describe('withOwnBookings', () => {
       { id: 'own', date: '20261120', startTime: '09:00', endTime: '11:00' },
     ];
     const seen = withOwnBookings(blocks, mine);
-    expect(roomsFreeFor(seen, '2026-11-20', at(8), [9])).toEqual([ind2!.featureId]);
-    expect(roomsFreeFor(seen, '2026-11-20', at(8), [10])).toEqual([
-      ind1!.featureId,
-      ind2!.featureId,
-    ]);
+    const cells = (hour: number) =>
+      gridRows(seen, '2026-11-20', at(8), new Set(), []).find((r) => r.hour === hour)!.cells;
+    expect(cells(9)[ind1!.featureId]).toBe('taken');
+    expect(cells(9)[ind2!.featureId]).toBe('free');
+    expect(cells(10)[ind1!.featureId]).toBe('free');
   });
 });
 
@@ -200,14 +118,5 @@ describe('libraryRoomOf', () => {
         room: 'Týmová 2',
       })
     ).toBeNull();
-  });
-});
-
-describe('hourCells with a partial answer', () => {
-  it('calls an hour unknown, not taken, while some room could not be read', () => {
-    const blocks = { [ind1!.featureId]: [], [ind2!.featureId]: null };
-    expect(hourCells(blocks, WED, at(9), new Set()).find((c) => c.hour === 10)?.state).toBe(
-      'unknown'
-    );
   });
 });
