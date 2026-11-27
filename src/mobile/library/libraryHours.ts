@@ -1,4 +1,20 @@
 import type { Block } from './availability';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** A room's blocks without the student's own busy hours (after a cancel). */
+export function withoutBusy(list: Block[], day: string, hours: number[]): Block[] {
+  const gone = new Set(hours.map((h) => `${day}T${pad(h)}:00`));
+  return list.filter((b) => !(b.status === 'busy' && gone.has(b.start)));
+}
+
+/** A room's blocks with one more busy hour (after a booking of ours). */
+export function withBusy(list: Block[], day: string, hour: number): Block[] {
+  return [
+    ...list,
+    { status: 'busy', start: `${day}T${pad(hour)}:00`, end: `${day}T${pad(hour + 1)}:00` },
+  ];
+}
 import { DAILY_CAP, freeHours } from './slots';
 import { libraryRoomOf, type OwnBooking } from './ownBooking';
 import { bookedOn } from './bookingService';

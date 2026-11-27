@@ -77,3 +77,18 @@ export function lessonHours(
 /** Whether an hour of `day` has gone (or sits inside the library's hour of notice). */
 export const hourGone = (day: string, hour: number, now: Date): boolean =>
   hourStartMs(day, hour) < now.getTime() + NOTICE_MS;
+
+/**
+ * The day and picked hours the card and the map's colours both use. A stored
+ * day that has passed (the app left open overnight, or a booking's day) gives
+ * way to the next open day, and its pick goes with it, so the card and the
+ * map never disagree about which day is shown.
+ */
+export function cardPick(
+  s: { day: string | null; picked: number[] },
+  now: Date
+): { day: string; picked: number[] } {
+  if (!s.day) return { day: shownDay(now), picked: s.picked };
+  if (s.day >= isoDay(now)) return { day: s.day, picked: s.picked };
+  return { day: shownDay(now), picked: [] };
+}

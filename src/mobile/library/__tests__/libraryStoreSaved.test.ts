@@ -85,4 +85,18 @@ describe('libraryStore: the last answer is shown at once while a new one is read
     expect(known()).toBe(false);
     expect(useLibraryStore.getState().savedAt).toBeNull();
   });
+
+  it('drops a copy that grew too old while it sat in memory, instead of keeping it on a failed read', async () => {
+    const taken = new Date(NOW.getTime() - SAVED_MAX_MS - 60_000).getTime();
+    useLibraryStore.setState({
+      blocks: { 1: [{ status: 'free', start: '2026-11-26T07:00', end: '2026-11-26T19:00' }] },
+      savedAt: taken,
+    });
+    const failing: BookingsHttp = async () => ({ status: 500, data: null });
+    await useLibraryStore.getState().load(failing, NOW);
+    const s = useLibraryStore.getState();
+    expect(s.status).toBe('offline');
+    expect(s.savedAt).toBeNull();
+    expect(known()).toBe(false);
+  });
 });

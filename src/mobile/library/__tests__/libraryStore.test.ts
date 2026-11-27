@@ -7,7 +7,8 @@ vi.mock('../transport', () => ({
   nativeBookingsHttp: native.http,
 }));
 
-import { cardPick, useLibraryStore, STALE_MS } from '../libraryStore';
+import { useLibraryStore, STALE_MS } from '../libraryStore';
+import { cardPick } from '../libraryDay';
 import { useAppStore } from '../../../store/useAppStore';
 import { clearDiagnostics, getDiagnostics } from '../../../utils/diagnostics/diagnosticLog';
 import type { BookingsHttp } from '../bookingsBase';

@@ -37,6 +37,7 @@ const MOBILE_ONLY = [
   'src/mobile/library/libraryHours.ts',
   'src/mobile/library/libraryGrid.ts',
   'src/mobile/library/libraryCache.ts',
+  'src/mobile/library/libraryWatch.ts',
   'src/mobile/library/ownBooking.ts',
   'src/components/mobile/screens/map/library/LibraryPinLayer.tsx',
   'src/components/mobile/screens/map/library/LibraryTints.tsx',

@@ -36,3 +36,21 @@ export function writeSaved(blocks: Record<number, Block[] | null>, savedAt: numb
     logError('Library.writeSaved', err)
   );
 }
+
+/** The `meta` key: the student has seen the data-sharing sentence once. Wiped on sign-out, so the next student sees it. */
+const NOTICE_KEY = 'library_notice_seen';
+
+export async function readNoticeSeen(): Promise<boolean> {
+  try {
+    return (await IndexedDBService.get('meta', NOTICE_KEY)) === true;
+  } catch (err) {
+    logError('Library.loadNotice', err);
+    return false;
+  }
+}
+
+export function writeNoticeSeen(): void {
+  IndexedDBService.set('meta', NOTICE_KEY, true).catch((err) =>
+    logError('Library.markNotice', err)
+  );
+}
