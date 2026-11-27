@@ -8,7 +8,7 @@ vi.mock('../../../api/impersonation/fetchImpersonation', () => ({
 
 import { useAppStore } from '../../useAppStore';
 import { overlayWrite } from '../../overlay/overlayGuard';
-import { IndexedDBService } from '../../../services/storage';
+import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 import { useViewer, viewerOf } from '../../../hooks/useViewer';
 import { matchesAudience } from '../../../utils/partnerAudience';
 import { visibleToStudent } from '../../../utils/eventAudience';

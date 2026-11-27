@@ -1,4 +1,4 @@
-import { IndexedDBService } from '../../../services/storage';
+import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 
 /** Who the student was last time IS said so: the event audience's fallback. */
 export const VIEWER_KEY = 'viewer_audience';

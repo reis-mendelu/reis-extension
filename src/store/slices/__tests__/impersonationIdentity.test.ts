@@ -23,7 +23,7 @@ vi.mock('../../../utils/userParams', async (orig) => ({
 import { useAppStore } from '../../useAppStore';
 import { overlayWrite } from '../../overlay/overlayGuard';
 import { identityOverlay } from '../../overlay/identityOverlay';
-import { IndexedDBService } from '../../../services/storage';
+import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 import { PERSONA_REQ, PERSONA_RESULT } from './impersonationFixtures';
 
 /**

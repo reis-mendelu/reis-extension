@@ -1,6 +1,6 @@
 import type { ContextSlice, AppSlice } from '../types';
 import { getUserParams, isIdentityConfirmed } from '../../utils/userParams';
-import { IndexedDBService } from '../../services/storage';
+import { IndexedDBService } from '../../services/storage/IndexedDBService';
 import { logError } from '../../utils/reportError';
 import { baseProgramme } from '../../utils/partnerAudience';
 import { switchStudy } from '../../services/identity/switchStudy';
