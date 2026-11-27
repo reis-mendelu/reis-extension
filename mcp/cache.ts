@@ -9,7 +9,7 @@
 // answers is saved there. The tiers never hold the password or the IS
 // sign-in (mcpStaysReadOnly.test.ts, README.md, PRIVACY.md).
 
-import { isReplacement, type Persist, type Ticket } from './cacheTypes';
+import { genOf, isReplacement, type Persist, type Ticket } from './cacheTypes';
 import { keyOf } from './cacheKey';
 
 const MIN = 60_000;
@@ -68,6 +68,7 @@ export function createToolCache({
   const fileStamps = new Map<string, string>();
   let total = 0;
   let epoch = 0; // bumped by clear(): a call that began before it is stale
+  let [seen, seenGen] = [false, undefined as unknown]; // the folder token at the last ticket
 
   const drop = (key: string) => {
     const e = entries.get(key);
@@ -106,19 +107,27 @@ export function createToolCache({
     }
   };
 
+  const clear = () => {
+    epoch++;
+    entries.clear();
+    inflight.clear();
+    fileStamps.clear();
+    total = 0;
+  };
+
   return {
     /** Forget everything held here, including reads still in flight (forget everything). */
-    clear() {
-      epoch++;
-      entries.clear();
-      inflight.clear();
-      fileStamps.clear();
-      total = 0;
-    },
-    /** One per tool call, before it does anything; pass it to run(). */
+    clear,
+    /** One per call, first; pass it to run(). A new folder token = a forget in another window. */
     async ticket(): Promise<Ticket> {
-      const started = epoch;
-      return { epoch: started, token: await persist?.begin().catch(() => null) };
+      const started = epoch; // a clear() while begin() is read still makes this call stale
+      const token = await persist?.begin().catch(() => null);
+      const gen = genOf(token);
+      const forgot = seen && gen !== seenGen;
+      [seen, seenGen] = [true, gen];
+      const stale = epoch !== started; // a clear() here while it waited: this call began before it
+      if (forgot) clear(); // a new token: nothing held under the old one is served again
+      return { epoch: stale ? started : epoch, token };
     },
     async run(
       tool: string,
