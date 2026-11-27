@@ -65,8 +65,11 @@ npm run verify:ui -- <label>-tablet --widths 834,1024,1194 --url http://localhos
 
 - `834` iPad portrait, `1194` iPad landscape, `1024` the shortest common iPad
   geometry (1024×768). Check `1024` in every state a card can reach: `#root` is
-  `overflow: hidden !important`, so content taller than the viewport is silently
-  clipped, not scrolled.
+  `overflow: hidden !important`, so on a screen without its own scroller,
+  content taller than the viewport is silently clipped, not scrolled. A screen
+  with its own `overflow-y-auto` scroller (Profil's `profile-scroll`, the tabs'
+  lists) scrolls instead, and what you check there is that its last row can be
+  scrolled clear of the floating nav.
 - `?mobile=1` pins the phone tree; without it, a ≥768px viewport in a browser
   renders the desktop tree, which is not what an iPad shows.
 

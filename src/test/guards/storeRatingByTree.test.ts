@@ -9,10 +9,13 @@ import { describe, expect, it } from 'vitest';
  *
  * PHONE AND IPAD: the OS's own rating dialog, asked right after a success
  * moment (src/mobile/storeReview.ts, rule in utils/storeReviewDecision.ts).
- * There is deliberately NO manual "Ohodnotit reIS" row in Profil: Profil must
- * not scroll, and at 375×667 (iPhone SE) it fits with 0px to spare — see
+ * There is deliberately NO manual "Ohodnotit reIS" row in Profil: its rows are
+ * budgeted to fit a typical student at 375×667 (iPhone SE) without scrolling,
+ * with 15–23px to spare (measured 2026-11-27), and a row nobody comes to Profil
+ * for is not worth that room — see
  * components/mobile/screens/profile/AboutSection.tsx, which already gives up
- * its own block on short screens to keep that true.
+ * its own block on short screens for the same budget. Profil does scroll (with
+ * a fade while more is below), so the budget is a preference, not a guarantee.
  *
  * EXTENSION: no OS dialog exists in a browser, so a quiet link in the profile
  * popup's support block (Sidebar/Profile/RateReisLink.tsx) and never a prompt.
