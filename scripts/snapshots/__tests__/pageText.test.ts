@@ -50,6 +50,6 @@ describe('pageText on IS pages', () => {
 describe('pageText on broken markup', () => {
   it('leaves no tag fragment, even from nested or unclosed tags', () => {
     expect(pageText('<scr<script>x</script>ipt>alert(1)</script><p>Konto</p>')).not.toMatch(/</);
-    expect(pageText('<p>a</p><div')).toBe('a\ndiv');
+    expect(pageText('<p>a</p><div')).toBe('a');
   });
 });

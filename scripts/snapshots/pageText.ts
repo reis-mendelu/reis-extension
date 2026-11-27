@@ -51,31 +51,54 @@ function decode(text: string): string {
   });
 }
 
-/** Applies `strip` until nothing changes: one pass can leave a new `<script` behind. */
-function untilStable(s: string, strip: (s: string) => string): string {
-  for (let prev = ''; prev !== s;) {
-    prev = s;
-    s = strip(s);
+/** Elements whose content is not text. */
+const SKIP = new Set(['script', 'style', 'noscript']);
+/** Closing one of these ends a line. */
+const BLOCK = new Set(
+  'p div tr li h1 h2 h3 h4 h5 h6 table ul ol dt dd section header footer form option label'.split(
+    ' '
+  )
+);
+
+/**
+ * Markup to text in one left-to-right pass, no regex replacing: a tag is
+ * dropped whole, script/style/noscript and comments with their content, and an
+ * unclosed tag ends the text. Nothing of a tag can survive (no `<` is ever
+ * copied), whatever the nesting. Cells end in a tab, blocks and <br> in a newline.
+ */
+function stripMarkup(html: string): string {
+  const lower = html.toLowerCase();
+  let out = '';
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf('<', i);
+    if (lt < 0) return out + html.slice(i);
+    out += html.slice(i, lt);
+    if (html.startsWith('<!--', lt)) {
+      const end = html.indexOf('-->', lt + 4);
+      i = end < 0 ? html.length : end + 3;
+      continue;
+    }
+    const gt = html.indexOf('>', lt);
+    if (gt < 0) return out;
+    i = gt + 1;
+    const m = /^(\/?)([a-z][a-z0-9]*)/.exec(lower.slice(lt + 1, gt));
+    if (!m) continue;
+    const closing = m[1] === '/';
+    const name = m[2] ?? '';
+    if (!closing && SKIP.has(name)) {
+      const end = lower.indexOf(`</${name}`, i);
+      const endGt = end < 0 ? -1 : html.indexOf('>', end);
+      i = endGt < 0 ? html.length : endGt + 1;
+    } else if (closing && (name === 'td' || name === 'th')) out += '\t';
+    else if ((closing && BLOCK.has(name)) || (!closing && name === 'br')) out += '\n';
   }
-  return s;
+  return out;
 }
 
 export function pageText(html: string): string {
   const main = html.indexOf(IS_MAIN);
-  const body = untilStable(main >= 0 ? html.slice(main) : html, (s) =>
-    s.replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '')
-  );
-  // The text is written to .txt files and never rendered, but a stray `<` left by
-  // broken markup is dropped all the same, so no tag fragment survives.
-  const text = body
-    .replace(IS_HEADER, '')
-    .replace(/<\/t[dh]>/gi, '\t')
-    .replace(
-      /<br\b[^>]*>|<\/(p|div|tr|li|h[1-6]|table|ul|ol|dt|dd|section|header|footer|form|option|label)>/gi,
-      '\n'
-    )
-    .replace(/<[^>]*>/g, '')
-    .replace(/</g, '');
+  const text = stripMarkup((main >= 0 ? html.slice(main) : html).replace(IS_HEADER, ''));
   return decode(text)
     .split('\n')
     .map((line) =>

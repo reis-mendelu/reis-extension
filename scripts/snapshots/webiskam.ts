@@ -100,9 +100,12 @@ async function signIn(
       process.stdout.write(
         'alibaba asks which details to give WebISKAM: accept it in the window.\n'
       );
-      await page
+      const accepted = await page
         .waitForURL((u) => u.hostname !== IDP_HOST, { timeout: CONSENT_WAIT_MS })
-        .catch(() => undefined);
+        .then(() => true)
+        .catch(() => false);
+      // Not accepted in time: stop here, so the IS pages already read still get saved.
+      if (!accepted) return 'consent';
       // The person may take most of the consent window: give the redirect back
       // to WebISKAM a full deadline of its own after it.
       deadline = Date.now() + LOGIN_DEADLINE_MS;
