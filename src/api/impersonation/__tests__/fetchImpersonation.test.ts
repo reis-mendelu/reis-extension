@@ -1,13 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-const FX = 'src/api/impersonation/__tests__/fixtures/';
-const raw = (n: string) => readFileSync(resolve(process.cwd(), FX + n), 'utf8');
-const noResults = readFileSync(
-  resolve(process.cwd(), 'src/api/__tests__/fixtures/is-rozvrh-no-results.html'),
-  'utf8'
-);
 
 const fetchWithAuth = vi.fn();
 vi.mock('../../client', () => ({
@@ -17,134 +8,15 @@ vi.mock('../../client', () => ({
 
 import { fetchImpersonation } from '../fetchImpersonation';
 import { loadOptions, loadYear1Groups } from '../options';
-import type { ImpersonationSelection } from '../types';
-
-/**
- * AF's shape (live 2026-11-27): the programme + group query returns a
- * subject's seminars but not its lectures, which IS tags to no programme.
- */
-let mtLecturesUntagged = false;
-/** ZF B-RASZ's shape (live 2026-11-27): the group is taught BOTAZ, which the plan omits. */
-let botazTaught = false;
-/** ZABAH's shape (ZF, live 2026-11-27): two seminar parallels on each of two dates, no group. */
-let parallelsUntagged = false;
-const withParallels = (json: string) => {
-  const d = JSON.parse(json) as { blockLessons: Record<string, unknown>[] };
-  const base = { ...d.blockLessons[0]!, courseCode: 'ZABAH', isSeminar: 'true' };
-  const extra = ['20260929', '20261013'].flatMap((date) =>
-    ['09:00', '11:00'].map((startTime) => ({
-      ...base,
-      date,
-      startTime,
-      id: `z-${date}-${startTime}`,
-    }))
-  );
-  return JSON.stringify({ ...d, blockLessons: [...d.blockLessons, ...extra] });
-};
-const withBotaz = (json: string) => {
-  const d = JSON.parse(json) as { blockLessons: Record<string, unknown>[] };
-  const l = {
-    ...d.blockLessons[0]!,
-    courseCode: 'BOTAZ',
-    courseName: 'Botanika',
-    courseId: '170001',
-    id: 'x1',
-  };
-  return JSON.stringify({ ...d, blockLessons: [...d.blockLessons, l] });
-};
-type Answer = { blockLessons: { courseCode: string; isSeminar: string }[] };
-const edit = (json: string, keep: (l: Answer['blockLessons'][number]) => boolean) => {
-  const d = JSON.parse(json) as Answer;
-  return JSON.stringify({ ...d, blockLessons: d.blockLessons.filter(keep) });
-};
-const withoutMtLectures = (json: string) =>
-  edit(json, (l) => !(l.courseCode === 'EBC-MT' && l.isSeminar === 'false'));
-const onlyMt = (json: string) => edit(json, (l) => l.courseCode === 'EBC-MT');
-
-/** Answers each request with the real IS page that request got on 2026-09-26. */
-function route(url: string, init?: RequestInit): string {
-  const body = new URLSearchParams(typeof init?.body === 'string' ? init.body : '');
-  if (url.includes('rozvrhy_view.pl?konf=1;lang=cz')) return raw('rozvrh-index.html');
-  if (url.includes('rozvrhy_view.pl?konf=1;z=')) return raw('rozvrh-range.html');
-  if (url.includes('rozvrhy_view.pl') && !body.has('format')) return raw('rozvrh-criteria.html');
-  if (body.get('format') === 'list') return raw('rozvrh-list-bf-y1.html');
-  if (
-    body.get('format') === 'json' &&
-    body.get('predmet') === '164066' &&
-    body.get('rocnik') === '2'
-  )
-    return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`);
-  // EBC-AZD (162664) behaves like AF/FRRMS/ZF subjects live: nothing under
-  // rocnik=2, a full timetable without the year filter (observed 2026-09-26).
-  if (
-    body.get('format') === 'json' &&
-    body.get('predmet') === '162664' &&
-    body.get('rocnik') === '0'
-  )
-    return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`).replaceAll('EBC-FT', 'EBC-AZD');
-  // "All groups" (skupina 0) answers the same page, parallels included. The
-  // programme query only: a per-subject ask sends program 0 and a predmet.
-  if (
-    parallelsUntagged &&
-    body.get('format') === 'json' &&
-    body.get('skupina') === '0' &&
-    body.get('program') !== '0' &&
-    body.get('predmet') === '0'
-  )
-    return withParallels(raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`));
-  if (body.get('format') === 'json' && body.get('skupina') === '2')
-    return (parallelsUntagged ? withParallels : botazTaught ? withBotaz : (j: string) => j)(
-      mtLecturesUntagged
-        ? withoutMtLectures(raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`))
-        : raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`)
-    );
-  // EBC-MT asked on its own (catalogue id 157993 in the 801 plan). As at AF:
-  // with the year filter, its seminars only; without it, its lectures too.
-  if (body.get('format') === 'json' && body.get('predmet') === '157993') {
-    const mt = onlyMt(raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`));
-    return body.get('rocnik') === '1' ? edit(mt, (l) => l.isSeminar === 'true') : mt;
-  }
-  if (body.get('format') === 'json') return noResults;
-  if (url.includes('plany.pl?fakulta=2;lang=cz')) return raw('catalog-periods-pef.html');
-  // An outgoing programme version: IS's own "no forms of study" page.
-  if (url.includes('program=9999') && !url.includes('stud_plan'))
-    return raw('catalog-programme-no-forms.html');
-  if (url.includes('program=1889') && !url.includes('stud_plan'))
-    return raw('catalog-programme-bf-801.auth.html');
-  if (url.includes('stud_plan=12490') && url.includes('lang=en'))
-    return raw('catalog-plan-bf-801.en.html');
-  if (url.includes('stud_plan=12490')) return raw('catalog-plan-bf-801.cz.html');
-  throw new Error(`unrouted ${url}`);
-}
+import { route, resetShapes, SEPT, bfSelection } from './isRoute';
 
 beforeEach(() => {
-  mtLecturesUntagged = false;
-  botazTaught = false;
-  parallelsUntagged = false;
+  resetShapes();
   fetchWithAuth.mockReset();
   fetchWithAuth.mockImplementation(
     async (url: string, init?: RequestInit) => new Response(route(url, init))
   );
 });
-
-const SEPT = new Date(2026, 8, 26);
-
-async function bfSelection(year: number): Promise<ImpersonationSelection> {
-  const bf = (await loadOptions(SEPT))
-    .find((f) => f.faculty === 'PEF')!
-    .programmes.find((p) => p.shortCode === 'B-F')!;
-  return {
-    variants: bf.variants,
-    programId: bf.programId,
-    shortCode: bf.shortCode,
-    name: bf.name,
-    faculty: 'PEF',
-    year,
-    group: year === 1 ? 2 : null,
-    rozvrh: bf.rozvrh,
-    periodLabel: 'ZS 2026/2027',
-  };
-}
 
 describe('loadOptions', () => {
   it('lists prezenční programmes of the current rozvrhy, B-/N- only', async () => {
@@ -233,53 +105,6 @@ describe('fetchImpersonation', () => {
     // EBC-KOM (158216), missing; and EBA-AJ1 (158903), seminars only, asked for
     // lectures it turns out not to have.
     expect(asked.map((b) => b.get('predmet')).sort()).toEqual(['158216', '158903']);
-  });
-
-  it('year 1: a subject that came back with seminars only gets its lectures on their own', async () => {
-    mtLecturesUntagged = true;
-    const r = await fetchImpersonation(await bfSelection(1), SEPT);
-    const mt = r.schedule.filter((l) => l.courseCode === 'EBC-MT');
-    expect(mt.some((l) => l.isSeminar === 'false')).toBe(true);
-    // The group's own seminar stays; the per-subject answer adds lectures only.
-    const groupSeminars = JSON.parse(raw('rozvrh-bf-y1-g2.cz.json')).blockLessons.filter(
-      (l: { courseCode: string; isSeminar: string }) =>
-        l.courseCode === 'EBC-MT' && l.isSeminar === 'true'
-    ).length;
-    expect(mt.filter((l) => l.isSeminar === 'true')).toHaveLength(groupSeminars);
-  });
-
-  it('year 1: a subject the group is taught but the plan omits joins the subjects', async () => {
-    botazTaught = true;
-    const r = await fetchImpersonation(await bfSelection(1), SEPT);
-    expect(r.subjects.data['BOTAZ']).toMatchObject({
-      subjectCode: 'BOTAZ',
-      nameCs: 'Botanika',
-      subjectId: '170001',
-    });
-    for (const l of r.schedule) expect(r.subjects.data[l.courseCode]).toBeDefined();
-    // The plan screen stays what IS's catalogue says.
-    const planCodes = r.plan.cz.blocks.flatMap((b) =>
-      b.groups.flatMap((g) => g.subjects.map((x) => x.code))
-    );
-    expect(planCodes).not.toContain('BOTAZ');
-  });
-
-  it('year 1: untagged seminar parallels keep one for a group, all of them for "All groups"', async () => {
-    parallelsUntagged = true;
-    const slots = (r: { schedule: { courseCode: string; date: string; startTime: string }[] }) =>
-      r.schedule.filter((l) => l.courseCode === 'ZABAH').map((l) => `${l.date} ${l.startTime}`);
-    const one = await fetchImpersonation(await bfSelection(1), SEPT);
-    expect(slots(one)).toEqual(['20260929 09:00', '20261013 09:00']);
-    const all = await fetchImpersonation({ ...(await bfSelection(1)), group: null }, SEPT);
-    expect(slots(all)).toHaveLength(4);
-  });
-
-  it('year 1: a subject with lectures in the group answer is not asked again', async () => {
-    await fetchImpersonation(await bfSelection(1), SEPT);
-    const asked = fetchWithAuth.mock.calls
-      .map(([, init]) => new URLSearchParams(String(init?.body ?? '')))
-      .filter((b) => b.get('predmet') === '157993');
-    expect(asked).toHaveLength(0);
   });
 
   it('uses the programme version that has a plan for the intake, and says which', async () => {

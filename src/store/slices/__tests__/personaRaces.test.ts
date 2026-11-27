@@ -78,10 +78,11 @@ describe('persona races (review 2026-11-27)', () => {
     vi.setSystemTime(new Date(2026, 8, 28));
     const release = gatedFetch('B-F-2');
     await s().switchToPersona('finance');
-    useAppStore.setState({ impersonationPickerOpen: true });
+    useAppStore.setState({ impersonationPickerOpen: true, impersonationStarting: true });
     release();
     await vi.waitFor(() => expect(codes()).toEqual(['B-F-2']));
     expect(s().impersonationPickerOpen).toBe(true);
+    expect(s().impersonationStarting).toBe(true);
   });
 
   it('an options failure says options, not timetable', async () => {
