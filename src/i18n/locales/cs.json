@@ -1811,6 +1811,7 @@
     "errorNoPlan": "Pro tento obor a ročník IS nemá studijní plán.",
     "errorNoSemester": "Plán tohoto oboru nemá semestr pro zvolený ročník.",
     "errorNotAdmin": "Jen pro správce reIS.",
+    "errorStorage": "Zobrazení se nepodařilo uložit v tomto zařízení.",
     "expired": "Zobrazení jako student skončilo s koncem semestru.",
     "bannerLabel": "Zobrazuješ jako {programme} · {year}. ročník",
     "bannerExit": "Ukončit",

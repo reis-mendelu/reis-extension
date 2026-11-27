@@ -133,6 +133,8 @@ describe('persona races (review 2026-11-27)', () => {
       );
     await expect(s().switchToPersona('finance')).resolves.toBe(false);
     expect(s().impersonation).toBeNull();
+    // Said on the row, unlike a cancel.
+    expect(s().personaRows.finance).toBe('storage');
     spy.mockRestore();
   });
 
@@ -152,6 +154,33 @@ describe('persona races (review 2026-11-27)', () => {
     expect(s().impersonationStarting).toBe(false);
     release();
     expect(await starting).toBe(false);
+    expect(s().impersonation).toBeNull();
+  });
+
+  it('closing the picker cancels the latest one-off even after an older one ended', async () => {
+    const req = {
+      programId: '2',
+      shortCode: 'B-F',
+      name: 'Finance',
+      faculty: 'PEF',
+      year: 1,
+      group: 1,
+      rozvrh: ROZVRH,
+    };
+    const releaseA = gatedFetch('A-1');
+    const a = s().startImpersonation(req);
+    await vi.waitFor(() => expect(m.fetchImpersonation).toHaveBeenCalledTimes(1));
+    s().closeImpersonationPicker();
+    const releaseB = gatedFetch('B-1');
+    const b = s().startImpersonation(req);
+    await vi.waitFor(() => expect(m.fetchImpersonation).toHaveBeenCalledTimes(2));
+    releaseA();
+    expect(await a).toBe(false);
+    // A ended under an older request: B's spinner is B's.
+    expect(s().impersonationStarting).toBe(true);
+    s().closeImpersonationPicker();
+    releaseB();
+    expect(await b).toBe(false);
     expect(s().impersonation).toBeNull();
   });
 });

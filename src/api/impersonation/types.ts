@@ -80,7 +80,14 @@ export interface ImpersonationResult {
 }
 
 export type ImpersonationErrorCode =
-  'options' | 'timetable' | 'noPlan' | 'noSemester' | 'expired' | 'notAdmin';
+  | 'options'
+  | 'timetable'
+  | 'noPlan'
+  | 'noSemester'
+  | 'expired'
+  | 'notAdmin'
+  /** IndexedDB refused to save the view: nothing was applied. */
+  | 'storage';
 
 export class ImpersonationError extends Error {
   readonly code: ImpersonationErrorCode;

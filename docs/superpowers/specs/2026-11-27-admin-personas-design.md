@@ -149,8 +149,9 @@ credentials never leave the laptop). Run before shipping and at each semester st
   "Já" or another persona tapped meanwhile wins. The token is checked again after the save, so an
   exit that began meanwhile also ends clean on disk. Other persona rows are held while one
   fetches; "Já" never is, and it always cancels a fetch in flight (freeing that row at once).
-  Closing the picker cancels a one-off still starting. The boot restore yields to anything
-  the admin does while it reads IndexedDB. A failed save applies nothing.
+  Closing the picker cancels the latest one-off still starting; only that one owns the
+  picker's spinner and error. The boot restore yields to anything the admin does while it
+  reads IndexedDB. A failed save applies nothing and says so ("storage" on the row or picker).
 - **reis_admin only, also mid-fetch:** a fetch that lands after an admin logout saves and applies
   nothing (the logout clears the cache last, once the role is gone).
 - **Background refresh** (> 24 h) runs on a switch only, never at boot, reuses the cached

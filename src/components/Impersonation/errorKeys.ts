@@ -8,4 +8,5 @@ export const IMPERSONATION_ERROR_KEY: Record<ImpersonationErrorCode, string> = {
   noSemester: 'impersonation.errorNoSemester',
   notAdmin: 'impersonation.errorNotAdmin',
   expired: 'impersonation.expired',
+  storage: 'impersonation.errorStorage',
 };

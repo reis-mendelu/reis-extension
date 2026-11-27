@@ -118,7 +118,12 @@ export const createPersonaSlice: AppSlice<PersonaSlice> = (set, get) => {
       const cached = await loadPersona(id).catch(() => null);
       if (cached && cached.selection.periodLabel === period()) {
         row(id, null);
-        if (!(await applyImpersonation(set, get, cached, { epoch }))) return false;
+        try {
+          if (!(await applyImpersonation(set, get, cached, { epoch }))) return false;
+        } catch (e) {
+          row(id, codeOf(e));
+          return false;
+        }
         if (refreshing.has(id)) refreshing.set(id, epoch);
         else if (Date.now() - cached.result.fetchedAt > STALE_MS)
           void refresh(id, cached.selection, epoch);

@@ -6,6 +6,7 @@ import { identityOverlay } from '../../overlay/identityOverlay';
 import { failRateCodes } from './failRateCodes';
 import { saveImpersonation } from './impersonationStorage';
 import { logError } from '../../../utils/reportError';
+import { ImpersonationError } from '../../../api/impersonation/types';
 
 type Set = (partial: Partial<AppState>) => void;
 type Get = () => AppState;
@@ -20,6 +21,8 @@ type Get = () => AppState;
  * a logout) has started, checked again after the save: an exit that began
  * meanwhile queued its delete after this save, so the disk ends clean too.
  * `background` (a refresh) leaves the picker's drawer and spinner alone.
+ * Resolves false when a newer request won; throws ImpersonationError('storage')
+ * when the save failed.
  */
 export async function applyImpersonation(
   set: Set,
@@ -32,9 +35,10 @@ export async function applyImpersonation(
   try {
     await saveImpersonation(active);
   } catch (e) {
-    // Every caller gets the same answer: not applied, nothing half-done.
+    // Not applied, nothing half-done, and unlike a cancel, said: every caller
+    // shows 'storage' where it shows its other errors.
     logError('Impersonation.save', e);
-    return false;
+    throw new ImpersonationError('storage');
   }
   if (stale()) return false;
   set(

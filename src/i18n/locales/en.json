@@ -1811,6 +1811,7 @@
     "errorNoPlan": "IS has no study plan for this programme and year.",
     "errorNoSemester": "This programme's plan has no semester for that year.",
     "errorNotAdmin": "reIS admins only.",
+    "errorStorage": "Could not save the view on this device.",
     "expired": "Viewing as a student ended with the semester.",
     "bannerLabel": "Viewing as {programme} · year {year}",
     "bannerExit": "Exit",
