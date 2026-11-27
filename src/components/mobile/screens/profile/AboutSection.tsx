@@ -23,11 +23,12 @@ import { PartnersBlock } from '../../../Partners/PartnersBlock';
  * exists precisely to be read ("Nevidí žádná data z tvého ISu").
  *
  * The measure widens on a tablet rather than the block growing taller, and the
- * whole block is kept tight: Profil must not scroll, and in landscape
- * (1080×810 on an iPad 8) every line this paragraph wraps to costs the list its
- * last row. The map-app reset row above appears only once a choice has been
- * remembered, and its ~40px is paid for here — out of the block that was added
- * last — rather than out of the settings the student came for.
+ * whole block is kept tight: Profil is budgeted to fit without scrolling where
+ * it can, and in landscape (1080×810 on an iPad 8) every line this paragraph
+ * wraps to pushes the list's last row toward the nav. The map-app reset row
+ * above appears only once a choice has been remembered, and its ~40px is paid
+ * for here — out of the block that was added last — rather than out of the
+ * settings the student came for.
  *
  * Reach is not the point of the block. Stating the rule once, in public, while
  * the stakes are nil is: when company events and internship deadlines
@@ -35,13 +36,14 @@ import { PartnersBlock } from '../../../Partners/PartnersBlock';
  * down, instead of looking like the week reIS started selling ads.
  */
 export function AboutSection() {
-  // Hidden on a short screen, and this is the rule Profil is held to rather
-  // than a nicety: it must not scroll. Measured at 375×667 (iPhone SE, still
-  // shipping) the settings fit EXACTLY — 0px over — and this block is what
-  // pushes them 70px past the fold, or 106px once the map-app row is there.
-  // A colophon is the one thing on this screen that can stand down; the
-  // settings are what the student came for. Everything from 780px up keeps
-  // it, which is every iPhone since the SE and both iPad orientations.
+  // Hidden on a short screen. Profil scrolls (its own scroller, with a fade
+  // while more is below), but the rows are budgeted to fit a typical student
+  // without it: at 375×667 (iPhone SE, still shipping) they fit with 15–23px
+  // to spare (measured 2026-11-27), and this block would push them past the
+  // fold. A colophon is the one thing on this screen that can stand down; the
+  // settings are what the student came for. From 780px up it stays, and there
+  // it does not always fit: on a 375×812 mini the partner block puts the last
+  // row 29px under the nav, which the scroll and the fade cover.
   //
   // Which partners, if any, is the student's field (spec 2026-10-09); the
   // block renders nothing for a field without one. No card, no plate, no link:

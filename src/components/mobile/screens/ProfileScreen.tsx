@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Wifi,
   FileText,
@@ -19,6 +19,7 @@ import { HelpRow } from './profile/HelpRow';
 import { NavRow } from '../primitives/NavRow';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
+import { ScrollMoreFade } from '../primitives/ScrollMoreFade';
 
 /**
  * The profile TAB: a way into Nastavení, eduroam setup, documents, feedback and
@@ -35,6 +36,7 @@ export function ProfileScreen() {
   const pushSheet = useAppStore((s) => s.pushSheet);
   const openReport = useAppStore((s) => s.openReport);
   const [signOutOpen, setSignOutOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   // Signed in to the console on this device (held the name once): keep a way back.
@@ -43,7 +45,7 @@ export function ProfileScreen() {
   const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
 
   return (
-    <div data-testid="profile-screen" className="flex flex-1 flex-col overflow-hidden">
+    <div data-testid="profile-screen" className="relative flex flex-1 flex-col overflow-hidden">
       {/* No eyebrow: the header's title block shares its row with the three
           action buttons, so at 320px it has ~152px — a programme name needs
           206px and was truncated there. The identity gets its own full-width
@@ -51,11 +53,17 @@ export function ProfileScreen() {
       <ScreenHeader title={t('sidebar.profile')} />
       <ProfileIdentity />
 
-      {/* pb-[84px], not pb-24. The floating BottomNav needs 76px of clearance —
+      {/* Profil scrolls. The rows are budgeted to fit a typical student on a
+          375×667 SE (15–23px to spare, measured 2026-11-27), but that is a
+          preference, not a guarantee: a 320×568 SE, two studies, a society
+          admin's Správa row or the partner block on a 375×812 mini all push the
+          last rows under the nav. ScrollMoreFade below says so while they are.
+
+          pb-[84px], not pb-24. The floating BottomNav needs 76px of clearance —
           measured, `innerHeight - nav.top` at 375×780 — and 96 reserved 20px of
-          nothing at the bottom of a screen that must not scroll. 8px of margin
-          over the measurement, so a taller nav does not silently tuck under. */}
-      <div data-testid="profile-scroll" className="flex-1 overflow-y-auto">
+          nothing below the last row. 8px of margin over the measurement, so a
+          taller nav does not silently tuck under. */}
+      <div ref={scrollRef} data-testid="profile-scroll" className="flex-1 overflow-y-auto">
         <AlwaysScrollable className="pb-[calc(84px_+_var(--safe-bottom,0px))]">
           {/* One row, not a group: calendar view, language and dark mode are set
             once (spec 2026-10-09), so they sit one tap down and the screen
@@ -143,6 +151,7 @@ export function ProfileScreen() {
           <AboutSection />
         </AlwaysScrollable>
       </div>
+      <ScrollMoreFade scrollerRef={scrollRef} />
 
       <SignOutConfirm open={signOutOpen} onCancel={() => setSignOutOpen(false)} />
     </div>
