@@ -260,6 +260,9 @@ export async function openExternal(url: string): Promise<void> {
     const isSecure = new URL(target).protocol === 'https:';
     const { loadStoredToken } = await import('../platform/tokenStore');
     const token = isSecure ? await loadStoredToken().catch(() => '') : '';
+    // Lazy, like the plugin: the extension reaches this module too, and has no
+    // in-app browser to send a stylesheet for IS pages to.
+    const { buildPhoneFrameScript } = await import('./isPhoneFrame');
 
     // Registered first: the page can load before the open call even returns.
     // The handoff is the toolbar's "open in browser" button — see openInBrowser.
@@ -301,12 +304,17 @@ export async function openExternal(url: string): Promise<void> {
       // that would abandon the open altogether — a dead tap instead of a page
       // with a login prompt on it. A token that fails the allowlist is treated
       // as no token, which is what the rest of this branch already does.
-      ...(isPlausibleToken(token)
-        ? {
-            preShowScript: buildRestoreScript(token),
-            preShowScriptInjectionTime: 'documentStart' as const,
-          }
-        : {}),
+      //
+      // The phone frame rides on the same hook, token or not: it is what makes
+      // a desktop IS page readable at phone width (isPhoneFrame.ts), and a
+      // lapsed session's login page needs it as much as any other.
+      preShowScript: [
+        isPlausibleToken(token) ? buildRestoreScript(token) : '',
+        buildPhoneFrameScript(),
+      ]
+        .filter(Boolean)
+        .join('\n'),
+      preShowScriptInjectionTime: 'documentStart' as const,
       // Reload, Android back through history, and the button out to a real
       // browser. No toolbarType: buttonNearDone is rejected with any but the default.
       ...BROWSING_TOOLBAR,

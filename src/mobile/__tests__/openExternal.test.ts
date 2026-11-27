@@ -372,6 +372,40 @@ describe('openExternal — the in-app browser needs the session on the request',
     expect(opts.preShowScriptInjectionTime).toBe('documentStart');
   });
 
+  // IS pages are built for a desktop and a phone shrinks them to a quarter.
+  // The frame script rides on the same document-start hook as the cookie, so
+  // it reaches every page the student taps through to, on iOS and Android.
+  it('sends the phone frame script with the cookie', async () => {
+    const { buildPhoneFrameScript } = await import('../isPhoneFrame');
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    const opts = openWebView.mock.calls[0]![0] as { preShowScript?: string };
+    expect(opts.preShowScript).toContain('UISAuth');
+    expect(opts.preShowScript).toContain(buildPhoneFrameScript());
+  });
+
+  // A lapsed session lands on IS's login page, then on IS itself once the
+  // student signs in. Those pages need the frame as much as any other.
+  it('sends the phone frame script even when there is no session to restore', async () => {
+    vi.doMock('../../platform/tokenStore', () => ({
+      loadStoredToken: vi.fn(async () => {
+        throw new Error('nothing stored');
+      }),
+    }));
+    const { buildPhoneFrameScript } = await import('../isPhoneFrame');
+    const { openExternal } = await import('../openExternal');
+    await openExternal('https://is.mendelu.cz/auth/student/moje_studium.pl');
+
+    const opts = openWebView.mock.calls[0]![0] as {
+      preShowScript?: string;
+      preShowScriptInjectionTime?: string;
+    };
+    expect(opts.preShowScript).toBe(buildPhoneFrameScript());
+    expect(opts.preShowScript).not.toContain('UISAuth');
+    expect(opts.preShowScriptInjectionTime).toBe('documentStart');
+  });
+
   /**
    * capgo injects `preShowScript` only when `isPresentAfterPageLoad` is true.
    * So the two are coupled: dropping the presentation flag would stop the
