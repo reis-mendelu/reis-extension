@@ -22,6 +22,8 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   internship_click_ey: 'signalInternshipClickEy',
   app_update_opened: 'signalAppUpdateOpened',
   study_aids_click_mendelu_app: 'signalStudyAidsClickMendeluApp',
+  study_aids_click_discord_b_oi: 'signalStudyAidsClickDiscordBOi',
+  study_aids_click_discord_b_aii: 'signalStudyAidsClickDiscordBAii',
   reis_for_claude_guide_opened: 'signalReisForClaudeGuideOpened',
   critical_update_shown: 'signalCriticalUpdateShown',
   critical_update_opened: 'signalCriticalUpdateOpened',

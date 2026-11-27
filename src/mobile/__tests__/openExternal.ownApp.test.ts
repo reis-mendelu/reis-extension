@@ -32,6 +32,10 @@ describe('openExternal — links that have their own app', () => {
     'https://www.instagram.com/esnmendelubrno/',
     'https://instagram.com/p/abc/',
     'https://m.instagram.com/supefmendelu/',
+    // A programme's Discord invite: in the in-app browser it is a signed-out
+    // web page asking to open the app; the OS opens the Discord app itself.
+    'https://discord.gg/fN9XrTqmVf',
+    'https://discord.com/invite/fN9XrTqmVf',
   ])('hands %s to the OS, not the in-app browser', async (url) => {
     await openExternal(url);
     expect(handToSystem).toHaveBeenCalledWith(url);
@@ -40,14 +44,17 @@ describe('openExternal — links that have their own app', () => {
     expect(setExternalOpening).not.toHaveBeenCalledWith(true);
   });
 
-  it.each(['https://notinstagram.com/x', 'https://instagram.com.evil.io/x', 'https://esn.cz/'])(
-    'keeps %s in the in-app browser',
-    async (url) => {
-      await openExternal(url);
-      expect(handToSystem).not.toHaveBeenCalled();
-      expect(open).toHaveBeenCalledWith({ url });
-    }
-  );
+  it.each([
+    'https://notinstagram.com/x',
+    'https://instagram.com.evil.io/x',
+    'https://esn.cz/',
+    'https://notdiscord.gg/x',
+    'https://discord.gg.evil.io/x',
+  ])('keeps %s in the in-app browser', async (url) => {
+    await openExternal(url);
+    expect(handToSystem).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith({ url });
+  });
 
   it('off Capacitor an Instagram link is an ordinary new tab', async () => {
     vi.mocked(getPlatform).mockReturnValue({ kind: 'extension' } as unknown as ReturnType<

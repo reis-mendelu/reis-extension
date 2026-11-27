@@ -34,8 +34,10 @@ const NEEDS_APP_SESSION = /^is\.mendelu\.cz$/i;
  * Hosts whose links open in their own app. In the in-app browser Instagram is
  * the web page, signed out ("doesn't open it in the Instagram app"); handed to
  * the OS it opens the Instagram app, or the browser when it is not installed.
+ * A programme's Discord invite (discord.gg, discord.com/invite) is the same: in
+ * the in-app browser a signed-out page asking to open the app.
  */
-const HAS_OWN_APP = /(^|\.)instagram\.com$/i;
+const HAS_OWN_APP = /(^|\.)(instagram\.com|discord\.gg|discord\.com)$/i;
 
 function hasOwnApp(url: string): boolean {
   try {

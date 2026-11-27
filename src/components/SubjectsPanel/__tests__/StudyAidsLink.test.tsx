@@ -54,6 +54,41 @@ describe('StudyAidsLink (extension)', () => {
     expect(trackFeatureSignal).toHaveBeenCalledWith('study_aids_click_mendelu_app');
   });
 
+  it("links a B-OI student to their programme's Discord, beside mendelu.app when both match", () => {
+    useAppStore.setState({
+      studyAids: {
+        'mendelu-app': ['pef'],
+        'discord-b-oi': ['pef:B-OI'],
+        'discord-b-aii': ['pef:B-AII'],
+      },
+      userFaculty: 'PEF',
+      userProgramme: 'B-OI',
+    } as never);
+    render(<StudyAidsLink />);
+    const discord = screen.getByRole('link', { name: /Discord · Otevřená informatika/ });
+    expect(discord).toHaveAttribute('href', 'https://discord.gg/fN9XrTqmVf');
+    expect(discord).toHaveAttribute('target', '_blank');
+    expect(screen.getByRole('link', { name: /Studijní opory/ })).toBeInTheDocument();
+    // The other programme's server is not offered.
+    expect(screen.queryByRole('link', { name: /Administrace/ })).toBeNull();
+    fireEvent.click(discord);
+    expect(trackFeatureSignal).toHaveBeenCalledWith('study_aids_click_discord_b_oi');
+  });
+
+  it('links a B-AII student to the administrace server only', () => {
+    useAppStore.setState({
+      studyAids: { 'discord-b-oi': ['pef:B-OI'], 'discord-b-aii': ['pef:B-AII'] },
+      userFaculty: 'PEF',
+      userProgramme: 'B-AII',
+    } as never);
+    render(<StudyAidsLink />);
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(screen.getByRole('link', { name: /Discord · Administrace/ })).toHaveAttribute(
+      'href',
+      'https://discord.gg/THue2RgVr2'
+    );
+  });
+
   it('counts nothing for a student who is shown no link', () => {
     useAppStore.setState({ userProgramme: 'B-FYT' } as never);
     render(<StudyAidsLink />);
