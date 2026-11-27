@@ -68,7 +68,7 @@ describe('LibraryCard', () => {
     expect(cell('Individuální 1', '13:00')).toBeTruthy();
     // Týmová 2 and the IC rooms were not read: "?", never offered.
     expect(screen.queryByRole('button', { name: /Týmová 2/ })).toBeNull();
-    expect(screen.getByRole('status')).toHaveTextContent('Některé studovny se nepodařilo načíst');
+    expect(screen.getByText(/Některé studovny se nepodařilo načíst/)).toBeTruthy();
   });
 
   it('a tap picks one room and hour, shows it in the bar and offers a plus on each side', () => {

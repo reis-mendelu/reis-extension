@@ -39,6 +39,7 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   const raw = useLibraryStore((s) => s.blocks);
   const status = useLibraryStore((s) => s.status);
   const savedAt = useLibraryStore((s) => s.savedAt);
+  const fetchedAt = useLibraryStore((s) => s.fetchedAt);
   const storeDay = useLibraryStore((s) => s.day);
   const storePicked = useLibraryStore((s) => s.picked);
   const storeRoom = useLibraryStore((s) => s.room);
@@ -92,6 +93,14 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
     const scroller = top.current?.closest<HTMLElement>('.overflow-y-auto');
     if (scroller) scroller.scrollTop = 0;
   }, [day]);
+  // A pick made low in the grid stays in view above the footer, and clear of the sticky head.
+  const pickKey = pick ? `${pick.room}:${pick.hours.join(',')}` : '';
+  useEffect(() => {
+    if (pickKey)
+      top.current
+        ?.querySelector<HTMLElement>('[data-picked]')
+        ?.scrollIntoView?.({ block: 'nearest' });
+  }, [pickKey]);
 
   return (
     <div ref={top} data-testid="library-card" className={`space-y-3 ${flush ? 'px-5' : 'px-4'}`}>
@@ -132,7 +141,11 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
         </p>
       ) : (
         <>
-          {savedAt !== null && <SavedNote at={savedAt} loading={status === 'loading'} />}
+          <SavedNote
+            at={savedAt ?? fetchedAt}
+            saved={savedAt !== null}
+            loading={status === 'loading'}
+          />
           <LibraryGrid
             rows={rows}
             pick={pick}

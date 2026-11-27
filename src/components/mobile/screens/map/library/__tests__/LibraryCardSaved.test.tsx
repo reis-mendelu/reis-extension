@@ -33,8 +33,9 @@ describe('LibraryCard: the library’s last answer, kept on the device', () => {
     expect(screen.getByText('Stav z 09:12, obnovit se nepodařilo')).toBeTruthy();
   });
 
-  it('shows no note for an answer that has just come from the library', () => {
+  it('says when a fresh answer was taken, in the same line, so the grid does not move', () => {
+    useLibraryStore.setState({ fetchedAt: new Date('2026-11-16T09:20:00+01:00').getTime() });
     render(<LibraryCard view={{ featureId: null }} />);
-    expect(screen.queryByText(/Stav z/)).toBeNull();
+    expect(screen.getByText('Stav z 09:20')).toBeTruthy();
   });
 });

@@ -8,16 +8,37 @@ const clock = (at: number, lang: 'cz' | 'en') =>
   });
 
 /**
- * Says the grid below is the library's last answer, kept on this device, and
- * when it was taken, while the new one is read (or after that read failed).
+ * When the grid below was taken from the library: "refreshing" while the last
+ * saved answer is on screen, a plain time once the library has answered. The line
+ * is always there once there is a time, so its coming and going never moves the
+ * grid under a thumb that is about to tap.
  */
-export function SavedNote({ at, loading }: { at: number; loading: boolean }) {
+export function SavedNote({
+  at,
+  saved,
+  loading,
+}: {
+  at: number | null;
+  saved: boolean;
+  loading: boolean;
+}) {
   const { t, language } = useTranslation();
-  const time = clock(at, language);
+  const time = at === null ? '' : clock(at, language);
+  const key = !saved
+    ? 'mobile.library.freshAt'
+    : loading
+      ? 'mobile.library.savedLoading'
+      : 'mobile.library.savedFailed';
   return (
-    <p role="status" className="flex items-center gap-2 text-xs text-base-content/70">
-      {loading && <span className="loading loading-spinner loading-xs" aria-hidden="true" />}
-      {t(loading ? 'mobile.library.savedLoading' : 'mobile.library.savedFailed', { time })}
+    <p role="status" className="flex min-h-4 items-center gap-2 text-xs text-base-content/70">
+      {at !== null && (
+        <>
+          {saved && loading && (
+            <span className="loading loading-spinner loading-xs" aria-hidden="true" />
+          )}
+          {t(key, { time })}
+        </>
+      )}
     </p>
   );
 }

@@ -156,8 +156,9 @@ function Cell({
       type="button"
       aria-label={plus ? t('mobile.library.addHour', { time: hh(hour) }) : label}
       aria-pressed={on}
+      data-picked={on || undefined}
       onClick={() => onTap(room.featureId, hour)}
-      className={`${base} ${
+      className={`${base} scroll-mb-2 scroll-mt-24 ${
         on
           ? 'bg-primary text-primary-content'
           : plus
