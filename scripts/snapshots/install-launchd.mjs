@@ -14,6 +14,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, userInfo } from 'node:os';
 import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export const LABEL = 'cz.reisapp.snapshots';
 
@@ -87,7 +88,7 @@ function mainCheckout() {
   return dirname(common);
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   if (process.argv.includes('--uninstall')) {
     process.stdout.write(`removed ${load(LABEL, null)}\n`);
   } else {

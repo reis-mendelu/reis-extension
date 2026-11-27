@@ -13,6 +13,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
 export const ENV = {
@@ -42,7 +43,7 @@ export function bundleOptions(entry, outfile) {
 
 const OUT = resolve('node_modules/.cache/reis-snapshots/run.mjs');
 
-if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     await build(bundleOptions(resolve('scripts/snapshots/run.ts'), OUT));
   } catch (err) {
