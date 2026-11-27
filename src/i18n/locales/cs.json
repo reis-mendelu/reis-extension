@@ -1816,6 +1816,13 @@
     "expired": "Zobrazení jako student skončilo s koncem semestru.",
     "bannerLabel": "Zobrazuješ jako {programme} · {year}. ročník",
     "bannerExit": "Ukončit",
+    "unavailable": "Persona · {what}: není k dispozici — IS to dává jen přihlášenému studentovi.",
+    "unavailableWhat": {
+      "exams": "Zkoušky",
+      "files": "Soubory",
+      "zaznamnik": "Záznamník",
+      "averagesAndBoxes": "Průměry a odevzdávárny"
+    },
     "close": "Zavřít"
   },
   "odevzdavarny": {

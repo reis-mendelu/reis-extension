@@ -30,6 +30,7 @@ import { useCourseName } from '../../../hooks/ui/useCourseName';
 import { useMarkZaznamnikSeen } from '../../../hooks/ui/useMarkZaznamnikSeen';
 import { useFileLastVisit } from '../../../hooks/ui/useFileLastVisit';
 import { syllabusUrl } from '../../../utils/syllabusUrl';
+import { zaznamnikTabCount } from '../../../utils/zaznamnik/tabCount';
 
 type SubjectDrawerSheetData = Extract<MobileSheet, { kind: 'subjectDrawer' }>;
 
@@ -131,16 +132,8 @@ export function SubjectDrawerSheet({ sheet, onClose }: SubjectDrawerSheetProps) 
   const syllabusResult = useSyllabus(courseCode, resolvedCourseId, courseName);
 
   const filesCount = files?.reduce((acc, f) => acc + f.files.length, 0) ?? 0;
-  // Records plus submission boxes — both live on this tab (see ZaznamnikTab).
-  const zaznamnikCount =
-    zaznamnikData || boxes.length > 0
-      ? (zaznamnikData?.ph.sections?.reduce(
-          (n, s) => n + s.arches.filter((a) => !a.empty).length,
-          0
-        ) ?? 0) +
-        (zaznamnikData?.vt.tests?.length ?? 0) +
-        boxes.length
-      : undefined;
+  const impersonating = useAppStore((s) => s.impersonation != null);
+  const zaznamnikCount = zaznamnikTabCount(zaznamnikData, boxes.length, impersonating);
   const counts: Partial<Record<DrawerTab, number | undefined>> = {
     files: filesCount,
     classmates: classmates?.length,

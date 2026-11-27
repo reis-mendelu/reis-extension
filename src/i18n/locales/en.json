@@ -1816,6 +1816,13 @@
     "expired": "Viewing as a student ended with the semester.",
     "bannerLabel": "Viewing as {programme} · year {year}",
     "bannerExit": "Exit",
+    "unavailable": "Persona · {what}: not available — IS gives this only to the signed-in student.",
+    "unavailableWhat": {
+      "exams": "Exams",
+      "files": "Files",
+      "zaznamnik": "Grades",
+      "averagesAndBoxes": "Averages and submission boxes"
+    },
     "close": "Close"
   },
   "odevzdavarny": {

@@ -12,6 +12,7 @@ const { store } = vi.hoisted(() => ({
     ],
     subjects: { data: { 'EBC-VWA': { subjectId: 'V' }, 'EBC-PS': { subjectId: 'P' } } },
     markBoxesSeen: vi.fn(async () => undefined),
+    impersonation: null as unknown,
   },
 }));
 vi.mock('../../../store/useAppStore', () => ({
@@ -25,11 +26,24 @@ describe('useMarkZaznamnikSeen', () => {
     vi.clearAllMocks();
     store.zaznamnikNewPoints = { 'EBC-PS': [{ label: 'a', value: '1' }] };
     store.odevzdavarnyNew = [];
+    store.impersonation = null;
   });
 
   it('clears a subject once its záznamník is on screen', () => {
     renderHook(() => useMarkZaznamnikSeen('EBC-PS', 'zaznamnik', true));
     expect(store.markZaznamnikSeen).toHaveBeenCalledWith('EBC-PS');
+  });
+
+  /**
+   * Admin personas: the tab shows the persona note, not the marks, so the
+   * admin has not seen them. Their "Nové body" and new boxes must stay unread.
+   */
+  it('leaves points and boxes unread while impersonating', () => {
+    store.impersonation = { selection: {} };
+    store.odevzdavarnyNew = ['9002'];
+    renderHook(() => useMarkZaznamnikSeen('EBC-PS', 'zaznamnik', true));
+    expect(store.markZaznamnikSeen).not.toHaveBeenCalled();
+    expect(store.markBoxesSeen).not.toHaveBeenCalled();
   });
 
   it('leaves it while another tab is showing, or the drawer is closed', () => {
