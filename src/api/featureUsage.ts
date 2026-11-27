@@ -78,6 +78,12 @@ export const FEATURE_SIGNALS = [
    * programme from the admin console (2026-11-18).
    */
   'study_aids_click_mendelu_app',
+  /**
+   * A programme's Discord server under Předměty (both trees) tapped, one label
+   * per server (2026-11-27): how many installs joined from reIS.
+   */
+  'study_aids_click_discord_b_oi',
+  'study_aids_click_discord_b_aii',
   /** The "reIS v Claude" row in the extension's Novinky opened its guide: how many installs went to set it up. */
   'reis_for_claude_guide_opened',
   /** The critical-version pop-up appeared (phone/iPad; at most twice per install, utils/criticalUpdate). */

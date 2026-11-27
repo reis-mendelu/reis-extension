@@ -1,9 +1,12 @@
+import type { ComponentType } from 'react';
 import { ChevronRight, ExternalLink } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 
 export interface NavRowProps {
-  /** Omitted where the row has to read as a sibling of an icon-less header. */
-  icon?: LucideIcon;
+  /**
+   * Omitted where the row has to read as a sibling of an icon-less header.
+   * Usually a lucide icon; a brand mark (StudyAidsIcon) takes the same props.
+   */
+  icon?: ComponentType<{ size?: number; className?: string }>;
   label: string;
   /** Optional second line. Truncated: these are one-liners, not descriptions. */
   sublabel?: string;

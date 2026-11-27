@@ -362,6 +362,22 @@ counter, one label per partner programme; the steps, the migration and the
 disclosure are in `docs/feature-counters.md`. If a new feature needs no
 counter, say so in the PR in one line.
 
+## Who sees it is data
+
+**Showing something to some students only (a faculty, a programme) is a row in
+Supabase, never a list in code**, so the admin console can retarget or remove
+it without a store release. The audience is tokens (`af`, `pef:B-OI`,
+`mendelu`), decided on the device by `matchesAudience(tokens, useViewer())`.
+
+- A link under Předměty (mendelu.app, a programme's Discord) is a `study_aids`
+  row (audience, on/off) plus an entry in `src/data/studyAids.ts` (URL, label,
+  counter, icon). Every matching link is shown, on both trees.
+  `src/test/guards/studyAidsRegistry.test.ts` names what a new entry still
+  needs: seed row, counter label, allowed host, disclosure, both languages.
+- A partner's audience is `societies.audience`.
+- `src/test/guards/noProgrammeListsInCode.test.ts` fails on a quoted programme
+  code in source. Reach for one of the above instead of widening its allow-list.
+
 ## Error Reporting & Privacy
 
 **reIS transmits nothing about a failure on its own.** No error type, message,

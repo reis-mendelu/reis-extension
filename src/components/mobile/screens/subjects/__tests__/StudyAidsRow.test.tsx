@@ -50,6 +50,33 @@ describe('StudyAidsRow (phone)', () => {
     expect(trackFeatureSignal).not.toHaveBeenCalled();
   });
 
+  it("shows a B-OI student their programme's Discord and hands the invite to openExternal", () => {
+    useAppStore.setState({
+      studyAids: { 'mendelu-app': ['pef'], 'discord-b-oi': ['pef:B-OI'], 'discord-b-aii': ['pef:B-AII'] },
+      userFaculty: 'PEF',
+      userProgramme: 'B-OI',
+    } as never);
+    render(<StudyAidsRow />);
+    expect(screen.getByRole('button', { name: /Studijní opory/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Administrace/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Discord · Otevřená informatika/ }));
+    expect(openExternal).toHaveBeenCalledWith('https://discord.gg/fN9XrTqmVf');
+    expect(trackFeatureSignal).toHaveBeenCalledWith('study_aids_click_discord_b_oi');
+  });
+
+  it('shows a B-AII student the administrace server only', () => {
+    useAppStore.setState({
+      studyAids: { 'discord-b-oi': ['pef:B-OI'], 'discord-b-aii': ['pef:B-AII'] },
+      userFaculty: 'PEF',
+      userProgramme: 'B-AII',
+    } as never);
+    render(<StudyAidsRow />);
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: /Discord · Administrace/ }));
+    expect(openExternal).toHaveBeenCalledWith('https://discord.gg/THue2RgVr2');
+    expect(trackFeatureSignal).toHaveBeenCalledWith('study_aids_click_discord_b_aii');
+  });
+
   it('follows the admin console: switched off, it disappears', () => {
     useAppStore.setState({ studyAids: {} } as never);
     const { container } = render(<StudyAidsRow />);

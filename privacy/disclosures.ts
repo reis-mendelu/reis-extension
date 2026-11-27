@@ -214,9 +214,9 @@ export const FLOWS: Flow[] = [
         'the random install identifier, the school and the fixed `app_update_opened` label. We cannot see whether you go on to update',
       ],
       [
-        'Study aids opened',
-        'you tap the "Studijní opory" link under Předměty (shown only to students of the faculties and programmes reIS has chosen; today it leads to mendelu.app), once per app session; stored as one row per install per day',
-        "the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`). We count how many installs tapped, which the site's author is told as a number; we never tell them who, and we cannot see what you do on the website",
+        'Study link opened',
+        'you tap one of the links under Předměty that are shown only to students of the faculties and programmes reIS has chosen (today the "Studijní opory" link to mendelu.app, and the Discord server of your programme for Otevřená informatika and Administrace IS/ICT), once per app session; stored as one row per install per day',
+        "the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`, `study_aids_click_discord_b_oi`, `study_aids_click_discord_b_aii`). We count how many installs tapped, which whoever runs the site may be told as a number; we never tell them who, and we cannot see what you do on the website or on Discord",
       ],
       [
         'reIS in Claude guide opened',
@@ -326,7 +326,7 @@ export const EXEMPT: Exempt[] = [
   {
     call: 'study_aids',
     files: ['src/api/studyAids.ts', 'src/api/adminStudyAids.ts'],
-    why: 'Public read of which faculties and programmes the study-aids link is shown to, matched on the device: the lookup does not send the student’s faculty or programme. Writes are by a signed-in reis_admin, never a student.',
+    why: 'Public read of which faculties and programmes each link under Předměty (study aids, programme Discord servers) is shown to, matched on the device: the lookup does not send the student’s faculty or programme. Writes are by a signed-in reis_admin, never a student.',
   },
   {
     call: 'critical_app_version',

@@ -9,12 +9,27 @@ begin
   if n <> 1 then raise exception 'mendelu-app is not seeded as off (%)', n; end if;
 end $$;
 
--- a student sees nothing while it is off
+-- the programme Discord servers are seeded ON, each for its own PEF programme
+-- (20261127120000), and a student reads them
+do $$
+declare n int;
+begin
+  select count(*) into n from public.study_aids
+   where (id = 'discord-b-oi' and audience = array['pef:B-OI'] and is_active)
+      or (id = 'discord-b-aii' and audience = array['pef:B-AII'] and is_active);
+  if n <> 2 then raise exception 'the Discord links are not seeded on (%)', n; end if;
+  set local role anon;
+  select count(*) into n from public.study_aids where id in ('discord-b-oi', 'discord-b-aii');
+  reset role;
+  if n <> 2 then raise exception 'anon saw % of the 2 active Discord links', n; end if;
+end $$;
+
+-- a student sees nothing of a link while it is off (the other links are on)
 do $$
 declare n int;
 begin
   set local role anon;
-  select count(*) into n from public.study_aids;
+  select count(*) into n from public.study_aids where id = 'mendelu-app';
   reset role;
   if n <> 0 then raise exception 'anon saw % switched-off rows', n; end if;
 end $$;
@@ -136,7 +151,7 @@ begin
   perform set_config('request.jwt.claims',
     '{"sub":"00000000-0000-0000-0000-00000000e501","role":"authenticated"}', true);
   set local role authenticated;
-  select count(*) into n from public.study_aids;
+  select count(*) into n from public.study_aids where id = 'mendelu-app';
   update public.study_aids set is_active = true, audience = array['mendelu'] where id = 'mendelu-app';
   get diagnostics changed = row_count;
   reset role;

@@ -249,6 +249,8 @@ const ALLOWED_HOSTS = [
   'cestasey.cz', // EY's programme, linked from Stáže for students whose field EY partners
   'mendelu.app', // study aids (data/studyAids.ts), linked under Předměty for the programmes
   // the admin console picks. A plain link: nothing about the student rides along.
+  'discord.gg', // a programme's Discord invite (data/studyAids.ts), under Předměty for that
+  // programme's students; handed to the Discord app on a phone. Nothing about the student rides along.
   'addons.mozilla.org', // the Firefox extension's "Ohodnotit reIS" link (utils/extensionReviewUrl.ts)
   'reisapp.cz', // reIS's own how-to guides (utils/guideUrl.ts), opened from Nápověda.
   // Only `z=app` rides along, nothing about the student.
