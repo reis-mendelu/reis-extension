@@ -4,7 +4,7 @@ import type { SpolekNotification } from '../../services/spolky/types';
 import type { AppState } from '../../store/types';
 import { localTodayIso } from '../../components/CampusMap/eventWindow';
 import { canSee, isReisOwn, type Viewer } from '../eventAudience';
-import { viewerFrom } from '../../hooks/useViewer';
+import { viewerOf } from '../../hooks/useViewer';
 import { isNoticeRows, pragueMinuteIso } from '../isNoticeRows';
 
 /** reIS's own rows are for everyone, exchange students included. */
@@ -21,14 +21,6 @@ export interface FeedInputs {
   isNoticeMutes: AppState['isNoticeMutes'];
   language: AppState['language'];
 }
-
-/** Who the audience rule applies to, from a store snapshot (useViewer's rule). */
-export const viewerOf = (s: AppState): Viewer => {
-  const impersonated = s.impersonation?.selection.faculty ?? null;
-  return impersonated
-    ? viewerFrom(impersonated, false)
-    : viewerFrom(s.userFaculty, s.isErasmus, s.userProgramme);
-};
 
 /** The same inputs, read from a store snapshot: for code outside React (src/mobile). */
 export const feedInputsOf = (s: AppState): FeedInputs => ({

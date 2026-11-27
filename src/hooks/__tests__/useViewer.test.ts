@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useAppStore } from '../../store/useAppStore';
-import { useViewer, viewerFrom } from '../useViewer';
+import { useViewer, viewerFrom, viewerOf } from '../useViewer';
 
 describe('viewerFrom', () => {
   it('maps an IS faculty label to a key', () => {
@@ -78,12 +78,50 @@ describe('useViewer', () => {
       impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never,
     });
     const { result } = renderHook(() => useViewer());
-    // The picker selects a faculty only, so no programme-level partners then.
+    // A selection without a programme code gives no programme-level matches.
     expect(result.current).toEqual({
       facultyKey: 'frrms',
       erasmus: false,
       exchange: false,
       programme: null,
     });
+  });
+
+  // A reis_admin impersonating a B-AII student must see B-AII's links,
+  // partners and events, not only the faculty-wide ones.
+  it("carries the impersonated student's programme", () => {
+    useAppStore.setState({
+      impersonation: { selection: { faculty: 'PEF', shortCode: 'B-AII' }, result: {} } as never,
+    });
+    const { result } = renderHook(() => useViewer());
+    expect(result.current).toEqual({
+      facultyKey: 'pef',
+      erasmus: false,
+      exchange: false,
+      programme: 'B-AII',
+    });
+  });
+
+  // Novinky outside React (buildFeed, src/mobile) reads the same rule.
+  it.each([
+    ['own', null],
+    ['impersonated', { selection: { faculty: 'PEF', shortCode: 'B-AII' }, result: {} }],
+  ])('agrees with viewerOf on a store snapshot (%s)', (_, impersonation) => {
+    useAppStore.setState({ impersonation: impersonation as never });
+    const { result } = renderHook(() => useViewer());
+    expect(viewerOf(useAppStore.getState())).toEqual(result.current);
+  });
+});
+
+describe('viewerOf', () => {
+  it('reduces a full programme code to its base, as partner tokens are', () => {
+    expect(
+      viewerOf({
+        userFaculty: 'PEF',
+        isErasmus: false,
+        userProgramme: 'B-OI-ZBOI',
+        impersonation: null,
+      })
+    ).toMatchObject({ programme: 'B-OI' });
   });
 });

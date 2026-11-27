@@ -19,8 +19,17 @@ function Badge() {
   return <span data-testid="badge">{useReisForClaude().badge}</span>;
 }
 
-const setUp = (programme: string | null, state: ReisForClaudeState = 'new') =>
-  useAppStore.setState({ userProgramme: programme, reisForClaude: state });
+const setUp = (
+  programme: string | null,
+  state: ReisForClaudeState = 'new',
+  faculty: string | null = 'PEF'
+) =>
+  useAppStore.setState({
+    userFaculty: faculty,
+    userProgramme: programme,
+    reisForClaude: state,
+    impersonation: null,
+  });
 
 describe('ReisForClaudeRow', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -37,6 +46,27 @@ describe('ReisForClaudeRow', () => {
     setUp(p);
     const { container } = render(<ReisForClaudeRow />);
     expect(container.innerHTML).toBe('');
+  });
+
+  // The audience is PEF tokens now (matchesAudience): an unknown faculty
+  // matches nothing, so a programme alone no longer shows the row.
+  it.each([null, 'XYZ'])('shows nothing when the faculty is %s', (faculty) => {
+    setUp('B-OI', 'new', faculty);
+    expect(render(<ReisForClaudeRow />).container.innerHTML).toBe('');
+  });
+
+  it('follows the impersonated student, not the admin', () => {
+    setUp('B-EKO', 'new', 'AF');
+    useAppStore.setState({
+      impersonation: { selection: { faculty: 'PEF', shortCode: 'B-AII' }, result: {} } as never,
+    });
+    expect(render(<ReisForClaudeRow />).container.innerHTML).not.toBe('');
+    // …and an admin in the launch programme sees what a B-EKO student would.
+    setUp('B-OI', 'new', 'PEF');
+    useAppStore.setState({
+      impersonation: { selection: { faculty: 'PEF', shortCode: 'B-EKO' }, result: {} } as never,
+    });
+    expect(render(<ReisForClaudeRow />).container.innerHTML).toBe('');
   });
 
   it('shows nothing before boot has read the device, or once done', () => {
