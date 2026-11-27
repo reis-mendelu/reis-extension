@@ -27,21 +27,24 @@ html { -webkit-text-size-adjust: 100%; }
 body { font-size: 16px; line-height: 1.45; }
 
 #header { flex-wrap: wrap; height: auto !important; min-height: 0 !important; padding: 8px 12px; gap: 8px; }
-#header .left { flex: 1 1 0; min-width: 0; align-items: center; gap: 10px; font-size: 15px; line-height: 1.2; }
-#header .right { flex: 0 0 auto; align-items: center; gap: 8px; font-size: 13px; }
-#uis-logo { height: 34px !important; width: auto !important; }
-#pfp, #pfp img { width: 40px !important; height: 40px !important; }
+#header .left { flex: 1 1 0; min-width: 124px; align-items: center; gap: 8px; font-size: 14px; line-height: 1.2; }
+#header .right { flex: 0 0 auto; margin-left: auto; align-items: center; gap: 6px; font-size: 12px; }
+#uis-logo { height: 30px !important; width: auto !important; flex: 0 0 auto; }
+#pfp, #pfp img { width: 36px !important; height: 36px !important; }
 
 .wholepage > nav { flex-wrap: wrap; height: auto !important; padding: 8px 12px; row-gap: 6px; }
 .breadcrumb { flex-wrap: wrap; min-width: 0; row-gap: 4px; }
 
-#stranka { display: flex !important; flex-direction: column; padding: 4px 12px 32px; }
+#stranka { display: flex !important; flex-direction: column; padding: 4px 0 32px; }
 #stranka > .mainpage { order: 1; min-width: 0; max-width: 100%; }
-#stranka > div:not(.mainpage) { order: 2; }
+#stranka > div:not(.mainpage) { order: 2; padding: 0 15px; }
 #stranka .portletbar { float: none !important; width: auto !important; padding-right: 0 !important; margin-top: 16px; }
 
 .mainpage div, .mainpage p, .mainpage form { max-width: 100% !important; box-sizing: border-box; }
 .mainpage div.small { width: auto !important; }
+.mainpage .rada-ikon { display: flex !important; flex-wrap: wrap; }
+.mainpage .paginator { flex-wrap: wrap; row-gap: 4px; }
+.mainpage .sekce-nadpis { font-size: 14px; }
 
 .mainpage table { display: block; width: auto !important; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .mainpage table:not(.portal_menu) td, .mainpage table:not(.portal_menu) th { font-size: 13px; padding-left: 5px !important; padding-right: 5px !important; }
