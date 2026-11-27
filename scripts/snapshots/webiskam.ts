@@ -29,7 +29,16 @@ const LOGIN_DEADLINE_MS = 60_000;
 const CONSENT_WAIT_MS = 180_000;
 
 /** Read every morning. Extend only with pages that show, never ones that act. */
-export const WEBISKAM_PAGES = ['/Konta', '/InformaceOKlientovi'];
+export const WEBISKAM_PAGES = [
+  '/Konta',
+  '/InformaceOKlientovi',
+  // Dorms, the reason this exists: when reservations open, what is free, the current stay.
+  // Seen in WebISKAM's menu on 2026-11-27 ("Rezervace", "Náhled na volné kapacity",
+  // "Přehled ubytování"); plain views, the job only loads them and clicks nothing.
+  '/Rezervace',
+  '/VolneKapacity',
+  '/PrehledUbytovani',
+];
 /** Links the menu record flags: they act, not show. */
 export const RISKY_LINK = /zaplat|uhrad|platb|gopay|odhlas|logout|smaz|delete|zrus|storno/i;
 

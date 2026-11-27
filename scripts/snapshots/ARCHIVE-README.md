@@ -11,7 +11,7 @@ This file is overwritten by every run. To change it, edit `ARCHIVE-README.md` th
 | `days/<date>/is/<page>.txt` | The visible text of an IS page, saved **only on days it changed**. |
 | `days/<date>/is/<page>.html` | The same page as IS served it. |
 | `days/<date>/…/<page>@HHMM.*` | A second change on the same day (a run by hand), kept next to the morning's copy. |
-| `days/<date>/webiskam/…` | The same for WebISKAM: `Konta` (balance), `InformaceOKlientovi` (claims, rent), `_menu` (its menu links). |
+| `days/<date>/webiskam/…` | The same for WebISKAM: `Konta` (balance), `InformaceOKlientovi` (claims, rent), `Rezervace` (dorm reservations), `VolneKapacity` (free dorm places), `PrehledUbytovani` (your stays), `_menu` (its menu links). |
 | `state.json` | For each page: the day it was last saved and last seen. |
 
 **A page as it was on a given day** is its newest file in `days/` dated on or before that day.
