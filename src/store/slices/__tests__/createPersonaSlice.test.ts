@@ -1,14 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const fetchImpersonation = vi.fn();
-const loadOptions = vi.fn();
-const loadYear1Groups = vi.fn();
+const m = vi.hoisted(() => ({
+  fetchImpersonation: vi.fn(),
+  loadOptions: vi.fn(),
+  loadYear1Groups: vi.fn(),
+}));
 vi.mock('../../../api/impersonation/fetchImpersonation', () => ({
-  fetchImpersonation: (...a: unknown[]) => fetchImpersonation(...a),
+  fetchImpersonation: (...a: unknown[]) => m.fetchImpersonation(...a),
 }));
 vi.mock('../../../api/impersonation/options', () => ({
-  loadOptions: (...a: unknown[]) => loadOptions(...a),
-  loadYear1Groups: (...a: unknown[]) => loadYear1Groups(...a),
+  loadOptions: (...a: unknown[]) => m.loadOptions(...a),
+  loadYear1Groups: (...a: unknown[]) => m.loadYear1Groups(...a),
 }));
 vi.mock('../../../services/admin/hasAdminSession', () => ({ hasAdminSession: async () => false }));
 vi.mock('../../../services/admin/authClient', () => ({
@@ -25,123 +27,14 @@ import { useAppStore } from '../../useAppStore';
 import { overlayWrite } from '../../overlay/overlayGuard';
 import { IndexedDBService } from '../../../services/storage';
 import { ImpersonationError } from '../../../api/impersonation/types';
-import type {
-  FacultyOptions,
-  ImpersonationResult,
-  ImpersonationSelection,
-  RozvrhRef,
-} from '../../../api/impersonation/types';
-import type { BlockLesson } from '../../../types/schedule';
+import type { ImpersonationResult, ImpersonationSelection } from '../../../api/impersonation/types';
+import * as setup from './personaSliceSetup';
 
-const ROZVRH: RozvrhRef = {
-  id: '5769',
-  z: '20260921',
-  k: '20261213',
-  label: '',
-  period: 'ZS 2026/2027',
-  faculty: 'PEF',
-  form: 'prezenční',
-  start: '21.09.2026',
-  end: '20.12.2026',
-};
-const variant = (programId: string, shortCode: string) => ({
-  programId,
-  shortCode,
-  rozvrh: ROZVRH,
-});
-const OPTIONS: FacultyOptions[] = [
-  {
-    faculty: 'PEF',
-    programmes: [
-      {
-        ...variant('1', 'B-OI'),
-        name: 'Otevřená informatika',
-        faculty: 'PEF',
-        years: [1],
-        variants: [variant('1', 'B-OI')],
-      },
-      {
-        ...variant('2', 'B-F'),
-        name: 'Finance',
-        faculty: 'PEF',
-        years: [1],
-        variants: [variant('2', 'B-F')],
-      },
-    ],
-  },
-];
+const { resultFor, s, codes, settle } = setup;
+const { fetchImpersonation, loadOptions, loadYear1Groups } = m;
 
-const lesson = (code: string): BlockLesson => ({
-  id: code,
-  date: '20260922',
-  startTime: '09:00',
-  endTime: '10:50',
-  courseCode: code,
-  courseName: code,
-  courseId: '1',
-  room: 'Q01',
-  roomStructured: { name: 'Q01', id: '1' },
-  isSeminar: 'false',
-  isConsultation: 'false',
-  isDefaultCampus: 'true',
-  facultyCode: 'PEF',
-  campus: 'Brno',
-  teachers: [],
-  studyId: '',
-  periodId: '',
-});
-const plan = {
-  title: 'x',
-  isFulfilled: false,
-  creditsAcquired: 0,
-  creditsRequired: 180,
-  blocks: [],
-};
-const resultFor = (sel: ImpersonationSelection, code: string): ImpersonationResult => ({
-  resolved: variant(sel.programId, sel.shortCode),
-  plan: { cz: plan, en: plan },
-  schedule: [lesson(code)],
-  subjects: { version: 1, lastUpdated: 'x', data: {} },
-  fetchedAt: Date.now(),
-});
-
-const s = () => useAppStore.getState();
-const codes = () => s().schedule.data.map((l) => l.courseCode);
-const flush = () => new Promise((r) => setTimeout(r, 0));
-/**
- * Lets a background refresh run to its end: a fetch, then several IndexedDB
- * round-trips (fake-indexeddb answers on later macrotasks). Two flushes were
- * enough on an idle machine and not under load.
- */
-const settle = async () => {
-  for (let i = 0; i < 30; i++) await flush();
-};
-
-beforeEach(async () => {
-  vi.useFakeTimers({ now: new Date(2026, 8, 26, 12), toFake: ['Date'] });
-  await IndexedDBService.clearAll();
-  await IndexedDBService.set('schedule', 'current', [lesson('REAL-1')]);
-  useAppStore.setState(
-    overlayWrite({
-      impersonation: null,
-      impersonationOptions: null,
-      impersonationOptionsStatus: 'idle' as const,
-      personaRows: {},
-      adminRole: 'reis_admin' as const,
-      adminSession: {} as never,
-      demoMode: false,
-      schedule: { data: [lesson('REAL-1')], status: 'success' as const },
-    })
-  );
-  fetchImpersonation.mockReset();
-  fetchImpersonation.mockImplementation(async (sel: ImpersonationSelection) =>
-    resultFor(sel, `${sel.shortCode}-1`)
-  );
-  loadOptions.mockReset();
-  loadOptions.mockResolvedValue(OPTIONS);
-  loadYear1Groups.mockReset();
-  loadYear1Groups.mockResolvedValue([4, 7]);
-});
+/** The one-tap persona switch (design 2026-11-27 §3, step B). */
+beforeEach(() => setup.resetPersonaStore(m));
 
 describe('persona switch', () => {
   it('a first switch fetches with the first IS group, applies, caches and survives restart', async () => {
@@ -244,8 +137,7 @@ describe('persona switch', () => {
       return resultFor(sel, 'B-F-1');
     });
     const pending = s().switchToPersona('finance');
-    await flush();
-    expect(s().personaRows.finance).toBe('loading');
+    await vi.waitFor(() => expect(s().personaRows.finance).toBe('loading'));
     await s().stopImpersonation();
     release();
     expect(await pending).toBe(false);
@@ -268,176 +160,5 @@ describe('persona switch', () => {
     fetchImpersonation.mockClear();
     await s().switchToPersona('finance');
     expect(fetchImpersonation).toHaveBeenCalledOnce();
-  });
-});
-
-describe('persona cache lifetime', () => {
-  it('"Já" exits and keeps the cache', async () => {
-    await s().switchToPersona('finance');
-    await s().stopImpersonation();
-    expect(s().impersonation).toBeNull();
-    expect(codes()).toEqual(['REAL-1']);
-    expect(await IndexedDBService.get('meta', 'persona:finance')).toBeDefined();
-  });
-
-  it('admin logout clears every persona, active or not', async () => {
-    await s().switchToPersona('finance');
-    await s().switchToPersona('it');
-    await s().adminLogout();
-    expect(s().impersonation).toBeNull();
-    expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
-    expect(await IndexedDBService.get('meta', 'persona:it')).toBeUndefined();
-  });
-
-  it('IS logout and an identity change (clearAll) take the persona cache with them', async () => {
-    await s().switchToPersona('finance');
-    await IndexedDBService.clearAll();
-    expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
-  });
-
-  it('a restore that finds no admin session clears the persona cache too', async () => {
-    await s().switchToPersona('finance');
-    useAppStore.setState(overlayWrite({ impersonation: null, adminRole: null }));
-    await s().restoreImpersonation();
-    expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
-  });
-
-  it('a boot with no admin session clears the persona cache even when no persona was active', async () => {
-    await s().switchToPersona('finance');
-    await s().stopImpersonation();
-    useAppStore.setState(overlayWrite({ adminRole: null }));
-    await s().restoreImpersonation();
-    expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
-  });
-});
-
-/** A fetch that answers only when the test says so. */
-function gatedFetch(code: string) {
-  let release!: () => void;
-  const gate = new Promise<void>((r) => (release = r));
-  fetchImpersonation.mockImplementationOnce(async (sel: ImpersonationSelection) => {
-    await gate;
-    return resultFor(sel, code);
-  });
-  return () => release();
-}
-
-describe('persona races (review 2026-11-27)', () => {
-  it('Já cancels a first fetch while nothing is active yet: cached, not applied', async () => {
-    const release = gatedFetch('B-F-1');
-    const pending = s().switchToPersona('finance');
-    await flush();
-    s().cancelPersonaSwitch();
-    expect(s().personaRows.finance).toBeUndefined();
-    release();
-    expect(await pending).toBe(false);
-    expect(s().impersonation).toBeNull();
-    expect(codes()).toEqual(['REAL-1']);
-  });
-
-  it('admin logout during a fetch: nothing applied, nothing cached', async () => {
-    const release = gatedFetch('B-F-1');
-    const pending = s().switchToPersona('finance');
-    await flush();
-    await s().adminLogout();
-    release();
-    expect(await pending).toBe(false);
-    await flush();
-    expect(s().impersonation).toBeNull();
-    expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
-  });
-
-  it('a refresh landing while Já is on its way out does not bring the persona back', async () => {
-    await s().switchToPersona('finance');
-    vi.setSystemTime(new Date(2026, 8, 28));
-    const release = gatedFetch('B-F-2');
-    await s().switchToPersona('finance');
-    const leaving = s().stopImpersonation();
-    release();
-    await leaving;
-    await settle();
-    expect(s().impersonation).toBeNull();
-    expect(await IndexedDBService.get('meta', 'impersonation')).toBeUndefined();
-  });
-
-  it('a refresh leaves the picker alone (open drawer, a one-off starting)', async () => {
-    await s().switchToPersona('finance');
-    vi.setSystemTime(new Date(2026, 8, 28));
-    const release = gatedFetch('B-F-2');
-    await s().switchToPersona('finance');
-    useAppStore.setState({ impersonationPickerOpen: true });
-    release();
-    await settle();
-    expect(codes()).toEqual(['B-F-2']);
-    expect(s().impersonationPickerOpen).toBe(true);
-  });
-
-  it('an options failure says options, not timetable', async () => {
-    loadOptions.mockRejectedValueOnce(new Error('network'));
-    expect(await s().switchToPersona('finance')).toBe(false);
-    expect(s().personaRows.finance).toBe('options');
-  });
-
-  it('a failed background refresh marks the row, keeping the cached persona applied', async () => {
-    await s().switchToPersona('finance');
-    vi.setSystemTime(new Date(2026, 8, 28));
-    fetchImpersonation.mockRejectedValueOnce(new ImpersonationError('timetable'));
-    expect(await s().switchToPersona('finance')).toBe(true);
-    await settle();
-    expect(s().personaRows.finance).toBe('timetable');
-    expect(s().impersonation?.selection.personaId).toBe('finance');
-    expect(codes()).toEqual(['B-F-1']);
-  });
-
-  it('an expired saved persona at a boot with no admin session takes the cache too', async () => {
-    await s().switchToPersona('finance');
-    useAppStore.setState(overlayWrite({ impersonation: null, adminRole: null }));
-    vi.setSystemTime(new Date(2027, 2, 1));
-    await s().restoreImpersonation();
-    expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
-  });
-
-  it('Já during the boot restore wins over the saved persona', async () => {
-    await s().switchToPersona('finance');
-    useAppStore.setState(overlayWrite({ impersonation: null }));
-    const restoring = s().restoreImpersonation();
-    s().cancelPersonaSwitch();
-    await restoring;
-    expect(s().impersonation).toBeNull();
-  });
-
-  it('a failed save of the active impersonation leaves the switch undone, not thrown', async () => {
-    await s().switchToPersona('finance');
-    await s().stopImpersonation();
-    const set = IndexedDBService.set.bind(IndexedDBService);
-    const spy = vi
-      .spyOn(IndexedDBService, 'set')
-      .mockImplementation(async (store, key, value) =>
-        key === 'impersonation'
-          ? Promise.reject(new Error('quota'))
-          : set(store, key, value as never)
-      );
-    await expect(s().switchToPersona('finance')).resolves.toBe(false);
-    expect(s().impersonation).toBeNull();
-    spy.mockRestore();
-  });
-
-  it('closing the picker while a one-off starts cancels it', async () => {
-    const release = gatedFetch('B-F-9');
-    const starting = s().startImpersonation({
-      programId: '2',
-      shortCode: 'B-F',
-      name: 'Finance',
-      faculty: 'PEF',
-      year: 1,
-      group: 1,
-      rozvrh: ROZVRH,
-    });
-    await flush();
-    s().closeImpersonationPicker();
-    expect(s().impersonationStarting).toBe(false);
-    release();
-    expect(await starting).toBe(false);
-    expect(s().impersonation).toBeNull();
   });
 });
