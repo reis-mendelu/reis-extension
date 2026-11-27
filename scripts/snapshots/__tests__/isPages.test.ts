@@ -58,3 +58,13 @@ describe('isKept (offline runs read a saved dump)', () => {
     );
   });
 });
+
+describe('secrets never reach the archive', () => {
+  it('skips the eduroam certificate page: it shows the certificate password as text', () => {
+    for (const [name, url] of all()) {
+      expect(name).not.toBe('certifikat');
+      expect(url).not.toMatch(/certifikat/);
+    }
+    expect(isKept('certifikat')).toBe(false);
+  });
+});

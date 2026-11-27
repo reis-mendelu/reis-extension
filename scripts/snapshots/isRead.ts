@@ -16,7 +16,11 @@ import { isFirstPages, isKept, isSubjectPages } from './isPages';
 import type { Credentials } from './keychain';
 
 const GAP_MS = 1_000;
-const IS_PAGE = '<div class="mainpage">';
+/** A signed-in IS page: the main column, the logout link, no login form (cf. src/api/isPage.ts). */
+const isSignedInPage = (html: string) =>
+  html.includes('<div class="mainpage">') &&
+  html.includes('logout.pl') &&
+  !html.includes('name="credential_1"');
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -49,7 +53,7 @@ export async function readIs(
     try {
       const res = await fetchWithAuth(`${url}${url.includes('?') ? ';' : '?'}lang=cz`);
       const html = await res.text();
-      if (!html.includes(IS_PAGE))
+      if (!isSignedInPage(html))
         problems.push(`IS: ${name} did not load as an IS page (HTTP ${res.status})`);
       else captures.push({ key: `is/${name}`, html });
     } catch (err) {

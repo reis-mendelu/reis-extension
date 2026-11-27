@@ -16,7 +16,6 @@ const KEEP = new Set([
   'studium',
   'moje-studium',
   'clovek',
-  'certifikat',
   'study-plan',
   'exam-terms',
   'odevzdavarny',

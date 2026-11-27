@@ -13,7 +13,7 @@
 import { mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
-import { chromium, type BrowserContext, type Page } from 'playwright';
+import { chromium, type BrowserContext, type Page } from '@playwright/test';
 import type { Capture } from './archive';
 import type { Credentials } from './keychain';
 
@@ -164,7 +164,9 @@ export async function readWebiskam(
     for (const path of WEBISKAM_PAGES) {
       try {
         const res = await page.goto(`${ISKAM}${path}`, { waitUntil: 'domcontentloaded' });
-        if (hostOf(page) !== ISKAM_HOST || !res || res.status() !== 200) {
+        // On the page asked for, not a login or error page on the same host.
+        const landed = new URL(page.url()).pathname.toLowerCase() === path.toLowerCase();
+        if (hostOf(page) !== ISKAM_HOST || !landed || !res || res.status() !== 200) {
           failed.push(`${path} (HTTP ${res?.status() ?? '?'})`);
           continue;
         }

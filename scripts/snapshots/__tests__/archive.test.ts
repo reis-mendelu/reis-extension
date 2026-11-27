@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -92,5 +92,22 @@ describe('recordDay, two runs on one day', () => {
     const log = readFileSync(join(root, 'changes.md'), 'utf8');
     expect(log).toContain('is/a: +1 −0 → days/2026-11-28/is/a@1830.txt\n  + Nájemné');
     expect(log).toContain('is/a: +1 −0 → days/2026-11-28/is/a@1900.txt\n  + Zaplaceno');
+  });
+});
+
+describe('recordDay, a previous copy deleted in Drive', () => {
+  it('starts that page over instead of failing every morning', () => {
+    const root = mkdtempSync(join(tmpdir(), 'snapshots-'));
+    const day = (date: string, body: string) =>
+      recordDay(root, {
+        date,
+        time: '07:00',
+        captures: [{ key: 'is/a', html: page(body) }],
+        problems: [],
+      });
+    day('2026-11-28', '<p>1</p>');
+    rmSync(join(root, 'days/2026-11-28'), { recursive: true });
+    expect(day('2026-11-29', '<p>2</p>').changed).toEqual(['is/a']);
+    expect(readFileSync(join(root, 'changes.md'), 'utf8')).toContain('first snapshot: is/a');
   });
 });

@@ -21,7 +21,9 @@ const xml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, 
 
 /** The plist for one LaunchAgent: `args` run with `cwd` at hour:minute, or once at load. */
 export function plist({ label, cwd, args, hour, minute, runAtLoad = false, logFile }) {
-  const path = `${dirname(process.execPath)}:/usr/bin:/bin:/usr/sbin:/sbin`;
+  // Homebrew's stable links, not process.execPath (a versioned Cellar folder that
+  // `brew upgrade node` removes).
+  const path = '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin';
   const when =
     hour === undefined
       ? ''
@@ -43,6 +45,19 @@ ${when}  <key>RunAtLoad</key><${runAtLoad}/>
 </plist>
 `;
 }
+
+/**
+ * run.ts exits 0, 3 (a problem it already notified) or 4 (a crash it notified).
+ * Anything else means it never ran (node gone, a module that fails to load, a
+ * stale checkout): say so, or the morning fails with only a log line.
+ */
+export const WRAPPER = [
+  'npm run -s snapshots; code=$?',
+  'case $code in 0|3|4) ;; *)',
+  `  osascript -e 'on run argv' -e 'display notification (item 1 of argv) with title "IS snímky"' -e 'end run' "the job did not start (exit $code), see ~/Library/Logs/reIS snapshots.log" ;;`,
+  'esac',
+  'exit $code',
+].join('\n');
 
 export const plistPath = (label) => resolve(homedir(), 'Library/LaunchAgents', `${label}.plist`);
 export const LOG_FILE = resolve(homedir(), 'Library/Logs/reIS snapshots.log');
@@ -77,13 +92,12 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(new URL(import.meta.
     process.stdout.write(`removed ${load(LABEL, null)}\n`);
   } else {
     const cwd = mainCheckout();
-    const npm = resolve(dirname(process.execPath), 'npm');
     const file = load(
       LABEL,
       plist({
         label: LABEL,
         cwd,
-        args: [npm, 'run', '-s', 'snapshots'],
+        args: ['/bin/zsh', '-c', WRAPPER],
         hour: 7,
         minute: 0,
         logFile: LOG_FILE,

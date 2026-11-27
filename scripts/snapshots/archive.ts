@@ -78,6 +78,16 @@ function lineDiff(prev: string, next: string): { added: string[]; removed: numbe
   return { added, removed };
 }
 
+/** The last saved text, or null when it is gone (deleted in Drive): the page starts over. */
+function readPrevious(root: string, prev: PageState, key: string): string | null {
+  try {
+    const file = join(root, `${prev.file ?? `days/${prev.saved}/${key}`}.txt`);
+    return readFileSync(file, 'utf8').replace(/\n$/, '');
+  } catch {
+    return null;
+  }
+}
+
 const short = (line: string) => (line.length > MAX_LINE ? `${line.slice(0, MAX_LINE)}…` : line);
 
 export function recordDay(root: string, input: DayInput): { changed: string[] } {
@@ -101,12 +111,7 @@ export function recordDay(root: string, input: DayInput): { changed: string[] } 
       ? `${day}@${input.time.replace(':', '')}`
       : day;
     // Read before writing: on a same-day change the previous file is in today's folder.
-    const before = prev
-      ? readFileSync(join(root, `${prev.file ?? `days/${prev.saved}/${key}`}.txt`), 'utf8').replace(
-          /\n$/,
-          ''
-        )
-      : null;
+    const before = prev ? readPrevious(root, prev, key) : null;
     writeAtomic(join(root, `${rel}.html`), html);
     writeAtomic(join(root, `${rel}.txt`), `${text}\n`);
     changed.push(key);

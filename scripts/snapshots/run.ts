@@ -35,6 +35,13 @@ const option = (name: string) => {
   return i >= 0 ? argv[i + 1] : undefined;
 };
 
+/**
+ * Exit codes for the launchd wrapper (install-launchd.mjs): it raises its own
+ * notification for any other code, i.e. when this file never got to run.
+ */
+const EXIT_PROBLEM = 3;
+const EXIT_CRASH = 4;
+
 const log = (msg: string) => process.stdout.write(`${new Date().toISOString()} ${msg}\n`);
 
 function notify(message: string): void {
@@ -63,7 +70,28 @@ function now(): { date: string; time: string } {
   };
 }
 
+/**
+ * launchd runs a missed 07:00 the moment the Mac wakes, often before Wi-Fi is
+ * back. Wait for IS to answer (up to ~5 min) instead of logging a lost day.
+ */
+async function waitForNetwork(): Promise<boolean> {
+  for (let i = 0; i < 10; i++) {
+    try {
+      await fetch('https://is.mendelu.cz/', {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(10_000),
+      });
+      return true;
+    } catch {
+      await new Promise((r) => setTimeout(r, 30_000));
+    }
+  }
+  return false;
+}
+
 async function live(): Promise<{ captures: Capture[]; problems: string[] }> {
+  if (!(await waitForNetwork()))
+    return { captures: [], problems: ['no network: IS did not answer for 5 minutes'] };
   const creds = readCredentials();
   if (!creds)
     return { captures: [], problems: [`no login in the Keychain under "${KEYCHAIN_SERVICE}"`] };
@@ -94,7 +122,7 @@ async function main(): Promise<number> {
     const problem = `Google Drive is not mounted at ${DRIVE}`;
     log(problem);
     notify(problem);
-    return 1;
+    return EXIT_PROBLEM;
   }
   const { date, time } = {
     ...now(),
@@ -106,7 +134,7 @@ async function main(): Promise<number> {
   log(`${captures.length} pages read, ${changed.length} changed → ${out}`);
   for (const p of problems) log(`problem: ${p}`);
   if (problems.length && !from) notify(problems.join(' · '));
-  return problems.length ? 1 : 0;
+  return problems.length ? EXIT_PROBLEM : 0;
 }
 
 main().then(
@@ -115,6 +143,6 @@ main().then(
     const message = err instanceof Error ? err.message : String(err);
     log(`failed: ${message}`);
     notify(`run failed: ${message.split('\n')[0]}`);
-    process.exit(1);
+    process.exit(EXIT_CRASH);
   }
 );
