@@ -99,18 +99,10 @@ export function DrawerTabBody({
   const refreshFilesForSubject = useAppStore((s) => s.refreshFilesForSubject);
   const impersonating = useAppStore((s) => s.impersonation != null);
 
-  // Files are code-keyed, so a subject the persona shares with the admin would
-  // still list them; only an empty folder is our gap, not a real one.
-  if (tab === 'files' && impersonating && (!files || files.length === 0)) {
-    return (
-      <div className="p-4">
-        <PersonaUnavailable what="files" />
-      </div>
-    );
-  }
-
   if (tab === 'files') {
     const isEmpty = !files || files.length === 0;
+    // Files are the subject's: a subject shared with the admin keeps its list.
+    if (impersonating && isEmpty) return <PersonaUnavailable what="files" className="m-4" />;
     const showSkeleton = isFilesLoading && isEmpty;
     // Cached files beat the failure; with none, the failure beats a background
     // sync's "loading" bar, which would otherwise hide it (Návrhy #26).
