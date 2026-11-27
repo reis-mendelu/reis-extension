@@ -53,3 +53,9 @@ describe('pageText on broken markup', () => {
     expect(pageText('<p>a</p><div')).toBe('a');
   });
 });
+
+describe('pageText entities', () => {
+  it('decodes &times; (WebISKAM dialogs close with it)', () => {
+    expect(pageText('<p>&times;</p>')).toBe('×');
+  });
+});

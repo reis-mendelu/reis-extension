@@ -38,6 +38,7 @@ const ENTITIES: Record<string, string> = {
   ndash: '–',
   mdash: '—',
   hellip: '…',
+  times: '×',
 };
 
 function decode(text: string): string {
