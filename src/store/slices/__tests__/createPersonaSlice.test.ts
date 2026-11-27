@@ -30,7 +30,7 @@ import { ImpersonationError } from '../../../api/impersonation/types';
 import type { ImpersonationResult, ImpersonationSelection } from '../../../api/impersonation/types';
 import * as setup from './personaSliceSetup';
 
-const { resultFor, s, codes, settle } = setup;
+const { resultFor, s, codes, cachedCode } = setup;
 const { fetchImpersonation, loadOptions, loadYear1Groups } = m;
 
 /** The one-tap persona switch (design 2026-11-27 §3, step B). */
@@ -84,9 +84,8 @@ describe('persona switch', () => {
     expect(codes()).toEqual(['B-F-1']); // the cache, at once
     await s().switchToPersona('finance'); // a second tap while the refresh runs
     release();
-    await settle();
+    await vi.waitFor(() => expect(codes()).toEqual(['B-F-2']));
     expect(fetchImpersonation).toHaveBeenCalledOnce();
-    expect(codes()).toEqual(['B-F-2']);
     const saved = (await IndexedDBService.get('meta', 'persona:finance')) as {
       result: ImpersonationResult;
     };
@@ -105,7 +104,7 @@ describe('persona switch', () => {
     await s().switchToPersona('finance');
     await s().stopImpersonation();
     release();
-    await settle();
+    await vi.waitFor(async () => expect(await cachedCode('finance')).toBe('B-F-2'));
     expect(s().impersonation).toBeNull();
     expect(codes()).toEqual(['REAL-1']);
   });

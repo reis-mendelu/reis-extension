@@ -58,6 +58,14 @@ export const createPersonaSlice: AppSlice<PersonaSlice> = (set, get) => {
       else delete next[id];
       return { personaRows: next };
     });
+  // A row's spinner belongs to the request that set it: an older fetch for the
+  // same persona (cancelled by Já, then tapped again) never clears or marks it.
+  const rowOwner = new Map<PersonaId, number>();
+  const ownRow = (id: PersonaId, epoch: number, v: PersonaRowState | null) => {
+    if (rowOwner.get(id) !== epoch) return;
+    if (v !== 'loading') rowOwner.delete(id);
+    row(id, v);
+  };
 
   // The picker's options when it already has them; otherwise loaded here and
   // handed to it too. Awaited directly: the picker's loader swallows errors.
@@ -100,8 +108,9 @@ export const createPersonaSlice: AppSlice<PersonaSlice> = (set, get) => {
         await applyImpersonation(set, get, active, { epoch: latest, background: true });
     } catch (e) {
       logError('Persona.refresh', e, { persona: id });
-      // The cached persona stays applied, but its row says IS did not refresh it.
-      row(id, codeOf(e));
+      // The cached persona stays applied, but its row says IS did not refresh it
+      // (unless a fetch of its own is showing there).
+      if (!rowOwner.has(id)) row(id, codeOf(e));
     } finally {
       refreshing.delete(id);
     }
@@ -130,6 +139,7 @@ export const createPersonaSlice: AppSlice<PersonaSlice> = (set, get) => {
         return true;
       }
 
+      rowOwner.set(id, epoch);
       row(id, 'loading');
       try {
         const req = await personaRequest(persona, await options(), loadYear1Groups);
@@ -137,19 +147,20 @@ export const createPersonaSlice: AppSlice<PersonaSlice> = (set, get) => {
         const result = await fetchImpersonation(selection);
         const active = { selection: { ...selection, ...result.resolved }, result };
         const kept = await keep(id, active);
-        row(id, null);
+        ownRow(id, epoch, null);
         // Já or another persona meanwhile: cached for next time, not applied.
         return kept && (await applyImpersonation(set, get, active, { epoch }));
       } catch (e) {
         logError('Persona.switch', e, { persona: id });
         // A cancelled request leaves no error on its row either.
-        row(id, isCurrentImpersonationEpoch(epoch) ? codeOf(e) : null);
+        ownRow(id, epoch, isCurrentImpersonationEpoch(epoch) ? codeOf(e) : null);
         return false;
       }
     },
 
     cancelPersonaSwitch: () => {
       nextImpersonationEpoch();
+      rowOwner.clear();
       set((s) => ({
         impersonationStarting: false,
         personaRows: Object.fromEntries(

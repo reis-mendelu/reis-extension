@@ -29,7 +29,7 @@ import { IndexedDBService } from '../../../services/storage';
 import { ImpersonationError } from '../../../api/impersonation/types';
 import * as setup from './personaSliceSetup';
 
-const { ROZVRH, s, codes, settle } = setup;
+const { ROZVRH, s, codes, cachedCode } = setup;
 const { fetchImpersonation, loadOptions } = m;
 const gatedFetch = (code: string) => setup.gatedFetch(m.fetchImpersonation, code);
 
@@ -56,7 +56,6 @@ describe('persona races (review 2026-11-27)', () => {
     await s().adminLogout();
     release();
     expect(await pending).toBe(false);
-    await settle();
     expect(s().impersonation).toBeNull();
     expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
   });
@@ -69,7 +68,7 @@ describe('persona races (review 2026-11-27)', () => {
     const leaving = s().stopImpersonation();
     release();
     await leaving;
-    await settle();
+    await vi.waitFor(async () => expect(await cachedCode('finance')).toBe('B-F-2'));
     expect(s().impersonation).toBeNull();
     expect(await IndexedDBService.get('meta', 'impersonation')).toBeUndefined();
   });
@@ -81,8 +80,7 @@ describe('persona races (review 2026-11-27)', () => {
     await s().switchToPersona('finance');
     useAppStore.setState({ impersonationPickerOpen: true });
     release();
-    await settle();
-    expect(codes()).toEqual(['B-F-2']);
+    await vi.waitFor(() => expect(codes()).toEqual(['B-F-2']));
     expect(s().impersonationPickerOpen).toBe(true);
   });
 
@@ -97,8 +95,7 @@ describe('persona races (review 2026-11-27)', () => {
     vi.setSystemTime(new Date(2026, 8, 28));
     fetchImpersonation.mockRejectedValueOnce(new ImpersonationError('timetable'));
     expect(await s().switchToPersona('finance')).toBe(true);
-    await settle();
-    expect(s().personaRows.finance).toBe('timetable');
+    await vi.waitFor(() => expect(s().personaRows.finance).toBe('timetable'));
     expect(s().impersonation?.selection.personaId).toBe('finance');
     expect(codes()).toEqual(['B-F-1']);
   });
@@ -182,5 +179,31 @@ describe('persona races (review 2026-11-27)', () => {
     releaseB();
     expect(await b).toBe(false);
     expect(s().impersonation).toBeNull();
+  });
+
+  it('an older fetch never touches the row of a newer one for the same persona', async () => {
+    const releaseOld = gatedFetch('B-F-old');
+    const old = s().switchToPersona('finance');
+    await vi.waitFor(() => expect(s().personaRows.finance).toBe('loading'));
+    s().cancelPersonaSwitch();
+    const releaseNew = gatedFetch('B-F-new');
+    const fresh = s().switchToPersona('finance');
+    await vi.waitFor(() => expect(m.fetchImpersonation).toHaveBeenCalledTimes(2));
+    releaseOld();
+    expect(await old).toBe(false);
+    expect(s().personaRows.finance).toBe('loading');
+    releaseNew();
+    expect(await fresh).toBe(true);
+    expect(s().personaRows.finance).toBeUndefined();
+  });
+
+  it('a persona chosen while Já is still exiting wins over the exit', async () => {
+    await s().switchToPersona('finance');
+    await s().switchToPersona('it');
+    const leaving = s().stopImpersonation();
+    const chosen = s().switchToPersona('finance');
+    await Promise.all([leaving, chosen]);
+    expect(s().impersonation?.selection.personaId).toBe('finance');
+    expect(codes()).toEqual(['B-F-1']);
   });
 });

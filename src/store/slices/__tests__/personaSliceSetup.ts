@@ -92,12 +92,14 @@ export const s = () => useAppStore.getState();
 export const codes = () => s().schedule.data.map((l) => l.courseCode);
 export const flush = () => new Promise((r) => setTimeout(r, 0));
 /**
- * Lets a background refresh run to its end: a fetch, then several IndexedDB
- * round-trips (fake-indexeddb answers on later macrotasks). Two flushes were
- * enough on an idle machine and not under load.
+ * The first lesson code of a persona's cached result: a background refresh
+ * saves before it decides whether to apply, so seeing its result here means
+ * that decision has been taken. Tests wait on this, never on a tick count.
  */
-export const settle = async () => {
-  for (let i = 0; i < 30; i++) await flush();
+export const cachedCode = async (id: string) => {
+  const v = (await IndexedDBService.get('meta', `persona:${id}`)) as
+    { result: ImpersonationResult } | undefined;
+  return v?.result.schedule[0]?.courseCode;
 };
 
 export interface PersonaMocks {

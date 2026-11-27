@@ -148,9 +148,11 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
     // The admin's own identity comes back from the record loadContext kept
     // writing underneath (none yet: blank, and loadContext asks IS).
     stopImpersonation: async () => {
-      nextImpersonationEpoch();
+      const epoch = nextImpersonationEpoch();
       await clearImpersonation().catch((e) => logError('Impersonation.clear', e));
       const own = await readRememberedViewer().catch(() => null);
+      // A persona chosen while this read IndexedDB is the admin's latest word.
+      if (!isCurrentImpersonationEpoch(epoch)) return;
       set(
         overlayWrite({
           impersonation: null,

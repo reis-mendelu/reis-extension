@@ -82,12 +82,14 @@ function route(url: string, init?: RequestInit): string {
     body.get('rocnik') === '0'
   )
     return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`).replaceAll('EBC-FT', 'EBC-AZD');
-  // "All groups" (skupina 0) answers the same page, parallels included.
+  // "All groups" (skupina 0) answers the same page, parallels included. The
+  // programme query only: a per-subject ask sends program 0 and a predmet.
   if (
     parallelsUntagged &&
     body.get('format') === 'json' &&
     body.get('skupina') === '0' &&
-    body.get('program')
+    body.get('program') !== '0' &&
+    body.get('predmet') === '0'
   )
     return withParallels(raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`));
   if (body.get('format') === 'json' && body.get('skupina') === '2')
