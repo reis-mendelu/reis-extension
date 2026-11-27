@@ -18,7 +18,7 @@ vi.mock('../../../../../../mobile/library/bookingActions', () => booking);
 import { LibraryCard } from '../LibraryCard';
 import { useAppStore } from '../../../../../../store/useAppStore';
 import { useLibraryStore } from '../../../../../../mobile/library/libraryStore';
-import { NOW, bar, cell, plus, seedCard, team1 } from './libraryCardFixture';
+import { NOW, bar, cell, ind1, plus, seedCard, team1 } from './libraryCardFixture';
 
 beforeEach(() => {
   wide.value = false;
@@ -103,5 +103,18 @@ describe('LibraryCard: booking', () => {
     expect(bar()).toBeTruthy();
     act(() => useLibraryStore.getState().markTaken(team1!.featureId, '2026-11-16', 14));
     expect(bar()).toBeNull();
+  });
+
+  it('a booking that finishes later does not clear a newer pick', async () => {
+    let finish: (r: { kind: 'ok' }) => void = () => undefined;
+    booking.bookAndRecord.mockReturnValue(new Promise((res) => (finish = res)));
+    useLibraryStore.setState({ noticeSeen: true });
+    render(<LibraryCard view={{ featureId: null }} />);
+    fireEvent.click(cell('Týmová 1', '14:00'));
+    fireEvent.click(within(bar()!).getByRole('button', { name: 'Rezervovat' }));
+    // While the library answers, the student picks another room.
+    fireEvent.click(cell('Individuální 1', '16:00'));
+    await act(async () => finish({ kind: 'ok' }));
+    expect(useLibraryStore.getState()).toMatchObject({ room: ind1!.featureId, picked: [16] });
   });
 });

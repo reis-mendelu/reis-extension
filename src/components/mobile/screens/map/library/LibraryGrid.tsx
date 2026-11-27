@@ -122,7 +122,7 @@ function Cell({
       <span
         className={`${base} bg-success/15 ring-1 ring-success/40`}
         role="img"
-        aria-label={label}
+        aria-label={t('mobile.library.cellMine', { room: name, time: hh(hour) })}
       >
         <CircleCheck size={16} className="text-success" aria-hidden="true" />
       </span>
@@ -135,7 +135,14 @@ function Cell({
             ? 'bg-base-content/10'
             : 'border border-dashed border-base-content/30 text-xs text-base-content/60'
         }`}
-        aria-hidden="true"
+        role="img"
+        aria-label={t(
+          state === 'taken' ? 'mobile.library.cellTaken' : 'mobile.library.cellUnknown',
+          {
+            room: name,
+            time: hh(hour),
+          }
+        )}
       >
         {state === 'unknown' ? '?' : ''}
       </span>

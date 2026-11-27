@@ -186,7 +186,12 @@ describe('LibraryCard', () => {
     render(<LibraryCard view={{ featureId: null }} />);
     expect(screen.getByText('Máš rezervováno')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Individuální 1, 14:00' })).toBeNull();
-    expect(screen.getByRole('img', { name: 'Individuální 1, 14:00' })).toBeTruthy();
+    // Taken and unread cells say so to a screen reader too.
+    expect(screen.getByRole('img', { name: 'Individuální 2, 16:00: obsazeno' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Týmová 2, 14:00: nepodařilo se načíst' })).toBeTruthy();
+    expect(
+      screen.getByRole('img', { name: 'Individuální 1, 14:00: tvoje rezervace' })
+    ).toBeTruthy();
     fireEvent.click(screen.getByText('14:00–15:00'));
     expect(useAppStore.getState().mobileSheets[0]).toEqual({
       kind: 'libraryBooking',

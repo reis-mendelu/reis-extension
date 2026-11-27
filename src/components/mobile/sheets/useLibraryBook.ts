@@ -84,8 +84,16 @@ export function useLibraryBook(
       // Booked: the pick is spent, and the card lists the booking at its top. The
       // student has now seen what the library receives, once.
       if (r.kind === 'ok' || r.kind === 'partial' || r.kind === 'unconfirmed') {
-        useLibraryStore.getState().clearPick();
-        useLibraryStore.getState().markNoticeSeen();
+        const now = useLibraryStore.getState();
+        // Only the pick that was booked: the student may have picked something else
+        // while the library was answering.
+        const same =
+          now.room === pick.featureId &&
+          now.day === pick.day &&
+          now.picked[0] === pick.from &&
+          now.picked[now.picked.length - 1] === pick.to - 1;
+        if (same) now.clearPick();
+        now.markNoticeSeen();
       }
     } catch (err) {
       logError('Library.book', err);
