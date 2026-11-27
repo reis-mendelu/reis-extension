@@ -10,7 +10,8 @@ import {
   deadlineAlertInputsOf,
   isAlertSeen,
 } from '../utils/novinky/buildDeadlineAlerts';
-import { buildFeed, feedInputsOf, viewerOf } from '../utils/novinky/buildFeed';
+import { buildFeed, feedInputsOf } from '../utils/novinky/buildFeed';
+import { viewerOf } from '../hooks/useViewer';
 import { pragueMinuteIso } from '../utils/isNoticeRows';
 import { planRun } from '../utils/novinky/planRun';
 import { withKnownStateLock } from '../services/sync/knownStateLock';
