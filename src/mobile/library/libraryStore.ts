@@ -50,6 +50,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
 const dayOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 let seq = 0;
+/**
+ * Counts the booking and cancel results that changed what the library holds
+ * (`markTaken`, `markFree`). A read that was out when one landed may have been
+ * answered before it, and putting it in would show the booked hour as free again
+ * for the whole stale window.
+ */
+let writes = 0;
 
 /**
  * The library's free hours, per room. A store of its own, NOT a slice of
@@ -72,6 +79,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
   endWrite: () => set({ writing: false }),
   markFree(featureId, day, hours) {
+    writes++;
     const list = get().blocks[featureId];
     const pad = (n: number) => String(n).padStart(2, '0');
     const gone = new Set(hours.map((h) => `${day}T${pad(h)}:00`));
@@ -99,6 +107,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const to = new Date(now);
     to.setDate(to.getDate() + DAYS_AHEAD);
     const startedAt = Date.now();
+    const writesAtStart = writes;
     const all = await fetchAllBlocks(
       http,
       LIBRARY_ROOMS.map((r) => r.staffMemberId),
@@ -115,6 +124,12 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     if (took >= SLOW_READ_MS)
       logError('Library.slowRead', new Error(`availability took ${Math.round(took / 1000)} s`));
     if (mine !== seq) return;
+    if (writes !== writesAtStart) {
+      // Not used, and not left on "loading" (every later read would return early):
+      // read again, which can only begin after that booking or cancel.
+      set({ status: 'idle', fetchedAt: null });
+      return get().load(http, now);
+    }
     const blocks = Object.fromEntries(results);
     const any = results.some(([, b]) => b !== null);
     set({
@@ -125,6 +140,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 
   markTaken(featureId, day, hour) {
+    writes++;
     const list = get().blocks[featureId];
     if (!list) return;
     const taken: Block = {

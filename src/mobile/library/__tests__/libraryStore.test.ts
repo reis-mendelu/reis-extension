@@ -55,6 +55,52 @@ describe('libraryStore: reading before the card opens', () => {
   });
 });
 
+describe('libraryStore: a read that was out while a booking finished', () => {
+  const answer = (from: number): BookingsHttp =>
+    vi.fn(async (req) => ({
+      status: 200,
+      data: {
+        staffAvailabilityResponse: (req.data as { staffIds: string[] }).staffIds.map((staffId) => ({
+          staffId,
+          availabilityItems: [
+            {
+              status: 'BOOKINGSAVAILABILITYSTATUS_AVAILABLE',
+              startDateTime: { dateTime: `2026-11-10T${String(from).padStart(2, '0')}:00:00` },
+              endDateTime: { dateTime: '2026-11-10T19:00:00' },
+            },
+          ],
+        })),
+      },
+    }));
+
+  it('does not let the older answer replace the booking, and reads again instead of sticking on loading', async () => {
+    const id = LIBRARY_ROOMS[0]!.featureId;
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const first = answer(7);
+    const second = answer(8);
+    let calls = 0;
+    const http: BookingsHttp = async (req) => {
+      calls++;
+      if (calls === 1) {
+        await gate;
+        return first(req);
+      }
+      return second(req);
+    };
+    const reading = useLibraryStore.getState().load(http, now);
+    // A booking of ours commits while that read is still out.
+    useLibraryStore.getState().markTaken(id, '2026-11-10', 15);
+    release();
+    await reading;
+    const s = useLibraryStore.getState();
+    // The first answer (free from 07:00) predates the booking and was dropped; the second was used.
+    expect(calls).toBe(2);
+    expect(s.status).toBe('ready');
+    expect(s.blocks[id]![0]!.start).toBe('2026-11-10T08:00');
+  });
+});
+
 describe('libraryStore: a slow answer is remembered on the device', () => {
   it('keeps a line in the local diagnostic log when the library took 8 s or more', async () => {
     vi.useFakeTimers();

@@ -54,7 +54,7 @@ day. Before choosing anything expensive, measure on the phone:
 | # | Trigger | Bookings calls/day (order of magnitude) | Hit rate | Verdict |
 | --- | --- | --- | --- | --- |
 | 1 | The student opens the **map tab** | ~100 | ~1 in 5 | **Do.** No history, no new state. The few seconds on the map hide most of the wait. |
-| 2 | Ask for **the shown day first**, the rest of the week after | none extra | n/a | **Do.** The first answer is about a third of the bytes (17 vs 56 KB). The gain on a laptop is ~0.6 s cold; on a phone it is unknown, so measure first. |
+| 2 | Ask for **the shown day first**, the rest of the week after | one extra request per card open (two instead of one) | n/a | **Do.** The first answer is about a third of the bytes (17 vs 56 KB). The gain on a laptop is ~0.6 s cold; on a phone it is unknown, so measure first. |
 | 3 | A device-only note "opened the card in the last 14 days" (IndexedDB, never sent), prefetch at app open on weekdays 7–19 | ≤10 today | high | **Cheap follow-up**, but today's cohort is ~10 devices, so it does little until the feature grows. |
 | 4 | The calendar shows a gap ≥1 h today, or today has a library booking | a few hundred | medium | **Maybe later.** It is also the best *entry point* (section 2), so build it once for both purposes. |
 | 5 | Every app open | ~1,500 | ~1 % | **No.** 99 of 100 calls are wasted, on a service that belongs to MENDELU's library. |
@@ -112,7 +112,7 @@ The student's question is "I need N hours around T, where?". Make that the scree
 8. **Slow booking** becomes a pending row on the card ("Rezervuji Týmová 1, 14–16… můžeš zavřít, dám vědět") while the request continues, with the existing "unknown, check e-mail" ending.
 9. **Entry from the calendar**: a gap of ≥1 h shows "Volno do 15:30: studovna?", opening the card prefilled with day, start and duration. Same signal can prefetch (option 4 above).
 
-Smaller fix if the full redesign waits: keep the grid, add one line "Klepni na první a poslední hodinu, až 4 h", show the pick as "14:00–16:00 (2 h)" and hide past hours. About a day of work, and it covers findings 1–4.
+Smaller fix if the full redesign waits: keep the grid, add one line "Klepni na hodinu. Na další klepni, když chceš víc hodin (nejvýš 4 h)" (the pick grows by tapping the **neighbouring** hour, `toggleHour`; a tap on a far hour starts over), show the pick as "14:00–16:00 · 2 h" and hide past hours. Shipped as #784; it covers findings 1–4.
 
 What stays as it is: one place, one name per room, free = green / full = grey, the booking drawer, cancel in-app,
 IC left/right, 4 h cap, own bookings overlaid as taken.
