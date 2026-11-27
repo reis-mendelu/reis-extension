@@ -23,6 +23,8 @@
     "outletOther": "{count} výdejen",
     "venueFullMenu": "Celé menu a ceny",
     "venueFullMenuOnMap": "Celé menu a ceny na mapě",
+    "pizzeriaOffer": "Nabídka pizzerie",
+    "pizzeriaHours": "Otevírací doba",
     "venuePlaceOnMap": "Ukázat na mapě"
   },
   "iskam": {
@@ -248,8 +250,14 @@
     "actionFailed": "Selhalo.",
     "actionGenericError": "Chyba.",
     "actionMissingId": "Chybí ID.",
-    "actionSwitchFailedRolledBack": "Nepodařilo se přepnout na nový termín. Tvoje původní registrace byla obnovena.",
-    "actionSwitchFailedNoRollback": "Nepodařilo se přepnout termín ani obnovit původní. Zkontroluj přihlášení přímo v IS MENDELU.",
+    "actionSwitchFailedKept": "Nepodařilo se přepnout na nový termín. Tvoje původní přihlášení zůstává, jak bylo.",
+    "actionSwitchFailedUnknown": "Nepodařilo se ověřit, jestli se termín změnil. Zkontroluj přihlášení přímo v IS MENDELU.",
+    "actionSwitchFailedLost": "Nepodařilo se přepnout termín a teď nemáš přihlášený žádný. Přihlas se znovu v IS MENDELU co nejdřív.",
+    "actionSwitchRefused": {
+      "targetUnavailable": "Na tenhle termín se už přihlásit nejde (zaplnil se nebo se zavřel). Tvoje přihlášení zůstává, jak bylo.",
+      "locked": "Z původního termínu se už odhlásit nejde (termín odhlášení uplynul), takže ho nelze změnit.",
+      "unverified": "Termíny se nepodařilo ověřit, nic se nezměnilo. Zkus to za chvíli."
+    },
     "confirmation": {
       "registerTitle": "Potvrdit přihlášení",
       "unregisterTitle": "Potvrdit odhlášení",
@@ -510,7 +518,16 @@
   },
   "appUpdate": {
     "title": "Nová verze reISu",
-    "body": "Klepni a aktualizuj"
+    "body": "Klepni a aktualizuj",
+    "critical": {
+      "popupTitle": "Je tu opravená verze reISu",
+      "update": "Aktualizovat",
+      "later": "Teď ne"
+    }
+  },
+  "reisForClaude": {
+    "text": "reIS v Claude: zeptej se na rozvrh, body ze Záznamníku nebo co ti chybí k zápočtu. Pro Claude Desktop →",
+    "dismiss": "Skrýt"
   },
   "notifications": {
     "title": "Novinky",
@@ -1308,6 +1325,9 @@
       "signalInternshipClickEy": "Klik na Cestu s EY",
       "signalAppUpdateOpened": "Klik na „Nová verze reISu“",
       "signalStudyAidsClickMendeluApp": "Klik na Studijní opory (mendelu.app)",
+      "signalReisForClaudeGuideOpened": "Klik na „reIS v Claude“",
+      "signalCriticalUpdateShown": "Okno „Je tu opravená verze reISu“ zobrazeno",
+      "signalCriticalUpdateOpened": "Klik na Aktualizovat u opravené verze",
       "signalShare": "{pct} % denních instalací",
       "signalShareHint": "Průměrný den za 30 dní: kolik z instalací, které ten den reIS otevřely, otevřelo i tohle. Kalendář je na telefonu úvodní obrazovka, takže tam je skoro vždy.",
       "signalInstalls": "instalací",
@@ -1529,6 +1549,7 @@
       "groupNotYetOpen": "Ještě neotevřené",
       "groupSignup": "Zápisy na cvičení",
       "opensAtLabel": "otevírá se",
+      "opensFrom": "od {when}",
       "refresh": "Obnovit zkoušky",
       "refreshing": "Aktualizuji…",
       "registeredCountOne": "{count} přihlášený",

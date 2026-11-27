@@ -4,6 +4,7 @@ import { fetchFullSemesterSchedule } from '../src/injector/dataFetchers';
 import { fetchDualLanguageExams } from '../src/api/exams';
 import { fetchDualLanguageSubjects } from '../src/api/subjects';
 import { fetchDualLanguageStudyPlan } from '../src/api/studyPlan';
+import { fetchSubjectZaznamnik } from '../src/api/zaznamnik';
 import { fetchSyllabus, SYLLABUS_FETCH_FAILED } from '../src/api/syllabus';
 import { fetchSubjectSuccessRates } from '../src/api/successRate';
 import { fetchGradeHistory } from '../src/api/gradeHistory';
@@ -33,6 +34,10 @@ export type ToolCtx = {
   fetch: typeof fetch;
   /** Set while the server cannot reach IS at all (no login): every tool answers this. */
   unavailable?: string;
+  /** A line every result carries while a newer release exists (updateCheck.ts). */
+  updateNotice?: () => string | null;
+  /** Told what getUserParams returned, so the store can keep the study programme and form. */
+  noteStudy?: (params: unknown) => void;
 };
 export type ToolDef = {
   name: string;
@@ -49,10 +54,14 @@ const lang = z
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD.');
 
-async function study(): Promise<{ studium: string; obdobi: string }> {
+export async function study(ctx?: ToolCtx): Promise<{ studium: string; obdobi: string }> {
   const p = await getUserParams();
   if (!p?.studium || !p.obdobi)
-    throw new Error('Could not find an active study on this IS account.');
+    throw new Error(
+      'IS Mendelu did not return your active study. The sign-in may have failed or IS is busy: try again in a minute.'
+    );
+  // Already read for this call: noting it asks IS for nothing more.
+  ctx?.noteStudy?.(p);
   return { studium: p.studium, obdobi: p.obdobi };
 }
 
@@ -70,12 +79,42 @@ function omit(row: object, keys: string[]): Record<string, unknown> {
 
 type SubjectsLite = { subjects?: { data?: Record<string, Record<string, unknown>> } } | null;
 
-async function subjectsData(): Promise<Record<string, Record<string, unknown>>> {
-  const { studium, obdobi } = await study();
+export async function subjectsData(
+  ctx?: ToolCtx
+): Promise<Record<string, Record<string, unknown>>> {
+  const { studium, obdobi } = await study(ctx);
   const res = (await fetchDualLanguageSubjects(studium, obdobi)) as SubjectsLite;
   // null is a failed fetch, not an empty enrolment: never report it as one.
   if (!res?.subjects?.data) throw new Error('IS Mendelu did not return your subjects. Try again.');
   return res.subjects.data;
+}
+
+/** One subject's Záznamník, shared with the overview (which already holds the subject list). */
+export async function pointsFor(subjectId: string, ctx?: ToolCtx) {
+  const { studium, obdobi } = await study(ctx);
+  const z = await fetchSubjectZaznamnik(studium, obdobi, subjectId);
+  // null is a failed fetch: never let it read as "no points yet".
+  if (!z) throw new Error('IS Mendelu did not return your points for this subject. Try again.');
+  return { continuousAssessment: z.ph.sections, tests: z.vt.tests };
+}
+
+/**
+ * The submission boxes as the tool shows them, shared with the overview. `keepIds` is for the
+ * overview alone: it needs IS's box id to tell same-name boxes apart, and the tool's own answer
+ * never shows it.
+ */
+export async function assignmentsData(ctx?: ToolCtx, keepIds = false) {
+  const { studium, obdobi } = await study(ctx);
+  const res = await fetchOdevzdavarny(studium, obdobi);
+  // null is a failed fetch: never let it read as "no assignments".
+  if (!res) throw new Error('IS Mendelu did not return your submission boxes. Try again.');
+  return {
+    ...res,
+    assignments: res.assignments.map((r) => ({
+      ...omit(r, keepIds ? ['uploadUrl'] : ['uploadUrl', 'odevzdavarnaId']),
+      ...submissionOf(r),
+    })),
+  };
 }
 
 export const TOOLS: ToolDef[] = [
@@ -114,8 +153,8 @@ export const TOOLS: ToolDef[] = [
     description:
       'The subjects you are enrolled in this semester: code, Czech and English name, IS subject id (use it for mendelu_syllabus), and whether it has ongoing assessment. Read-only.',
     input: {},
-    run: async () =>
-      Object.values(await subjectsData()).map((s) =>
+    run: async (_a, ctx) =>
+      Object.values(await subjectsData(ctx)).map((s) =>
         omit(s, ['folderUrl', 'autoHref', 'fetchedAt'])
       ),
   },
@@ -125,8 +164,12 @@ export const TOOLS: ToolDef[] = [
     description:
       'Your study plan: required subject groups per semester, credits earned and required, and which subjects you have completed. Read-only.',
     input: { lang },
-    run: async (a) =>
-      compactStudyPlan(pickLang(await fetchDualLanguageStudyPlan((await study()).studium), a.lang)),
+    run: async (a, ctx) => {
+      const plan = await fetchDualLanguageStudyPlan((await study(ctx)).studium);
+      // null is a failed fetch: never let it read as "no study plan".
+      if (!plan) throw new Error('IS Mendelu did not return your study plan. Try again.');
+      return compactStudyPlan(pickLang(plan, a.lang));
+    },
   },
   {
     name: 'mendelu_syllabus',
@@ -152,10 +195,10 @@ export const TOOLS: ToolDef[] = [
     name: 'mendelu_subject_files',
     title: 'Subject files',
     description:
-      "Lists the files in one enrolled subject's IS document folder (slides, materials): the document's name, the file's own name (one document can hold several files), folder, author, date, modified, and a downloadUrl to pass to mendelu_read_file. Read-only.",
+      "Lists the files in one enrolled subject's IS document folder (slides, materials): the document's name, the file's own name (one document can hold several files), folder, author, date, modified, and a downloadUrl to pass to mendelu_read_file. A file whose original is already saved on this computer also has a `localPath`, relative to the folder named in `savedFiles`: open it there with your own file tools. Read-only.",
     input: { code: z.string().min(2).describe('Subject code, e.g. "EBC-PS".') },
-    run: async (a) => {
-      const folderUrl = (await subjectsData())[String(a.code)]?.folderUrl;
+    run: async (a, ctx) => {
+      const folderUrl = (await subjectsData(ctx))[String(a.code)]?.folderUrl;
       if (typeof folderUrl !== 'string') {
         throw new Error(`${String(a.code)} is not enrolled this semester, or has no file folder.`);
       }
@@ -180,13 +223,27 @@ export const TOOLS: ToolDef[] = [
     run: (a) => fetchSubjectSuccessRates(a.codes as string[]),
   },
   {
+    name: 'mendelu_points',
+    title: 'My points in a subject',
+    description:
+      "Your points so far in one enrolled subject, from its IS Záznamník: the teacher's continuous-assessment tables (průběžné hodnocení: tests, homework, attendance columns with your row of values) and your graded online tests with score, max score and date. Use it to work out what the student still needs to pass; take the pass rules from mendelu_syllabus. Read-only.",
+    input: { code: z.string().min(2).describe('Subject code, e.g. "EBC-PS".') },
+    run: async (a, ctx) => {
+      const subjectId = (await subjectsData(ctx))[String(a.code)]?.subjectId;
+      if (typeof subjectId !== 'string') {
+        throw new Error(`${String(a.code)} is not enrolled this semester.`);
+      }
+      return pointsFor(subjectId, ctx);
+    },
+  },
+  {
     name: 'mendelu_grades',
     title: 'My grades',
     description:
       'Your grades and credits across all semesters so far (Průchod studiem): subject, grade, credits, attempt and date. Read-only.',
     input: {},
-    run: async () => {
-      const { studium, obdobi } = await study();
+    run: async (_a, ctx) => {
+      const { studium, obdobi } = await study(ctx);
       const grades = await fetchGradeHistory(studium, obdobi);
       if (!grades) throw new Error('IS Mendelu did not return your grades. Try again.');
       return grades;
@@ -198,17 +255,6 @@ export const TOOLS: ToolDef[] = [
     description:
       'Your submission boxes (Odevzdávárny): subject, assignment, deadline, whether it is still open, files uploaded, points, and the teacher `instructions` (IS "Pokyny": what to hand in and how) when the box has any. Pass the instructions on when the student asks what to submit. IS takes a submission in two steps, upload then confirm, so each box has a `submission` field: only "handed_in" (section "submitted") means it is handed in. "uploaded_not_confirmed" is an open box with files that is NOT confirmed in IS: tell the student to confirm it in IS, never that it is handed in. Read-only: it never submits or confirms anything.',
     input: {},
-    run: async () => {
-      const { studium, obdobi } = await study();
-      const res = await fetchOdevzdavarny(studium, obdobi);
-      if (!res) return null;
-      return {
-        ...res,
-        assignments: res.assignments.map((r) => ({
-          ...omit(r, ['uploadUrl', 'odevzdavarnaId']),
-          ...submissionOf(r),
-        })),
-      };
-    },
+    run: (_a, ctx) => assignmentsData(ctx),
   },
 ];

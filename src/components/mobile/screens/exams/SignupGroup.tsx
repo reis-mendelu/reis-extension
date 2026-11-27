@@ -52,8 +52,9 @@ export function SignupGroup({
           isProcessing: processingSectionId === id,
           onRegister,
         };
-        if (getSectionState(row.section, now).type === 'opening')
-          return <NotYetOpenCard key={id} {...common} />;
+        const state = getSectionState(row.section, now);
+        if (state.type === 'opening')
+          return <NotYetOpenCard key={id} {...common} opensAt={state.earliest} />;
         const blocked =
           row.section.terms.length > 0 && row.section.terms.every((term) => term.cannotRegister);
         return <OpenCard key={id} {...common} accent={blocked ? 'neutral' : 'info'} />;

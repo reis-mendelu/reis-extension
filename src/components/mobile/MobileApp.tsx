@@ -13,6 +13,7 @@ import { ProfileScreen } from './screens/ProfileScreen';
 import { SheetHost } from './sheets/SheetHost';
 import { FeedbackModalHost } from '../Feedback/FeedbackModalHost';
 import { WelcomeScreen } from './WelcomeScreen';
+import { CriticalUpdateDialog } from './CriticalUpdateDialog';
 
 /**
  * Root of the phone UI. Takes no props: `useAppLogic()` returns desktop-local
@@ -101,6 +102,7 @@ export function MobileApp() {
       <BottomNav />
       <SheetHost />
       <FeedbackModalHost />
+      <CriticalUpdateDialog />
       {/* Last child and z-50: an IS link is most often tapped from inside a
           sheet (the vývěska, notifications), and the scrim has to cover that
           sheet or the student can tap the link again underneath it. */}

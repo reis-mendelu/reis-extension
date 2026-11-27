@@ -369,5 +369,110 @@
         }
       ]
     }
-  ]
+  ],
+  "pizzeria": {
+    "address": "Zemědělská 1, Brno",
+    "hours": [
+      "Po-Čt 8:00 - 15:00 výdej pizzy 10:30 - 14:30",
+      "Pá 8:00 - 13:00 výdej pizzy 10:30 - 13:00"
+    ],
+    "pizzas": [
+      {
+        "name": "01. Pizza pollo",
+        "price": 86
+      },
+      {
+        "name": "02. Pizza americana",
+        "price": 80
+      },
+      {
+        "name": "03. Pizza vegetarián",
+        "price": 80
+      },
+      {
+        "name": "04. Pizza čtyři druhy sýrů",
+        "price": 86
+      },
+      {
+        "name": "05. Pizza hawai",
+        "price": 80
+      },
+      {
+        "name": "06. Pizza žampionová",
+        "price": 80
+      },
+      {
+        "name": "07. Pizza mexicana",
+        "price": 80
+      },
+      {
+        "name": "08. Pizza sallami",
+        "price": 80
+      },
+      {
+        "name": "09. Pizza smetanovo-sýrová",
+        "price": 86
+      },
+      {
+        "name": "10. Pizza kapsa",
+        "price": 80
+      },
+      {
+        "name": "11. Pizza mendelka",
+        "price": 86
+      },
+      {
+        "name": "13. Pizza šunková",
+        "price": 80
+      },
+      {
+        "name": "14. BZL pollo",
+        "price": 99
+      },
+      {
+        "name": "15. BZL americana",
+        "price": 92
+      },
+      {
+        "name": "16. BZL vegetarián",
+        "price": 92
+      },
+      {
+        "name": "17. BZL čtyři druhy sýrů",
+        "price": 99
+      },
+      {
+        "name": "18. BZL hawai",
+        "price": 92
+      },
+      {
+        "name": "19. BZL žampionová",
+        "price": 92
+      },
+      {
+        "name": "20. BZL mexicana",
+        "price": 92
+      },
+      {
+        "name": "21. BZL sallami",
+        "price": 92
+      },
+      {
+        "name": "22. BZL smetanovo-sýrová",
+        "price": 99
+      },
+      {
+        "name": "23. BZL kapsa",
+        "price": 92
+      },
+      {
+        "name": "24. BZL mendelka",
+        "price": 99
+      },
+      {
+        "name": "25. BZL šunková",
+        "price": 92
+      }
+    ]
+  }
 }

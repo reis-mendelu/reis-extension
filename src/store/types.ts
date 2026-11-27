@@ -19,7 +19,7 @@ import type { Odevzdavarna } from '../api/odevzdavarny';
 import type { SyncStatus } from '../services/sync';
 import type { ErasmusCountryData, ErasmusConfig, University } from '../types/erasmus';
 import type { BulletinPost } from '../types/bulletin';
-import type { OutletMenu } from '../types/menuTypes';
+import type { OutletMenu, PizzeriaMenu } from '../types/menuTypes';
 import type { PageCategory } from '../data/pages/types';
 import type { SpolekNotification } from '../services/spolky/types';
 import type { SubjectZaznamnik } from '../types/zaznamnik';
@@ -29,7 +29,6 @@ import type {
   MapSelection,
   PoiProperties,
   RoomProperties,
-  GardenPlace,
 } from '../types/campusMap';
 import type { MapEvent } from '../types/events';
 
@@ -93,6 +92,10 @@ export interface ZaznamnikSlice {
   fetchZaznamnik: () => Promise<void>;
   /** Refetch one subject on demand — the failed state's retry. */
   refetchZaznamnik: (courseCode: string) => Promise<void>;
+  /** Subjects whose drawer opened before the store could say whether to fetch their past-semester points. */
+  pendingPastZaznamnik: Record<string, true>;
+  /** Opening a past-semester subject's Záznamník: fetch its points for its own period, once. */
+  loadPastZaznamnik: (courseCode: string) => Promise<void>;
   /** Points the teacher added since the last sync, per subject, until its záznamník is opened. */
   zaznamnikNewPoints: Record<string, NewPoint[]>;
   setZaznamnikNewPoints: (unseen: Record<string, NewPoint[]>) => void;
@@ -352,6 +355,8 @@ export interface UseThemeResult {
 
 export interface MenuSlice {
   menu: OutletMenu[] | null;
+  /** SKM's pizzeria, from the same page as `menu` and replaced with it. */
+  pizzeria: PizzeriaMenu | null;
   menuLoading: boolean;
   menuError: boolean;
   /** The language `menu` (or the request in flight) was fetched for. */
@@ -415,6 +420,8 @@ export interface CalendarCustomEventsSlice {
   addCalendarCustomEvent: (event: CalendarCustomEvent) => Promise<void>;
   updateCalendarCustomEvent: (id: string, patch: Partial<CalendarCustomEvent>) => Promise<void>;
   removeCalendarCustomEvent: (id: string) => Promise<void>;
+  /** Puts these blocks and removes those ids, stored in one transaction: all or nothing. */
+  replaceCalendarCustomEvents: (put: CalendarCustomEvent[], drop: string[]) => Promise<void>;
 }
 
 export interface PulseSlice {
@@ -638,8 +645,6 @@ export interface MapSlice {
   /** The library's card (phone and iPad): its list, or one of its rooms. */
   selectMapLibrary: (featureId?: number) => void;
   selectMapPoi: (poi: PoiProperties, coord: [number, number]) => void;
-  /** Open one of the botanical garden's places. Keeps the garden drilled in. */
-  selectGardenPlace: (place: GardenPlace) => void;
   setMapSearchQuery: (q: string) => void;
   focusRoomByCode: (code: string) => void;
   focusPoiById: (id: number) => void;
@@ -748,6 +753,7 @@ export type AppState = ScheduleSlice &
   ExamSlice &
   import('./slices/createNewExamTermsSlice').NewExamTermsSlice &
   import('./slices/createAppUpdateSlice').AppUpdateSlice &
+  import('./slices/createReisForClaudeSlice').ReisForClaudeSlice &
   SyllabusSlice &
   ZaznamnikSlice &
   FilesSlice &

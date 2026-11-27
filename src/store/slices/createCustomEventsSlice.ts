@@ -56,4 +56,21 @@ export const createCustomEventsSlice: AppSlice<CalendarCustomEventsSlice> = (set
     set({ customEvents: newCustomEvents });
     await IndexedDBService.delete('custom_events', id);
   },
+
+  // Stored first: when the write fails, memory still matches storage, so a
+  // retry starts from what is really saved.
+  replaceCalendarCustomEvents: async (put: CalendarCustomEvent[], drop: string[]) => {
+    const byId = new Map(put.map((e) => [e.id, e]));
+    await IndexedDBService.replaceMany(
+      'custom_events',
+      put.map((e) => [e.id, e] as const),
+      drop.filter((id) => !byId.has(id))
+    );
+    const gone = new Set(drop);
+    const kept = get()
+      .customEvents.filter((e) => !gone.has(e.id) || byId.has(e.id))
+      .map((e) => byId.get(e.id) ?? e);
+    const added = put.filter((e) => !kept.some((k) => k.id === e.id));
+    set({ customEvents: [...kept, ...added] });
+  },
 });

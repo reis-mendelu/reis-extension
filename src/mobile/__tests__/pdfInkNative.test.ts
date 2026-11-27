@@ -21,6 +21,7 @@ vi.mock('@capacitor/core', () => ({
 vi.mock('../../platform', () => ({
   getPlatform: vi.fn(() => ({ kind: 'web' })),
 }));
+vi.mock('../macSave', () => ({ isMacApp: vi.fn(() => Promise.resolve(false)) }));
 vi.mock('@capacitor/filesystem', () => ({
   Filesystem,
   Directory: { Library: 'LIBRARY', LibraryNoCloud: 'LIBRARY_NO_CLOUD' },
@@ -29,6 +30,7 @@ vi.mock('@capacitor/filesystem', () => ({
 
 import { Capacitor } from '@capacitor/core';
 import { getPlatform } from '../../platform';
+import { isMacApp } from '../macSave';
 import {
   __resetPdfInkAvailabilityForTests,
   capacitorPdfCacheFs,
@@ -43,6 +45,7 @@ function host(kind: 'extension' | 'capacitor' | 'web', os: 'ios' | 'android' | '
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(isMacApp).mockResolvedValue(false);
   __resetPdfInkAvailabilityForTests();
 });
 
@@ -66,6 +69,24 @@ describe('isPdfInkAvailable', () => {
     __resetPdfInkAvailabilityForTests();
     plugin.isAvailable.mockResolvedValue({ available: false });
     expect(await isPdfInkAvailable()).toBe(false);
+  });
+
+  it('is false on a Mac (the iPad app Designed for iPad) and never asks the plugin', async () => {
+    // A mouse or trackpad cannot draw in PencilKit, so a Mac gets the read-only
+    // pdf.js viewer rather than a drawing reader that cannot draw. The plugin
+    // would say yes (it is an iPad idiom there), so JS must decide first.
+    host('capacitor', 'ios');
+    vi.mocked(isMacApp).mockResolvedValue(true);
+    plugin.isAvailable.mockResolvedValue({ available: true });
+    expect(await isPdfInkAvailable()).toBe(false);
+    expect(plugin.isAvailable).not.toHaveBeenCalled();
+  });
+
+  it('stays the plugin answer on an iPad (not a Mac)', async () => {
+    host('capacitor', 'ios');
+    vi.mocked(isMacApp).mockResolvedValue(false);
+    plugin.isAvailable.mockResolvedValue({ available: true });
+    expect(await isPdfInkAvailable()).toBe(true);
   });
 
   it('is false when the plugin rejects (not registered)', async () => {

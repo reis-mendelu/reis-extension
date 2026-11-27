@@ -4,6 +4,19 @@ import { useAppStore } from '../store/useAppStore';
 import type { SystemNotificationStatus } from '../store/slices/createSystemNotificationsSlice';
 import { logError } from '../utils/reportError';
 import { launchInSystemBrowser } from './openInBrowser';
+import { isMacApp, openOnMac } from './macSave';
+
+/**
+ * System Settings › Notifications on a Mac running the iPad app. The `.extension`
+ * id is the one macOS 13+ uses (eduroamProfile.ts opens its Profiles pane the
+ * same way). NOT verified on a Mac: this opens the pane's list, not reIS's own
+ * entry — the `?id=<bundle id>` deep link is undocumented, so it is not used.
+ */
+export const MAC_NOTIFICATIONS_URL =
+  'x-apple.systempreferences:com.apple.Notifications-Settings.extension';
+/** The same pane before macOS 13, tried only when macOS refuses the first. */
+export const MAC_NOTIFICATIONS_LEGACY_URL =
+  'x-apple.systempreferences:com.apple.preference.notifications';
 
 /** Android-only: the app's own page in system Settings → Notifications. */
 interface SettingsPlugin {
@@ -57,6 +70,10 @@ export async function openNotificationSettings(): Promise<void> {
   try {
     if (Capacitor.getPlatform() === 'android') {
       await Downloads.openNotificationSettings();
+    } else if (await isMacApp()) {
+      // The iPad app on a Mac answers `ios`, but `app-settings:` there opens
+      // Accessibility › Touch Alternatives. Never fall back to it.
+      if (!(await openOnMac(MAC_NOTIFICATIONS_URL))) await openOnMac(MAC_NOTIFICATIONS_LEGACY_URL);
     } else {
       // iOS' own scheme for the app's page in Settings.
       await launchInSystemBrowser('app-settings:');

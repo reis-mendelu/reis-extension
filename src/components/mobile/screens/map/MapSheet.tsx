@@ -54,22 +54,13 @@ export function MapSheet() {
   const { t } = useTranslation();
   const directions = useRoomDirections();
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
-  // A bubble in the botanical garden, tapped. Treated exactly as a tapped event
-  // pin is: the card IS the answer to the tap, so it replaces the list and the
-  // sheet hugs it rather than sitting at a detent.
-  const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
   // A Sportera place likewise.
   const selectedSportPlace = selection?.kind === 'sportPlace' ? selection.place : null;
   // The library's room list, or one of its rooms (also when tapped on the plan).
   const selectedLibrary = libraryOf(selection);
-  const selectedCard =
-    selectedEvent ||
-    selectedGardenPlace ||
-    selectedSocietyPin ||
-    selectedSportPlace ||
-    selectedLibrary;
+  const selectedCard = selectedEvent || selectedSocietyPin || selectedSportPlace || selectedLibrary;
   // The phone shows a venue's menu category as a page of its own (VenueCard).
   const venueMenuSection = useAppStore((s) => s.venueMenuSection);
   const setVenueMenuSection = useAppStore((s) => s.setVenueMenuSection);
@@ -334,7 +325,6 @@ export function MapSheet() {
           <div className="flex-1 overflow-y-auto pb-[calc(6rem_+_var(--safe-bottom,0px))] pt-2">
             <MapPanelBody
               selectedEvent={selectedEvent}
-              selectedGardenPlace={selectedGardenPlace}
               selectedSocietyPin={selectedSocietyPin}
               selectedSportPlace={selectedSportPlace}
               selectedLibrary={selectedLibrary}

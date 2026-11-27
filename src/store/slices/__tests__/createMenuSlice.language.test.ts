@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAppStore } from '../../useAppStore';
-import type { OutletMenu } from '../../../types/menuTypes';
+import type { MenuPage, OutletMenu } from '../../../types/menuTypes';
+import { page } from '../../../test/fixtures/menuPage';
 
 vi.mock('../../../api/menu', () => ({ fetchMenu: vi.fn() }));
 import { fetchMenu as apiFetchMenu } from '../../../api/menu';
@@ -32,7 +33,7 @@ describe('createMenuSlice — the menu is stamped with its language', () => {
   });
 
   it('fetches for the language in the store, and records which one', async () => {
-    vi.mocked(apiFetchMenu).mockResolvedValue(CZ);
+    vi.mocked(apiFetchMenu).mockResolvedValue(page(CZ));
     await useAppStore.getState().fetchMenu();
     expect(apiFetchMenu).toHaveBeenCalledWith('cz');
     expect(useAppStore.getState().menuLanguage).toBe('cz');
@@ -41,11 +42,11 @@ describe('createMenuSlice — the menu is stamped with its language', () => {
   // The guard has to reopen on a language change even when `menu` was never
   // cleared — the caller should not have to remember to clear it first.
   it('refetches for a new language even with a menu already in hand', async () => {
-    vi.mocked(apiFetchMenu).mockResolvedValue(CZ);
+    vi.mocked(apiFetchMenu).mockResolvedValue(page(CZ));
     await useAppStore.getState().fetchMenu();
     expect(apiFetchMenu).toHaveBeenCalledTimes(1);
 
-    vi.mocked(apiFetchMenu).mockResolvedValue(EN);
+    vi.mocked(apiFetchMenu).mockResolvedValue(page(EN));
     useAppStore.setState({ language: 'en' } as never);
     await useAppStore.getState().fetchMenu();
     expect(apiFetchMenu).toHaveBeenLastCalledWith('en');
@@ -57,7 +58,7 @@ describe('createMenuSlice — the menu is stamped with its language', () => {
   // flight when the language changes used to commit its stale body afterwards,
   // and the non-null guard then blocked the correction for good.
   it('discards a response whose language has been superseded', async () => {
-    let releaseCz!: (v: OutletMenu[]) => void;
+    let releaseCz!: (v: MenuPage) => void;
     vi.mocked(apiFetchMenu).mockReturnValueOnce(
       new Promise((resolve) => {
         releaseCz = resolve;
@@ -67,11 +68,11 @@ describe('createMenuSlice — the menu is stamped with its language', () => {
 
     // The language changes while that request is still out.
     useAppStore.setState({ language: 'en' } as never);
-    vi.mocked(apiFetchMenu).mockResolvedValueOnce(EN);
+    vi.mocked(apiFetchMenu).mockResolvedValueOnce(page(EN));
     await useAppStore.getState().fetchMenu();
 
     // The stale Czech body lands last and must not win.
-    releaseCz(CZ);
+    releaseCz(page(CZ));
     await inFlight;
 
     expect(useAppStore.getState().menu).toEqual(EN);
@@ -80,7 +81,7 @@ describe('createMenuSlice — the menu is stamped with its language', () => {
   });
 
   it('still collapses two triggers for the SAME language into one request', async () => {
-    let release!: (v: OutletMenu[]) => void;
+    let release!: (v: MenuPage) => void;
     vi.mocked(apiFetchMenu).mockReturnValue(
       new Promise((resolve) => {
         release = resolve;
@@ -89,7 +90,7 @@ describe('createMenuSlice — the menu is stamped with its language', () => {
     const first = useAppStore.getState().fetchMenu();
     await useAppStore.getState().fetchMenu();
     expect(apiFetchMenu).toHaveBeenCalledTimes(1);
-    release(CZ);
+    release(page(CZ));
     await first;
   });
 });
@@ -119,8 +120,8 @@ describe('createMenuSlice — only the newest request may commit', () => {
   });
 
   it('ignores an obsolete same-language response that resolves late', async () => {
-    let releaseStaleCz!: (v: OutletMenu[]) => void;
-    let releaseFreshCz!: (v: OutletMenu[]) => void;
+    let releaseStaleCz!: (v: MenuPage) => void;
+    let releaseFreshCz!: (v: MenuPage) => void;
     const STALE: OutletMenu[] = [
       { outlet: 'STALE', days: [{ date: '8. 9.', soup: 'Old', mainDishes: [] }] },
     ];
@@ -145,13 +146,13 @@ describe('createMenuSlice — only the newest request may commit', () => {
     );
     const freshCz = useAppStore.getState().fetchMenu();
 
-    releaseStaleCz(STALE);
+    releaseStaleCz(page(STALE));
     await staleCz;
     // The newest request is still pending, so nothing may have landed yet.
     expect(useAppStore.getState().menu).toBeNull();
     expect(useAppStore.getState().menuLoading).toBe(true);
 
-    releaseFreshCz(CZ);
+    releaseFreshCz(page(CZ));
     await freshCz;
     expect(useAppStore.getState().menu).toEqual(CZ);
     expect(useAppStore.getState().menuLoading).toBe(false);
@@ -162,7 +163,7 @@ describe('createMenuSlice — only the newest request may commit', () => {
   // "Menu není k dispozici", because it checks menuError first.
   it('ignores an obsolete same-language rejection', async () => {
     let failStaleCz!: (e: Error) => void;
-    let releaseFreshCz!: (v: OutletMenu[]) => void;
+    let releaseFreshCz!: (v: MenuPage) => void;
 
     vi.mocked(apiFetchMenu).mockReturnValueOnce(
       new Promise((_, reject) => {
@@ -187,7 +188,7 @@ describe('createMenuSlice — only the newest request may commit', () => {
     await staleCz;
     expect(useAppStore.getState().menuError).toBe(false);
 
-    releaseFreshCz(CZ);
+    releaseFreshCz(page(CZ));
     await freshCz;
     expect(useAppStore.getState().menu).toEqual(CZ);
     expect(useAppStore.getState().menuError).toBe(false);

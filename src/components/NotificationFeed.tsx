@@ -5,6 +5,8 @@ import { useDeadlineAlerts, type DeadlineAlert } from '../hooks/useDeadlineAlert
 import { NotificationDropdown } from './Notifications/NotificationDropdown';
 import { useQuestions } from '../hooks/useQuestions';
 import { useEscapeLayer } from '../hooks/ui/useEscapeLayer';
+import { useReisForClaude } from '../hooks/useReisForClaude';
+import { useAppStore } from '../store/useAppStore';
 
 export function NotificationFeed({
   className = '',
@@ -21,9 +23,15 @@ export function NotificationFeed({
     useNotificationFeed();
   const { alerts: deadlineAlerts, markAllSeen, unseenCount } = useDeadlineAlerts();
   const questions = useQuestions();
+  const reisForClaude = useReisForClaude();
+  const markReisForClaudeSeen = useAppStore((s) => s.markReisForClaudeSeen);
   useEffect(() => {
     if (isOpen) markAllSeen(deadlineAlerts.map((a) => a.id));
   }, [isOpen, markAllSeen, deadlineAlerts]);
+  // Opening Novinky with the reIS-v-Claude row in it takes it off the badge.
+  useEffect(() => {
+    if (isOpen && reisForClaude.visible) markReisForClaudeSeen();
+  }, [isOpen, reisForClaude.visible, markReisForClaudeSeen]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Escape closes the dropdown, and only it (an Escape layer).
@@ -46,7 +54,10 @@ export function NotificationFeed({
   // Console questions count until the dropdown is opened with them in, as on
   // the phone's HeaderActions.
   const unreadCount =
-    notifications.filter((n) => !readIds.has(n.id)).length + unseenCount + questions.badge;
+    notifications.filter((n) => !readIds.has(n.id)).length +
+    unseenCount +
+    questions.badge +
+    reisForClaude.badge;
 
   return (
     <div className={`relative ${className}`}>

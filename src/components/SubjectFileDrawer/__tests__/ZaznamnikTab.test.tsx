@@ -4,10 +4,10 @@ import { ZaznamnikTab } from '../ZaznamnikTab';
 import { useAppStore } from '../../../store/useAppStore';
 
 /**
- * The phone renders this tab inside a sheet that already pins ONE IS link in its
- * footer. Every other tab honours `showIsBacklink` for exactly that reason;
- * záznamník rendered its own pair unconditionally, so the sheet showed a
- * duplicate link on this tab alone.
+ * The IS links on this tab are for the day reIS lacks something or IS is the
+ * only place that shows it. They were switched off on the phone while its sheet
+ * pinned a footer link (#341 dropped the footer), so the phone lost them: both
+ * trees show the same pair, and the tab has no opt-out any more.
  */
 describe('ZaznamnikTab IS backlinks', () => {
   beforeEach(() => {
@@ -23,14 +23,18 @@ describe('ZaznamnikTab IS backlinks', () => {
 
   afterEach(cleanup);
 
-  it('renders the IS backlinks by default, as the desktop drawer expects', () => {
+  it('links průběžné and the test results in IS', () => {
     render(<ZaznamnikTab courseCode="EBC" />);
-    expect(screen.getAllByRole('link').length).toBe(2);
+    const links = screen.getAllByRole('link');
+    expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      expect.stringContaining('predmet=789;prubezne=1'),
+      expect.stringContaining('predmet=789;test=1'),
+    ]);
   });
 
-  it('renders none when the host pins its own IS link', () => {
-    render(<ZaznamnikTab courseCode="EBC" showIsBacklink={false} />);
-    expect(screen.queryAllByRole('link')).toHaveLength(0);
+  it('wraps, so two labels never push past a 320px phone', () => {
+    const { container } = render(<ZaznamnikTab courseCode="EBC" />);
+    expect(container.querySelector('a')?.parentElement?.className).toContain('flex-wrap');
   });
 });
 

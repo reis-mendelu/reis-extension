@@ -2,6 +2,7 @@ import type { ExamSection, ExamTerm } from '../../../../types/exams';
 import { useTranslation } from '../../../../hooks/useTranslation';
 import { formatOpensAtBare } from '../../../../utils/mobile/examOpening';
 import { parseRegistrationStart } from '../../../../utils/termUtils';
+import { isJustOpened } from '../../../../utils/exams/registrationOpening';
 
 export interface TermRowStatusProps {
   term: ExamTerm;
@@ -32,7 +33,13 @@ export function TermRowStatus({
   // registration that already opened — and closed — which is a different fact
   // and must not be dressed up as this one.
   const opensAt = term.registrationStart ? parseRegistrationStart(term.registrationStart) : null;
-  const opensLater = !term.canRegisterNow && opensAt && opensAt.getTime() > now.getTime();
+  // The minute after it passes counts too: the opening is behind us but IS has
+  // not shown the register link yet (the screen is asking it again). The label
+  // stays, rather than a blank slot or "UZAVŘENO"; only IS's link makes a button.
+  const opensLater =
+    !term.canRegisterNow &&
+    opensAt &&
+    (opensAt.getTime() > now.getTime() || isJustOpened(term, now));
   // Registration is over. The desktop tile marks this "UZAVŘENO" and greys the
   // whole tile; the row used to leave its slot empty, which reads as "nothing
   // to say here" rather than "too late".

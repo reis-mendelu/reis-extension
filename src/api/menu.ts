@@ -1,6 +1,7 @@
-import type { DayMenu, OutletMenu } from '../types/menuTypes';
+import type { DayMenu, MenuPage, OutletMenu } from '../types/menuTypes';
 import type { Language } from '../store/types';
 import { fetchPublic } from './publicPage';
+import { parsePizzeria } from './menuPizzeria';
 
 const LANG_CONFIG: Record<
   Language,
@@ -71,7 +72,7 @@ function parseOutlet(container: Element, config: (typeof LANG_CONFIG)[Language])
   return days;
 }
 
-export async function fetchMenu(lang: Language): Promise<OutletMenu[]> {
+export async function fetchMenu(lang: Language): Promise<MenuPage> {
   const config = LANG_CONFIG[lang];
   // fetchPublic, not fetchViaProxy: on Capacitor there is no content script to
   // answer REIS_FETCH, so the proxy call hung for the full 30s timeout and the
@@ -87,5 +88,7 @@ export async function fetchMenu(lang: Language): Promise<OutletMenu[]> {
     result.push({ outlet: label, days: parseOutlet(container, config) });
   }
 
-  return result;
+  // The pizzeria is a tab of the same page, so it costs no second request. A page
+  // that no longer has it, or that changed shape, is no pizzeria, not a failure.
+  return { outlets: result, pizzeria: parsePizzeria(doc) };
 }

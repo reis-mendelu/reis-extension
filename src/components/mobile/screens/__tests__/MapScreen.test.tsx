@@ -562,15 +562,23 @@ describe('MapSheet drag', () => {
    * the peek row honest: it offers the events list, and that is what it must
    * open.
    */
-  const PLACE = {
-    id: 'rokle',
-    name: { cz: 'Rokle', en: 'The ravine' },
-    lon: 16.6123,
-    lat: 49.2141,
+  const CARD = {
+    kind: 'sportPlace',
+    place: {
+      id: 'court',
+      sport: 'basketball',
+      name: 'Hřiště u koleje',
+      coord: [16.6123, 49.2141],
+      url: 'https://sportera.cz/court',
+      hours: 'nonstop',
+      surface: 'tartan',
+      count: 2,
+      near: { building: 'Q', metres: 120 },
+    },
   };
 
   it('drops the pin and restores the peek band when tapped collapsed with a card open', () => {
-    useAppStore.setState({ mapSelection: { kind: 'gardenPlace', place: PLACE } } as never);
+    useAppStore.setState({ mapSelection: CARD } as never);
     render(<MapScreen />);
     fireEvent.click(screen.getByLabelText(/panel mapy/));
     expect(useAppStore.getState().mapSheetState).toBe('peek');
@@ -579,7 +587,7 @@ describe('MapSheet drag', () => {
   });
 
   it('drops the pin when DRAGGED down to peek with a card open', () => {
-    useAppStore.setState({ mapSelection: { kind: 'gardenPlace', place: PLACE } } as never);
+    useAppStore.setState({ mapSelection: CARD } as never);
     render(<MapScreen />);
     // The effect put the sheet at `half`, one rung above peek.
     drag(300, 500);

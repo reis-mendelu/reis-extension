@@ -56,22 +56,13 @@ export function MapRail() {
   const maxHeight = useRailMaxHeight();
 
   const selectedEvent = selection?.kind === 'event' ? selection.event : null;
-  // A tapped bubble in the botanical garden, handled exactly like a tapped
-  // event pin: the card replaces the list, and opening the rail is what makes
-  // it visible at all.
-  const selectedGardenPlace = selection?.kind === 'gardenPlace' ? selection.place : null;
   // A society pin likewise.
   const selectedSocietyPin = selection?.kind === 'societyPin' ? selection.pin : null;
   // A Sportera place likewise.
   const selectedSportPlace = selection?.kind === 'sportPlace' ? selection.place : null;
   // The library's room list, or one of its rooms (also when tapped on the plan).
   const selectedLibrary = libraryOf(selection);
-  const selectedCard =
-    selectedEvent ||
-    selectedGardenPlace ||
-    selectedSocietyPin ||
-    selectedSportPlace ||
-    selectedLibrary;
+  const selectedCard = selectedEvent || selectedSocietyPin || selectedSportPlace || selectedLibrary;
   const forRoom = useForRoomSelection();
 
   // Picking a pin while the rail is closed has to bring it back — otherwise the
@@ -216,7 +207,6 @@ export function MapRail() {
       <div className="flex-1 overflow-y-auto pb-4 pl-1">
         <MapPanelBody
           selectedEvent={selectedEvent}
-          selectedGardenPlace={selectedGardenPlace}
           selectedSocietyPin={selectedSocietyPin}
           selectedSportPlace={selectedSportPlace}
           selectedLibrary={selectedLibrary}

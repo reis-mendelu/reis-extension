@@ -6,7 +6,15 @@
 // student's real IS data), never .env, never source maps. And the bundle must
 // load the way Claude Desktop loads it (see below).
 import { execFileSync, spawn } from 'node:child_process';
-import { copyFileSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative, sep } from 'node:path';
 
@@ -17,7 +25,14 @@ const npx = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const run = (cmd, args) =>
   execFileSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32' });
 
-copyFileSync(join('mcp', 'manifest.json'), join('dist-mcp', 'manifest.json'));
+// One version for every product: the app's (package.json). mcp/manifest.json
+// keeps 0.0.0 so nobody bumps it by hand; the server reads the same version.
+const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
+const manifest = JSON.parse(readFileSync(join('mcp', 'manifest.json'), 'utf8'));
+writeFileSync(
+  join('dist-mcp', 'manifest.json'),
+  JSON.stringify({ ...manifest, version }, null, 2) + '\n'
+);
 copyFileSync(join('public', 'brand-assets', 'reIS_logo_512.png'), join('dist-mcp', 'icon.png'));
 rmSync(OUT, { force: true });
 run(npx, [...MCPB, 'validate', join('dist-mcp', 'manifest.json')]);

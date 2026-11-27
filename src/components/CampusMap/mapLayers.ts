@@ -4,8 +4,6 @@ import landmarksJson from '../../data/map/landmarks.json';
 import buildingsJson from '../../data/map/buildings.json';
 import { buildingSharingOutline } from './landmarkBuilding';
 import { ringToLatLng, landmarkGroupLabels } from './mapHelpers';
-import { REMOTE } from './remoteLayers';
-import { GARDEN_PLACE_ID, bubblesHidden } from './gardenBubbleLayer';
 import { TOOLTIP_CARVE_OUTS, ensureReisPanes } from './mapPanes';
 import type { BuildingsMeta, Landmark } from '../../types/campusMap';
 
@@ -93,20 +91,8 @@ export function initLeafletMap(
     const restZoom = Math.min(18, Math.floor(map.getBoundsZoom(cb, false, L.point(40, 40))));
     const hideBelow = labelsAtRest ? restZoom - 1 : restZoom + 1;
     map.getContainer().classList.toggle('reis-hide-building-labels', map.getZoom() <= hideBelow);
-    // Same mechanism for the garden's bubbles: zoomed out they pile on top of
-    // each other, and the redraw that builds them is store-driven and knows
-    // nothing about zoom. The threshold is the zoom at which the garden fills
-    // THIS viewport, not a constant — see bubblesHidden.
-    const garden = REMOTE.find((p) => p.id === GARDEN_PLACE_ID);
-    if (garden?.area) {
-      const bounds = L.latLngBounds(ringToLatLng(garden.area.coordinates[0]!));
-      map.getContainer().classList.toggle('reis-hide-garden-bubbles', bubblesHidden(map, bounds));
-    }
   };
   syncLabelVisibility();
-  // 'resize' too: the bubble threshold is viewport-dependent (getBoundsZoom),
-  // so widening the window without zooming would otherwise leave them hidden or
-  // shown according to the old viewport.
   map.on('zoomend resize', syncLabelVisibility);
   return map;
 }

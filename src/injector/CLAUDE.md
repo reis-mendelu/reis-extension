@@ -17,6 +17,18 @@ The extension uses a **push-based postMessage IPC** for its injected host. There
 | Iframe bootstrap | `entrypoints/main/main.tsx` → `hooks/useAppLogic.ts` | IDB hydration → signal `REIS_READY` → listen for `REIS_SYNC_UPDATE` |
 | Skeleton guard | `store/slices/createSyncSlice.ts` | `handshakeDone` / `handshakeTimedOut` (10s) unblock skeletons |
 
+## "Open in IS" links to IS home (`#reis-off`)
+
+The content script injects reIS on IS's home page, so a plain link there
+reopens reIS (an IS outage notice has no link of its own and used to do exactly
+that). A link that must show the real IS carries the fragment `#reis-off`;
+`content.ts` returns before hiding the page, injecting or syncing when
+`isReisOff(location.hash)`. `utils/reisOff.ts` (imports nothing) owns the marker,
+the dashboard path list and `openInRealIs(url)`; `sniper.ts` shares the path
+list, and `isNoticeRows` wraps every Novinky IS notice link. A fragment never
+reaches IS. The sidebar's "Dashboard" item deliberately keeps linking to the
+injected home: reopening reIS is its job. The bypass lasts one page load.
+
 ## Storage is split across TWO origins
 
 `IndexedDBService` is one module, but IndexedDB is origin-scoped and this

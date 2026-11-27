@@ -126,6 +126,10 @@ const SUPABASE_CALLERS = new Set([
   // anonymous select of the active `study_aids` rows, matched on the device
   // against the student's own faculty and programme. Nothing goes up.
   'src/api/studyAids.ts',
+  // The critical app version (November 2026): an anonymous select of one
+  // `critical_app_version` row, compared on the device with the app's own
+  // version. Nothing goes up, not even that version.
+  'src/api/criticalVersion.ts',
 ]);
 
 /**

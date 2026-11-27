@@ -11,6 +11,8 @@ export interface ExamCapacity {
   occupied: number;
   total: number;
   raw: string; // "10/20"
+  /** The "(n)" after the total, IS's "Rezerva". It takes a seat: 59/60(1) is full. */
+  reserve?: number;
 }
 
 export interface ExamTerm {

@@ -10,7 +10,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { IndexedDBService, INSTALL_ID_KEY, STORE_REVIEW_KEY } from './IndexedDBService';
+import {
+  IndexedDBService,
+  INSTALL_ID_KEY,
+  STORE_REVIEW_KEY,
+  CRITICAL_POPUP_KEY,
+} from './IndexedDBService';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const internal = IndexedDBService as any;
@@ -103,5 +108,12 @@ describe('IndexedDBService.clearAll', () => {
 
     expect(await IndexedDBService.get('meta', STORE_REVIEW_KEY)).toEqual(history);
     expect(await IndexedDBService.get('meta', 'reis_user_params')).toBeUndefined();
+  });
+
+  it('keeps how often the critical-update pop-up appeared, so signing out does not reset its limit', async () => {
+    const log = { minVersion: '5.7.0', shown: 2, lastDay: '2026-11-22' };
+    await IndexedDBService.set('meta', CRITICAL_POPUP_KEY, log);
+    await IndexedDBService.clearAll();
+    expect(await IndexedDBService.get('meta', CRITICAL_POPUP_KEY)).toEqual(log);
   });
 });

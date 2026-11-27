@@ -53,8 +53,22 @@ describe('isNoticeRows', () => {
       createdAt: '2026-11-12',
       startsAt: undefined,
       priority: 'high',
-      link: 'https://is.mendelu.cz/auth/index.pl',
+      // The fragment keeps the extension from injecting reIS over IS's home.
+      link: 'https://is.mendelu.cz/auth/index.pl#reis-off',
     });
+  });
+
+  it('opens a notice that points at IS home without reIS, and any other link as it is', () => {
+    const [home, other] = isNoticeRows(
+      [
+        notice({ key: 'a', link: 'https://is.mendelu.cz/auth/?lang=cz' }),
+        notice({ key: 'b', link: 'https://is.mendelu.cz/auth/kontrola/' }),
+      ],
+      [],
+      '2026-11-09'
+    );
+    expect(home!.link).toBe('https://is.mendelu.cz/auth/?lang=cz#reis-off');
+    expect(other!.link).toBe('https://is.mendelu.cz/auth/kontrola/');
   });
 
   it('marks its rows so the society counters can leave them alone', () => {

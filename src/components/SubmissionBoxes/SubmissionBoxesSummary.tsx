@@ -4,6 +4,7 @@ import type { Odevzdavarna } from '../../api/odevzdavarny';
 import { useAppStore } from '../../store/useAppStore';
 import {
   boxCourseCode,
+  boxState,
   boxesDueSoon,
   listedInZaznamnik,
   splitBoxes,
@@ -45,7 +46,10 @@ export function SubmissionBoxesSummary({ onOpen, className = '' }: SubmissionBox
   const obdobi = useAppStore((s) => s.obdobiId);
   const [expanded, setExpanded] = useState(false);
   const listId = useId();
-  const { open } = splitBoxes(boxes, now);
+  // A box handed in but still open is listed under "Odevzdáno (N)" below, so
+  // the open part holds only what is left to hand in: listing it in both made
+  // it show twice with both sections expanded.
+  const open = splitBoxes(boxes, now).open.filter((b) => boxState(b) !== 'confirmed');
   const submitted = submittedBoxes(boxes, now, obdobi);
   if (open.length === 0 && submitted.length === 0) return null;
   const due = boxesDueSoon(boxes, now, WINDOW_DAYS).slice(0, MAX_ROWS);

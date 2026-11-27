@@ -25,7 +25,6 @@ function resultLabel(m: MapSelection): string {
   if (m.kind === 'roomRef') return roomLabel(m.entry.name, m.entry.code, m.entry.nickname);
   if (m.kind === 'landmark') return m.landmark.name;
   if (m.kind === 'placedRoom') return m.display;
-  if (m.kind === 'gardenPlace') return m.place.name.cz;
   if (m.kind === 'societyPin') return m.pin.title;
   return '';
 }

@@ -39,13 +39,19 @@ export function MenuSheet({ dayIso, week, onClose }: MenuSheetProps) {
   const menu = useAppStore((s) => s.menu);
   const faculty = useAppStore((s) => s.userFaculty);
   const venuePins = useAppStore((s) => s.venuePins);
+  const pizzeria = useAppStore((s) => s.pizzeria);
   const setMobileTab = useAppStore((s) => s.setMobileTab);
   const focusSocietyPin = useAppStore((s) => s.focusSocietyPin);
   const [day, setDay] = useState(dayIso);
   // The canteens serving that day, plus S-klub for an FRRMS student, in
   // reIS's order (utils/menuTabs).
   const tabsFor = (d: string) =>
-    menuTabs(menuForDay(menu, new Date(`${d}T00:00:00`)), { faculty, venuePins, dayIso: d });
+    menuTabs(menuForDay(menu, new Date(`${d}T00:00:00`)), {
+      faculty,
+      venuePins,
+      dayIso: d,
+      pizzeria,
+    });
   const outlets = tabsFor(day);
   // The canteen by NAME, not position: days serve different canteens, so a
   // position picked on Monday can name another canteen on Wednesday.

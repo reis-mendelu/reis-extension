@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { menuTabs, SKLUB_TAB } from '../menuTabs';
+import { menuTabs, PIZZA_TAB, SKLUB_TAB } from '../menuTabs';
 import { venueRowToPin } from '../../api/venues';
 import { SKLUB_VENUE_ROW } from '../../test/fixtures/sklubVenueRow';
 import type { OutletDayMenu } from '../menuForDay';
 import type { SocietyPin } from '../../types/campusMap';
+import type { PizzeriaMenu } from '../../types/menuTypes';
 
 const outlet = (name: string): OutletDayMenu => ({ outlet: name, soup: null, mainDishes: ['x'] });
 // SKM's page order, which is not the order reIS shows.
@@ -88,5 +89,62 @@ describe('menuTabs', () => {
     const tabs = menuTabs(SKM, { faculty: 'FRRMS', venuePins: [SKLUB], dayIso: MONDAY });
     expect(tabs[0]).toEqual({ kind: 'outlet', key: 'KA', menu: SKM[1] });
     expect(tabs[1]).toEqual({ kind: 'venue', key: SKLUB_TAB, pin: SKLUB, venue: SKLUB.venue });
+  });
+});
+
+/**
+ * The pizzeria at Zemědělská 1 is one more tab, last for everyone (student
+ * suggestion #39). It has no days of its own, so it follows the canteens: it
+ * shows on the days SKM lists a menu and not on a weekend or a holiday.
+ */
+describe('menuTabs — the pizzeria', () => {
+  const PIZZERIA: PizzeriaMenu = {
+    address: 'Zemědělská 1, Brno',
+    hours: ['Po-Čt 8:00 - 15:00'],
+    pizzas: [{ name: '01. Pizza pollo', price: 86 }],
+  };
+  const keysWith = (
+    outlets: OutletDayMenu[],
+    faculty: string | null,
+    pizzeria: PizzeriaMenu | null = PIZZERIA,
+    venuePins: SocietyPin[] = [SKLUB]
+  ) => menuTabs(outlets, { faculty, venuePins, dayIso: MONDAY, pizzeria }).map((t) => t.key);
+
+  it('everyone: X, JAK, KA, S-klub, then Pizza last', () => {
+    expect(keysWith(SKM, 'PEF')).toEqual(['X', 'JAK', 'KA', SKLUB_TAB, PIZZA_TAB]);
+  });
+
+  it('FRRMS: their own building first, Pizza still last', () => {
+    expect(keysWith(SKM, 'FRRMS')).toEqual(['KA', SKLUB_TAB, 'X', 'JAK', PIZZA_TAB]);
+  });
+
+  it('no Pizza tab until the page has a pizzeria', () => {
+    expect(keysWith(SKM, 'PEF', null)).toEqual(['X', 'JAK', 'KA', SKLUB_TAB]);
+    expect(keys(SKM, 'PEF')).toEqual(['X', 'JAK', 'KA', SKLUB_TAB]);
+  });
+
+  it('no Pizza tab on a day no canteen serves', () => {
+    expect(keysWith([], 'PEF')).toEqual([SKLUB_TAB]);
+  });
+
+  it('Pizza stays last, even after a canteen reIS does not know yet', () => {
+    expect(keysWith([outlet('Nová'), ...SKM], 'PEF')).toEqual([
+      'X',
+      'JAK',
+      'KA',
+      SKLUB_TAB,
+      'Nová',
+      PIZZA_TAB,
+    ]);
+  });
+
+  it('carries the pizzeria through', () => {
+    const tabs = menuTabs(SKM, {
+      faculty: 'PEF',
+      venuePins: [],
+      dayIso: MONDAY,
+      pizzeria: PIZZERIA,
+    });
+    expect(tabs.at(-1)).toEqual({ kind: 'pizzeria', key: PIZZA_TAB, pizzeria: PIZZERIA });
   });
 });

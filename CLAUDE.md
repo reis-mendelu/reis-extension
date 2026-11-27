@@ -84,18 +84,36 @@ capability" is a valid answer that ends the turn.
 ### A fourth product, headless: reIS for Claude (`mcp/`)
 
 A Claude Desktop extension (`.mcpb`) that signs in to IS as the student on
-their laptop and exposes ten read-only tools over the same `src/api` fetchers.
+their laptop and exposes eleven read-only tools over the same `src/api` fetchers (seventeen in all with
+the six below: `mendelu_overview`, `mendelu_search`, `mendelu_ledger`, `mendelu_build_my_map`,
+`mendelu_refresh` and `mendelu_forget_everything`, which deletes its own local folder and nothing else; `scripts/mcp-smoke.mjs`
+asserts the count).
 It has no UI tree, so the parity rule does not apply to it. It is also the only
 reIS code that handles a password: it comes from the keychain and is sent only
 to the IS login endpoint, at sign-in and at each automatic re-login. Its standing promises are pinned in
-`src/test/guards/mcpStaysReadOnly.test.ts`.
+`src/test/guards/mcpStaysReadOnly.test.ts`. It keeps a **map on disk**, on by
+default and local only: one folder per laptop (`~/Library/Application Support/reIS for
+Claude`, `%LOCALAPPDATA%\reIS for Claude`, `$XDG_DATA_HOME` or `~/.local/share`), written
+only through `mcp/store*.ts`, never holding the password or the session cookie. Step 2 of 7
+is in: subjects, folder listings, the full text of files read and the study programme are
+saved, a file's text is served again after a restart while its listing's Modifikace date is unchanged and the text was read on a later day than that date (IS gives no time of day, so a same-day edit cannot be told apart)
+(`mcp/cache.ts` second tier, `mcp/storeMap.ts`), and `mendelu_forget_everything` deletes it.
+Step 4 (`mendelu_search`, `mcp/search*.ts`: keyword search over the saved text and the listings, reading the store only) is in. In the plugin build it covers text-native files and file names only: no PDF text extractor fits the plugin's single 5 MiB bundle file (measured; a two-file pdfjs layout would fit but flips the plugin's hand-over design, so it is parked as Dominik's decision: see the design record). The overview (step 3) is in. Step 4b is in: **`mendelu_ledger`**, the upcoming-events ledger (decision 9; `mcp/ledger*.ts`, `mcp/storeLedger.ts`, one `ledger/<id>.json` per event, never evicted by the size budget). Claude writes it (reIS extracts nothing, it has no model), the overview's "upcoming" merges it with IS's own exam terms and deadlines, a replaced source file marks its entries "recheck", and forget removes it; it asks IS nothing and reIS never writes a calendar. Step 5 is in review: the **original files** (`mcp/storeOriginals.ts`: `originals/<hash of the link>/<IS name made safe>` plus a record of the listing date it was read at, same staleness rule as the text, `mcp/storeStamp.ts`), kept once by every `mendelu_read_file` download and all at once by **`mendelu_build_my_map`** (`mcp/build*.ts`: a dry run of counts and types first, size UNKNOWN since IS lists none; then GET-only downloads in a small pool, resumable, stopping at the byte budget and reporting skips and failures). The budget evicts originals first, the overview gives each kept original a `localPath`, the plugin build hands a kept original back by path (never inlined), and forget removes them. Step 6 is in review: **`mendelu_refresh`** (`mcp/refresh*.ts`), the one call of the student's scheduled digest: the overview's look and diff (`mcp/overviewLook.ts`) against its own record (`refresh/seen.json`), then the new or replaced files of subjects already known downloaded through build's download path (`mcp/buildDownload.ts`), within the budget; a first refresh borrows the overview's record, or only records a baseline when there is none. The digest routine is one prompt, `mcp/routine/digest-prompt.md` (the plugin build turns it into the `daily-digest` skill; `refreshDigest.test.ts` pins its rules): a mail DRAFT written by the student's own Claude, events a week ahead, a 14-day weekly look, calendar entries only proposed until the student says yes. reIS itself never sends mail or writes a calendar (guarded). The smoke never runs refresh live: it would consume the next digest's changes. Design, steps and the
+promises it changed: `docs/superpowers/specs/2026-11-25-reis-for-claude-map-design.md`. The
+directory listing's data-handling answer still says "not retained" until Dominik resubmits it.
 
 A `src/api` change reaches it too. `npx vitest run mcp/` covers the tool
 shaping; `npm run mcp:smoke` only proves the server starts and lists its tools.
 To exercise a changed fetcher against real IS, name its tool:
 `npm run mcp:smoke -- --live mendelu_grades` (it always adds `mendelu_exams`).
 
-Build with `npm run mcp:pack`. Its release tags are `mcp-v*`, never `v*`.
+Build with `npm run mcp:pack`. It ships with the app: the release run's `mcp`
+job publishes it to `reis-mendelu/reis-for-claude` (release `mcp-vX.Y.Z` with
+the `.mcpb`, plus the plugin on that repo's `main`) whenever what it ships
+changed, with the app's version. Never bump `mcp/manifest.json` (it stays
+0.0.0) and never tag `mcp-v*` by hand; see `docs/release-pipeline.md`. The
+`.mcpb` asks that repo once per start whether it is outdated
+(`mcp/updateCheck.ts`); the plugin updates itself in Claude Code.
 `npm run mcp:plugin` builds the same server as a Claude Code plugin for Claude's
 directory: `mendelu_read_file` hands the file over whole instead of extracting its text
 (`mcp/documentHandover.ts` replaces `documentText.ts`), so officeparser stays out and
@@ -436,8 +454,7 @@ These are enforced by linting and project convention:
   own tooltip and marker elements and accepts a single `className`, so its
   labels are styled by class in `src/index.css` (`.room-label`,
   `.building-label`, `.place-label`, `.room-route-chip`, `.room-route-chip-pill`,
-  `.reis-hide-building-labels`, `.reis-hide-room-labels`,
-  `.reis-hide-garden-bubbles`).
+  `.reis-hide-building-labels`, `.reis-hide-room-labels`).
   Tailwind utilities cannot reach that DOM without `!important` fighting
   Leaflet's own `.leaflet-tooltip` background, border and shadow — which is more
   custom CSS, not less. The rule is about app chrome, where DaisyUI applies.

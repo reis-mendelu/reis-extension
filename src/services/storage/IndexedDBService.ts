@@ -144,8 +144,15 @@ export const INSTALL_ID_KEY = 'install_id';
  */
 export const STORE_REVIEW_KEY = 'store_review';
 
+/**
+ * The `meta` key holding how often the critical-update pop-up appeared (see
+ * `mobile/criticalUpdate.ts`). Per install, nothing about the student, and
+ * spared by `clearAll`: a sign-out must not buy two more pop-ups.
+ */
+export const CRITICAL_POPUP_KEY = 'critical_update_popup';
+
 /** The `meta` keys that outlive a sign-out. */
-const PER_INSTALL_META_KEYS = [INSTALL_ID_KEY, STORE_REVIEW_KEY];
+const PER_INSTALL_META_KEYS = [INSTALL_ID_KEY, STORE_REVIEW_KEY, CRITICAL_POPUP_KEY];
 
 // True for the "database connection is closing" / InvalidStateError family that
 // a stale handle throws after the underlying connection was closed.
@@ -324,6 +331,41 @@ class IndexedDBServiceImpl {
     if (validated.length === 0) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.run((db) => putAcross(db as any, validated));
+  }
+
+  /**
+   * Puts and deletes in one store, in ONE readwrite transaction: all of it
+   * lands or none of it does. Unlike setMany, an invalid value is not skipped:
+   * the deletes beside it may only be right because it lands, so the whole
+   * batch is refused.
+   */
+  async replaceMany<K extends StoreName>(
+    storeName: K,
+    puts: Array<readonly [string, ReisDB[K]['value']]>,
+    deletes: string[]
+  ): Promise<void> {
+    const validated = puts.map(([key, value]) => {
+      const v = this.validate(storeName, value);
+      if (v === undefined) throw new Error(`replaceMany: invalid ${String(storeName)} '${key}'`);
+      return [key, v] as const;
+    });
+    if (validated.length === 0 && deletes.length === 0) return;
+    await this.run(async (db) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const tx = db.transaction(storeName as any, 'readwrite');
+      const ops: Promise<unknown>[] = [];
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        for (const [key, value] of validated) ops.push(tx.store.put(value as any, key));
+        for (const key of deletes) ops.push(tx.store.delete(key));
+      } catch (err) {
+        // A throwing put does not abort on its own (see putAcross).
+        for (const p of [...ops, tx.done]) p.catch(() => {});
+        tx.abort();
+        throw err;
+      }
+      await Promise.all([...ops, tx.done]);
+    });
   }
 
   async delete<K extends keyof ReisDB>(storeName: K, key: string): Promise<void> {

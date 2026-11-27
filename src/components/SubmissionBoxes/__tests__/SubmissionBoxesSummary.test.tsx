@@ -37,7 +37,8 @@ describe('SubmissionBoxesSummary', () => {
       ],
     });
     render(<SubmissionBoxesSummary onOpen={vi.fn()} />);
-    expect(screen.getByText('3 otevřené')).toBeTruthy();
+    // "Hotovo" is handed in, so it is counted under "Odevzdáno", not as open.
+    expect(screen.getByText('2 otevřené')).toBeTruthy();
     expect(screen.getByText('Rozpracovaný projekt')).toBeTruthy();
     expect(screen.queryByText('Projects')).toBeNull();
     expect(screen.queryByText('Hotovo')).toBeNull();
@@ -78,15 +79,14 @@ describe('SubmissionBoxesSummary', () => {
     );
     const rows = screen.getAllByTestId('submission-open-row');
     // Soonest first, a box without a deadline last, the closed one not at all.
+    // "Zadání" is handed in: it is under "Odevzdáno (N)", not listed here too.
     expect(rows.map((r) => r.textContent)).toEqual([
-      expect.stringContaining('Zadání'),
       expect.stringContaining('Projects'),
       expect.stringContaining('Bez termínu'),
     ]);
-    expect(rows[0]!.textContent).toContain('Odevzdáno');
-    expect(rows[0]!.textContent).toContain('za 9 d');
-    expect(rows[1]!.textContent).not.toContain('Odevzdáno');
-    expect(rows[1]!.textContent).toContain('do 31. 1.');
+    expect(rows[0]!.textContent).not.toContain('Odevzdáno');
+    expect(rows[0]!.textContent).toContain('do 31. 1.');
+    expect(screen.queryByText('Zadání')).toBeNull();
     expect(screen.queryByText('Nic k odevzdání do 14 dní')).toBeNull();
     expect(screen.queryByText('Uzavřená')).toBeNull();
   });

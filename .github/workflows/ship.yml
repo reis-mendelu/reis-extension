@@ -8,6 +8,8 @@ name: Ship
 #   Extension  Chrome Web Store + Firefox Add-ons (publish.yml)
 #   VŠE        reIS pro VŠE, its own Chrome Web Store item (publish-vse.yml), once
 #              CWS_VSE_ITEM_ID is set
+#   Claude     reIS for Claude (mcp/) -> reis-mendelu/reis-for-claude, only when
+#              what it ships changed (scripts/mcp-publish.mjs)
 #   Summary    one table, red if any store failed
 #
 # The three are independent jobs: one store failing never stops the others, and
@@ -48,7 +50,7 @@ on:
         type: boolean
         default: false
       stores:
-        description: 'Which stores: all, android, ios or extension'
+        description: 'Which stores: all, android, ios, extension or mcp'
         required: false
         type: string
         default: all
@@ -68,7 +70,7 @@ on:
         required: false
         default: all
         type: choice
-        options: [all, android, ios, extension]
+        options: [all, android, ios, extension, mcp]
 
 permissions:
   contents: read
@@ -195,6 +197,25 @@ jobs:
           major="$(xcodebuild -version | head -1 | sed -E 's/Xcode ([0-9]+).*/\1/')"
           [ "$major" -ge 26 ] || { echo "::error::Xcode $major is too old for the current iOS SDK requirement."; exit 1; }
       - run: npm ci
+      - name: Which App Store version
+        # A release submits its tag. A dry run checks the version the PR would
+        # release (package.json at the ref it built): its tag input is the LATEST
+        # EXISTING tag, and asking about that one finds the next version's own
+        # draft as a blocker. A different version in review still blocks.
+        id: version
+        env:
+          TAG: ${{ inputs.tag }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then
+            v="$(node -p "require('./package.json').version")"
+          else
+            v="${TAG#v}"
+          fi
+          printf '%s' "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::'$v' is not an x.y.z version."; exit 1; }
+          echo "App Store version: $v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
       - name: Install the App Store Connect key
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
@@ -237,8 +258,8 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          TAG: ${{ inputs.tag }}
-        run: npx tsx scripts/release/ios-submit.ts --version "${TAG#v}" --check
+          VERSION: ${{ steps.version.outputs.version }}
+        run: npx tsx scripts/release/ios-submit.ts --version "$VERSION" --check
       - name: Archive, sign, verify (and upload unless a dry run)
         if: steps.done.outputs.done != 'true' || inputs.dry_run
         env:
@@ -253,10 +274,10 @@ jobs:
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          TAG: ${{ inputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: >
           npx tsx scripts/release/ios-submit.ts
-          --version "${TAG#v}"
+          --version "$VERSION"
           ${{ inputs.dry_run && '--dry-run' || '' }}
 
   extension:
@@ -284,9 +305,95 @@ jobs:
       item_id: ${{ vars.CWS_VSE_ITEM_ID }}
     secrets: inherit
 
+  # reIS for Claude: the .mcpb release students download for Claude Desktop and
+  # the plugin Claude Code updates itself from, both in reis-mendelu/reis-for-claude.
+  # Released with the app only when what it ships changed; "unchanged" is a
+  # success. Needs no database. Two jobs: mcp-build runs npm ci and the build
+  # (dependency code) with no secret at all and hands over only the built files;
+  # mcp runs the publish script from a fresh checkout, with no npm ci, and is the
+  # only place the token exists.
+  mcp-build:
+    name: reIS for Claude (build)
+    if: inputs.stores == 'all' || inputs.stores == 'mcp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Refuse anything but a vX.Y.Z tag
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          printf '%s' "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            || { echo "::error::'$TAG' is not a release tag (vX.Y.Z)."; exit 1; }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Build the .mcpb and the plugin
+        run: npm run mcp:pack && npm run mcp:plugin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reis-for-claude
+          # The plugin keeps its manifest in .claude-plugin/.
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            dist-mcp/manifest.json
+            dist-mcp/icon.png
+            dist-mcp/server/index.mjs
+            dist-mcp/reis-for-claude.mcpb
+            dist-plugin/reis/
+
+  mcp:
+    name: reIS for Claude
+    needs: mcp-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # One real publish at a time; dry runs never wait on each other.
+    concurrency:
+      group: reis-for-claude-${{ inputs.dry_run && github.run_id || 'publish' }}
+      cancel-in-progress: false
+    steps:
+      - name: Check secrets
+        env:
+          REIS_FOR_CLAUDE_TOKEN: ${{ secrets.REIS_FOR_CLAUDE_TOKEN }}
+        run: |
+          [ -n "${REIS_FOR_CLAUDE_TOKEN:-}" ] || {
+            echo "::error::Missing repository secret: REIS_FOR_CLAUDE_TOKEN. See docs/release-pipeline.md."
+            exit 1
+          }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref || format('refs/tags/{0}', inputs.tag) }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      # Data only: the publish script hashes and copies these files, never runs them.
+      - uses: actions/download-artifact@v4
+        with:
+          name: reis-for-claude
+      - name: Publish when changed
+        env:
+          GH_TOKEN: ${{ secrets.REIS_FOR_CLAUDE_TOKEN }}
+          TAG: ${{ inputs.tag }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          # A dry run builds the PR head, whose version need not match the tag.
+          if [ "$DRY_RUN" = true ]; then
+            node scripts/mcp-publish.mjs --no-build --dry-run
+          else
+            node scripts/mcp-publish.mjs --no-build --expect-version "${TAG#v}"
+          fi
+
   summary:
     name: Release summary
-    needs: [database, android, ios, extension, extension-vse]
+    needs: [database, android, ios, extension, extension-vse, mcp-build, mcp]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -298,6 +405,7 @@ jobs:
           IOS: ${{ needs.ios.result }}
           EXTENSION: ${{ needs.extension.result }}
           EXTENSION_VSE: ${{ needs.extension-vse.result }}
+          MCP: ${{ needs.mcp.result }}
           VSE_ITEM: ${{ vars.CWS_VSE_ITEM_ID }}
           STORES: ${{ inputs.stores }}
           DATABASE: ${{ needs.database.result }}
@@ -314,13 +422,14 @@ jobs:
             echo "| App Store, submit for review | $IOS |"
             echo "| Chrome + Firefox | $EXTENSION |"
             echo "| Chrome (reIS pro VŠE) | $EXTENSION_VSE$vse_note |"
+            echo "| reIS for Claude (released only if changed) | $MCP |"
           } >> "$GITHUB_STEP_SUMMARY"
           # A store the `stores` input selected must have succeeded; one it did not select
           # must have been skipped. Anything else (a selected store skipped, a typo that
           # selects nothing) is red, so a run that shipped nothing never looks green.
           case "$STORES" in
-            all|android|ios|extension) ;;
-            *) echo "::error::Unknown stores value '$STORES' (all, android, ios, extension). Nothing was shipped."; exit 1 ;;
+            all|android|ios|extension|mcp) ;;
+            *) echo "::error::Unknown stores value '$STORES' (all, android, ios, extension, mcp). Nothing was shipped."; exit 1 ;;
           esac
           check() {
             if [ "$STORES" = all ] || [ "$STORES" = "$1" ]; then want=success; else want=skipped; fi
@@ -332,6 +441,7 @@ jobs:
           check android "$ANDROID"
           check ios "$IOS"
           check extension "$EXTENSION"
+          check mcp "$MCP"
           # VŠE rides on `extension`, and only once its store item exists: until
           # CWS_VSE_ITEM_ID is set it must be skipped, after that the same rule.
           if [ -n "$VSE_ITEM" ]; then

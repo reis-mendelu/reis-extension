@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { freeHours, hourSummary, DAILY_CAP, overCap } from '../slots';
 import type { Block } from '../availability';
+import { hourGone } from '../libraryDay';
 
 const free = (day: string, from: string, to: string): Block => ({
   status: 'free',
@@ -8,7 +9,10 @@ const free = (day: string, from: string, to: string): Block => ({
   end: `${day}T${to}`,
 });
 const TUE = '2026-11-10';
-const early = new Date(2026, 10, 10, 6, 0);
+// Instants, not the machine's wall clock: Bookings' hours are Prague's, and CI
+// runs in UTC.
+const early = new Date('2026-11-10T06:00:00+01:00');
+const nineThirty = new Date('2026-11-10T09:30:00+01:00');
 
 describe('freeHours', () => {
   it('lists whole hours inside a free block, 07 to 19', () => {
@@ -34,7 +38,7 @@ describe('freeHours', () => {
     expect(freeHours([free('2026-11-14', '07:00', '19:00')], '2026-11-14', early)).toEqual([]);
   });
   it('needs one hour of notice', () => {
-    const now = new Date(2026, 10, 10, 9, 30);
+    const now = nineThirty;
     const hours = freeHours([free(TUE, '07:00', '19:00')], TUE, now);
     expect(hours[0]).toBe(11);
   });
@@ -53,9 +57,38 @@ describe('freeHours', () => {
   });
 });
 
+// A student abroad (Erasmus, a trip home): the phone's zone is not Prague's,
+// but the room is booked in Prague. 9:30 in Prague is 3:30 in New York.
+describe('freeHours on a phone outside Prague', () => {
+  const savedTz = process.env.TZ;
+  beforeAll(() => {
+    process.env.TZ = 'America/New_York';
+  });
+  afterAll(() => {
+    // Assigning undefined would set the string "undefined".
+    if (savedTz === undefined) delete process.env.TZ;
+    else process.env.TZ = savedTz;
+  });
+
+  it('really runs in another zone', () => {
+    expect(new Date(2026, 10, 10).getTimezoneOffset()).toBe(300);
+  });
+  it("counts the hour of notice from Prague's clock", () => {
+    const hours = freeHours([free(TUE, '07:00', '19:00')], TUE, nineThirty);
+    expect(hours[0]).toBe(11);
+  });
+  it('has nothing left once Prague is past the last hour', () => {
+    const evening = new Date('2026-11-10T18:30:00+01:00'); // 12:30 in New York
+    expect(freeHours([free(TUE, '07:00', '19:00')], TUE, evening)).toEqual([]);
+    expect(hourGone(TUE, 18, evening)).toBe(true);
+    expect(hourGone(TUE, 11, nineThirty)).toBe(false);
+    expect(hourGone(TUE, 10, nineThirty)).toBe(true);
+  });
+});
+
 describe('hourSummary', () => {
   it('counts the free hours and names the next one', () => {
-    const now = new Date(2026, 10, 10, 9, 30);
+    const now = nineThirty;
     const s = hourSummary([free(TUE, '07:00', '19:00')], TUE, now);
     expect(s).toEqual({ count: 8, next: 11 });
   });

@@ -58,19 +58,16 @@ async function waitForBuild(a: SubmitArgs): Promise<string> {
 }
 
 export async function submitIosVersion(a: SubmitArgs): Promise<SubmitResult> {
-  let buildId: string;
+  let buildId: string | undefined;
+  let noBuild: string | undefined;
   try {
     buildId = await waitForBuild(a.dryRun ? { ...a, maxPolls: 1 } : a);
   } catch (err) {
     // A dry run on a PR runs before any upload for that version exists; that is
-    // the expected state, not a failure. A real run still fails.
-    if (a.dryRun && err instanceof Error && err.message.startsWith('No build')) {
-      return {
-        status: 'dry-run-ok',
-        detail: `${err.message} (expected before the upload); nothing written`,
-      };
-    }
-    throw err;
+    // the expected state, not a failure. It still checks the blockers below,
+    // which is what would stop the real submit. A real run still fails.
+    if (!(a.dryRun && err instanceof Error && err.message.startsWith('No build'))) throw err;
+    noBuild = err.message;
   }
   const rows = await listAll(a.asc, versionsPath(a.appId));
   const stateOf = (r: AscResource) => r.attributes?.appStoreState ?? '';
@@ -88,11 +85,13 @@ export async function submitIosVersion(a: SubmitArgs): Promise<SubmitResult> {
     return { status: 'already-submitted', detail: `${a.version} is ${stateOf(mine)}` };
   }
   if (a.dryRun) {
+    const build = buildId ? `build ${buildId} is VALID` : `${noBuild} (expected before the upload)`;
     return {
       status: 'dry-run-ok',
-      detail: `build ${buildId} is VALID; ${a.version} ${mine ? 'exists' : 'would be created'}; nothing written`,
+      detail: `${build}; ${a.version} ${mine ? 'exists' : 'would be created'}; nothing written`,
     };
   }
+  if (!buildId) throw new Error(noBuild ?? `No build for ${a.version} in App Store Connect.`);
 
   let versionId = mine?.id;
   if (!versionId) {

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSmartWeekRange } from '../utils/calendar';
 import { IndexedDBService } from '../services/storage';
 import { syncService, syncGradeHistory } from '../services/sync';
@@ -64,7 +64,13 @@ interface SyncedData {
 export function useAppLogic() {
   const [currentDate, setCurrentDate] = useState<Date>(() => getSmartWeekRange().start);
   const [currentView, setCurrentView] = useState<AppView>('calendar');
-  const [selectedSubject, setSelectedSubject] = useState<SelectedSubject | null>(null);
+  const [selectedSubject, setSelectedSubjectState] = useState<SelectedSubject | null>(null);
+  // Opening the desktop drawer on a subject from an earlier semester fetches
+  // its points (the sync skips those); the guard makes it a no-op otherwise.
+  const setSelectedSubject = useCallback((subject: SelectedSubject | null) => {
+    setSelectedSubjectState(subject);
+    if (subject?.courseCode) void useAppStore.getState().loadPastZaznamnik(subject.courseCode);
+  }, []);
   const [weekNavCount, setWeekNavCount] = useState(0);
   const openSettingsRef = useRef<(() => void) | null>(null);
   const searchPrefillRef = useRef<((query: string) => void) | null>(null);

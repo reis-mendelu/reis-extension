@@ -35,7 +35,6 @@
   "src/api/zaznamnik.ts",
   "src/components/CampusMap/EventPin.tsx",
   "src/components/CampusMap/LandmarkPicker.tsx",
-  "src/components/CampusMap/MapCanvas.tsx",
   "src/components/CampusMap/RoomThumbnail.tsx",
   "src/components/CampusMap/__tests__/EventComposer.test.tsx",
   "src/components/CampusMap/__tests__/EventLayer.test.tsx",

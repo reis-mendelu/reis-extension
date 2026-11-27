@@ -76,7 +76,15 @@ await call('initialize', {
 toServer.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
 const tools = (await call('tools/list', {})).result.tools.map((t) => t.name).sort();
 console.log('tools:', tools.length, tools.join(', '));
-let failed = tools.length !== 10;
+let failed =
+  tools.length !== 17 ||
+  ![
+    'mendelu_search',
+    'mendelu_overview',
+    'mendelu_ledger',
+    'mendelu_build_my_map',
+    'mendelu_refresh',
+  ].every((t) => tools.includes(t));
 
 const json = async (name, args) => {
   const r = await call('tools/call', { name, arguments: { ...args, response_format: 'json' } });
@@ -89,7 +97,20 @@ const json = async (name, args) => {
   return { kind: /"kind": "([^"]+)"/.exec(text)?.[1], truncated: text.length };
 };
 
-/** The one refusal a healthy server gives on purpose (files.ts readCapped). */
+/**
+ * mendelu_ledger only LISTS here: the smoke runs on the real store folder, so it never adds,
+ * changes or removes an entry. Counts only, never titles. Asks IS nothing, so it runs offline too.
+ */
+async function ledgerList() {
+  const l = await json('mendelu_ledger', { action: 'list' });
+  console.log(
+    `mendelu_ledger: ${l.count} upcoming event(s) saved${l.pastHidden ? ', some past' : ''}${l.unreadable ? `, ${l.unreadable}` : ''}`
+  );
+  return Array.isArray(l.entries) && !l.unreadable;
+}
+if (!(await ledgerList())) failed = true;
+
+/** The one refusal a healthy server gives on purpose (download.ts readCapped). */
 const TOO_BIG = 'too big to read here';
 /** mendelu_subject_files errors that mean "nothing to list", not a broken server. */
 const SKIPPABLE_LISTING = ['has no file folder', 'output cut at the limit'];
@@ -113,6 +134,8 @@ async function readRealFiles() {
     let files;
     try {
       files = await json('mendelu_subject_files', { code: s.subjectCode });
+      // With saved originals the answer is { savedFiles, files } (subjectFilesPaths.ts).
+      if (!Array.isArray(files)) files = files.files;
     } catch (e) {
       const m = e.message.split('\n')[0];
       // Expected: a subject with no IS folder (tools.ts), or a list too long to
@@ -147,9 +170,83 @@ async function readRealFiles() {
   );
 }
 
+/**
+ * mendelu_search needs words, and the text it searches is the student's own. Search for a
+ * very common letter to get some hits, take three words from the first snippet, search for
+ * that quoted phrase and expect the same file back. Prints counts only, never text or names.
+ * Needs files read before (`--live mendelu_read_file`): the store is on disk, shared by runs.
+ */
+async function searchLive() {
+  const first = await json('mendelu_search', { query: 'e' });
+  if (!first.hits?.length) {
+    console.log(
+      `mendelu_search: nothing stored to search (${first.note ?? first.searched ?? 'no hits'})`
+    );
+    return false;
+  }
+  const withText = first.hits.find((h) => h.snippet);
+  if (!withText) {
+    console.log('mendelu_search: hits by file name only, no saved text to take a phrase from');
+    return false;
+  }
+  // Three consecutive plain words, so the phrase is really in the text as written.
+  const tokens = withText.snippet.replace(/\*\*|…/g, '').split(/\s+/);
+  const plain = (w) => /^\p{L}{3,}$/u.test(w);
+  const at = tokens.findIndex(
+    (_, i) => tokens.slice(i, i + 3).length === 3 && tokens.slice(i, i + 3).every(plain)
+  );
+  const phrase = (at >= 0 ? tokens.slice(at, at + 3) : [tokens.find(plain) ?? 'e']).join(' ');
+  const again = await json('mendelu_search', { query: `"${phrase}"` });
+  const same = again.hits?.some((h) => h.file === withText.file && h.subject === withText.subject);
+  console.log(
+    `mendelu_search: ${first.found} files match "e"; a ${phrase.split(' ').length}-word phrase from one snippet found ${again.found} file(s), the same file ${same ? 'included' : 'MISSING'}; ${first.searched}`
+  );
+  return !!same;
+}
+
 for (const name of live ? [...extraTools, 'mendelu_exams'] : []) {
+  if (name === 'mendelu_search') {
+    if (!(await searchLive())) failed = true;
+    continue;
+  }
   if (name === 'mendelu_read_file') {
     if (!(await readRealFiles())) failed = true;
+    continue;
+  }
+  if (name === 'mendelu_ledger') continue; // listed above, offline: see ledgerList
+  if (name === 'mendelu_refresh') {
+    // Not run live: it downloads new files and moves the refresh record on, which would take
+    // "what changed" away from the student's own next digest. Covered by mcp/__tests__/refresh*.
+    console.log(`${name}: not run live (it would consume the next digest's changes)`);
+    continue;
+  }
+  if (name === 'mendelu_build_my_map') {
+    // The DRY run only: the smoke never downloads a whole library. Counts only, never names.
+    const t0 = Date.now();
+    const b = await json(name, { dry_run: true });
+    const types = new Map();
+    for (const s of b.subjects ?? [])
+      for (const part of String(s.types).split(', ')) {
+        const m = /^(.+) (\d+)$/.exec(part);
+        if (m) types.set(m[1], (types.get(m[1]) ?? 0) + Number(m[2]));
+      }
+    console.log(
+      `${name} (dry run): ${Date.now() - t0} ms, ${b.subjects?.length ?? 0} subjects, ${b.files} files, ${b.alreadySaved} already saved, total size ${b.totalSize}; types: ${[...types].map(([t, n]) => `${t} ${n}`).join(', ')}${b.problems?.length ? `; ${b.problems.length} problems` : ''}`
+    );
+    if (b.dryRun !== true || !/UNKNOWN/.test(String(b.totalSize)) || b.problems?.length)
+      failed = true;
+    continue;
+  }
+  if (name === 'mendelu_overview') {
+    // Counts and the fixed first sentence of its note only: the overview carries points and names.
+    const t0 = Date.now();
+    const o = await json(name, {});
+    const files = o.subjects.reduce((n, s) => n + (Array.isArray(s.files) ? s.files.length : 0), 0);
+    const cut = o.subjects.filter((s) => s.moreFiles).length;
+    console.log(
+      `${name}: ${Date.now() - t0} ms, "${String(o.note).split(/[.,]/, 1)[0].slice(0, 60)}", ${o.subjects.length} subjects, ${files} files listed (${cut} lists cut), ${o.upcoming?.length ?? 0} upcoming, ${o.changed?.length ?? 0} changed lines, ${o.problems?.length ?? 0} problems`
+    );
+    if (o.problems?.length) failed = true;
     continue;
   }
   const r = await call('tools/call', { name, arguments: {} });

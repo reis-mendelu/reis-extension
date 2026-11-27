@@ -1,6 +1,7 @@
 import type { AppSlice } from '../types';
 import { clearUnseenTerms, readUnseenTerms } from '../../services/sync/examTermsUnseen';
 import { logError } from '../../utils/reportError';
+import { allTermKeys } from '../../utils/newExamTerms';
 
 /**
  * New exam terms the student has not looked at yet (examTermKey strings), on
@@ -13,7 +14,11 @@ export interface NewExamTermsSlice {
   setExamTermsNew: (keys: string[]) => void;
   /** Boot: what an earlier sync found and nobody has looked at yet. */
   loadExamTermsNew: () => Promise<void>;
-  /** Zkoušky was on screen: every new term has been seen. */
+  /**
+   * Zkoušky was on screen: the new terms in the list it shows have been seen.
+   * Only those: the Android background check records keys without saving the
+   * list they came from, so a key can be newer than the cached list.
+   */
   markExamTermsSeen: () => void;
   /**
    * Terms acknowledged on Zkoušky in this session. A sync or a boot read that
@@ -51,10 +56,12 @@ export const createNewExamTermsSlice: AppSlice<NewExamTermsSlice> = (set, get) =
       }
     },
     markExamTermsSeen: () => {
-      const shown = get().examTermsNew;
+      const onScreen = new Set(allTermKeys(get().exams.data));
+      const shown = get().examTermsNew.filter((k) => onScreen.has(k));
       if (shown.length === 0) return;
+      const seen = new Set(shown);
       set((st) => ({
-        examTermsNew: [],
+        examTermsNew: st.examTermsNew.filter((k) => !seen.has(k)),
         examTermsAcknowledged: [...new Set([...st.examTermsAcknowledged, ...shown])],
       }));
       // What is stored once the clear has its turn: another tab may have found

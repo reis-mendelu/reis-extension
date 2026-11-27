@@ -218,6 +218,16 @@ export const FLOWS: Flow[] = [
         'you tap the "Studijní opory" link under Předměty (shown only to students of the faculties and programmes reIS has chosen; today it leads to mendelu.app), once per app session; stored as one row per install per day',
         "the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`). We count how many installs tapped, which the site's author is told as a number; we never tell them who, and we cannot see what you do on the website",
       ],
+      [
+        'reIS in Claude guide opened',
+        'you open the guide from the "reIS v Claude" row in Novinky (browser extension, shown only to students of the programmes it launches to), once per app session; stored as one row per install per day',
+        'the random install identifier, the school and the fixed `reis_for_claude_guide_opened` label. We cannot see whether you go on to install it, or anything you ask Claude',
+      ],
+      [
+        'Fixed version explained',
+        'reIS marked your version as broken by a change in IS and the mobile app shows the window explaining it (at most twice), or you tap its Update button or the one on an empty Předměty or Zkoušky, once per app session; stored as one row per install per day',
+        'the random install identifier, the school and one fixed label (`critical_update_shown`, `critical_update_opened`). We cannot see whether you go on to update',
+      ],
     ],
     stores: {
       // Which screens an install opened is "how the user interacts with the
@@ -317,6 +327,11 @@ export const EXEMPT: Exempt[] = [
     call: 'study_aids',
     files: ['src/api/studyAids.ts', 'src/api/adminStudyAids.ts'],
     why: 'Public read of which faculties and programmes the study-aids link is shown to, matched on the device: the lookup does not send the student’s faculty or programme. Writes are by a signed-in reis_admin, never a student.',
+  },
+  {
+    call: 'critical_app_version',
+    files: ['src/api/criticalVersion.ts'],
+    why: 'Public read of the one critical app version reIS set after a breaking IS change, compared on the device: the request does not send the app’s own version. Set by reIS with SQL, never by a student or the app.',
   },
   {
     call: 'question_results',

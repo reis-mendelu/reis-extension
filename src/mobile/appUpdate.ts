@@ -4,6 +4,7 @@ import { logError } from '../utils/reportError';
 import { useAppStore } from '../store/useAppStore';
 import { trackFeatureSignal } from '../api/featureUsage';
 import { appUpdateOffer, type StoreUpdateInfo } from '../utils/appUpdateOffer';
+import { applyCriticalUpdate } from './criticalUpdate';
 
 /**
  * "Nová verze reISu" on the phone and iPad: asks the store whether a newer
@@ -54,15 +55,21 @@ export async function checkAppUpdate(): Promise<void> {
     const info = await AppUpdate.getAppUpdateInfo(os === 'ios' ? { country: 'cz' } : {});
     const offer = appUpdateOffer(info as StoreUpdateInfo, os, new Date(), iosVersion());
     useAppStore.getState().setAppUpdate(offer);
+    // Not behind the 3-day grace: a build reIS marked broken is told at once.
+    await applyCriticalUpdate(info as StoreUpdateInfo, os, iosVersion());
   } catch (e) {
     // Offline, or a build Play did not install (sideloaded): keep what we had.
     logError('Mobile.appUpdate.check', e);
   }
 }
 
-export async function openAppUpdate(): Promise<void> {
+/** `signal` says which control was tapped: the Novinky row, or the
+ *  critical-version pop-up and empty-screen hint. */
+export async function openAppUpdate(
+  signal: 'app_update_opened' | 'critical_update_opened' = 'app_update_opened'
+): Promise<void> {
   if (!applies()) return;
-  void trackFeatureSignal('app_update_opened');
+  void trackFeatureSignal(signal);
   try {
     const os = await nativeOs();
     const { AppUpdate } = await import('@capawesome/capacitor-app-update');

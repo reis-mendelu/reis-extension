@@ -8,7 +8,15 @@
 // never source maps. And every file must stay under the directory's 5 MiB
 // limit, past which validation stops.
 import { execFileSync, spawn } from 'node:child_process';
-import { copyFileSync, cpSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  cpSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
 const OUT = join('dist-plugin', 'reis');
@@ -20,6 +28,7 @@ const EXPECTED = [
   'PRIVACY.md',
   'README.md',
   'server/index.mjs',
+  'skills/daily-digest/SKILL.md',
   'skills/reading-is-files/SKILL.md',
 ];
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
@@ -35,8 +44,23 @@ copyFileSync(
   join('public', 'brand-assets', 'reIS_logo_1080.png'),
   join(OUT, '.claude-plugin', 'icon.png')
 );
-// One version for both products: the .mcpb manifest's.
-const { version } = JSON.parse(readFileSync(join('mcp', 'manifest.json'), 'utf8'));
+// The digest routine as a skill, from its one source (mcp/routine/digest-prompt.md, which the
+// READMEs and reisapp.cz point to), so the plugin's copy cannot drift from it.
+const digestDir = join(OUT, 'skills', 'daily-digest');
+mkdirSync(digestDir, { recursive: true });
+writeFileSync(
+  join(digestDir, 'SKILL.md'),
+  [
+    '---',
+    'description: Writes the student\'s school digest from IS Mendelu (daily, weekly or on demand) as a mail draft, with the upcoming tests and proposed University-calendar entries. Use when the student asks for their digest or "přehled", what is new since the last digest, or when a scheduled task runs it.',
+    '---',
+    '',
+    readFileSync(join('mcp', 'routine', 'digest-prompt.md'), 'utf8'),
+  ].join('\n')
+);
+// One version for every product: the app's (package.json), as on the .mcpb.
+// Claude Code updates a plugin only when this version changes.
+const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 const pluginJson = join(OUT, '.claude-plugin', 'plugin.json');
 writeFileSync(
   pluginJson,

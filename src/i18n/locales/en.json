@@ -23,6 +23,8 @@
     "outletOther": "{count} outlets",
     "venueFullMenu": "Full menu and prices",
     "venueFullMenuOnMap": "Full menu and prices on the map",
+    "pizzeriaOffer": "Pizzeria offer",
+    "pizzeriaHours": "Opening hours",
     "venuePlaceOnMap": "Show on the map"
   },
   "iskam": {
@@ -198,8 +200,14 @@
     "actionFailed": "Failed.",
     "actionGenericError": "Error.",
     "actionMissingId": "Missing ID.",
-    "actionSwitchFailedRolledBack": "Couldn't switch to the new term. Your previous registration was restored.",
-    "actionSwitchFailedNoRollback": "Couldn't switch and couldn't restore the previous term. Check your registration directly in IS MENDELU.",
+    "actionSwitchFailedKept": "Couldn't switch to the new term. Your previous registration is unchanged.",
+    "actionSwitchFailedUnknown": "Couldn't confirm whether the term changed. Check your registration directly in IS MENDELU.",
+    "actionSwitchFailedLost": "Couldn't switch terms and you are not registered for any term right now. Register again in IS MENDELU as soon as possible.",
+    "actionSwitchRefused": {
+      "targetUnavailable": "You can no longer register for this term (it filled up or closed). Your registration is unchanged.",
+      "locked": "The deregistration deadline for your current term has passed, so it can't be changed.",
+      "unverified": "Couldn't check the terms, nothing was changed. Try again in a moment."
+    },
     "confirmation": {
       "registerTitle": "Confirm registration",
       "unregisterTitle": "Confirm unregistration",
@@ -510,7 +518,16 @@
   },
   "appUpdate": {
     "title": "New reIS version",
-    "body": "Tap to update"
+    "body": "Tap to update",
+    "critical": {
+      "popupTitle": "A fixed version of reIS is out",
+      "update": "Update",
+      "later": "Not now"
+    }
+  },
+  "reisForClaude": {
+    "text": "reIS in Claude: ask about your timetable, Záznamník points or what you still need for the zápočet. For Claude Desktop →",
+    "dismiss": "Hide"
   },
   "notifications": {
     "title": "News",
@@ -1308,6 +1325,9 @@
       "signalInternshipClickEy": "Click on “Cesta s EY”",
       "signalAppUpdateOpened": "Click on “New reIS version”",
       "signalStudyAidsClickMendeluApp": "Click on Study aids (mendelu.app)",
+      "signalReisForClaudeGuideOpened": "Click on “reIS in Claude”",
+      "signalCriticalUpdateShown": "“A fixed version of reIS is out” shown",
+      "signalCriticalUpdateOpened": "Update tapped for the fixed version",
       "signalShare": "{pct}% of daily installs",
       "signalShareHint": "An average day over 30 days: of the installs that opened reIS that day, how many also opened this. The calendar is the phone’s start screen, so it is near 100% there.",
       "signalInstalls": "installs",
@@ -1529,6 +1549,7 @@
       "groupNotYetOpen": "Not open yet",
       "groupSignup": "Practical sign-ups",
       "opensAtLabel": "opens",
+      "opensFrom": "from {when}",
       "refresh": "Refresh exams",
       "refreshing": "Updating…",
       "registeredCountOne": "{count} registered",

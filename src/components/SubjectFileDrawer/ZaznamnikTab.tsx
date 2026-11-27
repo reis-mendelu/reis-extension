@@ -12,20 +12,15 @@ import { ReportMissingLink } from '../Feedback/ReportMissingLink';
 import { SubmissionBoxList } from '../SubmissionBoxes/SubmissionBoxList';
 import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
 import { LoadFailed } from '../LoadFailed';
+import { zaznamnikPeriod } from '../../utils/zaznamnik/pastSemester';
 
 const IS_BASE = 'https://is.mendelu.cz';
 
 interface ZaznamnikTabProps {
   courseCode: string;
-  /**
-   * Off on the phone, where the sheet pins a single IS link in its footer.
-   * Defaults to shown so the desktop drawer is untouched — the same contract
-   * every sibling tab uses.
-   */
-  showIsBacklink?: boolean;
 }
 
-export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTabProps) {
+export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
   const { data, isLoading, isFailed } = useZaznamnik(courseCode);
   const refetchZaznamnik = useAppStore((s) => s.refetchZaznamnik);
   const impersonating = useAppStore((s) => !!s.impersonation);
@@ -35,6 +30,8 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   const { t, language } = useTranslation();
   const lang = language === 'cz' ? 'cz' : 'en';
   const subjectId = subjectInfo?.subjectId;
+  // A past subject lives in IS under the period it was taken in.
+  const period = obdobi ? zaznamnikPeriod(subjectInfo, obdobi) : null;
   // Docházka, then submission boxes, sit on top of every state below: both come
   // from their own sync, so a subject can have them before (or without) marks.
   const { assignments: boxes } = useOdevzdavarny(subjectId);
@@ -50,21 +47,17 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
   const hasTop = hasAttendance || boxes.length > 0;
 
   const buildUrl = (extra: string) =>
-    `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${obdobi};predmet=${subjectId};${extra};lang=${lang}`;
+    `${IS_BASE}/auth/student/list.pl?studium=${studium};obdobi=${period};predmet=${subjectId};${extra};lang=${lang}`;
 
   const backlinks =
-    showIsBacklink &&
-    (subjectInfo?.hasPrubezne || subjectInfo?.hasTest) &&
-    studium &&
-    obdobi &&
-    subjectId ? (
-      <div className="flex justify-center gap-2 pt-2 pb-2">
+    (subjectInfo?.hasPrubezne || subjectInfo?.hasTest) && studium && period && subjectId ? (
+      <div className="flex flex-wrap justify-center gap-2 pt-2 pb-2">
         {subjectInfo!.hasPrubezne && (
           <a
             href={buildUrl('prubezne=1')}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold"
+            className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-primary normal-case font-bold"
           >
             <span>{t('zaznamnik.isContinuous')}</span>
             <ExternalLink size={14} />
@@ -75,7 +68,7 @@ export function ZaznamnikTab({ courseCode, showIsBacklink = true }: ZaznamnikTab
             href={buildUrl('test=1')}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn-ghost btn-sm gap-2 text-base-content/50 hover:text-primary normal-case font-bold"
+            className="btn btn-ghost btn-sm gap-2 text-base-content/70 hover:text-primary normal-case font-bold"
           >
             <span>{t('zaznamnik.isTestResults')}</span>
             <ExternalLink size={14} />

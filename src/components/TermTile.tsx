@@ -7,6 +7,8 @@ import { SNIPER_WINDOW_MS } from './ExamPanel/useAutoRegistration';
 import { TermBuiltinActions, TermDetailLink } from './ExamPanel/TermBuiltinActions';
 import { TermExtras } from './ExamPanel/TermExtras';
 import { AttemptPill } from './ExamPanel/AttemptPill';
+import { OpeningNow } from './ExamPanel/OpeningNow';
+import { isJustOpened } from '../utils/exams/registrationOpening';
 
 const attemptAccentClass: Record<string, string> = {
   regular: 'bg-success/50',
@@ -44,9 +46,13 @@ export function TermTile({
     isClosed = !!(regEnd && regEnd < now),
     isFull = term.full || (term.capacity && term.capacity.occupied >= term.capacity.total);
   const isWithinSniperWindow = isFuture && msRemaining <= SNIPER_WINDOW_MS;
-  const isBlocked = cannotRegister || (term.canRegisterNow === false && !isFuture && !isFull);
+  // Opened a moment ago and IS has not shown the link yet: neutral, never
+  // "UZAVŘENO", never registrable from the clock (the hook asks IS again).
+  const justOpened = isJustOpened(term, now);
+  const isBlocked =
+    cannotRegister || (term.canRegisterNow === false && !isFuture && !isFull && !justOpened);
   const blockedLabel = cannotRegister ? t('exams.cannotRegister') : t('exams.closed');
-  const disabled = isFull || isProcessing || isFuture || isClosed || isBlocked;
+  const disabled = isFull || isProcessing || isFuture || isClosed || isBlocked || justOpened;
   const sameDeadline =
     term.registrationEnd &&
     term.deregistrationDeadline &&
@@ -74,7 +80,7 @@ export function TermTile({
           onSelect();
         }
       }}
-      className={`relative flex flex-col w-full rounded-lg border transition-all text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${isArmed || isFiring ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture ? 'bg-warning/5 border-warning/30' : isFull || isClosed || isBlocked ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}
+      className={`relative flex flex-col w-full rounded-lg border transition-all text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${isArmed || isFiring ? 'bg-warning/10 border-warning shadow-[0_0_10px_rgba(251,189,35,0.3)]' : isFuture || justOpened ? 'bg-warning/5 border-warning/30' : isFull || isClosed || isBlocked ? 'bg-base-200 border-transparent opacity-60' : 'bg-base-100 border-transparent hover:border-primary shadow-sm cursor-pointer'}`}
     >
       {attemptAccent && (
         <div className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-lg ${attemptAccent}`} />
@@ -175,6 +181,8 @@ export function TermTile({
             <div className="flex items-center gap-3">
               {isProcessing ? (
                 <span className="loading loading-spinner loading-sm text-primary" />
+              ) : justOpened ? (
+                <OpeningNow />
               ) : isClosed || isBlocked ? (
                 <div className="flex items-center gap-2 flex-wrap justify-end">
                   <span className="text-[10px] font-bold opacity-30 uppercase tracking-wider">
@@ -344,6 +352,8 @@ export function TermTile({
               <div className="flex items-center gap-2">
                 {isProcessing ? (
                   <span className="loading loading-spinner loading-xs text-primary" />
+                ) : justOpened ? (
+                  <OpeningNow compact />
                 ) : isClosed || isBlocked ? (
                   <div className="flex items-center gap-2">
                     <span className="text-[9px] font-bold opacity-30 uppercase tracking-wider">

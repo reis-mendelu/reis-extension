@@ -5,7 +5,7 @@ import UIKit
 
 /**
  * `PdfInk`: opens a subject's PDFs in a native PencilKit reader with a Notes-style
- * file sidebar, and resolves when the student closes it. iPad + iPadOS 16 only;
+ * file sidebar, and resolves when the student closes it. iPad + iPadOS 16 only (not the iPad app on a Mac);
  * JS asks `isAvailable` first and keeps the pdf.js viewer everywhere else.
  *
  * Files the reader does not have are requested with a `needsFile` event; JS
@@ -33,6 +33,10 @@ public class PdfInkPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private static var supported: Bool {
         guard #available(iOS 16.0, *) else { return false }
+        // The iPad app on a Mac ("Designed for iPad") reports the .pad idiom, but PencilKit
+        // takes Pencil and finger, never a mouse or trackpad: strokes would not register. A Mac
+        // gets the read-only pdf.js viewer. Same test as MacSavePlugin and EduroamPlugin.
+        if ProcessInfo.processInfo.isiOSAppOnMac { return false }
         return UIDevice.current.userInterfaceIdiom == .pad
     }
 

@@ -3,10 +3,12 @@ import { useTranslation } from '../../../hooks/useTranslation';
 import type { MenuTab } from '../../../utils/menuTabs';
 import type { SocietyPin } from '../../../types/campusMap';
 import { VenueMenuTab } from '../../Jidelnicek/VenueMenuTab';
+import { PizzeriaMenuTab } from '../../Jidelnicek/PizzeriaMenuTab';
 
 /**
  * One canteen on one day: the canteen tabs for that day, then its dishes —
- * or, on S-klub's tab, the café's lunch and a way to its card on the map.
+ * or, on S-klub's tab, the café's lunch and a way to its card on the map, or,
+ * on the pizzeria's, its hours and pizzas.
  * The order of the tabs is `menuTabs`'.
  *
  * MenuSheet stacks one of these per day×canteen in a single grid cell and shows
@@ -64,7 +66,9 @@ export function MenuOutletPanel({
           ))}
         </div>
       )}
-      {current.kind === 'venue' ? (
+      {current.kind === 'pizzeria' ? (
+        <PizzeriaMenuTab pizzeria={current.pizzeria} variant="sheet" />
+      ) : current.kind === 'venue' ? (
         <VenueMenuTab
           pin={current.pin}
           venue={current.venue}
