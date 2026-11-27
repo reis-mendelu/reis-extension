@@ -13,8 +13,9 @@ import { describe, expect, it } from 'vitest';
  * - The EXTENSION does not get it. It shows IS in a desktop browser tab, where
  *   the page already fits, and off Capacitor openExternal is a plain
  *   `window.open` with no page to inject into.
- * - The iPAD does not get it. It runs the phone tree, but its shorter side is
- *   810, which IS's desktop layout fits; the script stops at 768.
+ * - The iPAD does not get it. It runs the phone tree, but IS's desktop layout
+ *   fits a tablet; the script stops at a shorter side of 600, below every iPad
+ *   (the mini is 744).
  *
  * openExternal.ts is shared code that branches internally, which is how a
  * one-platform feature hides (CLAUDE.md, "Two traps"). Both halves are pinned.
@@ -55,7 +56,7 @@ describe('IS phone frame placement', () => {
 
   it('stops below tablet size, so the iPad keeps the desktop layout', () => {
     const src = read('mobile/isPhoneFrame.ts');
-    expect(src).toContain('const TABLET_MIN_SIDE = 768');
+    expect(src).toContain('const TABLET_MIN_SIDE = 600');
     expect(src).toContain('Math.min(screen.width,screen.height)>=${TABLET_MIN_SIDE}');
   });
 

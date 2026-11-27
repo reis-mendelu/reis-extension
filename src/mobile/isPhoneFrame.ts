@@ -16,8 +16,10 @@ import { IS_PHONE_FRAME_CSS } from './isPhoneFrameCss';
  * it only ever ADDS two elements to `<head>`:
  *
  * - **Only is.mendelu.cz**, and only the top page, never a frame inside it.
- * - **Only a phone**: the shorter screen side under 768. An iPad's is 810, so
- *   a tablet keeps IS's desktop layout, which fits it.
+ * - **Only a phone**: the shorter screen side under 600. That is where Android
+ *   itself starts calling a screen a tablet (sw600dp), and it is below every
+ *   iPad (the mini's shorter side is 744, the app's test iPad's 810). A tablet
+ *   keeps IS's desktop layout, which fits it.
  * - **Only the frame we know** (`#header`, and `.mainpage` inside `#stranka`).
  *   Any other page, and every page after IS renames these, looks exactly as it
  *   does today. That is the safety net: there is no "original view" switch.
@@ -28,8 +30,8 @@ import { IS_PHONE_FRAME_CSS } from './isPhoneFrameCss';
  * parsed and gives up at DOMContentLoaded.
  */
 const IS_HOST = 'is.mendelu.cz';
-/** Tailwind's `md`, the same line the app draws between phone and tablet. */
-const TABLET_MIN_SIDE = 768;
+/** Android's sw600dp. Not Tailwind's `md` (768): an iPad mini is 744 wide. */
+const TABLET_MIN_SIDE = 600;
 export const PHONE_FRAME_STYLE_ID = 'reis-phone-frame';
 
 export function buildPhoneFrameScript(): string {

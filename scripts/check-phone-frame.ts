@@ -53,7 +53,10 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
     };
     const past = (el: Element) => el.getBoundingClientRect().right > width + 1;
     const table = document.getElementById('wide')!;
-    const scrolls = table.scrollWidth > table.clientWidth + 1;
+    // `hidden` would pass the size test and scroll from script, but not by touch.
+    const overflowX = getComputedStyle(table).overflowX;
+    const scrolls =
+      table.scrollWidth > table.clientWidth + 1 && (overflowX === 'auto' || overflowX === 'scroll');
     table.scrollLeft = table.scrollWidth;
     const last = document.getElementById('last-column')!.getBoundingClientRect();
     const box = table.getBoundingClientRect();

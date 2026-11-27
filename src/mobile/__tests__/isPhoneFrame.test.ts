@@ -67,14 +67,28 @@ describe('buildPhoneFrameScript', () => {
     expect(document.querySelectorAll('meta[name="viewport"]')).toHaveLength(1);
   });
 
-  it('does nothing on a tablet, in either orientation', () => {
+  // 810 is the iPad the app is tested on; 744 is the iPad mini, the narrowest
+  // tablet there is, and 600 is where Android itself starts calling a screen a
+  // tablet (sw600dp).
+  it.each([
+    [810, 1080],
+    [1080, 810],
+    [744, 1133],
+    [1133, 744],
+    [600, 960],
+  ])('does nothing on a tablet (%i x %i)', (width, height) => {
     document.body.innerHTML = FRAME;
-    setScreen(810, 1080);
-    run();
-    setScreen(1080, 810);
+    setScreen(width, height);
     run();
     expect(viewport()).toBeNull();
     expect(style()).toBeNull();
+  });
+
+  it('still styles the widest phone', () => {
+    document.body.innerHTML = FRAME;
+    setScreen(440, 956);
+    run();
+    expect(style()).not.toBeNull();
   });
 
   it('still styles a phone held sideways', () => {
@@ -112,10 +126,18 @@ describe('buildPhoneFrameScript', () => {
   });
 
   it('only ever adds: no element of the page is removed or moved', () => {
+    document.head.innerHTML =
+      '<meta charset="UTF-8"><title>IS</title><link rel="stylesheet" href="/css/univergo.css"><style>body{margin:0}</style>';
     document.body.innerHTML = FRAME;
     const before = document.body.innerHTML;
+    const headBefore = [...document.head.children];
     run();
     expect(document.body.innerHTML).toBe(before);
+    // IS's own head nodes: the same objects, in the same order, ahead of ours.
+    const headAfter = [...document.head.children];
+    expect(headAfter.slice(0, headBefore.length)).toEqual(headBefore);
+    headBefore.forEach((node, i) => expect(headAfter[i]).toBe(node));
+    expect(headAfter.slice(headBefore.length).map((n) => n.tagName)).toEqual(['META', 'STYLE']);
   });
 
   it('carries the stylesheet as data, so no CSS can end the script early', () => {

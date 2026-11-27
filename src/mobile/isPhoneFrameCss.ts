@@ -14,6 +14,10 @@
  * - **Styling only**: nothing is hidden, nothing is generated, nothing is
  *   loaded. Hiding or relabelling an element can break a form IS itself
  *   submits (exam and subject registration live on these pages).
+ * - **The side column is drawn after the content**, not before it (`order`
+ *   on `#stranka`'s children). In the markup it still comes first; only the
+ *   visual order changes. On a desktop it sits beside the content; stacked in
+ *   one column it would otherwise push every page's content half a screen down.
  * - **A wide table keeps its columns** and scrolls sideways inside its own box.
  *   The exam table has 14 columns and List záznamníku 19; a phone shows about
  *   six. Reshaping rows into cards needs script, which the line above rules out.
@@ -33,7 +37,7 @@ body { font-size: 16px; line-height: 1.45; }
 #pfp, #pfp img { width: 36px !important; height: 36px !important; }
 
 .wholepage > nav { flex-wrap: wrap; height: auto !important; padding: 8px 12px; row-gap: 6px; }
-.breadcrumb { flex-wrap: wrap; min-width: 0; row-gap: 4px; }
+.breadcrumb { flex-wrap: wrap; min-width: 0; row-gap: 4px; overflow-wrap: anywhere; }
 
 #stranka { display: flex !important; flex-direction: column; padding: 4px 0 32px; }
 #stranka > .mainpage { order: 1; min-width: 0; max-width: 100%; }
