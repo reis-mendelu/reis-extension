@@ -19,6 +19,33 @@ import { fetchImpersonation } from '../fetchImpersonation';
 import { loadOptions, loadYear1Groups } from '../options';
 import type { ImpersonationSelection } from '../types';
 
+/**
+ * AF's shape (live 2026-11-27): the programme + group query returns a
+ * subject's seminars but not its lectures, which IS tags to no programme.
+ */
+let mtLecturesUntagged = false;
+/** ZF B-RASZ's shape (live 2026-11-27): the group is taught BOTAZ, which the plan omits. */
+let botazTaught = false;
+const withBotaz = (json: string) => {
+  const d = JSON.parse(json) as { blockLessons: Record<string, unknown>[] };
+  const l = {
+    ...d.blockLessons[0]!,
+    courseCode: 'BOTAZ',
+    courseName: 'Botanika',
+    courseId: '170001',
+    id: 'x1',
+  };
+  return JSON.stringify({ ...d, blockLessons: [...d.blockLessons, l] });
+};
+type Answer = { blockLessons: { courseCode: string; isSeminar: string }[] };
+const edit = (json: string, keep: (l: Answer['blockLessons'][number]) => boolean) => {
+  const d = JSON.parse(json) as Answer;
+  return JSON.stringify({ ...d, blockLessons: d.blockLessons.filter(keep) });
+};
+const withoutMtLectures = (json: string) =>
+  edit(json, (l) => !(l.courseCode === 'EBC-MT' && l.isSeminar === 'false'));
+const onlyMt = (json: string) => edit(json, (l) => l.courseCode === 'EBC-MT');
+
 /** Answers each request with the real IS page that request got on 2026-09-26. */
 function route(url: string, init?: RequestInit): string {
   const body = new URLSearchParams(typeof init?.body === 'string' ? init.body : '');
@@ -41,7 +68,17 @@ function route(url: string, init?: RequestInit): string {
   )
     return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`).replaceAll('EBC-FT', 'EBC-AZD');
   if (body.get('format') === 'json' && body.get('skupina') === '2')
-    return raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`);
+    return (botazTaught ? withBotaz : (j: string) => j)(
+      mtLecturesUntagged
+        ? withoutMtLectures(raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`))
+        : raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`)
+    );
+  // EBC-MT asked on its own (catalogue id 157993 in the 801 plan). As at AF:
+  // with the year filter, its seminars only; without it, its lectures too.
+  if (body.get('format') === 'json' && body.get('predmet') === '157993') {
+    const mt = onlyMt(raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`));
+    return body.get('rocnik') === '1' ? edit(mt, (l) => l.isSeminar === 'true') : mt;
+  }
   if (body.get('format') === 'json') return noResults;
   if (url.includes('plany.pl?fakulta=2;lang=cz')) return raw('catalog-periods-pef.html');
   // An outgoing programme version: IS's own "no forms of study" page.
@@ -56,6 +93,8 @@ function route(url: string, init?: RequestInit): string {
 }
 
 beforeEach(() => {
+  mtLecturesUntagged = false;
+  botazTaught = false;
   fetchWithAuth.mockReset();
   fetchWithAuth.mockImplementation(
     async (url: string, init?: RequestInit) => new Response(route(url, init))
@@ -164,8 +203,47 @@ describe('fetchImpersonation', () => {
     const perSubject = fetchWithAuth.mock.calls
       .map(([, init]) => new URLSearchParams(String(init?.body ?? '')))
       .filter((b) => b.get('format') === 'json' && b.get('predmet') !== '0');
-    const kom = perSubject.filter((b) => b.get('lang') === 'cz' && b.get('rocnik') === '1');
-    expect(kom.length).toBe(1);
+    const asked = perSubject.filter((b) => b.get('lang') === 'cz' && b.get('rocnik') === '1');
+    // EBC-KOM (158216), missing; and EBA-AJ1 (158903), seminars only, asked for
+    // lectures it turns out not to have.
+    expect(asked.map((b) => b.get('predmet')).sort()).toEqual(['158216', '158903']);
+  });
+
+  it('year 1: a subject that came back with seminars only gets its lectures on their own', async () => {
+    mtLecturesUntagged = true;
+    const r = await fetchImpersonation(await bfSelection(1), SEPT);
+    const mt = r.schedule.filter((l) => l.courseCode === 'EBC-MT');
+    expect(mt.some((l) => l.isSeminar === 'false')).toBe(true);
+    // The group's own seminar stays; the per-subject answer adds lectures only.
+    const groupSeminars = JSON.parse(raw('rozvrh-bf-y1-g2.cz.json')).blockLessons.filter(
+      (l: { courseCode: string; isSeminar: string }) =>
+        l.courseCode === 'EBC-MT' && l.isSeminar === 'true'
+    ).length;
+    expect(mt.filter((l) => l.isSeminar === 'true')).toHaveLength(groupSeminars);
+  });
+
+  it('year 1: a subject the group is taught but the plan omits joins the subjects', async () => {
+    botazTaught = true;
+    const r = await fetchImpersonation(await bfSelection(1), SEPT);
+    expect(r.subjects.data['BOTAZ']).toMatchObject({
+      subjectCode: 'BOTAZ',
+      nameCs: 'Botanika',
+      subjectId: '170001',
+    });
+    for (const l of r.schedule) expect(r.subjects.data[l.courseCode]).toBeDefined();
+    // The plan screen stays what IS's catalogue says.
+    const planCodes = r.plan.cz.blocks.flatMap((b) =>
+      b.groups.flatMap((g) => g.subjects.map((x) => x.code))
+    );
+    expect(planCodes).not.toContain('BOTAZ');
+  });
+
+  it('year 1: a subject with lectures in the group answer is not asked again', async () => {
+    await fetchImpersonation(await bfSelection(1), SEPT);
+    const asked = fetchWithAuth.mock.calls
+      .map(([, init]) => new URLSearchParams(String(init?.body ?? '')))
+      .filter((b) => b.get('predmet') === '157993');
+    expect(asked).toHaveLength(0);
   });
 
   it('uses the programme version that has a plan for the intake, and says which', async () => {

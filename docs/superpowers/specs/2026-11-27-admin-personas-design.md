@@ -136,6 +136,47 @@ rows, subjects, lectures, seminars, Erasmus courses resolved. Exits non-zero whe
 0 subjects, 0 lectures, 0 seminars (year 1 with a group), or an unresolved code. Never in CI (IS
 credentials never leave the laptop). Run before shipping and at each semester start.
 
+## Step B: what the build decided (2026-11-27)
+
+- **Phone:** the list sits on Profil itself (reIS admins only), one tap from the avatar, rather
+  than behind a row; a student's Profil is unchanged. "Jiný obor…" pushes today's picker sheet.
+  **Desktop:** inline in the avatar popup's admin section; "Jiný obor…" opens the drawer.
+- **The banner** names a persona the way the list does ("Finance · B-F") with "Já" to exit; a
+  one-off from the picker keeps today's wording and "Ukončit". The list checks "Jiný obor…" and
+  names its code while a one-off is active.
+- **One request at a time:** every start (persona, picker) and exit (Já, a cancel, admin logout)
+  takes a new request token; a fetch that lands under an older one is cached but not applied, so
+  "Já" or another persona tapped meanwhile wins. The token is checked again after the save, so an
+  exit that began meanwhile also ends clean on disk. Other persona rows are held while one
+  fetches; "Já" never is, and with nothing applied yet it cancels the fetch in flight.
+- **reis_admin only, also mid-fetch:** a fetch that lands after an admin logout saves and applies
+  nothing (the logout clears the cache last, once the role is gone).
+- **Background refresh** (> 24 h) runs on a switch only, never at boot, reuses the cached
+  selection (no `loadOptions`: a POST per faculty) and re-applies only under the token of the
+  latest switch to that persona (a re-tap keeps it; Já or another persona ends it), without
+  touching the picker's drawer or spinner. Once per persona at a time.
+- **Cache clears:** admin logout (every persona, active or not), a boot that finds no admin
+  session (looked up only when a persona is cached), and IS logout / identity change through
+  `clearAll`. Not "Já".
+- **What the live check found, fixed in `fetchImpersonation` (year 1, shared with the picker):**
+  - ZF B-RASZ: a subject's seminar parallels carrying no group in IS (ZABAH: four Tuesday
+    parallels for every group) all came back. Where a subject's seminars collide on two dates or
+    more, the colliding slots keep their earliest (`oneSeminarParallel`); slots that never
+    collide, and a one-off block day, stay. LDF had the same shape (126 → 113).
+  - AF B-ZIN: four subjects came back with seminars but no lecture (lectures tagged to no
+    programme; the year-tagged per-subject answer has the seminars only). They are now asked
+    for their lectures on their own, without the year if it finds none (12 → 57 lectures).
+  - ZF B-RASZ: the new accreditation's plan lists 3 first-semester subjects while the group is
+    taught 7. Subjects the timetable teaches that the plan semester does not list at all (any
+    group, electives included) join the persona's subject list, named from the timetable; the
+    plan screen stays IS's catalogue.
+  - Cost: a seminar-only subject (a language) is now asked for lectures it does not have: up to
+    4 more timetable POSTs each per year-1 fetch.
+- **`personas:check`** also prints the most weekly seminar slots of any one subject and fails
+  above 2 ("not narrowed to one group"), since "seminars > 0" passes a query that returned
+  every group. `--detail <id>` prints one persona's lessons and plan. It bundles with esbuild
+  like `npm run snapshots` (the fetchers read `import.meta.env`).
+
 ## Out of scope
 
 - Years 2+ as personas (the old picker still does them).
@@ -165,7 +206,7 @@ credentials never leave the laptop). Run before shipping and at each semester st
 |---|---|---|---|
 | A | A persona started from today's picker changes faculty, programme and Erasmus for every reader (design §2, without language). | — | On test |
 | D | Screens a persona cannot fill show one "Persona: not available" note (design §5). | — | On test |
-| B | The avatar opens the one-tap list of the seven programme personas, cached, with "Já" and "Jiný obor…", checked by `npm run personas:check` (design §1, §3, §6, §7). | A | Defined |
+| B | The avatar opens the one-tap list of the seven programme personas, cached, with "Já" and "Jiný obor…", checked by `npm run personas:check` (design §1, §3, §6, §7). | A | On test |
 | C | The Erasmus persona: pinned English PEF courses, Z-EXC identity, English UI in memory, in the list and the check (design §1, §2 language, §4). | B | Defined |
 
 A and D touch different files and run in parallel. B and C run after the step before them merges.

@@ -18,15 +18,16 @@ import {
   programmeUrl,
   findLeafUrl,
 } from './catalogNav';
-import { parseCatalogPlan, subjectsToAttend, toStudyPlan, type CatalogRow } from './catalogPlan';
-import { firstSlotOnly } from './pickSlots';
+import { parseCatalogPlan, subjectsToAttend, toStudyPlan } from './catalogPlan';
+import { firstSlotOnly, oneSeminarParallel } from './pickSlots';
 import { text, post, mapLimit } from './transport';
+import { taughtSubjects } from './taughtSubjects';
 
 /** Both languages or failure — a half-fetched timetable is never applied. */
 async function lessonsFor(
   sel: ImpersonationSelection,
   f: TimetableFilter,
-  pickFirst: boolean
+  pick: (lessons: BlockLesson[]) => BlockLesson[]
 ): Promise<BlockLesson[]> {
   const [cz, en] = await Promise.all(
     (['cz', 'en'] as const).map(async (lang) =>
@@ -37,7 +38,7 @@ async function lessonsFor(
     throw new ImpersonationError('timetable');
   const czL = cz.kind === 'lessons' ? cz.lessons : [];
   const enL = en.kind === 'lessons' ? en.lessons : [];
-  return mergeDualLanguageLessons(pickFirst ? firstSlotOnly(czL) : czL, enL);
+  return mergeDualLanguageLessons(pick(czL), enL);
 }
 
 /**
@@ -51,8 +52,22 @@ async function subjectLessons(
   sel: ImpersonationSelection,
   predmet: string
 ): Promise<BlockLesson[]> {
-  const narrowed = await lessonsFor(sel, { predmet, rocnik: sel.year }, true);
-  return narrowed.length ? narrowed : lessonsFor(sel, { predmet }, true);
+  const narrowed = await lessonsFor(sel, { predmet, rocnik: sel.year }, firstSlotOnly);
+  return narrowed.length ? narrowed : lessonsFor(sel, { predmet }, firstSlotOnly);
+}
+
+/**
+ * Only the lectures of a subject, for one whose seminars came with the group.
+ * At AF the year-tagged answer holds the seminars and no lecture (live
+ * 2026-11-27), so "not empty" is not enough to skip the year-less ask.
+ */
+async function subjectLectures(
+  sel: ImpersonationSelection,
+  predmet: string
+): Promise<BlockLesson[]> {
+  const lectures = (ls: BlockLesson[]) => ls.filter((l) => l.isSeminar !== 'true');
+  const narrowed = lectures(await lessonsFor(sel, { predmet, rocnik: sel.year }, firstSlotOnly));
+  return narrowed.length ? narrowed : lectures(await lessonsFor(sel, { predmet }, firstSlotOnly));
 }
 
 /**
@@ -106,13 +121,21 @@ export async function fetchImpersonation(
   let schedule: BlockLesson[] = [];
   if (sel.year === 1) {
     const f = { program: sel.programId, rocnik: 1, skupina: sel.group ?? 0 };
-    schedule = await lessonsFor(sel, f, false);
+    schedule = await lessonsFor(sel, f, oneSeminarParallel);
   }
+  // A subject the group answer has seminars of but no lecture (AF: AGRMT, BZRV,
+  // DMEP, BZZV, live 2026-11-27) has its lectures tagged to no programme: they
+  // are asked for on their own too, and only the lectures are taken.
   const covered = new Set(schedule.map((l) => l.courseCode));
-  const missing = attend.filter(
-    (r): r is CatalogRow & { predmetId: string } => r.predmetId !== null && !covered.has(r.code)
+  const lectured = new Set(schedule.filter((l) => l.isSeminar !== 'true').map((l) => l.courseCode));
+  const ask = attend.flatMap((r) =>
+    r.predmetId === null || lectured.has(r.code)
+      ? []
+      : [{ predmetId: r.predmetId, lecturesOnly: covered.has(r.code) }]
   );
-  const per = await mapLimit(missing, 3, (r) => subjectLessons(sel, r.predmetId));
+  const per = await mapLimit(ask, 3, ({ predmetId, lecturesOnly }) =>
+    lecturesOnly ? subjectLectures(sel, predmetId) : subjectLessons(sel, predmetId)
+  );
   schedule = schedule.concat(per.flat());
 
   const title = `${sel.shortCode} ${sel.name} · ${intakeLabel(sel.year, now)}`;
@@ -134,6 +157,8 @@ export async function fetchImpersonation(
       fetchedAt,
     };
   }
+  const planned = new Set(semester.groups.flatMap((g) => g.rows.map((r) => r.code)));
+  Object.assign(data, taughtSubjects(schedule, planned, fetchedAt));
   return {
     resolved: variant,
     plan: { cz: toStudyPlan(czSems, title, enrolled), en: toStudyPlan(enSems, title, enrolled) },

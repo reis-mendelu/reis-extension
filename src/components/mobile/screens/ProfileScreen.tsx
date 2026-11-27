@@ -1,13 +1,5 @@
 import { useRef, useState } from 'react';
-import {
-  Wifi,
-  FileText,
-  MessageSquarePlus,
-  LogOut,
-  UserCog,
-  ShieldCheck,
-  Settings,
-} from 'lucide-react';
+import { Wifi, FileText, MessageSquarePlus, LogOut, ShieldCheck, Settings } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
@@ -20,6 +12,7 @@ import { NavRow } from '../primitives/NavRow';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { ScrollMoreFade } from '../primitives/ScrollMoreFade';
+import { PersonaList } from '../../Impersonation/PersonaList';
 
 /**
  * The profile TAB: a way into Nastavení, eduroam setup, documents, feedback and
@@ -114,13 +107,14 @@ export function ProfileScreen() {
             <NavRow icon={ShieldCheck} label={t('admin.entry')} onClick={openSocietyAdmin} />
           )}
 
-          {/* reIS admins only. Options load from the tap, never from an effect. */}
+          {/* reIS admins only, so a student's row budget above is untouched.
+              The persona list sits on Profil itself, one tap from the avatar
+              (design 2026-11-27 §6); "Jiný obor…" opens today's picker sheet.
+              Options load from that tap, never from an effect. */}
           {isReisAdmin && (
-            <NavRow
-              icon={UserCog}
-              label={t('impersonation.entry')}
-              sublabel={t('impersonation.entrySub')}
-              onClick={() => {
+            <PersonaList
+              variant="touch"
+              onOther={() => {
                 void loadImpersonationOptions();
                 pushSheet({ kind: 'impersonation' });
               }}

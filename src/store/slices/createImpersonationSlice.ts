@@ -11,15 +11,11 @@ import { fetchImpersonation } from '../../api/impersonation/fetchImpersonation';
 import { loadOptions, loadYear1Groups } from '../../api/impersonation/options';
 import { currentPeriod, periodLabel } from '../../api/impersonation/intake';
 import { overlayWrite } from '../overlay/overlayGuard';
-import { overlayState, blankOverlayState } from '../overlay/overlayState';
-import { identityOverlay } from '../overlay/identityOverlay';
+import { blankOverlayState } from '../overlay/overlayState';
 import { readRememberedViewer } from './context/rememberedViewer';
-import { failRateCodes } from './impersonation/failRateCodes';
-import {
-  saveImpersonation,
-  loadImpersonation,
-  clearImpersonation,
-} from './impersonation/impersonationStorage';
+import { loadImpersonation, clearImpersonation } from './impersonation/impersonationStorage';
+import { clearPersonaCache, hasPersonaCache } from './impersonation/personaCache';
+import { applyImpersonation, nextImpersonationEpoch } from './impersonation/applyImpersonation';
 import { hasAdminSession } from '../../services/admin/hasAdminSession';
 import { logError } from '../../utils/reportError';
 
@@ -55,6 +51,17 @@ const codeOf = (e: unknown): ImpersonationErrorCode =>
  * of the admin's (design 2026-11-27 §2). The overlay guard keeps every other writer off those keys while
  * this is active; the admin's real data keeps syncing into IndexedDB underneath.
  */
+/**
+ * A boot with no admin session ends the cached personas too, even with none
+ * active: they belong to the admin session (design 2026-11-27 §3). The admin
+ * session is looked up only when a persona is cached, so a student's boot asks
+ * nothing.
+ */
+async function dropPersonasWithoutAdmin(role: string | null): Promise<void> {
+  if (role === 'reis_admin' || !(await hasPersonaCache().catch(() => false))) return;
+  if (role !== null || !(await hasAdminSession())) await clearPersonaCache().catch(() => {});
+}
+
 export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get) => ({
   impersonation: null,
   impersonationPickerOpen: false,
@@ -100,6 +107,7 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
       set({ impersonationError: 'notAdmin' });
       return false;
     }
+    const epoch = nextImpersonationEpoch();
     set({ impersonationStarting: true, impersonationError: null });
     const selection: ImpersonationSelection = {
       ...req,
@@ -108,22 +116,18 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
     try {
       const result = await fetchImpersonation(selection);
       // The programme version that actually had the plan (B-RSZ vs B-RASZ): the
-      // banner names the code the timetable came from.
-      const active = { selection: { ...selection, ...result.resolved }, result };
-      await saveImpersonation(active);
-      set(
-        overlayWrite({
-          impersonation: active,
-          ...overlayState(result),
-          ...identityOverlay(active.selection),
-          impersonationStarting: false,
-          impersonationPickerOpen: false,
-        })
-      );
-      void get()
-        .fetchSuccessRateBatch(failRateCodes(result))
-        .catch(() => {});
-      return true;
+      // banner names the code the timetable came from. Not applied once Já, a
+      // persona or an admin logout has taken over (applyImpersonation's epoch).
+      const applied =
+        get().adminRole === 'reis_admin' &&
+        (await applyImpersonation(
+          set,
+          get,
+          { selection: { ...selection, ...result.resolved }, result },
+          { epoch }
+        ));
+      if (!applied) set({ impersonationStarting: false });
+      return applied;
     } catch (e) {
       logError('Impersonation.start', e, { year: req.year });
       set({ impersonationStarting: false, impersonationError: codeOf(e) });
@@ -134,6 +138,7 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
   // The admin's own identity comes back from the record loadContext kept
   // writing underneath (none yet: blank, and loadContext asks IS).
   stopImpersonation: async () => {
+    nextImpersonationEpoch();
     await clearImpersonation().catch((e) => logError('Impersonation.clear', e));
     const own = await readRememberedViewer().catch(() => null);
     set(
@@ -164,25 +169,18 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
   // next boot without applying it.
   restoreImpersonation: async () => {
     const saved = await loadImpersonation().catch(() => null);
-    if (!saved) return;
+    if (!saved) return dropPersonasWithoutAdmin(get().adminRole);
     const drop = async (why?: 'expired') => {
       await clearImpersonation().catch(() => {});
       if (why) set({ impersonationError: why });
+      // No admin session (or not a reis_admin): the persona cache goes too.
+      else await clearPersonaCache().catch(() => {});
     };
     if (saved.selection.periodLabel !== periodLabel(currentPeriod(new Date())))
       return drop('expired');
     const role = get().adminRole;
     if (role === 'reis_admin') {
-      set(
-        overlayWrite({
-          impersonation: saved,
-          ...overlayState(saved.result),
-          ...identityOverlay(saved.selection),
-        })
-      );
-      void get()
-        .fetchSuccessRateBatch(failRateCodes(saved.result))
-        .catch(() => {});
+      await applyImpersonation(set, get, saved);
       return;
     }
     if (role !== null || !(await hasAdminSession())) return drop();

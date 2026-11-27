@@ -49,4 +49,13 @@ describe('ImpersonationBanner', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ukončit' }));
     expect(stop).toHaveBeenCalledOnce();
   });
+  it('names a persona the way the list does, and exits with Já', () => {
+    const stop = vi.fn(async () => {});
+    const persona = { ...active, selection: { ...active.selection, personaId: 'finance' } };
+    useAppStore.setState(overlayWrite({ impersonation: persona, stopImpersonation: stop }));
+    render(<ImpersonationBanner variant="row" />);
+    expect(screen.getByRole('status').textContent).toContain('Finance · B-F');
+    fireEvent.click(screen.getByRole('button', { name: 'Já' }));
+    expect(stop).toHaveBeenCalledOnce();
+  });
 });
