@@ -38,6 +38,8 @@ interface PageState {
   hash: string;
   saved: string;
   seen: string;
+  /** The saved copy, without extension (`days/<date>/<key>`, or `…@HHMM` for a same-day rerun). */
+  file?: string;
 }
 
 interface State {
@@ -92,15 +94,23 @@ export function recordDay(root: string, input: DayInput): { changed: string[] } 
       prev.seen = input.date;
       continue;
     }
-    const rel = `days/${input.date}/${key}`;
+    // A second change on the same day (a manual rerun) gets its own file, so the
+    // morning's copy is never overwritten.
+    const day = `days/${input.date}/${key}`;
+    const rel = existsSync(join(root, `${day}.txt`))
+      ? `${day}@${input.time.replace(':', '')}`
+      : day;
+    // Read before writing: on a same-day change the previous file is in today's folder.
+    const before = prev
+      ? readFileSync(join(root, `${prev.file ?? `days/${prev.saved}/${key}`}.txt`), 'utf8').replace(
+          /\n$/,
+          ''
+        )
+      : null;
     writeAtomic(join(root, `${rel}.html`), html);
     writeAtomic(join(root, `${rel}.txt`), `${text}\n`);
     changed.push(key);
-    if (prev) {
-      const before = readFileSync(join(root, `days/${prev.saved}/${key}.txt`), 'utf8').replace(
-        /\n$/,
-        ''
-      );
+    if (before !== null) {
       const { added, removed } = lineDiff(before, text);
       entries.push(`- ${key}: +${added.length} −${removed} → ${rel}.txt`);
       added.slice(0, MAX_LINES_SHOWN).forEach((l) => entries.push(`  + ${short(l)}`));
@@ -109,7 +119,7 @@ export function recordDay(root: string, input: DayInput): { changed: string[] } 
     } else {
       firsts.push(key);
     }
-    state.pages[key] = { hash, saved: input.date, seen: input.date };
+    state.pages[key] = { hash, saved: input.date, seen: input.date, file: rel };
   }
 
   const pages = input.captures.length;

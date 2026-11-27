@@ -84,7 +84,7 @@ async function signIn(
 ): Promise<Outcome> {
   await page.goto(`${ISKAM}/Prihlaseni/AuthShibb`, { waitUntil: 'domcontentloaded' });
   let typed = false;
-  const deadline = Date.now() + LOGIN_DEADLINE_MS;
+  let deadline = Date.now() + LOGIN_DEADLINE_MS;
   while (Date.now() < deadline) {
     await page.waitForLoadState('domcontentloaded').catch(() => undefined);
     const state = await stateOf(page, context);
@@ -103,6 +103,9 @@ async function signIn(
       await page
         .waitForURL((u) => u.hostname !== IDP_HOST, { timeout: CONSENT_WAIT_MS })
         .catch(() => undefined);
+      // The person may take most of the consent window: give the redirect back
+      // to WebISKAM a full deadline of its own after it.
+      deadline = Date.now() + LOGIN_DEADLINE_MS;
       continue;
     }
     await page.waitForTimeout(1_000);
@@ -155,20 +158,27 @@ export async function readWebiskam(
     if (outcome !== 'signed-in')
       return { captures: [], problem: `WebISKAM: ${OUTCOME_TEXT[outcome]}` };
     const captures: Capture[] = [];
+    const failed: string[] = [];
     let menu: Capture | null = null;
+    // One page failing (a timeout, a lapsed login) keeps the pages already read.
     for (const path of WEBISKAM_PAGES) {
-      const res = await page.goto(`${ISKAM}${path}`, { waitUntil: 'domcontentloaded' });
-      if (hostOf(page) !== ISKAM_HOST || !res || res.status() !== 200) {
-        return {
-          captures,
-          problem: `WebISKAM: ${path} did not load (HTTP ${res?.status() ?? '?'})`,
-        };
+      try {
+        const res = await page.goto(`${ISKAM}${path}`, { waitUntil: 'domcontentloaded' });
+        if (hostOf(page) !== ISKAM_HOST || !res || res.status() !== 200) {
+          failed.push(`${path} (HTTP ${res?.status() ?? '?'})`);
+          continue;
+        }
+        captures.push({ key: `webiskam${path}`, html: await res.text() });
+        menu ??= await menuCapture(page);
+      } catch (err) {
+        failed.push(`${path} (${err instanceof Error ? err.message.split('\n')[0] : 'error'})`);
       }
-      captures.push({ key: `webiskam${path}`, html: await res.text() });
-      menu ??= await menuCapture(page);
     }
     if (menu) captures.push(menu);
-    return { captures, problem: null };
+    return {
+      captures,
+      problem: failed.length ? `WebISKAM: did not load ${failed.join(', ')}` : null,
+    };
   } finally {
     await context.close();
   }

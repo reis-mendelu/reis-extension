@@ -51,18 +51,31 @@ function decode(text: string): string {
   });
 }
 
+/** Applies `strip` until nothing changes: one pass can leave a new `<script` behind. */
+function untilStable(s: string, strip: (s: string) => string): string {
+  for (let prev = ''; prev !== s;) {
+    prev = s;
+    s = strip(s);
+  }
+  return s;
+}
+
 export function pageText(html: string): string {
   const main = html.indexOf(IS_MAIN);
-  const text = (main >= 0 ? html.slice(main) : html)
-    .replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
+  const body = untilStable(main >= 0 ? html.slice(main) : html, (s) =>
+    s.replace(/<(script|style|noscript)\b[\s\S]*?<\/\1>/gi, '').replace(/<!--[\s\S]*?-->/g, '')
+  );
+  // The text is written to .txt files and never rendered, but a stray `<` left by
+  // broken markup is dropped all the same, so no tag fragment survives.
+  const text = body
     .replace(IS_HEADER, '')
     .replace(/<\/t[dh]>/gi, '\t')
     .replace(
       /<br\b[^>]*>|<\/(p|div|tr|li|h[1-6]|table|ul|ol|dt|dd|section|header|footer|form|option|label)>/gi,
       '\n'
     )
-    .replace(/<[^>]+>/g, '');
+    .replace(/<[^>]*>/g, '')
+    .replace(/</g, '');
   return decode(text)
     .split('\n')
     .map((line) =>

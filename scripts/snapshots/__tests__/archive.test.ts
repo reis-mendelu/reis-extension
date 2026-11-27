@@ -71,3 +71,26 @@ describe('recordDay', () => {
     expect(state.pages['is/a']).toMatchObject({ saved: '2026-11-28', seen: '2026-11-28' });
   });
 });
+
+describe('recordDay, two runs on one day', () => {
+  it('keeps the morning copy and diffs a rerun against it', () => {
+    const root = mkdtempSync(join(tmpdir(), 'snapshots-'));
+    const at = (time: string, body: string) =>
+      recordDay(root, {
+        date: '2026-11-28',
+        time,
+        captures: [{ key: 'is/a', html: page(body) }],
+        problems: [],
+      });
+    at('07:00', '<p>Konto</p>');
+    at('18:30', '<p>Konto</p><p>Nájemné</p>');
+    at('19:00', '<p>Konto</p><p>Nájemné</p><p>Zaplaceno</p>');
+    expect(readFileSync(join(root, 'days/2026-11-28/is/a.txt'), 'utf8')).toBe('Konto\n');
+    expect(readFileSync(join(root, 'days/2026-11-28/is/a@1830.txt'), 'utf8')).toBe(
+      'Konto\nNájemné\n'
+    );
+    const log = readFileSync(join(root, 'changes.md'), 'utf8');
+    expect(log).toContain('is/a: +1 −0 → days/2026-11-28/is/a@1830.txt\n  + Nájemné');
+    expect(log).toContain('is/a: +1 −0 → days/2026-11-28/is/a@1900.txt\n  + Zaplaceno');
+  });
+});
