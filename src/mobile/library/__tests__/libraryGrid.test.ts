@@ -92,6 +92,11 @@ describe('tapCell', () => {
   it('does not grow over a taken hour', () => {
     expect(tapCell(pick([14]), A, 15, state([15]), 4)).toEqual(pick([14]));
   });
+
+  it('leaves the pick alone on a middle hour, which could not be dropped without splitting it', () => {
+    expect(tapCell(pick([13, 14, 15]), A, 14, state(), 4)).toEqual(pick([13, 14, 15]));
+    expect(tapCell(pick([13, 14, 15, 16]), A, 15, state(), 4)).toEqual(pick([13, 14, 15, 16]));
+  });
 });
 
 describe('growHours and spanOf', () => {

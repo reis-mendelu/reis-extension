@@ -89,6 +89,8 @@ export function tapCell(
     const lo = pick.hours[0]!;
     const hi = pick.hours[pick.hours.length - 1]!;
     if (hour === lo && hour === hi) return null;
+    // A middle hour does nothing: dropping it would split the stretch in two.
+    if (hour > lo && hour < hi) return pick;
     if (hour === lo) return { room, hours: pick.hours.slice(1) };
     if (hour === hi) return { room, hours: pick.hours.slice(0, -1) };
     if ((hour === lo - 1 || hour === hi + 1) && isFree(state, room, hour)) {
