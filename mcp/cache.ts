@@ -57,6 +57,11 @@ export const stampOf = (f: Listed) =>
 
 export type ToolCache = ReturnType<typeof createToolCache>;
 
+const UNSEEN = Symbol('unseen');
+/** The folder's forget token inside a persist token (storeMap.ts begin(): `{ gen, at }`). */
+const genOf = (token: unknown) =>
+  token && typeof token === 'object' && 'gen' in token ? (token as { gen: unknown }).gen : token;
+
 export function createToolCache({
   now = Date.now,
   maxBytes = MAX_BYTES,
@@ -68,6 +73,7 @@ export function createToolCache({
   const fileStamps = new Map<string, string>();
   let total = 0;
   let epoch = 0; // bumped by clear(): a call that began before it is stale
+  let seenGen: unknown = UNSEEN; // the folder's forget token at the last ticket
 
   const drop = (key: string) => {
     const e = entries.get(key);
@@ -106,19 +112,28 @@ export function createToolCache({
     }
   };
 
+  const clear = () => {
+    epoch++;
+    entries.clear();
+    inflight.clear();
+    fileStamps.clear();
+    total = 0;
+  };
+
   return {
     /** Forget everything held here, including reads still in flight (forget everything). */
-    clear() {
-      epoch++;
-      entries.clear();
-      inflight.clear();
-      fileStamps.clear();
-      total = 0;
-    },
-    /** One per tool call, before it does anything; pass it to run(). */
+    clear,
+    /**
+     * One per tool call, before it does anything; pass it to run(). A forget in another
+     * process (Desktop and each Claude Code window run their own server over one folder)
+     * shows here as a new folder token: what this memory held goes too, before it is served.
+     */
     async ticket(): Promise<Ticket> {
-      const started = epoch;
-      return { epoch: started, token: await persist?.begin().catch(() => null) };
+      const token = await persist?.begin().catch(() => null);
+      const gen = genOf(token);
+      if (seenGen !== UNSEEN && gen !== seenGen) clear();
+      seenGen = gen;
+      return { epoch, token };
     },
     async run(
       tool: string,
