@@ -43,3 +43,7 @@ export const isReplacement = (v: unknown): v is Replacement =>
  * began before a forget keeps and saves nothing, wherever it is by then.
  */
 export type Ticket = { epoch: number; token: unknown };
+
+/** The folder's forget token inside a persist token (storeMap.ts begin(): `{ gen, at }`). */
+export const genOf = (token: unknown) =>
+  token && typeof token === 'object' && 'gen' in token ? (token as { gen: unknown }).gen : token;

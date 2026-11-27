@@ -105,11 +105,12 @@ export function createLedger(
 
   return {
     list,
+    askedUnder,
 
     /** Saves a new event, or updates the one already saved for the same subject, kind, day, time, file and title. */
-    add: (args: Raw, today: string) => {
-      const asked = askedUnder();
-      return serial(async () => {
+    /** `asked`: the forget token taken when the tool call began (askedUnder), if it began earlier. */
+    add: (args: Raw, today: string, asked = askedUnder()) =>
+      serial(async () => {
         const gen = await asked;
         const fields = parseFields(args);
         const { entries } = await list();
@@ -129,13 +130,11 @@ export function createLedger(
         });
         await put(entry, gen);
         return { entry, created: true };
-      });
-    },
+      }),
 
     /** Changes the fields given; an empty string clears one. The id and the saved date stay. */
-    update: (id: string, args: Raw) => {
-      const asked = askedUnder();
-      return serial(async () => {
+    update: (id: string, args: Raw, asked = askedUnder()) =>
+      serial(async () => {
         const gen = await asked;
         if (!ID.test(id))
           throw new LedgerInputError('id must be an event id such as ev-0123456789ab.');
@@ -143,8 +142,7 @@ export function createLedger(
         if (!old)
           throw new LedgerInputError(`No ledger entry ${id}. Use action "list" to see the ids.`);
         return merge(old, parseFields(args) as Raw, gen);
-      });
-    },
+      }),
 
     /** True if there was such an entry. */
     remove: (id: string) =>

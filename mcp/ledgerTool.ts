@@ -63,7 +63,9 @@ export async function runLedger(
   try {
     switch (args.action) {
       case 'add': {
-        const { entry, created } = await ledger.add(await withSource(store, args), today);
+        // The forget token as the call begins: a forget while the source file is read cancels it.
+        const asked = ledger.askedUnder();
+        const { entry, created } = await ledger.add(await withSource(store, args), today, asked);
         return {
           saved: created
             ? 'added'
@@ -72,7 +74,9 @@ export async function runLedger(
         };
       }
       case 'update': {
-        const entry = await ledger.update(String(args.id ?? ''), await withSource(store, args));
+        const asked = ledger.askedUnder();
+        const sourced = await withSource(store, args);
+        const entry = await ledger.update(String(args.id ?? ''), sourced, asked);
         return { saved: 'updated', entry: shape(entry, now, {}) };
       }
       case 'remove': {

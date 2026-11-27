@@ -9,7 +9,7 @@
 // answers is saved there. The tiers never hold the password or the IS
 // sign-in (mcpStaysReadOnly.test.ts, README.md, PRIVACY.md).
 
-import { isReplacement, type Persist, type Ticket } from './cacheTypes';
+import { genOf, isReplacement, type Persist, type Ticket } from './cacheTypes';
 import { keyOf } from './cacheKey';
 
 const MIN = 60_000;
@@ -57,11 +57,6 @@ export const stampOf = (f: Listed) =>
 
 export type ToolCache = ReturnType<typeof createToolCache>;
 
-const UNSEEN = Symbol('unseen');
-/** The folder's forget token inside a persist token (storeMap.ts begin(): `{ gen, at }`). */
-const genOf = (token: unknown) =>
-  token && typeof token === 'object' && 'gen' in token ? (token as { gen: unknown }).gen : token;
-
 export function createToolCache({
   now = Date.now,
   maxBytes = MAX_BYTES,
@@ -73,7 +68,7 @@ export function createToolCache({
   const fileStamps = new Map<string, string>();
   let total = 0;
   let epoch = 0; // bumped by clear(): a call that began before it is stale
-  let seenGen: unknown = UNSEEN; // the folder's forget token at the last ticket
+  let [seen, seenGen] = [false, undefined as unknown]; // the folder token at the last ticket
 
   const drop = (key: string) => {
     const e = entries.get(key);
@@ -123,16 +118,15 @@ export function createToolCache({
   return {
     /** Forget everything held here, including reads still in flight (forget everything). */
     clear,
-    /**
-     * One per tool call, before it does anything; pass it to run(). A forget in another
-     * process (Desktop and each Claude Code window run their own server over one folder)
-     * shows here as a new folder token: what this memory held goes too, before it is served.
-     */
+    /** One per call, first; pass it to run(). A new folder token = a forget in another window. */
     async ticket(): Promise<Ticket> {
+      const started = epoch; // a clear() while begin() is read still makes this call stale
       const token = await persist?.begin().catch(() => null);
       const gen = genOf(token);
-      if (seenGen !== UNSEEN && gen !== seenGen) clear();
-      seenGen = gen;
+      const forgotElsewhere = seen && gen !== seenGen;
+      [seen, seenGen] = [true, gen];
+      if (!forgotElsewhere || epoch !== started) return { epoch: started, token };
+      clear(); // this call saw it first: what it fetches now is after the forget
       return { epoch, token };
     },
     async run(
