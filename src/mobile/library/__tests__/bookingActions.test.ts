@@ -110,6 +110,51 @@ describe('bookAndRecord', () => {
   });
 });
 
+describe('bookAndRecord, counting a partial answer', () => {
+  it('does not count hours that only looked booked after a timeout', async () => {
+    useLibraryStore.setState({ blocks: { [room.featureId]: [] } });
+    let reads = 0;
+    let creates = 0;
+    const h: BookingsHttp = vi.fn(async (req) => {
+      if (req.url.endsWith('GetStaffAvailability')) {
+        // After the writes, 15:00 is gone: the library took it, though it never said so.
+        const gone = ++reads > 1;
+        return {
+          status: 200,
+          data: {
+            staffAvailabilityResponse: [
+              {
+                availabilityItems: [
+                  ['07:00', gone ? '15:00' : '19:00'],
+                  ...(gone ? [['16:00', '19:00']] : []),
+                ].map(([a, b]) => ({
+                  status: 'BOOKINGSAVAILABILITYSTATUS_AVAILABLE',
+                  startDateTime: { dateTime: `2026-11-10T${a}:00` },
+                  endDateTime: { dateTime: `2026-11-10T${b}:00` },
+                })),
+              },
+            ],
+          },
+        };
+      }
+      return ++creates === 1
+        ? { status: 200, data: {} }
+        : { status: 400, data: { message: 'Staff not available' } };
+    });
+    const r = await bookAndRecord({
+      http: h,
+      room,
+      day: '2026-11-10',
+      from: 15,
+      to: 17,
+      lang: 'cz',
+      now,
+    });
+    expect(r.kind).toBe('partial');
+    expect(trackFeatureSignal).not.toHaveBeenCalled();
+  });
+});
+
 describe('bookAndRecord, a failed save', () => {
   it('says which booked blocks the phone could not save, and still records the rest', async () => {
     const h: BookingsHttp = vi.fn(async (req) =>

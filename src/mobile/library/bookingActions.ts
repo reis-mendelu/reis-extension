@@ -78,9 +78,11 @@ async function bookUnlocked(a: BookAction): Promise<BookResult> {
       for (let h = Number(e.startTime.slice(0, 2)); h < Number(e.endTime.slice(0, 2)); h++)
         useLibraryStore.getState().markTaken(a.room.featureId, a.day, h);
     }
-    // At least one hour is certainly booked: the open-to-booked half of the funnel.
-    // An `unconfirmed` answer is not counted, the library never said yes.
-    if (r.kind !== 'unconfirmed') void trackFeatureSignal('library_booking_made');
+    // Counted only when the library said yes to some hour (a block with a cancel
+    // key): `unconfirmed` is not, and neither is a `partial` made only of hours
+    // that merely looked taken after a timeout.
+    if (r.events.some((e) => !e.libraryBooking?.unconfirmed))
+      void trackFeatureSignal('library_booking_made');
     if (unsaved > 0) return { ...r, unsaved };
   }
   return r;
