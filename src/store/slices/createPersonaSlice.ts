@@ -100,6 +100,8 @@ export const createPersonaSlice: AppSlice<PersonaSlice> = (set, get) => {
         await applyImpersonation(set, get, active, { epoch: latest, background: true });
     } catch (e) {
       logError('Persona.refresh', e, { persona: id });
+      // The cached persona stays applied, but its row says IS did not refresh it.
+      row(id, codeOf(e));
     } finally {
       refreshing.delete(id);
     }

@@ -154,7 +154,8 @@ credentials never leave the laptop). Run before shipping and at each semester st
 - **Background refresh** (> 24 h) runs on a switch only, never at boot, reuses the cached
   selection (no `loadOptions`: a POST per faculty) and re-applies only under the token of the
   latest switch to that persona (a re-tap keeps it; Já or another persona ends it), without
-  touching the picker's drawer or spinner. Once per persona at a time.
+  touching the picker's drawer or spinner. Once per persona at a time. A failed refresh keeps the
+  cached persona applied and puts the error on its row.
 - **Cache clears:** admin logout (every persona, active or not), a boot that finds no admin
   session (looked up only when a persona is cached), and IS logout / identity change through
   `clearAll`. Not "Já".
@@ -163,6 +164,8 @@ credentials never leave the laptop). Run before shipping and at each semester st
     parallels for every group) all came back. Where a subject's seminars collide on two dates or
     more, the colliding slots keep their earliest (`oneSeminarParallel`); slots that never
     collide, and a one-off block day, stay. LDF had the same shape (126 → 113).
+    The picker's "Všechny skupiny" (no group) asks for every parallel on purpose and is never
+    narrowed.
   - AF B-ZIN: four subjects came back with seminars but no lecture (lectures tagged to no
     programme; the year-tagged per-subject answer has the seminars only). They are now asked
     for their lectures on their own, without the year if it finds none (12 → 57 lectures).

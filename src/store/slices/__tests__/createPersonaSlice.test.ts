@@ -373,4 +373,16 @@ describe('persona races (review 2026-11-27)', () => {
     expect(await s().switchToPersona('finance')).toBe(false);
     expect(s().personaRows.finance).toBe('options');
   });
+
+  it('a failed background refresh marks the row, keeping the cached persona applied', async () => {
+    await s().switchToPersona('finance');
+    vi.setSystemTime(new Date(2026, 8, 28));
+    fetchImpersonation.mockRejectedValueOnce(new ImpersonationError('timetable'));
+    expect(await s().switchToPersona('finance')).toBe(true);
+    await flush();
+    await flush();
+    expect(s().personaRows.finance).toBe('timetable');
+    expect(s().impersonation?.selection.personaId).toBe('finance');
+    expect(codes()).toEqual(['B-F-1']);
+  });
 });

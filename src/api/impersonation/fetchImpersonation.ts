@@ -121,7 +121,8 @@ export async function fetchImpersonation(
   let schedule: BlockLesson[] = [];
   if (sel.year === 1) {
     const f = { program: sel.programId, rocnik: 1, skupina: sel.group ?? 0 };
-    schedule = await lessonsFor(sel, f, oneSeminarParallel);
+    // "All groups" (no group) asked for every parallel on purpose: none narrowed.
+    schedule = await lessonsFor(sel, f, sel.group === null ? (l) => l : oneSeminarParallel);
   }
   // A subject the group answer has seminars of but no lecture (AF: AGRMT, BZRV,
   // DMEP, BZZV, live 2026-11-27) has its lectures tagged to no programme: they

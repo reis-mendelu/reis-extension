@@ -26,6 +26,21 @@ import type { ImpersonationSelection } from '../types';
 let mtLecturesUntagged = false;
 /** ZF B-RASZ's shape (live 2026-11-27): the group is taught BOTAZ, which the plan omits. */
 let botazTaught = false;
+/** ZABAH's shape (ZF, live 2026-11-27): two seminar parallels on each of two dates, no group. */
+let parallelsUntagged = false;
+const withParallels = (json: string) => {
+  const d = JSON.parse(json) as { blockLessons: Record<string, unknown>[] };
+  const base = { ...d.blockLessons[0]!, courseCode: 'ZABAH', isSeminar: 'true' };
+  const extra = ['20260929', '20261013'].flatMap((date) =>
+    ['09:00', '11:00'].map((startTime) => ({
+      ...base,
+      date,
+      startTime,
+      id: `z-${date}-${startTime}`,
+    }))
+  );
+  return JSON.stringify({ ...d, blockLessons: [...d.blockLessons, ...extra] });
+};
 const withBotaz = (json: string) => {
   const d = JSON.parse(json) as { blockLessons: Record<string, unknown>[] };
   const l = {
@@ -67,8 +82,16 @@ function route(url: string, init?: RequestInit): string {
     body.get('rocnik') === '0'
   )
     return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`).replaceAll('EBC-FT', 'EBC-AZD');
+  // "All groups" (skupina 0) answers the same page, parallels included.
+  if (
+    parallelsUntagged &&
+    body.get('format') === 'json' &&
+    body.get('skupina') === '0' &&
+    body.get('program')
+  )
+    return withParallels(raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`));
   if (body.get('format') === 'json' && body.get('skupina') === '2')
-    return (botazTaught ? withBotaz : (j: string) => j)(
+    return (parallelsUntagged ? withParallels : botazTaught ? withBotaz : (j: string) => j)(
       mtLecturesUntagged
         ? withoutMtLectures(raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`))
         : raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`)
@@ -95,6 +118,7 @@ function route(url: string, init?: RequestInit): string {
 beforeEach(() => {
   mtLecturesUntagged = false;
   botazTaught = false;
+  parallelsUntagged = false;
   fetchWithAuth.mockReset();
   fetchWithAuth.mockImplementation(
     async (url: string, init?: RequestInit) => new Response(route(url, init))
@@ -236,6 +260,16 @@ describe('fetchImpersonation', () => {
       b.groups.flatMap((g) => g.subjects.map((x) => x.code))
     );
     expect(planCodes).not.toContain('BOTAZ');
+  });
+
+  it('year 1: untagged seminar parallels keep one for a group, all of them for "All groups"', async () => {
+    parallelsUntagged = true;
+    const slots = (r: { schedule: { courseCode: string; date: string; startTime: string }[] }) =>
+      r.schedule.filter((l) => l.courseCode === 'ZABAH').map((l) => `${l.date} ${l.startTime}`);
+    const one = await fetchImpersonation(await bfSelection(1), SEPT);
+    expect(slots(one)).toEqual(['20260929 09:00', '20261013 09:00']);
+    const all = await fetchImpersonation({ ...(await bfSelection(1)), group: null }, SEPT);
+    expect(slots(all)).toHaveLength(4);
   });
 
   it('year 1: a subject with lectures in the group answer is not asked again', async () => {
