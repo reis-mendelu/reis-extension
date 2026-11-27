@@ -85,11 +85,11 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-cards tr.reis-head, .mainpage table.reis-exam tr.reis-head, .mainpage table.reis-att tr.reis-head { display: none !important; }
 .mainpage tr.reis-plain, .mainpage tr.reis-plain > td { display: block !important; }
 .mainpage tr.reis-card, .mainpage tr.a-main, .mainpage tr.a-cont { border: 1px solid #d5dbd0; border-radius: 12px; background: #fff !important; padding: 9px 12px; margin: 0 0 10px; }
-.mainpage tr.reis-card > td, .mainpage tr.a-main > td, .mainpage tr.a-cont > td { border: 0 !important; background: none !important; padding: 0 !important; min-width: 0; width: auto !important; height: auto !important; text-align: left !important; white-space: normal !important; font-size: 13px !important; }
+.mainpage tr.reis-card > td, .mainpage tr.a-main > td, .mainpage tr.a-cont > td { border: 0 !important; background: none !important; padding: 0 !important; min-width: 0; width: auto !important; height: auto !important; text-align: left !important; white-space: normal !important; overflow-wrap: anywhere; font-size: 13px !important; }
 
 /* Cards: the name as a title, every other value as a small "header value" fact. */
 .mainpage table.reis-cards tr.reis-card { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
-.mainpage table.reis-cards tr.reis-card > td { display: inline-flex !important; align-items: baseline; gap: 5px; max-width: 100%; color: #111; }
+.mainpage table.reis-cards tr.reis-card > td { display: inline-flex !important; flex-wrap: wrap; align-items: baseline; gap: 5px; max-width: 100%; color: #111; }
 .mainpage table.reis-cards tr.reis-card > td::before { content: attr(data-label); font-size: 11px; color: #5b6670; white-space: nowrap; }
 .mainpage table.reis-cards tr.reis-card > td.reis-icon { align-items: center; }
 .mainpage table.reis-cards tr.reis-card > td.reis-title { display: block !important; flex: 0 0 100%; order: -1; font-size: 15px !important; font-weight: 700; }
