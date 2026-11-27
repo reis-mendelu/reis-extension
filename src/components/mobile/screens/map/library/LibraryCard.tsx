@@ -70,6 +70,12 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
       ? stored
       : null;
   const span = spanOf(pick);
+  // A pick that stopped being valid is dropped from the store, not only hidden: a
+  // later read that frees those cells again must not bring the old pick back.
+  const lost = stored !== null && pick === null;
+  useEffect(() => {
+    if (lost) useLibraryStore.getState().clearPick();
+  }, [lost]);
 
   const onTap = (room: number, hour: number) => {
     const next = tapCell(pick, room, hour, stateOf, left);

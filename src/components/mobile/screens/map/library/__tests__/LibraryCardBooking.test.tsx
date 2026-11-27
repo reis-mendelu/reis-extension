@@ -101,7 +101,16 @@ describe('LibraryCard: booking', () => {
     render(<LibraryCard view={{ featureId: null }} />);
     fireEvent.click(cell('Týmová 1', '14:00'));
     expect(bar()).toBeTruthy();
+    const before = useLibraryStore.getState().blocks[team1!.featureId];
     act(() => useLibraryStore.getState().markTaken(team1!.featureId, '2026-11-16', 14));
+    expect(bar()).toBeNull();
+    // Gone from the store too, so freeing the cell again does not bring the pick back.
+    expect(useLibraryStore.getState()).toMatchObject({ room: null, picked: [] });
+    act(() =>
+      useLibraryStore.setState({
+        blocks: { ...useLibraryStore.getState().blocks, [team1!.featureId]: before! },
+      })
+    );
     expect(bar()).toBeNull();
   });
 
