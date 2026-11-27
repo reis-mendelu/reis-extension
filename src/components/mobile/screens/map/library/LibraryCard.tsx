@@ -72,7 +72,8 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
       : null;
   // A pick that stopped being valid is dropped from the store, not only hidden: a
   // later read that frees those cells again must not bring the old pick back.
-  const lost = stored !== null && pick === null;
+  // Includes a pick from a day that has passed: `cardPick` hides it, the store still holds it.
+  const lost = storeRoom !== null && storePicked.length > 0 && pick === null;
   useEffect(() => {
     if (lost) useLibraryStore.getState().clearPick();
   }, [lost]);

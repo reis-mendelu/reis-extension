@@ -97,6 +97,28 @@ describe('LibraryCard: booking', () => {
     expect(screen.getByTestId('library-confirm')).toBeTruthy();
   });
 
+  it('on a short wide window (a landscape phone) the first booking opens the sheet instead', () => {
+    wide.value = true;
+    const height = window.innerHeight;
+    Object.defineProperty(window, 'innerHeight', { value: 390, configurable: true });
+    try {
+      renderPanel(true);
+      fireEvent.click(cell('Týmová 1', '14:00'));
+      fireEvent.click(within(bar()!).getByRole('button', { name: 'Rezervovat' }));
+      expect(useAppStore.getState().mobileSheets[0]).toMatchObject({ kind: 'libraryBook' });
+      expect(screen.queryByTestId('library-confirm')).toBeNull();
+    } finally {
+      Object.defineProperty(window, 'innerHeight', { value: height, configurable: true });
+    }
+  });
+
+  it('forgets a pick from a day that has passed, in the footer and in the store', () => {
+    useLibraryStore.setState({ day: '2026-11-13', room: team1!.featureId, picked: [14] });
+    renderPanel();
+    expect(bar()).toBeNull();
+    expect(useLibraryStore.getState()).toMatchObject({ room: null, picked: [] });
+  });
+
   it('drops a pick whose cell was taken meanwhile', () => {
     renderPanel();
     fireEvent.click(cell('Týmová 1', '14:00'));

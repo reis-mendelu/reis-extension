@@ -4,8 +4,12 @@ import { useAppStore } from '../../../../../store/useAppStore';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { useWideViewport } from '../../../../../hooks/ui/useWideViewport';
 import { useLibraryStore } from '../../../../../mobile/library/libraryStore';
+import { cardPick } from '../../../../../mobile/library/libraryDay';
 import { useLibraryBook } from '../../../sheets/useLibraryBook';
 import { LibraryConfirm } from '../../../sheets/LibraryConfirm';
+
+/** Below this window height the first booking's confirm opens as a sheet, not inline in the rail. */
+const INLINE_MIN_HEIGHT = 600;
 
 /**
  * What is picked, and the one labelled button that books it. A footer of the
@@ -17,9 +21,11 @@ import { LibraryConfirm } from '../../../sheets/LibraryConfirm';
  */
 export function LibraryBar({ flush }: { flush?: boolean }) {
   const room = useLibraryStore((s) => s.room);
-  const day = useLibraryStore((s) => s.day);
-  const picked = useLibraryStore((s) => s.picked);
-  if (room === null || day === null || !picked.length) return null;
+  const storeDay = useLibraryStore((s) => s.day);
+  const storePicked = useLibraryStore((s) => s.picked);
+  // The same day and hours the card shows: a pick from a day that has passed is none.
+  const { day, picked } = cardPick({ day: storeDay, picked: storePicked }, new Date());
+  if (room === null || storeDay === null || !picked.length) return null;
   const pick = { featureId: room, day, from: picked[0]!, to: picked[picked.length - 1]! + 1 };
   return <PickBar pick={pick} flush={flush} />;
 }
@@ -43,7 +49,8 @@ function PickBar({
 
   const book = () => {
     if (noticeSeen) void confirm();
-    else if (wide) setInline(true);
+    // Inline only where the rail has the height for it: a landscape phone is wide but 390 px tall.
+    else if (wide && window.innerHeight >= INLINE_MIN_HEIGHT) setInline(true);
     else pushSheet({ kind: 'libraryBook', ...pick });
   };
 
@@ -51,9 +58,7 @@ function PickBar({
     <div
       data-testid="library-bar"
       className={`shrink-0 space-y-2 border-t border-base-content/15 pt-3 ${
-        flush
-          ? 'bg-base-100 px-5 pb-4'
-          : 'bg-base-200 px-4 pb-[calc(6rem_+_var(--safe-bottom,0px))]'
+        flush ? 'bg-base-100 px-5 pb-4' : 'bg-base-200 px-4 pb-4'
       }`}
     >
       {inline && <LibraryConfirm pick={pick} onClose={() => setInline(false)} />}
