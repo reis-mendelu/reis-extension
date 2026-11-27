@@ -163,7 +163,7 @@ credentials never leave the laptop). Run before shipping and at each semester st
 
 | # | Step | Depends on | State |
 |---|---|---|---|
-| A | A persona started from today's picker changes faculty, programme and Erasmus for every reader (design §2, without language). | — | Building |
+| A | A persona started from today's picker changes faculty, programme and Erasmus for every reader (design §2, without language). | — | On test |
 | D | Screens a persona cannot fill show one "Persona: not available" note (design §5). | — | Building |
 | B | The avatar opens the one-tap list of the seven programme personas, cached, with "Já" and "Jiný obor…", checked by `npm run personas:check` (design §1, §3, §6, §7). | A | Defined |
 | C | The Erasmus persona: pinned English PEF courses, Z-EXC identity, English UI in memory, in the list and the check (design §1, §2 language, §4). | B | Defined |

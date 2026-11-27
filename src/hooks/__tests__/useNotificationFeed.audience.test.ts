@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useAppStore } from '../../store/useAppStore';
+import { overlayWrite } from '../../store/overlay/overlayGuard';
+import { identityOverlay } from '../../store/overlay/identityOverlay';
 import { BUNDLED_SOCIETIES } from '../../data/societies';
 import { useNotificationFeed } from '../useNotificationFeed';
 import { localTodayIso } from '../../components/CampusMap/eventWindow';
@@ -24,25 +26,28 @@ const row = (id: string, associationId: string, subscribersOnly: boolean) => ({
 
 describe('Novinky audience', () => {
   beforeEach(() => {
-    useAppStore.setState({
-      societies: BUNDLED_SOCIETIES,
-      userFaculty: 'PEF',
-      userProgramme: 'B-OI',
-      isErasmus: false,
-      impersonation: null,
-      notifications: {
-        ...useAppStore.getState().notifications,
-        data: [
-          row('pub', 'au_frrms', false),
-          row('mine', 'supef', true),
-          row('esn', 'esn', true),
-          row('esnPub', 'esn', false),
-          row('frrms', 'au_frrms', true),
-          row('reisNotice', 'reis', false),
-          row('deadline', 'academic_deadline', false),
-        ],
-      },
-    });
+    // overlayWrite: the identity is guarded while a test leaves a persona set.
+    useAppStore.setState(
+      overlayWrite({
+        societies: BUNDLED_SOCIETIES,
+        userFaculty: 'PEF',
+        userProgramme: 'B-OI',
+        isErasmus: false,
+        impersonation: null,
+        notifications: {
+          ...useAppStore.getState().notifications,
+          data: [
+            row('pub', 'au_frrms', false),
+            row('mine', 'supef', true),
+            row('esn', 'esn', true),
+            row('esnPub', 'esn', false),
+            row('frrms', 'au_frrms', true),
+            row('reisNotice', 'reis', false),
+            row('deadline', 'academic_deadline', false),
+          ],
+        },
+      })
+    );
   });
 
   it("shows public events, my faculty's own and reIS rows, without any follow", () => {
@@ -56,10 +61,15 @@ describe('Novinky audience', () => {
     ]);
   });
 
+  // The persona's identity is in the store, as createImpersonationSlice puts it.
   it("shows the impersonated student's audience", () => {
-    useAppStore.setState({
-      impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never,
-    });
+    const selection = { faculty: 'FRRMS', shortCode: 'B-METS' };
+    useAppStore.setState(
+      overlayWrite({
+        impersonation: { selection, result: {} } as never,
+        ...identityOverlay(selection),
+      })
+    );
     const { result } = renderHook(() => useNotificationFeed());
     expect(result.current.notifications.map((n) => n.id)).toEqual([
       'pub',

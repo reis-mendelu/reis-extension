@@ -4,11 +4,7 @@ import { IndexedDBService } from '../../services/storage';
 import { logError } from '../../utils/reportError';
 import { baseProgramme } from '../../utils/partnerAudience';
 import { switchStudy } from '../../services/identity/switchStudy';
-
-/** Who the student was last time IS said so — the event audience's fallback. */
-const VIEWER_KEY = 'viewer_audience';
-/** How long a remembered Erasmus status is trusted without IS confirming it. */
-const ERASMUS_CACHE_MS = 120 * 24 * 60 * 60 * 1000;
+import { VIEWER_KEY, readRememberedViewer } from './context/rememberedViewer';
 
 export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
   studiumId: null,
@@ -52,24 +48,8 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
     // IS read below.
     try {
       if (get().userFaculty === null) {
-        const cached = (await IndexedDBService.get('meta', VIEWER_KEY)) as
-          | {
-              faculty: string | null;
-              erasmus: boolean;
-              programme?: string | null;
-              savedAt?: number;
-            }
-          | undefined;
-        if (cached && get().userFaculty === null) {
-          // Erasmus is a semester, a faculty is a degree: an old Erasmus flag
-          // would show ESN-only events to a student who is no longer one.
-          const fresh = Date.now() - (cached.savedAt ?? 0) < ERASMUS_CACHE_MS;
-          set({
-            userFaculty: cached.faculty,
-            userProgramme: cached.programme ?? null,
-            isErasmus: fresh && cached.erasmus,
-          });
-        }
+        const cached = await readRememberedViewer();
+        if (cached && get().userFaculty === null) set(cached);
       }
     } catch (err) {
       logError('ContextSlice.loadContext.cache', err);
@@ -81,10 +61,13 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
         // A remembered programme only stands in for the SAME faculty: kept
         // across a faculty change it would match another study's partner. The
         // value kept is also the value persisted, so a cold start agrees.
+        // While a reis_admin's persona is active the store holds the persona,
+        // so the student's own is the record on disk.
+        const own = get().impersonation ? await readRememberedViewer().catch(() => null) : get();
         const programme =
           baseProgramme(params.studyProgram) ??
-          (params.facultyLabel === get().userFaculty || !params.facultyLabel
-            ? get().userProgramme
+          (params.facultyLabel === own?.userFaculty || !params.facultyLabel
+            ? (own?.userProgramme ?? null)
             : null);
         set({
           studiumId: params.studium ? String(params.studium) : null,
@@ -92,6 +75,8 @@ export const createContextSlice: AppSlice<ContextSlice> = (set, get) => ({
           obdobiId: params.obdobi ? String(params.obdobi) : null,
           facultyId: params.facultyId ? String(params.facultyId) : null,
           // An unparsed header (#titulek) must not erase a faculty already known.
+          // The identity keys are dropped here while a persona is active
+          // (overlayGuard); the record below still gets the real ones.
           userFaculty: params.facultyLabel ?? get().userFaculty,
           userProgramme: programme,
           userSemester: params.periodLabel ?? null,
