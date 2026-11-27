@@ -2,7 +2,7 @@ import { ExternalLink } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useStudyAids } from '@/hooks/useStudyAids';
 import { trackFeatureSignal } from '@/api/featureUsage';
-import { studyAidsIcon } from '../StudyAids/StudyAidsIcon';
+import { studyAidsIcon } from '../StudyAids/studyAidsIcon';
 
 /**
  * The links under the subjects for this student's field (mendelu.app's

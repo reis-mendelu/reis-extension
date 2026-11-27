@@ -56,7 +56,11 @@ describe('StudyAidsLink (extension)', () => {
 
   it("links a B-OI student to their programme's Discord, beside mendelu.app when both match", () => {
     useAppStore.setState({
-      studyAids: { 'mendelu-app': ['pef'], 'discord-b-oi': ['pef:B-OI'], 'discord-b-aii': ['pef:B-AII'] },
+      studyAids: {
+        'mendelu-app': ['pef'],
+        'discord-b-oi': ['pef:B-OI'],
+        'discord-b-aii': ['pef:B-AII'],
+      },
       userFaculty: 'PEF',
       userProgramme: 'B-OI',
     } as never);

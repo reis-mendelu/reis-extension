@@ -50,14 +50,11 @@ describe('openExternal — links that have their own app', () => {
     'https://esn.cz/',
     'https://notdiscord.gg/x',
     'https://discord.gg.evil.io/x',
-  ])(
-    'keeps %s in the in-app browser',
-    async (url) => {
-      await openExternal(url);
-      expect(handToSystem).not.toHaveBeenCalled();
-      expect(open).toHaveBeenCalledWith({ url });
-    }
-  );
+  ])('keeps %s in the in-app browser', async (url) => {
+    await openExternal(url);
+    expect(handToSystem).not.toHaveBeenCalled();
+    expect(open).toHaveBeenCalledWith({ url });
+  });
 
   it('off Capacitor an Instagram link is an ordinary new tab', async () => {
     vi.mocked(getPlatform).mockReturnValue({ kind: 'extension' } as unknown as ReturnType<

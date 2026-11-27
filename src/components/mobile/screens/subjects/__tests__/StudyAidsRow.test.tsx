@@ -52,7 +52,11 @@ describe('StudyAidsRow (phone)', () => {
 
   it("shows a B-OI student their programme's Discord and hands the invite to openExternal", () => {
     useAppStore.setState({
-      studyAids: { 'mendelu-app': ['pef'], 'discord-b-oi': ['pef:B-OI'], 'discord-b-aii': ['pef:B-AII'] },
+      studyAids: {
+        'mendelu-app': ['pef'],
+        'discord-b-oi': ['pef:B-OI'],
+        'discord-b-aii': ['pef:B-AII'],
+      },
       userFaculty: 'PEF',
       userProgramme: 'B-OI',
     } as never);

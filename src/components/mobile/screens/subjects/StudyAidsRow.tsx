@@ -4,7 +4,7 @@ import { trackFeatureSignal } from '../../../../api/featureUsage';
 import { openExternal } from '../../../../mobile/openExternal';
 import { logError } from '../../../../utils/reportError';
 import { NavRow } from '../../primitives/NavRow';
-import { studyAidsIcon } from '../../../StudyAids/StudyAidsIcon';
+import { studyAidsIcon } from '../../../StudyAids/studyAidsIcon';
 import type { StudyAidsEntry } from '../../../../data/studyAids';
 
 /**

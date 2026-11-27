@@ -216,7 +216,7 @@ export const FLOWS: Flow[] = [
       [
         'Study link opened',
         'you tap one of the links under Předměty that are shown only to students of the faculties and programmes reIS has chosen (today the "Studijní opory" link to mendelu.app, and the Discord server of your programme for Otevřená informatika and Administrace IS/ICT), once per app session; stored as one row per install per day',
-        "the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`, `study_aids_click_discord_b_oi`, `study_aids_click_discord_b_aii`). We count how many installs tapped, which whoever runs the site may be told as a number; we never tell them who, and we cannot see what you do on the website or on Discord",
+        'the random install identifier, the school and a fixed label naming the link (`study_aids_click_mendelu_app`, `study_aids_click_discord_b_oi`, `study_aids_click_discord_b_aii`). We count how many installs tapped, which whoever runs the site may be told as a number; we never tell them who, and we cannot see what you do on the website or on Discord',
       ],
       [
         'reIS in Claude guide opened',
