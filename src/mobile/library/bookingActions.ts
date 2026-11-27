@@ -6,6 +6,7 @@ import { useLibraryStore } from './libraryStore';
 import { nativeBookingsHttp } from './transport';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS, type LibraryRoom } from '../../data/map/libraryRooms';
+import { trackFeatureSignal } from '../../api/featureUsage';
 import { logError } from '../../utils/reportError';
 import { planCancel } from './cancelPlan';
 
@@ -77,6 +78,11 @@ async function bookUnlocked(a: BookAction): Promise<BookResult> {
       for (let h = Number(e.startTime.slice(0, 2)); h < Number(e.endTime.slice(0, 2)); h++)
         useLibraryStore.getState().markTaken(a.room.featureId, a.day, h);
     }
+    // Counted only when the library said yes to some hour (a block with a cancel
+    // key): `unconfirmed` is not, and neither is a `partial` made only of hours
+    // that merely looked taken after a timeout.
+    if (r.events.some((e) => !e.libraryBooking?.unconfirmed))
+      void trackFeatureSignal('library_booking_made');
     if (unsaved > 0) return { ...r, unsaved };
   }
   return r;

@@ -1324,6 +1324,7 @@
       "signalScreenDocuments": "Documents opened",
       "signalScreenIsic": "ISIC opened (mobile app only)",
       "signalScreenLibrary": "Library card opened (mobile app only)",
+      "signalLibraryBookingMade": "Study room booked from the Library card (mobile app only)",
       "signalScreenInternships": "Internships (Stáže) opened",
       "signalInternshipClickEy": "Click on “Cesta s EY”",
       "signalAppUpdateOpened": "Click on “New reIS version”",
@@ -1815,6 +1816,13 @@
     "expired": "Viewing as a student ended with the semester.",
     "bannerLabel": "Viewing as {programme} · year {year}",
     "bannerExit": "Exit",
+    "unavailable": "Persona · {what}: not available — IS gives this only to the signed-in student.",
+    "unavailableWhat": {
+      "exams": "Exams",
+      "files": "Files",
+      "zaznamnik": "Grades",
+      "averagesAndBoxes": "Averages and submission boxes"
+    },
     "close": "Close"
   },
   "odevzdavarny": {

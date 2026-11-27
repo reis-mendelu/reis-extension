@@ -52,10 +52,13 @@ describe('ZaznamnikTab when the fetch failed', () => {
     expect(container.querySelector('.animate-pulse')).not.toBeNull();
   });
 
-  it('offers no retry button it cannot honour — while impersonating', () => {
+  // The admin's own failure says nothing about a persona: the persona note
+  // replaces it, with no retry button it could not honour.
+  it('shows the persona note instead, with no retry — while impersonating', () => {
     useAppStore.setState({ impersonation: { programme: 'x' } } as never);
     render(<ZaznamnikTab courseCode="EBC" />);
-    expect(screen.getByText(cs.mobile.loadFailed.title)).toBeInTheDocument();
+    expect(screen.getByTestId('persona-unavailable')).toBeInTheDocument();
+    expect(screen.queryByText(cs.mobile.loadFailed.title)).toBeNull();
     expect(screen.queryByRole('button', { name: cs.mobile.loadFailed.retry })).toBeNull();
   });
 

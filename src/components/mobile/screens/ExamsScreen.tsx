@@ -31,6 +31,7 @@ import { RefreshButton } from '../primitives/RefreshButton';
 import { ConfirmSheet } from '../sheets/ConfirmSheet';
 import { ReportMissingLink } from '../../Feedback/ReportMissingLink';
 import { CriticalUpdateHint } from '../CriticalUpdateHint';
+import { PersonaUnavailable } from '../../Impersonation/PersonaUnavailable';
 import { useMarkExamTermsSeen } from '../../../hooks/ui/useMarkExamTermsSeen';
 import { useRefreshAtExamOpening } from '../../../hooks/ui/useRefreshAtExamOpening';
 
@@ -71,6 +72,7 @@ export function ExamsScreen() {
   const firstSyncSettled = useAppStore((s) => s.firstSyncSettled);
   const syncLoaded = useAppStore((s) => s.syncLoaded);
   const examsRefreshing = useAppStore((s) => s.examsRefreshing);
+  const impersonating = useAppStore((s) => s.impersonation != null);
   const triggerExamsRefresh = useAppStore((s) => s.triggerExamsRefresh);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const screenRef = useRef<HTMLDivElement>(null);
@@ -203,11 +205,14 @@ export function ExamsScreen() {
         title={t('mobile.exams.title')}
         below={registeredPill}
         action={
-          <RefreshButton
-            label={t('mobile.exams.refresh')}
-            refreshing={examsRefreshing}
-            onRefresh={triggerExamsRefresh}
-          />
+          // The admin's own exams: nothing a persona's screen can refresh.
+          impersonating ? undefined : (
+            <RefreshButton
+              label={t('mobile.exams.refresh')}
+              refreshing={examsRefreshing}
+              onRefresh={triggerExamsRefresh}
+            />
+          )
         }
       />
       {body}
@@ -226,6 +231,16 @@ export function ExamsScreen() {
   // The tab's own refresh happens on arrival (setMobileTab); this one is for
   // sitting here while a registration opens.
   useRefreshAtExamOpening(examsInFront);
+
+  // A persona has no exams in IS. Ahead of loading and failed: those read the
+  // admin's own sync, which says nothing about the persona.
+  if (impersonating) {
+    return shell(
+      <div className="px-4 pt-3">
+        <PersonaUnavailable what="exams" />
+      </div>
+    );
+  }
 
   if (loading) {
     return shell(<ExamsSkeleton />);

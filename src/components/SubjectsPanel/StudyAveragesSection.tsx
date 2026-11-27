@@ -3,6 +3,8 @@ import { ChevronDown, Info, Trophy } from 'lucide-react';
 import type { StudyStats, StudyComparison } from '@/types/studyPlan';
 import { percentileStanding } from '@/api/studyComparison';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useAppStore } from '@/store/useAppStore';
+import { PersonaUnavailable } from '@/components/Impersonation/PersonaUnavailable';
 
 interface Props {
   studyStats: StudyStats | null;
@@ -47,6 +49,10 @@ export function StudyAveragesSection({
   // Expanded by default (no information lost for anyone who hasn't touched
   // it) — collapsing is an opt-out, not the default state.
   const [expanded, setExpanded] = useState(true);
+  // A persona has no averages or submission boxes in IS; vanishing read as
+  // "none yet". One note for both: the boxes card sits beside this one.
+  const impersonating = useAppStore((s) => s.impersonation != null);
+  if (impersonating) return <PersonaUnavailable what="averagesAndBoxes" className={className} />;
   if (!studyStats) return null;
 
   const period = studyStats.currentSemester.gpa;

@@ -15,6 +15,7 @@ import { useUserParams } from '../../hooks/useUserParams';
 import { useAppStore } from '../../store/useAppStore';
 import { ExamsFreshness } from './ExamsFreshness';
 import { LoadFailed } from '../LoadFailed';
+import { PersonaUnavailable } from '../Impersonation/PersonaUnavailable';
 import { SignupGroup } from './SignupGroup';
 import { useMarkExamTermsSeen } from '../../hooks/ui/useMarkExamTermsSeen';
 import { useRefreshAtExamOpening } from '../../hooks/ui/useRefreshAtExamOpening';
@@ -49,6 +50,8 @@ export function ExamPanel() {
   // Mounted only as the extension's Zkoušky view: on screen = Novinky's new terms seen.
   useMarkExamTermsSeen(true);
   const { exams, showSkeleton, showFailed, sections, signupSections } = useExamsData();
+  // A persona has no exams in IS; the admin's own sync state says nothing about it.
+  const impersonating = useAppStore((s) => s.impersonation != null);
   const studium = params?.studium || '';
   const obdobi = params?.obdobi || '';
   const href =
@@ -174,7 +177,7 @@ export function ExamPanel() {
   return (
     <>
       <div className="flex flex-col h-full bg-base-100 rounded-lg border border-base-300 overflow-hidden relative">
-        {armedTerms.size > 0 && (
+        {armedTerms.size > 0 && !impersonating && (
           <div className="bg-warning/10 border-b border-warning/20 px-4 py-2.5 flex flex-wrap items-center justify-center gap-2">
             <Zap size={16} className="text-warning animate-pulse shrink-0" />
             <span className="text-xs font-semibold text-[var(--tone-warning)] text-center">
@@ -183,9 +186,14 @@ export function ExamPanel() {
           </div>
         )}
 
-        {!showSkeleton && <PanelTopBar href={href} />}
+        {/* Its freshness and refresh are the admin's own exams, not the persona's. */}
+        {!showSkeleton && !impersonating && <PanelTopBar href={href} />}
 
-        {showSkeleton ? (
+        {impersonating ? (
+          <div className="p-4">
+            <PersonaUnavailable what="exams" />
+          </div>
+        ) : showSkeleton ? (
           <div className="flex items-center justify-center h-32 opacity-50">
             <span className="loading loading-spinner mr-2" /> {t('exams.loading')}
           </div>

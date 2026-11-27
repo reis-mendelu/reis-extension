@@ -1324,6 +1324,7 @@
       "signalScreenDocuments": "Otevřené Doklady",
       "signalScreenIsic": "Otevřený ISIC (jen mobilní aplikace)",
       "signalScreenLibrary": "Otevřená karta Knihovna (jen mobilní aplikace)",
+      "signalLibraryBookingMade": "Rezervace studovny z karty Knihovna (jen mobilní aplikace)",
       "signalScreenInternships": "Otevřené Stáže",
       "signalInternshipClickEy": "Klik na Cestu s EY",
       "signalAppUpdateOpened": "Klik na „Nová verze reISu“",
@@ -1815,6 +1816,13 @@
     "expired": "Zobrazení jako student skončilo s koncem semestru.",
     "bannerLabel": "Zobrazuješ jako {programme} · {year}. ročník",
     "bannerExit": "Ukončit",
+    "unavailable": "Persona · {what}: není k dispozici — IS to dává jen přihlášenému studentovi.",
+    "unavailableWhat": {
+      "exams": "Zkoušky",
+      "files": "Soubory",
+      "zaznamnik": "Záznamník",
+      "averagesAndBoxes": "Průměry a odevzdávárny"
+    },
     "close": "Zavřít"
   },
   "odevzdavarny": {

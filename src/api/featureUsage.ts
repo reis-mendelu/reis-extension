@@ -61,6 +61,8 @@ export const FEATURE_SIGNALS = [
   'screen_isic',
   /** The library study-rooms card on the phone map. Phone/iPad only (desktopHasNoLibraryBooking.test.ts). */
   'screen_library',
+  /** A study room was booked from the library card (phone/iPad only): the other half of `screen_library`'s open-to-booked funnel. */
+  'library_booking_made',
   /** Stáže opened: the denominator for the click count below. Seen only by students a partner is shown to. */
   'screen_internships',
   /**

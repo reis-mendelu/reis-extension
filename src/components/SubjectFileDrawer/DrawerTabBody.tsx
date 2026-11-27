@@ -12,6 +12,7 @@ import type { SyllabusRequirements, ParsedFile } from '../../types/documents';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useAppStore } from '../../store/useAppStore';
 import { LoadFailed } from '../LoadFailed';
+import { PersonaUnavailable } from '../Impersonation/PersonaUnavailable';
 import type { BlockLesson } from '../../types/calendarTypes';
 import type { SelectedSubject } from '../../types/app';
 import type { Classmate } from '../../types/classmates';
@@ -96,9 +97,12 @@ export function DrawerTabBody({
   const courseCode = lesson?.courseCode ?? '';
   const filesFailed = useAppStore((s) => !!courseCode && !!s.filesError[courseCode]);
   const refreshFilesForSubject = useAppStore((s) => s.refreshFilesForSubject);
+  const impersonating = useAppStore((s) => s.impersonation != null);
 
   if (tab === 'files') {
     const isEmpty = !files || files.length === 0;
+    // Files are the subject's: a subject shared with the admin keeps its list.
+    if (impersonating && isEmpty) return <PersonaUnavailable what="files" className="m-4" />;
     const showSkeleton = isFilesLoading && isEmpty;
     // Cached files beat the failure; with none, the failure beats a background
     // sync's "loading" bar, which would otherwise hide it (Návrhy #26).

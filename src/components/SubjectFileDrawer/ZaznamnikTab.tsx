@@ -13,6 +13,7 @@ import { SubmissionBoxList } from '../SubmissionBoxes/SubmissionBoxList';
 import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
 import { LoadFailed } from '../LoadFailed';
 import { zaznamnikPeriod } from '../../utils/zaznamnik/pastSemester';
+import { PersonaUnavailable } from '../Impersonation/PersonaUnavailable';
 
 const IS_BASE = 'https://is.mendelu.cz';
 
@@ -77,6 +78,16 @@ export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
       </div>
     ) : null;
 
+  // Marks are personal in IS, and this store is keyed by subject code: a
+  // subject the persona shares with the admin holds the ADMIN's own marks.
+  if (impersonating) {
+    return (
+      <div className="p-4">
+        <PersonaUnavailable what="zaznamnik" />
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="h-full overflow-y-auto p-4 space-y-5 text-[13px]">
@@ -101,12 +112,8 @@ export function ZaznamnikTab({ courseCode }: ZaznamnikTabProps) {
         <LoadFailed
           testId="zaznamnik-error"
           // The same preconditions refetchZaznamnik checks, so the button is
-          // never one that does nothing.
-          onRetry={
-            !impersonating && studium && obdobi && subjectId
-              ? () => refetchZaznamnik(courseCode)
-              : undefined
-          }
+          // never one that does nothing (impersonation returned above).
+          onRetry={studium && obdobi && subjectId ? () => refetchZaznamnik(courseCode) : undefined}
         />
         {backlinks}
       </div>
