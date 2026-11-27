@@ -1758,6 +1758,8 @@
       "otherTime": "Another time or room",
       "busy": "Wait, the previous booking is still being processed.",
       "someUnknown": "Some rooms could not be loaded; their hours are missing here.",
+      "savedLoading": "As of {time} · refreshing…",
+      "savedFailed": "As of {time}, could not refresh",
       "unsaved": "The booking was made, but the phone could not save it. After the app restarts it will be gone from your calendar and can only be cancelled through the library (the confirmation is in your e-mail)."
     }
   },

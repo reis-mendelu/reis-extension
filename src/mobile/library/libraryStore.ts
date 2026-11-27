@@ -9,6 +9,7 @@ import type { MapSelection } from '../../types/campusMap';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
 import { IndexedDBService } from '../../services/storage/IndexedDBService';
+import { readSaved, writeSaved } from './libraryCache';
 
 export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'offline';
 
@@ -26,6 +27,8 @@ export interface LibraryState {
   blocks: Record<number, Block[] | null>;
   status: LibraryStatus;
   fetchedAt: number | null;
+  /** Set while `blocks` is the last answer from the device, taken at this time, and no new one has come. */
+  savedAt: number | null;
   load(http?: BookingsHttp, now?: Date): Promise<void>;
   /** The card's day (`YYYY-MM-DD`), null until the student picks one. */
   day: string | null;
@@ -77,13 +80,15 @@ let writes = 0;
  * The library's free hours, per room. A store of its own, NOT a slice of
  * useAppStore, for the reason `iskamStore` gives: the extension builds that one
  * and library booking must not reach it (desktopHasNoLibraryBooking.test.ts).
- * Memory only — a list of free hours is stale in minutes and worth keeping
- * nowhere.
+ * Memory, plus the last answer on the device (`libraryCache`) to show while a read
+ * is out: a list of free hours is stale in minutes, so that copy is only ever shown
+ * marked with when it was taken.
  */
 export const useLibraryStore = create<LibraryState>((set, get) => ({
   blocks: {},
   status: 'idle',
   fetchedAt: null,
+  savedAt: null,
   day: null,
   picked: [],
   room: null,
@@ -137,6 +142,12 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const mine = ++seq;
     set({ status: 'loading' });
     if (!get().noticeSeen) void get().loadNotice();
+    // The last answer on this device is shown while the library thinks.
+    const restored = readSaved(now.getTime()).then((saved) => {
+      const nothingYet = !Object.values(get().blocks).some(Array.isArray);
+      if (saved && nothingYet && mine === seq && get().status === 'loading')
+        set({ blocks: saved.blocks, savedAt: saved.savedAt });
+    });
     const to = new Date(now);
     to.setDate(to.getDate() + DAYS_AHEAD);
     const startedAt = Date.now();
@@ -156,6 +167,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const took = Date.now() - startedAt;
     if (took >= SLOW_READ_MS)
       logError('Library.slowRead', new Error(`availability took ${Math.round(took / 1000)} s`));
+    await restored;
     if (mine !== seq) return;
     if (writes !== writesAtStart) {
       // Not used, and not left on "loading" (every later read would return early):
@@ -165,11 +177,18 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     }
     const blocks = Object.fromEntries(results);
     const any = results.some(([, b]) => b !== null);
+    if (!any && get().savedAt !== null) {
+      // No answer, but the saved one is on screen: keep it, read again next time.
+      set({ status: 'idle', fetchedAt: null });
+      return;
+    }
     set({
       blocks,
       status: any ? 'ready' : 'offline',
       fetchedAt: any ? now.getTime() : null,
+      savedAt: null,
     });
+    if (any) writeSaved(blocks, now.getTime());
   },
 
   markTaken(featureId, day, hour) {
@@ -186,7 +205,15 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
 
   reset() {
     seq++;
-    set({ blocks: {}, status: 'idle', fetchedAt: null, day: null, picked: [], room: null });
+    set({
+      blocks: {},
+      status: 'idle',
+      fetchedAt: null,
+      savedAt: null,
+      day: null,
+      picked: [],
+      room: null,
+    });
   },
 }));
 

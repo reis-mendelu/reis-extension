@@ -1758,6 +1758,8 @@
       "otherTime": "Jiný čas nebo studovna",
       "busy": "Počkej, předchozí rezervace se ještě vyřizuje.",
       "someUnknown": "Některé studovny se nepodařilo načíst, jejich hodiny tu chybí.",
+      "savedLoading": "Stav z {time} · obnovuji…",
+      "savedFailed": "Stav z {time}, obnovit se nepodařilo",
       "unsaved": "Rezervace vznikla, ale telefon si ji nepodařilo uložit. Po restartu aplikace zmizí z kalendáře a zrušit ji půjde jen přes knihovnu (potvrzení máš v e-mailu)."
     }
   },

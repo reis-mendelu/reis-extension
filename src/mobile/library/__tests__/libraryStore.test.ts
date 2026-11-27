@@ -12,6 +12,8 @@ import { useAppStore } from '../../../store/useAppStore';
 import { clearDiagnostics, getDiagnostics } from '../../../utils/diagnostics/diagnosticLog';
 import type { BookingsHttp } from '../bookingsBase';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
+import { SAVED_KEY } from '../libraryCache';
+import { IndexedDBService } from '../../../services/storage/IndexedDBService';
 
 const ok: BookingsHttp = vi.fn(async (req) => ({
   status: 200,
@@ -30,8 +32,10 @@ const ok: BookingsHttp = vi.fn(async (req) => ({
 }));
 const now = new Date(2026, 10, 10, 6, 0);
 
-beforeEach(() => {
+beforeEach(async () => {
   useLibraryStore.getState().reset();
+  // Each test starts without a saved answer on the device.
+  await IndexedDBService.delete('meta', SAVED_KEY);
   vi.mocked(ok).mockClear();
   native.http.mockReset();
   native.http.mockImplementation(ok);

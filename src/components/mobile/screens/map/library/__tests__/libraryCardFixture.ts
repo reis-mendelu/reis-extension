@@ -35,6 +35,7 @@ export function seedCard() {
     },
     status: 'ready',
     fetchedAt: Date.now(),
+    savedAt: null,
     day: null,
     picked: [],
     room: null,

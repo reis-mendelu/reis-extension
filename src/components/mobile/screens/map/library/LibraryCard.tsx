@@ -24,6 +24,7 @@ import { MyBookings } from './MyBookings';
 import { DayChips } from './DayChips';
 import { LibraryGrid } from './LibraryGrid';
 import { LibraryBar } from './LibraryBar';
+import { SavedNote } from './SavedNote';
 import { openLibrary } from './openLibrary';
 import type { LibraryView } from './libraryOf';
 
@@ -38,6 +39,7 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
   const { t, language } = useTranslation();
   const raw = useLibraryStore((s) => s.blocks);
   const status = useLibraryStore((s) => s.status);
+  const savedAt = useLibraryStore((s) => s.savedAt);
   const storeDay = useLibraryStore((s) => s.day);
   const storePicked = useLibraryStore((s) => s.picked);
   const storeRoom = useLibraryStore((s) => s.room);
@@ -131,6 +133,7 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
         </p>
       ) : (
         <>
+          {savedAt !== null && <SavedNote at={savedAt} loading={status === 'loading'} />}
           <LibraryGrid
             rows={rows}
             pick={pick}
