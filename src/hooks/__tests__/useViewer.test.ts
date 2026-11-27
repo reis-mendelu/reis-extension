@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useAppStore } from '../../store/useAppStore';
+import { overlayWrite } from '../../store/overlay/overlayGuard';
 import { useViewer, viewerFrom, viewerOf } from '../useViewer';
 
 describe('viewerFrom', () => {
@@ -47,12 +48,15 @@ describe('viewerFrom', () => {
 
 describe('useViewer', () => {
   beforeEach(() => {
-    useAppStore.setState({
-      userFaculty: 'PEF',
-      userProgramme: 'B-OI',
-      isErasmus: true,
-      impersonation: null,
-    });
+    // overlayWrite: the identity is guarded while a test leaves an impersonation set.
+    useAppStore.setState(
+      overlayWrite({
+        userFaculty: 'PEF',
+        userProgramme: 'B-OI',
+        isErasmus: true,
+        impersonation: null,
+      })
+    );
   });
 
   it('is the signed-in student by default', () => {
@@ -71,34 +75,20 @@ describe('useViewer', () => {
     expect(result.current).toMatchObject({ erasmus: true, exchange: true });
   });
 
-  it('is the impersonated student while impersonating, never Erasmus or exchange', () => {
+  // The persona is in the store itself (createImpersonationSlice puts it there,
+  // design 2026-11-27 §2), so the viewer reads the store and nothing else: an
+  // impersonation object alone changes nothing. personaViewer.test.ts drives a
+  // real persona through the slice.
+  it('reads the store only, never the impersonation selection', () => {
     useAppStore.setState({
-      // The admin's own programme must not leak into the impersonated viewer.
-      userProgramme: 'Z-EXC',
-      impersonation: { selection: { faculty: 'FRRMS' }, result: {} } as never,
-    });
-    const { result } = renderHook(() => useViewer());
-    // A selection without a programme code gives no programme-level matches.
-    expect(result.current).toEqual({
-      facultyKey: 'frrms',
-      erasmus: false,
-      exchange: false,
-      programme: null,
-    });
-  });
-
-  // A reis_admin impersonating a B-AII student must see B-AII's links,
-  // partners and events, not only the faculty-wide ones.
-  it("carries the impersonated student's programme", () => {
-    useAppStore.setState({
-      impersonation: { selection: { faculty: 'PEF', shortCode: 'B-AII' }, result: {} } as never,
+      impersonation: { selection: { faculty: 'FRRMS', shortCode: 'B-AII' }, result: {} } as never,
     });
     const { result } = renderHook(() => useViewer());
     expect(result.current).toEqual({
       facultyKey: 'pef',
-      erasmus: false,
+      erasmus: true,
       exchange: false,
-      programme: 'B-AII',
+      programme: 'B-OI',
     });
   });
 
@@ -120,7 +110,6 @@ describe('viewerOf', () => {
         userFaculty: 'PEF',
         isErasmus: false,
         userProgramme: 'B-OI-ZBOI',
-        impersonation: null,
       })
     ).toMatchObject({ programme: 'B-OI' });
   });

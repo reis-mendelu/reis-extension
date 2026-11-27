@@ -8,9 +8,9 @@ import { ErasmusPanel } from '../index';
  * hides that tab (`showLearningAgreement={false}`), so opening the mobile
  * Erasmus sheet was fetching a date of birth nothing could display.
  *
- * `getUserParams` is deliberately NOT gated the same way: the Explore tab's
- * faculty filter reads `userParams.facultyLabel`, so gating it would break the
- * one tab the phone does show.
+ * `getUserParams` is gated the same way since 2026-11-27: the Explore tab's
+ * faculty filter reads the store's `userFaculty` (a reis_admin's persona
+ * included), so only the Learning Agreement still needs the params.
  */
 const fetchKontrolaData = vi.hoisted(() => vi.fn().mockResolvedValue(null));
 const getUserParams = vi.hoisted(() => vi.fn().mockResolvedValue(null));
@@ -50,11 +50,11 @@ describe('ErasmusPanel personal-data fetches', () => {
     expect(fetchKontrolaData).not.toHaveBeenCalled();
   });
 
-  it('still reads user params, which the Explore faculty filter needs', () => {
+  it('does not read user params either: the Explore faculty filter reads the store', () => {
     render(
       <ErasmusPanel onOpenSubject={noop} onSearchSubject={noop} showLearningAgreement={false} />
     );
-    expect(getUserParams).toHaveBeenCalled();
+    expect(getUserParams).not.toHaveBeenCalled();
   });
 
   it('reads the date of birth when the Learning Agreement is shown', () => {

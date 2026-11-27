@@ -5,8 +5,8 @@ const { idb, getUserParams, isIdentityConfirmed } = vi.hoisted(() => ({
   getUserParams: vi.fn(),
   isIdentityConfirmed: vi.fn(() => true),
 }));
-vi.mock('../../../services/storage', async (orig) => {
-  const real = await orig<typeof import('../../../services/storage')>();
+vi.mock('../../../services/storage/IndexedDBService', async (orig) => {
+  const real = await orig<typeof import('../../../services/storage/IndexedDBService')>();
   return {
     ...real,
     IndexedDBService: {
@@ -109,7 +109,7 @@ describe('loadContext viewer cache', () => {
 
   it('still asks IS when the cache cannot be read', async () => {
     idb.set('viewer_audience', 'boom');
-    const { IndexedDBService } = await import('../../../services/storage');
+    const { IndexedDBService } = await import('../../../services/storage/IndexedDBService');
     vi.mocked(IndexedDBService.get).mockRejectedValueOnce(new Error('idb'));
     getUserParams.mockResolvedValue({ facultyLabel: 'ZF', isErasmus: false });
     await useAppStore.getState().loadContext();

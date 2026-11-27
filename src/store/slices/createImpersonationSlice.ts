@@ -12,6 +12,9 @@ import { loadOptions, loadYear1Groups } from '../../api/impersonation/options';
 import { currentPeriod, periodLabel } from '../../api/impersonation/intake';
 import { overlayWrite } from '../overlay/overlayGuard';
 import { overlayState, blankOverlayState } from '../overlay/overlayState';
+import { identityOverlay } from '../overlay/identityOverlay';
+import { readRememberedViewer } from './context/rememberedViewer';
+import { failRateCodes } from './impersonation/failRateCodes';
 import {
   saveImpersonation,
   loadImpersonation,
@@ -46,26 +49,10 @@ const codeOf = (e: unknown): ImpersonationErrorCode =>
   e instanceof ImpersonationError ? e.code : 'timetable';
 
 /**
- * Every subject in the impersonated plan, not only this semester's.
- *
- * The study plan shows a fail rate on each row, and the overlay guard keeps
- * `fetchStudyPlan` — which asks for the whole real plan — from running, so this
- * slice is the only thing that can ask for the impersonated one. Asking for
- * `subjects` alone left semesters 2+ bare until each row was tapped open. Asked
- * on restore too: a relaunch starts with no rates in memory. The batch skips
- * codes it already has or has in flight.
- */
-function failRateCodes(result: ImpersonationResult): string[] {
-  const inPlan = result.plan.cz.blocks.flatMap((b) =>
-    b.groups.flatMap((g) => g.subjects.map((s) => s.code))
-  );
-  return [...new Set([...Object.keys(result.subjects.data), ...inPlan])];
-}
-
-/**
  * "View as a student" for reIS admins: another programme's plan, subjects and
  * timetable, fetched live from IS through the admin's own session and laid over
- * the store. The overlay guard keeps every other writer off those keys while
+ * the store, and that student's faculty, programme and Erasmus status in place
+ * of the admin's (design 2026-11-27 §2). The overlay guard keeps every other writer off those keys while
  * this is active; the admin's real data keeps syncing into IndexedDB underneath.
  */
 export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get) => ({
@@ -128,6 +115,7 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
         overlayWrite({
           impersonation: active,
           ...overlayState(result),
+          ...identityOverlay(active.selection),
           impersonationStarting: false,
           impersonationPickerOpen: false,
         })
@@ -143,11 +131,21 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
     }
   },
 
+  // The admin's own identity comes back from the record loadContext kept
+  // writing underneath (none yet: blank, and loadContext asks IS).
   stopImpersonation: async () => {
     await clearImpersonation().catch((e) => logError('Impersonation.clear', e));
-    set(overlayWrite({ impersonation: null, ...blankOverlayState() }));
+    const own = await readRememberedViewer().catch(() => null);
+    set(
+      overlayWrite({
+        impersonation: null,
+        ...blankOverlayState(),
+        ...(own ?? { userFaculty: null, userProgramme: null, isErasmus: false }),
+      })
+    );
     const s = get();
     await Promise.all([
+      s.loadContext(),
       s.fetchSchedule(),
       s.fetchStudyPlan(),
       s.fetchSubjects(),
@@ -175,7 +173,13 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
       return drop('expired');
     const role = get().adminRole;
     if (role === 'reis_admin') {
-      set(overlayWrite({ impersonation: saved, ...overlayState(saved.result) }));
+      set(
+        overlayWrite({
+          impersonation: saved,
+          ...overlayState(saved.result),
+          ...identityOverlay(saved.selection),
+        })
+      );
       void get()
         .fetchSuccessRateBatch(failRateCodes(saved.result))
         .catch(() => {});

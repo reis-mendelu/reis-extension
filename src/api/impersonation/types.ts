@@ -55,6 +55,13 @@ export interface ImpersonationSelection {
   variants?: ProgrammeVariant[];
   /** The period this was fetched for, e.g. 'ZS 2026/2027'. A mismatch at boot ends it. */
   periodLabel: string;
+  /**
+   * An exchange student: the persona's programme is Z-EXC and `isErasmus` is
+   * true (store/overlay/identityOverlay). Today's picker never sets it; the
+   * Erasmus persona will (design 2026-11-27, step C). Absent = not Erasmus,
+   * which is also what a selection saved by an older build reads as.
+   */
+  erasmus?: boolean;
 }
 
 export interface ImpersonationResult {
