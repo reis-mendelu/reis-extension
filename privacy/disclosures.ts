@@ -204,6 +204,11 @@ export const FLOWS: Flow[] = [
         'the random install identifier, the school and one fixed label naming the screen (`screen_calendar`, `screen_subjects`, `screen_menu`, `screen_search`, `screen_bulletin`, `screen_notifications`, `screen_internships`, `screen_exams`, `screen_study_plan`, `screen_documents`, `screen_isic`, `screen_library`) — nothing about what was on it, what you searched for or how long you stayed',
       ],
       [
+        'Study room booked',
+        'you book a study room from the library card on the map (mobile app), once per app session; stored as one row per install per day',
+        'the random install identifier, the school and the fixed `library_booking_made` label. We never see which room, which hours or any booking detail, and the booking itself goes from your phone to the library, not through us',
+      ],
+      [
         'Partner programme opened',
         'you tap the card of a partner programme in Stáže (today only "Cesta s EY"), once per app session; stored as one row per install per day',
         'the random install identifier, the school and a fixed label naming the programme (`internship_click_ey`). We count how many installs tapped, which the partner is told as a number; we never tell the partner who, and we cannot see what you do on its website',

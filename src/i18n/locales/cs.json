@@ -1324,6 +1324,7 @@
       "signalScreenDocuments": "Otevřené Doklady",
       "signalScreenIsic": "Otevřený ISIC (jen mobilní aplikace)",
       "signalScreenLibrary": "Otevřená karta Knihovna (jen mobilní aplikace)",
+      "signalLibraryBookingMade": "Rezervace studovny z karty Knihovna (jen mobilní aplikace)",
       "signalScreenInternships": "Otevřené Stáže",
       "signalInternshipClickEy": "Klik na Cestu s EY",
       "signalAppUpdateOpened": "Klik na „Nová verze reISu“",

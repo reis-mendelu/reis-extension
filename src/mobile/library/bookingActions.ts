@@ -6,6 +6,7 @@ import { useLibraryStore } from './libraryStore';
 import { nativeBookingsHttp } from './transport';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS, type LibraryRoom } from '../../data/map/libraryRooms';
+import { trackFeatureSignal } from '../../api/featureUsage';
 import { logError } from '../../utils/reportError';
 import { planCancel } from './cancelPlan';
 
@@ -77,6 +78,9 @@ async function bookUnlocked(a: BookAction): Promise<BookResult> {
       for (let h = Number(e.startTime.slice(0, 2)); h < Number(e.endTime.slice(0, 2)); h++)
         useLibraryStore.getState().markTaken(a.room.featureId, a.day, h);
     }
+    // At least one hour is certainly booked: the open-to-booked half of the funnel.
+    // An `unconfirmed` answer is not counted, the library never said yes.
+    if (r.kind !== 'unconfirmed') void trackFeatureSignal('library_booking_made');
     if (unsaved > 0) return { ...r, unsaved };
   }
   return r;

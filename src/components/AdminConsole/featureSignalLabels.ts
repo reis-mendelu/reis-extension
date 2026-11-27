@@ -18,6 +18,7 @@ export const SIGNAL_LABEL_KEY: Record<FeatureSignal, string> = {
   screen_documents: 'signalScreenDocuments',
   screen_isic: 'signalScreenIsic',
   screen_library: 'signalScreenLibrary',
+  library_booking_made: 'signalLibraryBookingMade',
   screen_internships: 'signalScreenInternships',
   internship_click_ey: 'signalInternshipClickEy',
   app_update_opened: 'signalAppUpdateOpened',

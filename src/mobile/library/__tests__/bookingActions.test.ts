@@ -10,6 +10,9 @@ vi.mock('../../../utils/userParams', () => ({
   })),
 }));
 
+vi.mock('../../../api/featureUsage', () => ({ trackFeatureSignal: vi.fn(async () => true) }));
+
+import { trackFeatureSignal } from '../../../api/featureUsage';
 import { bookAndRecord, extendBooking } from '../bookingActions';
 import { useLibraryStore } from '../libraryStore';
 import { useAppStore } from '../../../store/useAppStore';
@@ -37,6 +40,7 @@ const http = (create: { status: number; data: unknown }): BookingsHttp =>
 const now = new Date(2026, 10, 10, 6, 0);
 
 beforeEach(() => {
+  vi.mocked(trackFeatureSignal).mockClear();
   useAppStore.setState({ customEvents: [] });
   useLibraryStore.getState().reset();
 });
@@ -82,6 +86,27 @@ describe('bookAndRecord', () => {
     });
     expect(r.kind).toBe('taken');
     expect(useAppStore.getState().customEvents).toHaveLength(0);
+  });
+
+  it('counts the install once a booking went through, and not a refused one', async () => {
+    useLibraryStore.setState({ blocks: { [room.featureId]: [] } });
+    const refused = http({ status: 400, data: { message: 'Staff not available' } });
+    await bookAndRecord({
+      http: refused,
+      room,
+      day: '2026-11-10',
+      from: 15,
+      to: 16,
+      lang: 'cz',
+      now,
+    });
+    expect(trackFeatureSignal).not.toHaveBeenCalled();
+    const made = http({
+      status: 200,
+      data: { appointment: { id: 'A1', selfServiceAppointmentId: 'S1' } },
+    });
+    await bookAndRecord({ http: made, room, day: '2026-11-10', from: 15, to: 16, lang: 'cz', now });
+    expect(trackFeatureSignal).toHaveBeenCalledExactlyOnceWith('library_booking_made');
   });
 });
 
