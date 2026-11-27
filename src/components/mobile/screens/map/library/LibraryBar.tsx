@@ -8,8 +8,8 @@ import { useLibraryBook } from '../../../sheets/useLibraryBook';
 import { LibraryConfirm } from '../../../sheets/LibraryConfirm';
 
 /**
- * What is picked, and the one button that books it. Fixed to the card's bottom
- * edge while a pick exists. The first booking on a device goes through the
+ * What is picked, and the one button that books it. Sticks under the grid's
+ * column heads while a pick exists, so it never covers a cell or a "+". The first booking on a device goes through the
  * confirm (a sheet on the phone, inline on the iPad), which says what the library
  * receives; after it a tap on the check books straight away, and the "i" says it
  * again for anyone who wants to read it.
@@ -38,7 +38,7 @@ export function LibraryBar({
   return (
     <div
       data-testid="library-bar"
-      className="sticky bottom-0 z-10 -mx-1 space-y-2 rounded-2xl bg-base-100 p-3 shadow-lg ring-1 ring-base-content/15"
+      className="space-y-2 rounded-2xl bg-base-100 px-3 py-2 shadow-md ring-1 ring-base-content/15"
     >
       {inline && <LibraryConfirm pick={pick} onClose={() => setInline(false)} />}
       {info && !inline && (

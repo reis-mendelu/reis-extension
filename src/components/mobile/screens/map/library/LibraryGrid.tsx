@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { CircleCheck, Plus, User, Users } from 'lucide-react';
 import { useTranslation } from '../../../../../hooks/useTranslation';
 import { LIBRARY_ROOMS, type LibraryRoom } from '../../../../../data/map/libraryRooms';
@@ -31,6 +32,7 @@ export function LibraryGrid({
   grow,
   chosen,
   flush,
+  bar,
   onTap,
 }: {
   rows: GridRow[];
@@ -41,35 +43,42 @@ export function LibraryGrid({
   chosen: number | null;
   /** In the iPad's rail (a white panel) rather than the phone's sheet (the page tone). */
   flush?: boolean;
+  /** What is picked and the button that books it. It sticks under the column heads, so it never covers a cell. */
+  bar?: ReactNode;
   onTap: (room: number, hour: number) => void;
 }) {
   const { t, language } = useTranslation();
   return (
     <div role="group" aria-label={t('mobile.library.pickHour')} className="space-y-1">
       <div
-        className={`sticky top-0 z-10 grid ${COLS} gap-1 ${flush ? 'bg-base-100' : 'bg-base-200'} py-1`}
+        // The phone's sheet scrolls under a pt-2 and sticks at its inner edge: the head reaches
+        // up over that padding (-top-2) and down over the row gap, so no row shows around it.
+        className={`sticky z-10 -mb-1 pb-2 ${flush ? 'top-0 bg-base-100 pt-1' : '-top-2 bg-base-200 pt-3'}`}
       >
-        <span />
-        {LIBRARY_ROOMS.map((r) => (
-          <div
-            key={r.featureId}
-            className={`flex flex-col items-center gap-0.5 rounded-md py-0.5 text-[11px] font-semibold leading-tight ${
-              r.featureId === chosen || r.featureId === pick?.room
-                ? 'bg-primary text-primary-content'
-                : 'text-base-content/80'
-            }`}
-          >
-            <span className="whitespace-nowrap">{shortName(r, language)}</span>
-            <span className="flex items-center gap-0.5 font-normal tabular-nums">
-              {r.seats === 1 ? (
-                <User size={10} aria-hidden="true" />
-              ) : (
-                <Users size={10} aria-hidden="true" />
-              )}
-              {r.seats}
-            </span>
-          </div>
-        ))}
+        <div className={`grid ${COLS} gap-1`}>
+          <span />
+          {LIBRARY_ROOMS.map((r) => (
+            <div
+              key={r.featureId}
+              className={`flex flex-col items-center gap-0.5 rounded-md py-0.5 text-[11px] font-semibold leading-tight ${
+                r.featureId === chosen || r.featureId === pick?.room
+                  ? 'bg-primary text-primary-content'
+                  : 'text-base-content/80'
+              }`}
+            >
+              <span className="whitespace-nowrap">{shortName(r, language)}</span>
+              <span className="flex items-center gap-0.5 font-normal tabular-nums">
+                {r.seats === 1 ? (
+                  <User size={10} aria-hidden="true" />
+                ) : (
+                  <Users size={10} aria-hidden="true" />
+                )}
+                {r.seats}
+              </span>
+            </div>
+          ))}
+        </div>
+        {bar && <div className="mt-1">{bar}</div>}
       </div>
       {rows.map((row) => (
         <div key={row.hour} className={`grid ${COLS} items-center gap-1`}>

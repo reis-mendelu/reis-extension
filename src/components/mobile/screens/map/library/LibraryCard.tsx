@@ -137,6 +137,11 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
             grow={growHours(pick, stateOf, left)}
             chosen={view.featureId}
             flush={flush}
+            bar={
+              pick && span ? (
+                <LibraryBar pick={{ featureId: pick.room, day, from: span.from, to: span.to }} />
+              ) : undefined
+            }
             onTap={onTap}
           />
           {rows.some((r) => Object.values(r.cells).includes('unknown')) && (
@@ -148,9 +153,6 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
             <p className="text-xs text-base-content/70">
               {t('mobile.library.capReached', { cap: DAILY_CAP })}
             </p>
-          )}
-          {pick && span && (
-            <LibraryBar pick={{ featureId: pick.room, day, from: span.from, to: span.to }} />
           )}
         </>
       )}
