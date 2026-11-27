@@ -4,7 +4,9 @@ import { useAppStore } from '../../../store/useAppStore';
 import { useRefreshAtExamOpening } from '../useRefreshAtExamOpening';
 import type { ExamSubject } from '../../../types/exams';
 
-const START = new Date(2026, 11, 1, 8, 0, 0);
+// IS's "01.12.2026 08:00" is Prague time (CET, UTC+1): an absolute instant, whatever the
+// zone of the test machine or the student's phone.
+const START = new Date(Date.UTC(2026, 11, 1, 7, 0, 0));
 
 const exams = (registrationStart: string): { data: ExamSubject[] } => ({
   data: [

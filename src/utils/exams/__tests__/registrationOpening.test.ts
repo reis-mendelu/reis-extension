@@ -1,9 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { afterAll, beforeAll, describe, it, expect } from 'vitest';
 import { isJustOpened, nextRegistrationOpening, OPENING_GRACE_MS } from '../registrationOpening';
 import type { ExamSubject, ExamTerm } from '../../../types/exams';
 
 const START = new Date(2026, 11, 1, 8, 0, 0);
 const at = (ms: number) => new Date(START.getTime() + ms);
+// The same opening as an instant, for the refresh timer: IS's 08:00 is Prague time (CET, UTC+1).
+const OPENS = Date.UTC(2026, 11, 1, 7, 0, 0);
+const after = (ms: number) => OPENS + ms;
 
 const term = (over: Partial<ExamTerm> = {}): ExamTerm => ({
   id: 't1',
@@ -59,29 +62,47 @@ describe('isJustOpened', () => {
 describe('nextRegistrationOpening', () => {
   it('is the earliest opening still ahead, as a timestamp', () => {
     const later = term({ id: 't2', registrationStart: '05.12.2026 08:00' });
-    expect(nextRegistrationOpening(subjects(later, term()), at(-60_000).getTime())).toBe(
-      START.getTime()
-    );
+    expect(nextRegistrationOpening(subjects(later, term()), after(-60_000))).toBe(OPENS);
   });
 
   it('keeps naming an opening for a minute after it passes, so retries survive it', () => {
-    expect(nextRegistrationOpening(subjects(term()), at(30_000).getTime())).toBe(START.getTime());
-    expect(nextRegistrationOpening(subjects(term()), at(5 * 60_000).getTime())).toBeNull();
+    expect(nextRegistrationOpening(subjects(term()), after(30_000))).toBe(OPENS);
+    expect(nextRegistrationOpening(subjects(term()), after(5 * 60_000))).toBeNull();
   });
 
   it('ignores terms IS already opened, and ones that never open for this student', () => {
     expect(
-      nextRegistrationOpening(subjects(term({ canRegisterNow: true })), at(-1000).getTime())
+      nextRegistrationOpening(subjects(term({ canRegisterNow: true })), after(-1000))
     ).toBeNull();
     expect(
-      nextRegistrationOpening(subjects(term({ cannotRegister: true })), at(-1000).getTime())
+      nextRegistrationOpening(subjects(term({ cannotRegister: true })), after(-1000))
     ).toBeNull();
   });
 
   it('is null with nothing to wait for', () => {
-    expect(nextRegistrationOpening([], at(0).getTime())).toBeNull();
+    expect(nextRegistrationOpening([], after(0))).toBeNull();
     expect(
-      nextRegistrationOpening(subjects(term({ registrationStart: undefined })), at(0).getTime())
+      nextRegistrationOpening(subjects(term({ registrationStart: undefined })), after(0))
     ).toBeNull();
+  });
+});
+
+/**
+ * IS writes Prague wall-clock times. A phone in London read "08:00" as 08:00
+ * London, so the refresh at the opening asked IS an hour after the seats went.
+ */
+describe('nextRegistrationOpening on a phone outside Prague', () => {
+  const zone = process.env.TZ;
+  beforeAll(() => {
+    process.env.TZ = 'Europe/London';
+  });
+  afterAll(() => {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  });
+
+  it('names the Prague instant: 08:00 in Prague is 07:00 UTC in December', () => {
+    const pragueOpening = Date.UTC(2026, 11, 1, 7, 0);
+    expect(nextRegistrationOpening(subjects(term()), pragueOpening - 60_000)).toBe(pragueOpening);
   });
 });

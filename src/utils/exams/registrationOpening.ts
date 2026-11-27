@@ -1,4 +1,5 @@
 import { parseRegistrationStart } from '../termUtils';
+import { pragueToInstant } from '../examOpeningReminders';
 import type { ExamSubject, ExamTerm } from '../../types/exams';
 
 /**
@@ -65,7 +66,11 @@ export function nextRegistrationOpening(
     for (const section of subject.sections) {
       for (const term of section.terms) {
         if (term.canRegisterNow || term.cannotRegister) continue;
-        const start = startOf(term)?.getTime();
+        // The instant IS opens it: IS writes Prague time, and a phone abroad that
+        // read it in its own zone (London) asked IS again an hour after the seats went.
+        // The labels still read IS's wall clock, like every other exam time on screen.
+        const wall = startOf(term);
+        const start = wall ? pragueToInstant(wall).getTime() : undefined;
         if (start === undefined || Number.isNaN(start) || start <= nowMs - RETRY_WINDOW_MS)
           continue;
         if (next === null || start < next) next = start;
