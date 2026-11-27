@@ -122,6 +122,35 @@ describe('a forget run by another process', () => {
     expect(run).toHaveBeenCalledTimes(1); // nothing was kept from the call that began before
   });
 
+  it('still clears on the new token when the ticket that sees it spanned a forget here', async () => {
+    let gen = 'g1';
+    let hold: Promise<void> | undefined;
+    const persist: Persist = {
+      begin: async () => {
+        const h = hold;
+        await h;
+        return { gen, at: 0 };
+      },
+      load: async () => undefined,
+      save: async () => undefined,
+    };
+    const cache = createToolCache({ persist });
+    await cache.ticket();
+    let release!: () => void;
+    hold = new Promise((r) => (release = r));
+    const waiting = cache.ticket(); // A: waits on the folder
+    hold = undefined;
+    cache.clear(); // forget starts in this process
+    // B reads the folder before forget replaced its token, and finishes.
+    await cache.run('mendelu_subjects', {}, async () => ({ text: 'old' }), await cache.ticket());
+    gen = 'g2'; // forget replaced the token and deleted
+    release();
+    await waiting;
+    const run = vi.fn(async () => ({ text: 'new' }));
+    await cache.run('mendelu_subjects', {}, run, await cache.ticket());
+    expect(run).toHaveBeenCalledTimes(1); // B's answer from before the forget is not served
+  });
+
   it('holds answers as before while nobody forgets', async () => {
     const { persist } = sharedFolder();
     const cache = createToolCache({ persist });

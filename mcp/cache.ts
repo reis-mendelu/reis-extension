@@ -123,11 +123,11 @@ export function createToolCache({
       const started = epoch; // a clear() while begin() is read still makes this call stale
       const token = await persist?.begin().catch(() => null);
       const gen = genOf(token);
-      const forgotElsewhere = seen && gen !== seenGen;
+      const forgot = seen && gen !== seenGen;
       [seen, seenGen] = [true, gen];
-      if (!forgotElsewhere || epoch !== started) return { epoch: started, token };
-      clear(); // this call saw it first: what it fetches now is after the forget
-      return { epoch, token };
+      const stale = epoch !== started; // a clear() here while it waited: this call began before it
+      if (forgot) clear(); // a new token: nothing held under the old one is served again
+      return { epoch: stale ? started : epoch, token };
     },
     async run(
       tool: string,
