@@ -1712,6 +1712,7 @@
       "pickHour": "Vyber hodiny",
       "pickHint": "Klepni na hodinu. Na další klepni, když chceš víc hodin (nejvýš {cap} h).",
       "pickedHint": "{time} · {n} h. Klepni na sousední hodinu pro víc, na krajní pro méně.",
+      "pickedMax": "{time} · {n} h. Víc dnes nejde, na krajní klepni pro méně.",
       "dayOver": "Na tento den už nejde rezervovat.",
       "lessonTag": "výuka",
       "capReached": "Na tento den už máš {cap} h, víc knihovna nedovolí.",

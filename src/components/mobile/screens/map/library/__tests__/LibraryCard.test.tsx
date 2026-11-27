@@ -98,6 +98,35 @@ describe('LibraryCard', () => {
     expect(screen.queryByText(/Klepni na hodinu/)).toBeNull();
   });
 
+  it('keeps the line the same height in every state, so the hour buttons never move under a finger', () => {
+    render(<LibraryCard view={{ featureId: null }} />);
+    const line = () => screen.getByText(/^(Klepni na hodinu|\d\d:00–)/);
+    expect(line().className).toContain('min-h-10');
+    fireEvent.click(hour('14:00'));
+    expect(line().className).toContain('min-h-10');
+  });
+
+  it('stops offering more hours once the day’s allowance is used up by the pick', () => {
+    // Three hours already booked today: one is left.
+    useAppStore.setState({
+      customEvents: [
+        {
+          id: 'library:A9',
+          title: 'Studovna v knihovně',
+          date: '20261116',
+          startTime: '11:00',
+          endTime: '14:00',
+          room: 'Týmová 1',
+          libraryBooking: { featureId: team1!.featureId, selfServiceIds: ['S9'] },
+        },
+      ],
+    } as never);
+    render(<LibraryCard view={{ featureId: null }} />);
+    fireEvent.click(hour('15:00'));
+    expect(screen.getByText(/^15:00–16:00 · 1 h\. Víc dnes nejde/)).toBeTruthy();
+    expect(screen.queryByText(/sousední/)).toBeNull();
+  });
+
   it('says a day is over instead of showing an empty grid', () => {
     vi.setSystemTime(new Date(2026, 10, 16, 17, 30));
     render(<LibraryCard view={{ featureId: null }} />);

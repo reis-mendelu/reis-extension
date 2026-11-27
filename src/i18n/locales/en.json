@@ -1712,6 +1712,7 @@
       "pickHour": "Pick hours",
       "pickHint": "Tap an hour. Tap the next ones for a longer stay (up to {cap} h).",
       "pickedHint": "{time} · {n} h. Tap a neighbouring hour for more, an end hour for less.",
+      "pickedMax": "{time} · {n} h. No more today; tap an end hour for less.",
       "dayOver": "Nothing left to book on this day.",
       "lessonTag": "class",
       "capReached": "You already have {cap} h that day, the library allows no more.",

@@ -112,12 +112,14 @@ export function LibraryCard({ view, flush }: { view: LibraryView; flush?: boolea
       ) : (
         <>
           {left > 0 && (
-            // One line, always in the same place, so the grid does not move under the
-            // finger between the first tap and the second. A student who needs three
-            // hours books one without it (nothing else says hours can be added).
-            <p className="text-sm text-base-content/70">
+            // Always in the same place and always two lines tall (`min-h-10`), whichever
+            // text it holds, so the grid does not move under the finger between the first
+            // tap and the second. A student who needs three hours books one without it
+            // (nothing else says hours can be added). Once the pick has used up what is
+            // left of the day it says so instead of inviting a tap that would do nothing.
+            <p className="min-h-10 text-sm text-base-content/70">
               {span
-                ? t('mobile.library.pickedHint', {
+                ? t(sel.length >= left ? 'mobile.library.pickedMax' : 'mobile.library.pickedHint', {
                     time: `${hh(span.from)}–${hh(span.to)}`,
                     n: sel.length,
                   })
