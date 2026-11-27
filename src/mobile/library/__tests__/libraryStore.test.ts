@@ -1,5 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+// The app's gate and its native transport: on in the phone and iPad apps, which is what this is.
+const native = vi.hoisted(() => ({ http: vi.fn() }));
+vi.mock('../transport', () => ({
+  canBookLibrary: () => true,
+  nativeBookingsHttp: native.http,
+}));
+
 import { cardPick, useLibraryStore, STALE_MS } from '../libraryStore';
+import { useAppStore } from '../../../store/useAppStore';
+import { clearDiagnostics, getDiagnostics } from '../../../utils/diagnostics/diagnosticLog';
 import type { BookingsHttp } from '../bookingsBase';
 import { LIBRARY_ROOMS } from '../../../data/map/libraryRooms';
 
@@ -23,6 +33,45 @@ const now = new Date(2026, 10, 10, 6, 0);
 beforeEach(() => {
   useLibraryStore.getState().reset();
   vi.mocked(ok).mockClear();
+  native.http.mockReset();
+  native.http.mockImplementation(ok);
+  clearDiagnostics();
+  useAppStore.setState({ mobileTab: 'calendar', mapSelection: null } as never);
+});
+afterEach(() => vi.useRealTimers());
+
+describe('libraryStore: reading before the card opens', () => {
+  it('starts the read when the student arrives on the map tab, so it is under way when they tap the pin', async () => {
+    useAppStore.getState().setMobileTab('map');
+    await vi.waitFor(() => expect(native.http).toHaveBeenCalledTimes(1));
+    // Moving between other tabs, or staying on the map, asks nothing more.
+    useAppStore.getState().setMobileTab('calendar');
+    expect(native.http).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not read for tabs that are not the map', () => {
+    useAppStore.getState().setMobileTab('subjects');
+    expect(native.http).not.toHaveBeenCalled();
+  });
+});
+
+describe('libraryStore: a slow answer is remembered on the device', () => {
+  it('keeps a line in the local diagnostic log when the library took 8 s or more', async () => {
+    vi.useFakeTimers();
+    const slow: BookingsHttp = async (req) => {
+      await new Promise((r) => setTimeout(r, 9_000));
+      return ok(req);
+    };
+    const p = useLibraryStore.getState().load(slow, now);
+    await vi.advanceTimersByTimeAsync(9_000);
+    await p;
+    expect(getDiagnostics().some((e) => e.ctx === 'Library.slowRead')).toBe(true);
+  });
+
+  it('keeps nothing for a normal answer', async () => {
+    await useLibraryStore.getState().load(ok, now);
+    expect(getDiagnostics().some((e) => e.ctx === 'Library.slowRead')).toBe(false);
+  });
 });
 
 describe('libraryStore.load', () => {

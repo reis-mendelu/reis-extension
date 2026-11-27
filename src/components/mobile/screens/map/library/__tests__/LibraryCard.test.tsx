@@ -81,8 +81,29 @@ describe('LibraryCard', () => {
     const chips = within(screen.getAllByRole('group')[0]!).getAllByRole('button');
     expect(chips.map((c) => c.textContent)).toEqual(['Dnes', 'Út 17', 'St 18', 'Čt 19', 'Pá 20']);
     expect(screen.queryByRole('listitem')).toBeNull();
-    // No explainers.
-    expect(screen.queryByText(/uplynuly|obsazeno|Klepni/)).toBeNull();
+    // No legends. The one line of instruction is covered by its own test.
+    expect(screen.queryByText(/uplynuly|obsazeno/)).toBeNull();
+  });
+
+  it('says once that several hours can be picked, and never draws hours that are gone', () => {
+    render(<LibraryCard view={{ featureId: null }} />);
+    // 09:30: 07–10 are over (the 10:00 hour starts inside the library's hour of notice).
+    expect(screen.queryByRole('button', { name: /^(07|08|09|10):00/ })).toBeNull();
+    expect(hour('11:00')).toBeTruthy();
+    expect(screen.getByText(/Klepni na hodinu.*další.*nejvýš 4 h/)).toBeTruthy();
+    fireEvent.click(hour('14:00'));
+    fireEvent.click(hour('15:00'));
+    // The pick reads as a stretch with its length; the instruction has done its job.
+    expect(screen.getByText(/^14:00–16:00 · 2 h\./)).toBeTruthy();
+    expect(screen.queryByText(/Klepni na hodinu/)).toBeNull();
+  });
+
+  it('says a day is over instead of showing an empty grid', () => {
+    vi.setSystemTime(new Date(2026, 10, 16, 17, 30));
+    render(<LibraryCard view={{ featureId: null }} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Dnes' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Na tento den už nejde rezervovat.');
+    expect(screen.queryByText(/Klepni na hodinu/)).toBeNull();
   });
 
   it('shows the rooms free for the picked hours, smallest first', () => {

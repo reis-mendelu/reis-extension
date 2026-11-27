@@ -4,6 +4,7 @@ import { fetchAllBlocks, type Block } from './availability';
 import { isoDay, shownDay } from './libraryDay';
 import { canBookLibrary, nativeBookingsHttp } from './transport';
 import { isDemoMode } from '../../errors/demoMode';
+import { logError } from '../../utils/reportError';
 import type { MapSelection } from '../../types/campusMap';
 import type { BookingsHttp } from './bookingsBase';
 import { LIBRARY_ROOMS } from '../../data/map/libraryRooms';
@@ -12,6 +13,8 @@ export type LibraryStatus = 'idle' | 'loading' | 'ready' | 'offline';
 
 /** Availability older than this is read again when the library is opened. */
 export const STALE_MS = 2 * 60 * 1000;
+/** A read this slow is kept in the device's diagnostic log (see `load`). */
+export const SLOW_READ_MS = 8_000;
 /** How many days ahead the room card offers. */
 export const DAYS_AHEAD = 7;
 
@@ -95,6 +98,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     set({ status: 'loading' });
     const to = new Date(now);
     to.setDate(to.getDate() + DAYS_AHEAD);
+    const startedAt = Date.now();
     const all = await fetchAllBlocks(
       http,
       LIBRARY_ROOMS.map((r) => r.staffMemberId),
@@ -104,6 +108,12 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const results = LIBRARY_ROOMS.map(
       (r) => [r.featureId, all?.[r.staffMemberId] ?? null] as const
     );
+    // The library answered in 0.3–1.6 s from a laptop on 2026-11-27 and in 8–14 s on
+    // 2026-10-30; which one a phone sees is not known. A slow read leaves one line in
+    // the local diagnostic log (kept in memory, sent only if the student attaches it).
+    const took = Date.now() - startedAt;
+    if (took >= SLOW_READ_MS)
+      logError('Library.slowRead', new Error(`availability took ${Math.round(took / 1000)} s`));
     if (mine !== seq) return;
     const blocks = Object.fromEntries(results);
     const any = results.some(([, b]) => b !== null);
@@ -142,7 +152,12 @@ const libraryRoomIn = (sel: MapSelection | null): boolean => {
   return LIBRARY_ROOMS.some((r) => r.featureId === id);
 };
 useAppStore.subscribe((s, prev) => {
-  if (s.mapSelection === prev.mapSelection || !libraryRoomIn(s.mapSelection)) return;
+  // Arriving on the map tab starts the read too: about one in five map visitors
+  // opens the card, and the seconds before they tap the pin are the library's
+  // answering time. Not at app start: 99 in 100 of those would never look.
+  const arrived = s.mobileTab === 'map' && prev.mobileTab !== 'map';
+  const picked = s.mapSelection !== prev.mapSelection && libraryRoomIn(s.mapSelection);
+  if (!arrived && !picked) return;
   if (canBookLibrary() && !isDemoMode()) void useLibraryStore.getState().load();
 });
 
