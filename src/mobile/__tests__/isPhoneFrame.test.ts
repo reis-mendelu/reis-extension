@@ -127,7 +127,7 @@ describe('buildPhoneFrameScript', () => {
 
   it('only ever adds: no element of the page is removed or moved', () => {
     document.head.innerHTML =
-      '<meta charset="UTF-8"><title>IS</title><link rel="stylesheet" href="/css/univergo.css"><style>body{margin:0}</style>';
+      '<meta charset="UTF-8"><title>IS</title><link rel="icon" href="/favicon.ico"><style>body{margin:0}</style>';
     document.body.innerHTML = FRAME;
     const before = document.body.innerHTML;
     const headBefore = [...document.head.children];
@@ -148,12 +148,35 @@ describe('buildPhoneFrameScript', () => {
 });
 
 describe('IS_PHONE_FRAME_CSS', () => {
-  // Styling only (decided 2026-11-27): hiding an element is removing it by
-  // another name, and generated content is how labels would be injected.
-  it('hides nothing and generates no content', () => {
-    expect(IS_PHONE_FRAME_CSS).not.toMatch(/display\s*:\s*none/);
-    expect(IS_PHONE_FRAME_CSS).not.toMatch(/visibility\s*:\s*hidden/);
-    expect(IS_PHONE_FRAME_CSS).not.toMatch(/content\s*:/);
+  /** Every `selector { declarations }` pair, at-rule wrappers flattened away. */
+  const rules = [...IS_PHONE_FRAME_CSS.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+    selector: m[1]!.trim(),
+    body: m[2]!,
+  }));
+
+  // Decided 2026-11-28: a table shown as cards may hide what the cards replace
+  // (its header row, empty cells, three exam columns). Nothing else on an IS
+  // page is ever hidden, so every such rule must be scoped to a table the
+  // script has re-read, which all carry a `reis-` class.
+  it('hides things only inside a table the script has re-read', () => {
+    const hiding = rules.filter((r) => /display\s*:\s*none|visibility\s*:\s*hidden/.test(r.body));
+    expect(hiding.length).toBeGreaterThan(0);
+    for (const rule of hiding) {
+      for (const part of rule.selector.split(','))
+        expect(part).toMatch(/table(\.reis-|\[class\*="reis-"\])/);
+    }
+  });
+
+  // The only text the stylesheet may add is a column's own header in front of
+  // its value. Invented wording would be reIS speaking in IS's voice, in one
+  // language, on a page that has two.
+  it('generates no text of its own, only a column header before its value', () => {
+    const allowed = ['attr(data-label)', "attr(data-label) ' '", 'none', 'none !important'];
+    const used = rules.flatMap((r) =>
+      [...r.body.matchAll(/content\s*:\s*([^;]+);/g)].map((m) => m[1]!.trim())
+    );
+    expect(used.length).toBeGreaterThan(0);
+    for (const value of used) expect(allowed).toContain(value);
   });
 
   it('loads nothing from anywhere', () => {

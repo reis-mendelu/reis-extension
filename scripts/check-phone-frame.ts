@@ -12,7 +12,9 @@
  * tests could have seen that.
  *
  * The page is `scripts/fixtures/isPhoneFrame.html`: made up, in the shape of a
- * signed-in IS page, with the things that make one too wide. It is served to
+ * signed-in IS page, with the things that make one too wide and one table for
+ * each treatment the script gives (exam rows, cards, attendance, shrink to fit,
+ * a wrapping filter form, and the one that still scrolls sideways). It is served to
  * the browser as an is.mendelu.cz URL (the script acts on that host only) and
  * every other request is refused, so this never contacts IS.
  */
@@ -28,6 +30,18 @@ const URL_ON_IS = 'https://is.mendelu.cz/auth/reis-phone-frame-fixture';
 /** The widths the app claims to support. Same three `scripts/shot.ts` uses. */
 const WIDTHS = [320, 390, 430];
 
+interface TableFacts {
+  id: string;
+  /** What the fixture says this table must become: a class, or "scroll". */
+  expect: string;
+  classes: string;
+  needsSidewaysScroll: boolean;
+  scrollsByTouch: boolean;
+  /** Cells whose right edge is past the page's, before any scrolling. */
+  cellsPastEdge: number;
+  lastColumnReachable: boolean;
+}
+
 interface Facts {
   styled: boolean;
   layoutWidth: number;
@@ -36,8 +50,8 @@ interface Facts {
   stickingOut: string[];
   /** Form controls whose right edge is past the page's. */
   controlsPastEdge: string[];
-  tableScrollsInside: boolean;
-  lastColumnReachable: boolean;
+  tables: TableFacts[];
+  registerVisible: boolean;
 }
 
 async function gather(page: Page, styleId: string): Promise<Facts> {
@@ -51,30 +65,48 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
       }
       return false;
     };
-    const past = (el: Element) => el.getBoundingClientRect().right > width + 1;
-    const table = document.getElementById('wide')!;
-    // `hidden` would pass the size test and scroll from script, but not by touch.
-    const overflowX = getComputedStyle(table).overflowX;
-    const scrolls =
-      table.scrollWidth > table.clientWidth + 1 && (overflowX === 'auto' || overflowX === 'scroll');
-    table.scrollLeft = table.scrollWidth;
-    const last = document.getElementById('last-column')!.getBoundingClientRect();
-    const box = table.getBoundingClientRect();
-    const facts = {
+    const shown = (el: Element) => el.getBoundingClientRect().width > 0;
+    const past = (el: Element) => shown(el) && el.getBoundingClientRect().right > width + 1;
+    const tables = [...document.querySelectorAll<HTMLElement>('table[data-expect]')].map((t) => {
+      const overflowX = getComputedStyle(t).overflowX;
+      const needs = t.scrollWidth > t.clientWidth + 1;
+      const cellsPastEdge = [...t.querySelectorAll('td, th')].filter(past).length;
+      const last = t.querySelector('#last-column');
+      let reachable = true;
+      if (last) {
+        t.scrollLeft = t.scrollWidth;
+        const cell = last.getBoundingClientRect();
+        reachable =
+          cell.width > 0 &&
+          cell.right <= t.getBoundingClientRect().right + 1 &&
+          cell.right <= width + 1;
+        t.scrollLeft = 0;
+      }
+      return {
+        id: t.id,
+        expect: t.dataset['expect'] ?? '',
+        classes: t.className,
+        needsSidewaysScroll: needs,
+        // `hidden` would pass the size test and scroll from script, but not by touch.
+        scrollsByTouch: needs && (overflowX === 'auto' || overflowX === 'scroll'),
+        cellsPastEdge,
+        lastColumnReachable: reachable,
+      };
+    });
+    const register = document.getElementById('register')!.getBoundingClientRect();
+    return {
       styled: !!document.getElementById(id),
       layoutWidth: width,
       pageScrollWidth: document.documentElement.scrollWidth,
       stickingOut: [...document.querySelectorAll('body *')]
-        .filter((el) => el.getBoundingClientRect().width > 0 && past(el) && !inScrollBox(el))
+        .filter((el) => past(el) && !inScrollBox(el))
         .map(name),
       controlsPastEdge: [...document.querySelectorAll('input, select, textarea, button')]
         .filter(past)
         .map(name),
-      tableScrollsInside: scrolls,
-      lastColumnReachable: last.width > 0 && last.right <= box.right + 1 && last.right <= width + 1,
+      tables,
+      registerVisible: register.width > 0 && register.right <= width + 1,
     };
-    table.scrollLeft = 0;
-    return facts;
   }, styleId);
 }
 
@@ -86,8 +118,21 @@ function problems(width: number, f: Facts): string[] {
   if (f.stickingOut.length) out.push(`sticking out of the page: ${f.stickingOut.join(', ')}`);
   if (f.controlsPastEdge.length)
     out.push(`form controls past the edge: ${f.controlsPastEdge.join(', ')}`);
-  if (!f.tableScrollsInside) out.push('the wide table does not scroll inside its own box');
-  if (!f.lastColumnReachable) out.push('the last table column cannot be scrolled into view');
+  if (!f.registerVisible)
+    out.push('the exam register control is not on screen without scrolling sideways');
+  for (const t of f.tables) {
+    if (t.expect === 'scroll') {
+      if (!t.scrollsByTouch) out.push(`#${t.id} should scroll inside its own box and does not`);
+      if (!t.lastColumnReachable)
+        out.push(`#${t.id}: the last column cannot be scrolled into view`);
+      continue;
+    }
+    if (!t.classes.split(' ').includes(t.expect))
+      out.push(`#${t.id} should be ${t.expect}, is "${t.classes}"`);
+    if (t.needsSidewaysScroll) out.push(`#${t.id} still needs sideways scrolling`);
+    if (t.cellsPastEdge)
+      out.push(`#${t.id}: ${t.cellsPastEdge} cells are past the edge of the page`);
+  }
   return out;
 }
 

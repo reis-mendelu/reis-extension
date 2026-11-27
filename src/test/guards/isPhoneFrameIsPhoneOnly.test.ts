@@ -60,6 +60,11 @@ describe('IS phone frame placement', () => {
     expect(src).toContain('Math.min(screen.width,screen.height)>=${TABLET_MIN_SIDE}');
   });
 
+  it('keeps the table script out of everything but the frame script', () => {
+    const users = sourcesUnder('.').filter((f) => read(f).includes('PHONE_TABLES_JS'));
+    expect(users.sort()).toEqual(['mobile/isPhoneFrame.ts', 'mobile/isPhoneTablesScript.ts']);
+  });
+
   it('keeps every IS style in the one file the CLAUDE.md exception names', () => {
     const styled = sourcesUnder('.').filter((f) => read(f).includes('IS_PHONE_FRAME_CSS'));
     expect(styled.sort()).toEqual(['mobile/isPhoneFrame.ts', 'mobile/isPhoneFrameCss.ts']);

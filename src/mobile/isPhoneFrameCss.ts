@@ -8,19 +8,25 @@
  * What it may do was decided on 2026-11-27 and is pinned in
  * `__tests__/isPhoneFrame.test.ts`:
  *
- * - **The frame only**: header, breadcrumb, the content column, text and form
- *   size, tables. No page gets rules of its own. A page students open often
- *   belongs in reIS as a real screen, not here.
- * - **Styling only**: nothing is hidden, nothing is generated, nothing is
- *   loaded. Hiding or relabelling an element can break a form IS itself
- *   submits (exam and subject registration live on these pages).
+ * - **The frame, plus two pages** (2026-11-28): header, breadcrumb, the content
+ *   column, text and form size, tab rows and tables are styled the same on
+ *   every page. Exam terms and List záznamníku get a layout of their own,
+ *   because a generic one could not show a term with its register control or a
+ *   week with its attendance mark. Anything else students open often belongs in
+ *   reIS as a real screen, not here.
+ * - **Nothing is moved or removed in the markup, and nothing is loaded.** The
+ *   script (isPhoneTablesScript.ts) adds classes and labels; this file does the
+ *   rest. What it hides is only what a card layout replaces: the header row of
+ *   a table shown as cards, cells with nothing in them, and on exam rows the
+ *   row number, subject code and period. The only text it generates is a
+ *   column's own header in front of its value.
  * - **The side column is drawn after the content**, not before it (`order`
  *   on `#stranka`'s children). In the markup it still comes first; only the
  *   visual order changes. On a desktop it sits beside the content; stacked in
  *   one column it would otherwise push every page's content half a screen down.
- * - **A wide table keeps its columns** and scrolls sideways inside its own box.
- *   The exam table has 14 columns and List záznamníku 19; a phone shows about
- *   six. Reshaping rows into cards needs script, which the line above rules out.
+ * - **A table that fits is left alone.** One that does not becomes cards, exam
+ *   rows or attendance strips, or is tightened and shrunk by up to 20 %; only
+ *   what is left after that scrolls sideways inside its own box.
  *
  * Selectors are IS's own ids and classes as dumped from live IS (new design,
  * live since 2026-11-15). `!important` is here because IS sets several of these
@@ -64,4 +70,77 @@ input, select, textarea, button { font-size: 16px; }
     100% { -webkit-mask-image: linear-gradient(to right, #000 100%, transparent); mask-image: linear-gradient(to right, #000 100%, transparent); }
   }
 }
+/* IS's tab rows as chips: every button kept, one tinted block per level, the current one solid. */
+.mainpage table.portal_menu { display: block !important; overflow: visible !important; animation: none !important; -webkit-mask-image: none !important; mask-image: none !important; width: auto !important; box-sizing: border-box; background: #f1f4ef; border: 0 !important; border-radius: 12px; padding: 8px; margin: 0 0 8px; }
+.mainpage table.portal_menu tbody, .mainpage table.portal_menu tr { display: flex !important; flex-wrap: wrap; gap: 6px; }
+.mainpage table.portal_menu td { display: block !important; position: static !important; padding: 0 !important; margin: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; height: auto !important; min-height: 0 !important; }
+.mainpage table.portal_menu td::before, .mainpage table.portal_menu td::after, .mainpage table.portal_menu tr::before, .mainpage table.portal_menu tr::after { content: none !important; }
+.mainpage table.portal_menu td b { display: block; margin: 0 !important; padding: 0 !important; }
+.mainpage table.portal_menu td a { display: block; margin: 0 !important; padding: 6px 11px; border: 1px solid #d5dbd0; border-radius: 999px; background: #fff; font-size: 13px !important; font-weight: 400; line-height: 1.2; text-decoration: none; white-space: nowrap; }
+.mainpage table.portal_menu td b a { background: #8cbf4a; border-color: #8cbf4a; color: #111; font-weight: 700; }
+
+/* Tables the script has re-read (isPhoneTablesScript.ts) stop being scroll boxes. */
+.mainpage table.reis-cards, .mainpage table.reis-exam, .mainpage table.reis-att, .mainpage table.reis-flow, .mainpage table.reis-fit { display: block !important; overflow: visible !important; animation: none !important; -webkit-mask-image: none !important; mask-image: none !important; width: auto !important; }
+.mainpage table.reis-cards tbody, .mainpage table.reis-exam tbody, .mainpage table.reis-att tbody { display: block !important; }
+.mainpage table.reis-cards tr.reis-head, .mainpage table.reis-exam tr.reis-head, .mainpage table.reis-att tr.reis-head { display: none !important; }
+.mainpage tr.reis-plain, .mainpage tr.reis-plain > td { display: block !important; }
+.mainpage tr.reis-card, .mainpage tr.a-main, .mainpage tr.a-cont { border: 1px solid #d5dbd0; border-radius: 12px; background: #fff !important; padding: 9px 12px; margin: 0 0 10px; }
+.mainpage tr.reis-card > td, .mainpage tr.a-main > td, .mainpage tr.a-cont > td { border: 0 !important; background: none !important; padding: 0 !important; min-width: 0; width: auto !important; height: auto !important; text-align: left !important; white-space: normal !important; font-size: 13px !important; }
+
+/* Cards: the name as a title, every other value as a small "header value" fact. */
+.mainpage table.reis-cards tr.reis-card { display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.mainpage table.reis-cards tr.reis-card > td { display: inline-flex !important; align-items: baseline; gap: 5px; max-width: 100%; color: #111; }
+.mainpage table.reis-cards tr.reis-card > td::before { content: attr(data-label); font-size: 11px; color: #5b6670; white-space: nowrap; }
+.mainpage table.reis-cards tr.reis-card > td.reis-icon { align-items: center; }
+.mainpage table.reis-cards tr.reis-card > td.reis-title { display: block !important; flex: 0 0 100%; order: -1; font-size: 15px !important; font-weight: 700; }
+.mainpage table.reis-cards tr.reis-card > td.reis-title::before { content: none; }
+.mainpage table.reis-cards tr.reis-card > td.reis-empty, .mainpage table.reis-cards tr.reis-card > td.reis-dash { display: none !important; }
+
+/* Exam terms: status, subject, date and room, then the rest small; register and info on the right. */
+.mainpage table.reis-exam tr.reis-card { display: grid !important; grid-template-columns: 16px auto 1fr auto; gap: 2px 8px; align-items: center; grid-template-areas: "stav predmet predmet akce" "stav datum kde oper" ". druh vypsal prihl" ". okno okno typ"; }
+.mainpage table.reis-exam td { display: block !important; font-size: 12px !important; line-height: 1.3; color: #55606a; }
+.mainpage table.reis-exam tr.reis-card > td.x-por, .mainpage table.reis-exam tr.reis-card > td.x-kod, .mainpage table.reis-exam tr.reis-card > td.x-obdobi, .mainpage table.reis-exam tr.reis-card > td.reis-empty { display: none !important; }
+.mainpage table.reis-exam td.x-stav { grid-area: stav; align-self: start; padding-top: 4px !important; }
+.mainpage table.reis-exam td.x-predmet { grid-area: predmet; font-size: 15px !important; font-weight: 700; color: #111; }
+.mainpage table.reis-exam td.x-datum { grid-area: datum; font-size: 14px !important; color: #111; white-space: nowrap !important; }
+.mainpage table.reis-exam td.x-kde { grid-area: kde; font-size: 14px !important; }
+.mainpage table.reis-exam td.x-druh { grid-area: druh; }
+.mainpage table.reis-exam td.x-vypsal { grid-area: vypsal; }
+.mainpage table.reis-exam td.x-prihl { grid-area: prihl; justify-self: end; font-size: 13px !important; color: #111; white-space: nowrap !important; }
+.mainpage table.reis-exam td.x-prihl::before { content: attr(data-label) ' '; font-size: 11px; color: #55606a; }
+.mainpage table.reis-exam td.x-typ { grid-area: typ; justify-self: end; transform: scale(0.8); transform-origin: right center; }
+.mainpage table.reis-exam td.x-okno { grid-area: okno; display: flex !important; gap: 8px; font-size: 11px !important; }
+.mainpage table.reis-exam td.x-okno::before { content: attr(data-label); white-space: pre-line; }
+.mainpage table.reis-exam td.x-akce { grid-area: akce; justify-self: end; align-self: start; padding: 4px 0 4px 10px !important; }
+.mainpage table.reis-exam td.x-oper { grid-area: oper; justify-self: end; white-space: nowrap !important; transform: scale(0.8); transform-origin: right center; }
+
+/* List záznamníku: subject with its operation icons, then per time slot a line and twelve week boxes.
+   IS gives each attendance cell an inline "padding: 0.5em !important" that no stylesheet can
+   override, so a tiny font shrinks it and a flex column keeps the icon centred inside its box. */
+.mainpage table.reis-att tr.a-main, .mainpage table.reis-att tr.a-cont { display: grid !important; grid-template-columns: repeat(12, 1fr); gap: 4px 2px; align-items: center; padding: 10px; }
+.mainpage table.reis-att tr.a-main:has(+ tr.a-cont), .mainpage table.reis-att tr.a-cont:has(+ tr.a-cont) { border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; padding-bottom: 4px; }
+.mainpage table.reis-att tr.a-cont { border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; padding-top: 4px; }
+.mainpage table.reis-att tr > td { display: block !important; }
+.mainpage table.reis-att td.a-pad { display: none !important; }
+.mainpage table.reis-att td.a-title { grid-column: 1 / -1; grid-row: 1; align-self: start; min-height: 30px; padding-right: 150px !important; font-size: 15px !important; font-weight: 700; }
+.mainpage table.reis-att td.a-op, .mainpage table.reis-att td.a-set { grid-row: 1; justify-self: end; align-self: start; z-index: 1; }
+.mainpage table.reis-att td.a-op1 { grid-column: 8; }
+.mainpage table.reis-att td.a-op2 { grid-column: 9; }
+.mainpage table.reis-att td.a-op3 { grid-column: 10; }
+.mainpage table.reis-att td.a-op4 { grid-column: 11; }
+.mainpage table.reis-att td.a-set { grid-column: 12; }
+.mainpage table.reis-att td.reis-dash { visibility: hidden; }
+.mainpage table.reis-att td.a-slot { grid-column: 1 / -1; font-size: 12px !important; color: #55606a; }
+.mainpage table.reis-att td.a-week { display: flex !important; flex-direction: column; align-items: center; align-self: stretch; box-sizing: border-box; min-height: 46px; padding: 3px !important; overflow: hidden; border: 1px solid #e1e5df !important; border-radius: 6px; font-size: 6px !important; }
+.mainpage table.reis-att td.a-week::before { content: attr(data-label); flex: 0 0 auto; font-size: 9px; line-height: 12px; color: #7a858f; }
+.mainpage table.reis-att td.a-week .uf-icon, .mainpage table.reis-att td.a-week img { flex: 0 0 auto; margin: 0 !important; transform: scale(0.72); transform-origin: center top; }
+
+/* What the script could not re-read: tighter cells; a one-row filter form wraps. */
+.mainpage table.reis-compact td, .mainpage table.reis-compact th { font-size: 12px !important; padding: 3px !important; white-space: normal !important; }
+.mainpage table.reis-flow tbody, .mainpage table.reis-flow tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.mainpage table.reis-flow td { display: block !important; padding: 0 !important; max-width: 100%; }
+.mainpage table.reis-flow select, .mainpage table.reis-flow input { max-width: calc(100vw - 30px); }
+/* A column IS itself hides (the row number; "Období" until the student switches it on) stays
+   hidden in a card. Last on purpose: it has to win over every display rule above. */
+.mainpage table[class*="reis-"] tr[class] > td.UISTMNumberCellHidden, .mainpage table[class*="reis-"] tr[class] > td[style*="display: none"], .mainpage table[class*="reis-"] tr[class] > td[style*="display:none"] { display: none !important; }
 `;

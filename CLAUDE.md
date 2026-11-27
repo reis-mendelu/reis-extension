@@ -477,9 +477,14 @@ These are enforced by linting and project convention:
   A second standing exception is **old IS pages on a phone**: the in-app
   browser sends one stylesheet with every is.mendelu.cz page so a desktop page
   is readable at phone width. It lives in `src/mobile/isPhoneFrameCss.ts` and
-  nowhere else, styles only the frame all IS pages share (no per-page rules,
-  nothing hidden, moved or generated), and leaves a page it does not recognise
-  as it is. Phone only: `src/test/guards/isPhoneFrameIsPhoneOnly.test.ts`.
+  nowhere else, and leaves a page it does not recognise as it is. It styles the
+  frame all IS pages share, shows tables that do not fit as cards, and gives two
+  pages a layout of their own (exam terms, List záznamníku); a third needs
+  Dominik's OK, since a page students open often belongs in reIS as a screen.
+  The script beside it (`isPhoneTablesScript.ts`) only adds classes and labels:
+  nothing in an IS page is created, moved or removed, and the stylesheet hides
+  only what a card replaces. Phone only:
+  `src/test/guards/isPhoneFrameIsPhoneOnly.test.ts`.
 - **NO generic state** — all state lives in Zustand slices
 - **Max 200 lines per file** — convention, not lint-enforced; split proactively when a file grows past this
 - **Direct imports only** — no middleman re-export barrels; import from the specific file
