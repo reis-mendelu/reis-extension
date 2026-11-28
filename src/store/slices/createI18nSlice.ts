@@ -2,7 +2,7 @@ import type { I18nSlice, AppSlice, Language } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { syncService } from '../../services/sync';
 import { setCurrentLanguage } from '../../i18n/currentLanguage';
-import { noteLanguagePick } from './impersonation/applyImpersonation';
+import { currentImpersonationEpoch } from './impersonation/applyImpersonation';
 
 const STORAGE_KEY = 'reis_language';
 const DEFAULT_LANGUAGE: Language = 'cz';
@@ -16,6 +16,7 @@ export const createI18nSlice: AppSlice<I18nSlice> = (set, get) => {
     language: DEFAULT_LANGUAGE,
     isLanguageLoading: true,
     personaLanguage: null,
+    languagePickedAt: -1,
     // The persona's language while one sets it (Erasmus), else the saved one.
     // Every reload goes through here (boot, another tab, LANGUAGE_UPDATE), so
     // none of them can take the persona's English away mid-persona.
@@ -34,13 +35,14 @@ export const createI18nSlice: AppSlice<I18nSlice> = (set, get) => {
       show(get().personaLanguage ?? language);
     },
     setLanguage: async (newLang: Language) => {
+      // The pick takes effect at once, before the save: a persona tapped
+      // while the save is out is the newer word and applies after it. The
+      // admin's own pick, even mid-persona, is theirs from now on, also over
+      // a persona still being fetched (applyImpersonation reads the token).
+      set({ personaLanguage: null, languagePickedAt: currentImpersonationEpoch() });
+      show(newLang);
       try {
         await IndexedDBService.set('meta', STORAGE_KEY, newLang);
-        // The admin's own pick, even mid-persona: theirs from now on, also
-        // over a persona still being fetched (applyImpersonation).
-        noteLanguagePick();
-        set({ personaLanguage: null });
-        show(newLang);
 
         // Trigger global refresh for other components/tabs
         syncService.triggerRefresh('LANGUAGE_UPDATE');

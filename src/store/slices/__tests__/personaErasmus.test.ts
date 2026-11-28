@@ -201,6 +201,26 @@ describe('Erasmus persona: English in memory only', () => {
     expect(s().language).toBe('cz');
   });
 
+  it('Erasmus tapped while an earlier language pick is still saving gets its English', async () => {
+    const save = IndexedDBService.set.bind(IndexedDBService);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    vi.spyOn(IndexedDBService, 'set').mockImplementation((async (
+      store: never,
+      key: never,
+      value: never
+    ) => {
+      if (key === 'reis_language') await gate;
+      return save(store, key, value);
+    }) as never);
+    const saving = s().setLanguage('cz');
+    await s().switchToPersona('erasmus');
+    release();
+    await saving;
+    expect(s().language).toBe('en');
+    expect(await savedLanguage()).toBe('cz');
+  });
+
   it('entering the demo restores the admin language', async () => {
     await s().switchToPersona('erasmus');
     await s().enterDemo();
