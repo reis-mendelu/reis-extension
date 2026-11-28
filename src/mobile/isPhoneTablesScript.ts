@@ -4,10 +4,16 @@
  * so nothing a bundler adds to a function (tsx's `__name`, for one) may be in
  * it. Plain ES5, because old Android WebViews run it too.
  *
- * It ADDS classes and `data-label` attributes, and one inline `zoom`. It never
- * creates, moves or removes an element: these tables hold IS's own forms and
+ * It ADDS classes and `data-label` attributes, and one inline `zoom`; when the
+ * phone is turned it takes its own table classes and `zoom` back before
+ * judging again. It never creates, moves or removes an element: these tables hold IS's own forms and
  * links (exam registration is one), and they must keep working untouched.
  * `__tests__/isPhoneTables.test.ts` pins that.
+ *
+ * Tables are read innermost first: a layout table is often wide only because
+ * of the table inside it, and must be judged after that one has been dealt
+ * with. A table that still holds other tables is layout, never data, so it is
+ * only ever wrapped (one row) or tightened.
  *
  * A table that fits the phone is left alone. One that does not gets the first
  * treatment that matches (decided with mock-ups on real pages, 2026-11-28):
@@ -79,7 +85,8 @@ function one(t){
 ALL.forEach(function(n){if(t.classList.contains(n))t.classList.remove(n);});if(t.style.zoom)t.style.zoom='';
 if(!wide(t))return;
 var rows=arr(t.rows);
-if(rows.length<2){if(rows.length===1&&!t.querySelector('th'))add(t,'reis-flow');return;}
+if(rows.length<2){if(rows.length===1&&!arr(rows[0].cells).some(function(c){return c.tagName==='TH';}))add(t,'reis-flow');return;}
+if(t.querySelector('table')){squeeze(t);return;}
 var head=arr(rows[0].cells),labels=head.map(lab);
 var grouped=head.some(function(c){return span(c,'colspan')>1;});
 if(grouped){if(rows.length>2&&attendance(t,rows,head))return;squeeze(t);return;}
@@ -98,5 +105,6 @@ arr(r.cells).forEach(function(c,i){mark(c,labels[i]);if(isExam&&keys[i])add(c,'x
 });
 add(t,isExam?'reis-exam':'reis-cards');
 }
-arr(d.querySelectorAll('.mainpage table:not(.portal_menu)')).forEach(function(t){try{one(t);}catch(e){}});
+var list=arr(d.querySelectorAll('.mainpage table:not(.portal_menu)'));
+for(var n=list.length-1;n>=0;n--){try{one(list[n]);}catch(e){}}
 }`;

@@ -32,8 +32,9 @@ import { PHONE_TABLES_JS } from './isPhoneTablesScript';
  * parsed and gives up at DOMContentLoaded.
  *
  * Once the frame is in, it also looks at IS's tables (isPhoneTablesScript.ts):
- * when the page is parsed, again when it has loaded (images and late styles
- * change widths), and again when the phone is turned. A resize that leaves the
+ * when the page is parsed, again when it has loaded and when its web fonts
+ * have (both change widths; a font can arrive after `load`), and again when
+ * the phone is turned. A resize that leaves the
  * width alone is the keyboard opening, and re-laying tables under someone
  * typing into IS's own form would be worse than doing nothing. Should the
  * script ever run twice on one page, only the run that added the stylesheet
@@ -72,6 +73,7 @@ lastW=w;reisTables(d);
 }
 apply();
 window.addEventListener('load',function(){tables(false);});
+if(d.fonts&&d.fonts.ready&&d.fonts.ready.then)d.fonts.ready.then(function(){tables(false);});
 window.addEventListener('resize',function(){tables(true);});
 if(done){if(d.readyState!=='loading')tables(false);else d.addEventListener('DOMContentLoaded',function(){tables(false);});return;}
 obs=new MutationObserver(apply);

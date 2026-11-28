@@ -179,6 +179,18 @@ describe('IS_PHONE_FRAME_CSS', () => {
     for (const value of used) expect(allowed).toContain(value);
   });
 
+  // A table that fits again after the phone is turned loses its table class,
+  // but its rows and cells keep theirs. No rule may style those on their own.
+  it('styles a tagged row or cell only inside a table that is being shown that way', () => {
+    const tagged =
+      /\.(reis-(card|plain|head|title|icon|empty|dash)|a-(main|cont|title|slot|week|op\d?|set|pad)|x-[a-z]+)\b/;
+    const parts = rules
+      .flatMap((r) => r.selector.split(/,(?![^(]*\))/))
+      .filter((part) => tagged.test(part));
+    expect(parts.length).toBeGreaterThan(20);
+    for (const part of parts) expect(part).toMatch(/table(\.reis-|\[class\*="reis-"\])/);
+  });
+
   it('loads nothing from anywhere', () => {
     expect(IS_PHONE_FRAME_CSS).not.toMatch(/url\(|@import/);
   });

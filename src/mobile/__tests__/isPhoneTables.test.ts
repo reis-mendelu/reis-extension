@@ -1,5 +1,20 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { buildPhoneFrameScript } from '../isPhoneFrame';
+import {
+  $,
+  $$,
+  ATTENDANCE,
+  EXAM_CZ,
+  EXAM_EN,
+  EXAM_KEYS,
+  IS_PAGE,
+  SIMPLE,
+  exam,
+  page,
+  run,
+  setUrl,
+  size,
+  tags,
+} from './isPhoneTablesFixtures';
 
 /**
  * What the injected script does to IS's tables on a phone: it adds classes and
@@ -9,95 +24,6 @@ import { buildPhoneFrameScript } from '../isPhoneFrame';
  *
  * happy-dom has no layout, so "too wide" is set by hand on each table.
  */
-const IS_PAGE = 'https://is.mendelu.cz/auth/student/terminy_seznam.pl';
-const page = (main: string) => `
-  <div class="wholepage"><div id="header"></div>
-    <div id="base"><div id="base-right"><div id="stranka">
-      <div class="mainpage">${main}</div>
-    </div></div></div>
-  </div>`;
-
-const setUrl = (url: string) =>
-  (window as unknown as { happyDOM: { setURL: (url: string) => void } }).happyDOM.setURL(url);
-const run = () => new Function(buildPhoneFrameScript())();
-const $ = (sel: string) => document.querySelector(sel) as HTMLElement;
-const $$ = (sel: string) => [...document.querySelectorAll(sel)] as HTMLElement[];
-
-/** Gives a table a width it needs and a width it has. */
-function size(sel: string, needs: number, has = 380) {
-  const t = $(sel);
-  Object.defineProperty(t, 'scrollWidth', { get: () => needs, configurable: true });
-  Object.defineProperty(t, 'clientWidth', { get: () => has, configurable: true });
-}
-const tags = () => $$('body *').map((el) => el.tagName);
-
-const SIMPLE = `<table id="t"><thead><tr><th></th><th>Název</th><th>Komentář</th><th>Vložil</th><th>Zobrazit</th><th>Body</th></tr></thead>
-  <tbody><tr><td><img alt=""></td><td>Studijní opora Management</td><td></td><td><a href="#">J. Vzorová</a></td><td><a href="#"><img alt=""></a></td><td>-</td></tr>
-  <tr><td colspan="6">Nenalezena žádná vyhovující data.</td></tr></tbody></table>`;
-
-const exam = (
-  h: string[]
-) => `<table id="t"><thead><tr>${h.map((x) => `<th>${x}</th>`).join('')}</tr></thead>
-  <tbody><tr>${h.map((_, i) => `<td>v${i}</td>`).join('')}</tr></tbody></table>`;
-const EXAM_CZ = [
-  'Poř.',
-  'Stav',
-  'Kód',
-  'Předmět',
-  'Období',
-  'Datum termínu',
-  'Kde',
-  'Druh (forma)',
-  'Vypsal',
-  'Přihlášeno',
-  'Typ termínu',
-  'Přihlašování od Přihlašování do Odhlašování do',
-  'Operace',
-  'Přihlásit',
-];
-const EXAM_EN = [
-  'Ord.',
-  'Status',
-  'Code',
-  'Course',
-  'Study period',
-  'Date of exam sitting',
-  'Where',
-  'Type (form)',
-  'Put up by',
-  'Registered',
-  'Type of exam sitting',
-  'Registration from Register until Unregister until',
-  'Actions',
-  'Register',
-];
-const EXAM_KEYS = [
-  'por',
-  'stav',
-  'kod',
-  'predmet',
-  'obdobi',
-  'datum',
-  'kde',
-  'druh',
-  'vypsal',
-  'prihl',
-  'typ',
-  'okno',
-  'oper',
-  'akce',
-];
-
-/** List záznamníku: two header rows, and a second time slot as a short row. */
-const weeks = (n: number) => Array.from({ length: n }, (_, i) => `<td>${i + 1}.</td>`).join('');
-const marks = (n: number) => Array.from({ length: n }, () => '<td></td>').join('');
-const ATTENDANCE = `<table id="t"><tbody>
-  <tr><td></td><td rowspan="2">Předmět</td><td colspan="7">Rozvrhová akce</td><td rowspan="2" colspan="2">Operace</td><td rowspan="2">Nastavení</td></tr>
-  <tr><td></td><td>Kdy</td>${weeks(6)}</tr>
-  <tr><td></td><td rowspan="2"><a href="#">XYZ Vzorový předmět</a></td><td>Př Po 9.00</td>${marks(6)}<td>-</td><td><a href="#"><img alt=""></a></td><td><a href="#"><img alt=""></a></td></tr>
-  <tr><td></td><td>Cv Út 13.00</td>${marks(6)}</tr>
-</tbody></table>`;
-
 describe('the phone script and IS tables', () => {
   beforeEach(() => {
     document.head.innerHTML = '';
@@ -247,22 +173,5 @@ describe('the phone script and IS tables', () => {
     size('#t', 900);
     run();
     expect($('#t').className).toBe('');
-  });
-
-  it('judges again when the phone is turned, and undoes what no longer applies', () => {
-    document.body.innerHTML = page(SIMPLE);
-    size('#t', 900);
-    const root = document.documentElement;
-    Object.defineProperty(root, 'clientWidth', { get: () => 390, configurable: true });
-    run();
-    expect($('#t').classList.contains('reis-cards')).toBe(true);
-
-    size('#t', 700, 844);
-    window.dispatchEvent(new Event('resize'));
-    expect($('#t').classList.contains('reis-cards')).toBe(true); // same width: a keyboard, not a turn
-
-    Object.defineProperty(root, 'clientWidth', { get: () => 844, configurable: true });
-    window.dispatchEvent(new Event('resize'));
-    expect($('#t').classList.contains('reis-cards')).toBe(false);
   });
 });

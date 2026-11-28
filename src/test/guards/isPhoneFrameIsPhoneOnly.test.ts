@@ -26,7 +26,9 @@ function sourcesUnder(dir: string): string[] {
   const abs = resolve(process.cwd(), 'src', dir);
   return readdirSync(abs).flatMap((name) => {
     const rel = join(dir, name);
-    if (statSync(resolve(abs, name)).isDirectory()) return sourcesUnder(rel);
+    // Test helpers live beside the tests and never reach a bundle.
+    if (statSync(resolve(abs, name)).isDirectory())
+      return name === '__tests__' ? [] : sourcesUnder(rel);
     return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [rel] : [];
   });
 }

@@ -481,9 +481,10 @@ These are enforced by linting and project convention:
   frame all IS pages share, shows tables that do not fit as cards, and gives two
   pages a layout of their own (exam terms, List záznamníku); a third needs
   Dominik's OK, since a page students open often belongs in reIS as a screen.
-  The script beside it (`isPhoneTablesScript.ts`) only adds classes and labels:
-  nothing in an IS page is created, moved or removed, and the stylesheet hides
-  only what a card replaces. Phone only:
+  The script beside it (`isPhoneTablesScript.ts`) only sets classes, labels and
+  one inline `zoom` on IS's tables, and takes its own back when the phone is
+  turned: nothing in an IS page is created, moved or removed, and the stylesheet
+  hides only what a card replaces. Phone only:
   `src/test/guards/isPhoneFrameIsPhoneOnly.test.ts`.
 - **NO generic state** — all state lives in Zustand slices
 - **Max 200 lines per file** — convention, not lint-enforced; split proactively when a file grows past this
