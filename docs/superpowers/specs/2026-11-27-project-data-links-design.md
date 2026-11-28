@@ -1,6 +1,6 @@
 # Data for student projects — a link above the open odevzdávárny (design)
 
-Discussed with Dominik on 2026-11-27 and 2026-11-28. Status: **approved and built** in the PR that carries this file. Where it differs from the first draft (any subject, once above the list), the Decisions section says so.
+Discussed with Dominik on 2026-11-27 and 2026-11-28. Status: **approved and built**; the page and data are live, the app change and its migration ship with the PR that carries this file (the release applies the migration). Where it differs from the first draft (any subject, once above the list), the Decisions section says so.
 
 ## Intent and why
 

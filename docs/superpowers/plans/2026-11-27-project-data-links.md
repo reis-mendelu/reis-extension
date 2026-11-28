@@ -19,7 +19,7 @@
 - The line is shown **once** above the open boxes of a subject, only when at least one is open; never per card, and not when only submitted or closed boxes exist.
 - One counter label, `project_data_opened`; click and middle-click count, never right-click; nothing about the student goes with the link.
 - No teacher names, no student names or e-mails, no free text in anything the page links; no mention of My MENDELU anywhere; no buildings or rooms on the page.
-- Both trees: the edit is in `src/components/SubmissionBoxes/` (shared); verify at 390 and tablet 834 (the desktop tree renders the same shared list).
+- Both trees: the edit is in `src/components/SubmissionBoxes/` (shared); verified at 390 and tablet 834. The desktop tree was **not** screenshotted: it renders the same shared `SubmissionBoxList`, so the line is the same component; check it on desktop when the extension build is next opened.
 - Czech section ids in both languages (shipped: `#data`, `#nacist`, `#napady`); page rules in `reis-page/CLAUDE.md` apply (scannable, persona test, text in HTML).
 - Migration is additive and applied to prod **before** the build that sends the label ships; no `begin;`/`commit;`.
 - `npm run check` before every push in reis-extension. Base the PR on `test`.
@@ -118,9 +118,11 @@ Every Erasmus report in the public `reis-data` carried `student.email` (UČO@nod
 - [ ] **Step 2: Run** `npx vitest run projectDataLink`. Expected: FAIL.
 - [ ] **Step 3: Implement** `ProjectDataLink` as a plain `<a target="_blank" rel="noopener noreferrer">` row (bordered, `text-xs`, `ExternalLink` icon) and mount it in `SubmissionBoxList` as above.
 - [ ] **Step 4: Run** the new test plus `npx vitest run SubmissionBoxes SubjectsPanel`. Expected: PASS.
-- [ ] **Step 5: `verify-ui`** at 390 and tablet 834 (the desktop tree renders the same shared list); confirm the line is present once, nothing overflows, and it is absent for a B-EM persona.
+- [ ] **Step 5: `verify-ui`** at 390 and tablet 834 (desktop not screenshotted, same shared list, see Global Constraints); confirm the line is present once, nothing overflows, and it is absent for a B-EM persona.
 - [ ] **Step 6: `npm run check`, commit, open the PR to `test`** (the edit is in shared code, so both trees have it).
 
 ---
+
+**Status (2026-11-28):** Tasks 0–2 are merged and live (reis-data#10/#11, reis-scraper#25, reis-page#87); Tasks 3–5 are in the extension PR, whose migration the release applies. The checkboxes below were not ticked as the work went.
 
 **Rollout order:** Task 1 → Task 2 (both merged and live) → Task 3 migration applied → Tasks 4–5 in one PR to `test` → release.
