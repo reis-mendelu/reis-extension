@@ -52,9 +52,10 @@ export async function applyImpersonation(
   );
   // The Erasmus persona's English, in memory only; any other view gives the
   // admin's own language back (design 2026-11-27 §2 "Language"). Not on a
-  // background refresh: the same persona, and a language the admin picked
-  // meanwhile is theirs.
-  if (!opts.background)
+  // background refresh (the same persona), and not when the admin picked a
+  // language after this request began: that pick is theirs and newer.
+  const pickedSince = opts.epoch !== undefined && languagePickedAt >= opts.epoch;
+  if (!opts.background && !pickedSince)
     await get().setPersonaLanguage(personaById(active.selection.personaId)?.language ?? null);
   void get()
     .fetchSuccessRateBatch(failRateCodes(active.result))
@@ -73,3 +74,13 @@ export const nextImpersonationEpoch = () => ++epoch;
 export const isCurrentImpersonationEpoch = (e: number) => e === epoch;
 /** The current token without taking a new one: the boot restore yields to any request after it. */
 export const currentImpersonationEpoch = () => epoch;
+
+/**
+ * The request token current when the admin last picked a language
+ * (`setLanguage`). A request that began at or before it lands without setting
+ * its persona's language: a pick made while a persona was fetching is newer.
+ */
+let languagePickedAt = -1;
+export const noteLanguagePick = () => {
+  languagePickedAt = epoch;
+};

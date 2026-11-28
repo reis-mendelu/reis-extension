@@ -52,9 +52,11 @@ describe('fetchImpersonation, Erasmus', () => {
     }
     expect(r.subjects.data['EBA-MAR']).toMatchObject({
       subjectCode: 'EBA-MAR',
-      nameEn: 'Financial Markets',
+      nameCs: 'Marketing 1 v AJ',
+      nameEn: 'Marketing 1',
       subjectId: '164024',
     });
+    expect(r.subjects.data['EBA-FT']).toMatchObject({ nameEn: 'Financial Markets' });
   });
 
   it('asks each course without a year (exchange students have none), one per course', async () => {
@@ -81,6 +83,18 @@ describe('fetchImpersonation, Erasmus', () => {
     await expect(fetchImpersonation(await erasmusSelection(), SEPT)).rejects.toMatchObject({
       code: 'timetable',
     });
+  });
+
+  it('asks each course in the timetable it was listed in', async () => {
+    await fetchImpersonation(await erasmusSelection(), SEPT);
+    const rozvrhy = new Set(
+      bodies()
+        .filter((b) => b.get('predmet') && b.get('predmet') !== '0')
+        .map((b) => b.get('rozvrh'))
+    );
+    const pef = (await loadOptions(SEPT)).find((f) => f.faculty === 'PEF')!;
+    const listed = pef.courses!.find((c) => c.code === 'EBA-MAR')!.rozvrh.id;
+    expect([...rozvrhy]).toEqual([listed]);
   });
 
   it('no course at all is noPlan', async () => {

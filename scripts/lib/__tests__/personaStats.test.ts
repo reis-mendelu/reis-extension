@@ -107,7 +107,12 @@ describe('the Erasmus row', () => {
   );
 
   it('has no plan: 0 plan rows, every taught subject is "only in timetable"', () => {
-    expect(personaStats(r)).toMatchObject({ planRows: 0, planSubjects: 0, subjects: 2 });
+    expect(personaStats(r)).toMatchObject({
+      planRows: 0,
+      planSubjects: 0,
+      subjects: 2,
+      timetableOnly: 2,
+    });
   });
 
   it('counts each pinned course, resolved or not', () => {

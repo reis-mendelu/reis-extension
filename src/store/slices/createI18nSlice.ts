@@ -2,6 +2,7 @@ import type { I18nSlice, AppSlice, Language } from '../types';
 import { IndexedDBService } from '../../services/storage';
 import { syncService } from '../../services/sync';
 import { setCurrentLanguage } from '../../i18n/currentLanguage';
+import { noteLanguagePick } from './impersonation/applyImpersonation';
 
 const STORAGE_KEY = 'reis_language';
 const DEFAULT_LANGUAGE: Language = 'cz';
@@ -35,7 +36,9 @@ export const createI18nSlice: AppSlice<I18nSlice> = (set, get) => {
     setLanguage: async (newLang: Language) => {
       try {
         await IndexedDBService.set('meta', STORAGE_KEY, newLang);
-        // The admin's own pick, even mid-persona: theirs from now on.
+        // The admin's own pick, even mid-persona: theirs from now on, also
+        // over a persona still being fetched (applyImpersonation).
+        noteLanguagePick();
         set({ personaLanguage: null });
         show(newLang);
 

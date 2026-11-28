@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadOptions } from '../options';
+import { personaById, personaRequest } from '../../../features/personas';
 import type { ImpersonationSelection } from '../types';
 
 /**
@@ -77,8 +78,22 @@ export const EXCHANGE_COURSES: Record<string, string> = {
   '164119': 'EBA-PE',
   '164023': 'EBA-FT',
 };
-const asCourse = (json: string, predmet: string) =>
-  json.replaceAll('EBC-FT', EXCHANGE_COURSES[predmet]!).replaceAll('164066', predmet);
+/** Each course's own names (the timetable's), so a mixed-up subject shows. */
+export const EXCHANGE_NAMES: Record<string, { cz: string; en: string }> = {
+  'EBA-MAR': { cz: 'Marketing 1 v AJ', en: 'Marketing 1' },
+  'EBA-MI': { cz: 'Mikroekonomie 1 v AJ', en: 'Microeconomics 1' },
+  'EBA-MT': { cz: 'Matematika v AJ', en: 'Mathematics' },
+  'EBA-PE': { cz: 'Podniková ekonomika 1 v AJ', en: 'Business Economics 1' },
+  'EBA-FT': { cz: 'Finanční trhy v AJ', en: 'Financial Markets' },
+};
+const asCourse = (json: string, predmet: string) => {
+  const code = EXCHANGE_COURSES[predmet]!;
+  return json
+    .replaceAll('EBC-FT', code)
+    .replaceAll('164066', predmet)
+    .replaceAll('Finanční trhy', EXCHANGE_NAMES[code]!.cz)
+    .replaceAll('Financial Markets', EXCHANGE_NAMES[code]!.en);
+};
 
 /** Answers each request with the real IS page that request got on 2026-09-26. */
 export function route(url: string, init?: RequestInit): string {
@@ -162,23 +177,9 @@ export async function bfSelection(year: number): Promise<ImpersonationSelection>
   };
 }
 
-/** The Erasmus persona's request, the way `personaRequest` builds it from `loadOptions`. */
+/** The Erasmus persona's request: built by `personaRequest` itself, from `loadOptions`. */
 export async function erasmusSelection(): Promise<ImpersonationSelection> {
-  const pef = (await loadOptions(SEPT)).find((f) => f.faculty === 'PEF')!;
-  const courses = (pef.courses ?? [])
-    .filter((c) => Object.values(EXCHANGE_COURSES).includes(c.code))
-    .map(({ code, predmetId }) => ({ code, predmetId }));
-  return {
-    programId: '',
-    shortCode: 'Z-EXC',
-    name: '',
-    faculty: 'PEF',
-    year: 1,
-    group: null,
-    rozvrh: pef.courses![0]!.rozvrh,
-    periodLabel: 'ZS 2026/2027',
-    erasmus: true,
-    courses,
-    personaId: 'erasmus',
-  };
+  const erasmus = personaById('erasmus')!;
+  const req = await personaRequest(erasmus, await loadOptions(SEPT), async () => []);
+  return { ...req, periodLabel: 'ZS 2026/2027' };
 }

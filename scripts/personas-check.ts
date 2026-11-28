@@ -20,7 +20,7 @@ const exitAfterOutput = (code: number) => process.stdout.write('', () => process
 async function main() {
   // Before the login: the persona list is plain data (features/personas.ts
   // imports no fetcher), so a mistyped id costs no browser and no IS request.
-  const { PERSONAS } = await import('@/features/personas');
+  const { PERSONAS, personaById } = await import('@/features/personas');
   const { EXCHANGE_PROGRAMME } = await import('@/utils/eventAudience');
   // `--detail zf`: every subject's lessons of that persona, to tell a broken
   // group filter from a subject that really meets at several times.
@@ -105,7 +105,8 @@ async function main() {
     return {
       persona: r.id,
       code: r.code ?? '—',
-      group: r.courses ? '—' : (r.group ?? 'all'),
+      // Erasmus has no group, also on a row that failed (no courses then).
+      group: personaById(r.id)?.erasmus ? '—' : (r.group ?? 'all'),
       'groups in IS': r.groups.join(',') || '—',
       'plan rows': r.stats?.planRows ?? '—',
       'plan subj': r.stats?.planSubjects ?? '—',

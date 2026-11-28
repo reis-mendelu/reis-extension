@@ -189,6 +189,18 @@ describe('Erasmus persona: English in memory only', () => {
     expect(s().language).toBe('cz');
   });
 
+  it('a language picked while Erasmus is still fetching is not overwritten when it lands', async () => {
+    const release = setup.gatedFetch(fetchImpersonation, 'Z-EXC-1');
+    const pending = s().switchToPersona('erasmus');
+    await vi.waitFor(() => expect(s().personaRows.erasmus).toBe('loading'));
+    await s().setLanguage('en');
+    await s().setLanguage('cz');
+    release();
+    expect(await pending).toBe(true);
+    expect(s().isErasmus).toBe(true);
+    expect(s().language).toBe('cz');
+  });
+
   it('entering the demo restores the admin language', async () => {
     await s().switchToPersona('erasmus');
     await s().enterDemo();
