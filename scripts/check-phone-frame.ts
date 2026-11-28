@@ -35,7 +35,11 @@ const FIXTURE = part('isPhoneFrame.html')
     () => part('isPhoneFrameTablesRead.html') + part('isPhoneFrameTablesRest.html')
   )
   .replace(/\/\* ICONS:[^*]*\*\//, () => part('isPhoneFrameIcons.css'));
-if (!FIXTURE.includes('data-expect') || !FIXTURE.includes('decorator'))
+if (
+  !FIXTURE.includes('data-expect') ||
+  !FIXTURE.includes("svg[data-size-sysid='decorator']") ||
+  FIXTURE.includes('/* ICONS:')
+)
   throw new Error('check:phone-frame: the table or icon fixtures were not inserted');
 const URL_ON_IS = 'https://is.mendelu.cz/auth/reis-phone-frame-fixture';
 /** The widths the app claims to support. Same three `scripts/shot.ts` uses. */
