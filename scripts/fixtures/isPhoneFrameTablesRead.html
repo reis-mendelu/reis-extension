@@ -1,0 +1,136 @@
+<!--
+  Part of scripts/fixtures/isPhoneFrame.html (the check script inserts it): the three tables the
+  phone script re-reads. Made up; no real student, subject or teacher.
+-->
+<!-- Exam terms: found by header words, laid out as rows. Must not scroll sideways. -->
+<table id="exam" data-expect="reis-exam">
+  <thead>
+    <tr>
+      <th>Poř.</th>
+      <th>Stav</th>
+      <th>Kód</th>
+      <th>Předmět</th>
+      <th>Období</th>
+      <th>Datum termínu</th>
+      <th>Kde</th>
+      <th>Druh (forma)</th>
+      <th>Vypsal</th>
+      <th>Přihlášeno</th>
+      <th>Typ termínu</th>
+      <th>Přihlašování od<br />Přihlašování do<br />Odhlašování do</th>
+      <th>Operace</th>
+      <th>Přihlásit</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1.</td>
+      <td>●</td>
+      <td>XYZ-ABC</td>
+      <td>Vzorový předmět s dlouhým názvem</td>
+      <td>ZS 2030/2031 - VZ</td>
+      <td>07.12.2030 11:00 (po)</td>
+      <td>Q05 (ČP)</td>
+      <td>zkouška (písemná)</td>
+      <td>J. Vzorový</td>
+      <td>14/14</td>
+      <td>řádný</td>
+      <td>--<br />06.12.2030 17:00<br />06.12.2030 17:00</td>
+      <td>info</td>
+      <td id="register">přihlásit</td>
+    </tr>
+  </tbody>
+</table>
+<!-- A plain header: becomes cards. -->
+<table id="cards" data-expect="reis-cards">
+  <thead>
+    <tr>
+      <th></th>
+      <th>Název</th>
+      <th>Komentář</th>
+      <th>Vložil</th>
+      <th>Datum dokumentu</th>
+      <th>Modifikace</th>
+      <th>Zobrazit</th>
+      <th>Přílohy</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>✉</td>
+      <td>Vzorový dokument s velmi dlouhým názvem k předmětu</td>
+      <td></td>
+      <td>J. Vzorový</td>
+      <td>23.11.2030</td>
+      <td>23.11.2030</td>
+      <td>zobrazit</td>
+      <td>PDF</td>
+    </tr>
+  </tbody>
+</table>
+<!-- List záznamníku: two header rows, a second time slot as a short row. -->
+<table id="att" data-expect="reis-att">
+  <tbody>
+    <tr>
+      <td></td>
+      <td rowspan="2">Předmět</td>
+      <td colspan="13">Rozvrhová akce</td>
+      <td rowspan="2" colspan="4">Operace</td>
+      <td rowspan="2">Nastavení</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>Kdy</td>
+      <td>1.</td>
+      <td>2.</td>
+      <td>3.</td>
+      <td>4.</td>
+      <td>5.</td>
+      <td>6.</td>
+      <td>7.</td>
+      <td>8.</td>
+      <td>9.</td>
+      <td>10.</td>
+      <td>11.</td>
+      <td>12.</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td rowspan="2">XYZ-ABC Vzorový předmět s dlouhým názvem</td>
+      <td>XYZ-ABC Př Po 9.00-10.50 Q02 Každý týden</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td>hodnocení</td>
+      <td>-</td>
+      <td>-</td>
+      <td>složka</td>
+      <td>e-mail</td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>XYZ-ABC Cv Út 13.00-14.50 Q05 Každý týden</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>

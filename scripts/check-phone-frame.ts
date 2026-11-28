@@ -25,7 +25,14 @@ import { fileURLToPath } from 'node:url';
 import { buildPhoneFrameScript, PHONE_FRAME_STYLE_ID } from '../src/mobile/isPhoneFrame';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const FIXTURE = readFileSync(resolve(HERE, 'fixtures/isPhoneFrame.html'), 'utf8');
+const part = (name: string) => readFileSync(resolve(HERE, 'fixtures', name), 'utf8');
+/** The page shell with its two table fixtures put in (three files, each short enough to read). */
+const FIXTURE = part('isPhoneFrame.html').replace(
+  /<!-- TABLES:[^>]*-->/,
+  () => part('isPhoneFrameTablesRead.html') + part('isPhoneFrameTablesRest.html')
+);
+if (!FIXTURE.includes('data-expect'))
+  throw new Error('check:phone-frame: the table fixtures were not inserted');
 const URL_ON_IS = 'https://is.mendelu.cz/auth/reis-phone-frame-fixture';
 /** The widths the app claims to support. Same three `scripts/shot.ts` uses. */
 const WIDTHS = [320, 390, 430];

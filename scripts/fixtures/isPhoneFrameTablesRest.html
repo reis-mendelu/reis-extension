@@ -1,0 +1,73 @@
+<!--
+  Part of scripts/fixtures/isPhoneFrame.html (the check script inserts it): the tables the phone
+  script cannot re-read. Made up; no real student, subject or teacher.
+-->
+<!-- Rows that do not line up with a header, a little too wide: tightened, and shrunk to fit
+ on the narrowest phone, where tightening alone is not enough. -->
+<table id="plan" data-expect="reis-compact">
+  <tr>
+    <td>Kód</td>
+    <td>Název předmětu</td>
+    <td>Ukončení</td>
+    <td>Kredity</td>
+    <td>Zapsáno</td>
+    <td>Stav splnění</td>
+  </tr>
+  <tr>
+    <td colspan="6">1. semestr</td>
+  </tr>
+  <tr>
+    <td>XYZ-ABC</td>
+    <td>Vzorový předmět</td>
+    <td>zk</td>
+    <td>6</td>
+    <td>1x</td>
+    <td>SPLNĚNO (05.01.2030)</td>
+  </tr>
+</table>
+<!-- The same shape but far too wide: the one case that still scrolls inside its own box. -->
+<table id="scroller" data-expect="scroll">
+  <tr>
+    <td>Název předmětu</td>
+    <td>Název</td>
+    <td>Typ</td>
+    <td>Vypsáno pro</td>
+    <td>Dokdy</td>
+    <td>Téma</td>
+    <td>Podrobnosti</td>
+    <td>Počet souborů</td>
+    <td>Pokyny</td>
+    <td>Vypsal</td>
+    <td>Vkládat soubory</td>
+    <td id="last-column">Poslední sloupec</td>
+  </tr>
+  <tr>
+    <td colspan="12">Nenalezena žádná vyhovující data.</td>
+  </tr>
+  <tr>
+    <td colspan="12">Skupina předmětů povinných</td>
+  </tr>
+</table>
+<!-- A one-row filter form: its cells wrap. -->
+<table id="filter" data-expect="reis-flow">
+  <tr>
+    <td>Předmět</td>
+    <td>
+      <select name="p">
+        <option>-- všechny předměty a všechna období od počátku studia --</option>
+      </select>
+    </td>
+    <td>druh termínu</td>
+    <td>
+      <select name="d">
+        <option>-- neomezeno --</option>
+      </select>
+    </td>
+    <td>vypsal</td>
+    <td>
+      <select name="v">
+        <option>-- neomezeno --</option>
+      </select>
+    </td>
+  </tr>
+</table>
