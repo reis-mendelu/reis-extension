@@ -10,7 +10,7 @@ export const IS_PHONE_FRAME_CSS_TABLES = `
 /* Tightened tables: IS's no-wrap pieces may wrap, a text field takes its cell's width (a form keeps its layout). */
 .mainpage table.reis-compact .nowrap, .mainpage table.reis-compact td span, .mainpage table.reis-compact th span { white-space: normal !important; }
 /* ...but a number keeps its digits together ("2 000 000" broke into three lines that read as three numbers). */
-.mainpage table.reis-compact td.reis-numeric { white-space: nowrap !important; }
+.mainpage table.reis-compact td.reis-numeric, .mainpage table.reis-compact td.reis-numeric span { white-space: nowrap !important; }
 .mainpage table.reis-compact input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="hidden"]):not(.hasDatepicker), .mainpage table.reis-compact select, .mainpage table.reis-compact textarea { width: 100% !important; min-width: 0 !important; max-width: 100%; box-sizing: border-box; }
 .mainpage table.reis-compact input.hasDatepicker { width: calc(100% - 36px) !important; min-width: 0 !important; box-sizing: border-box; }
 /* Footnote marks in restyled tables stay readable (the timetable's "(3)" came out at 10 px). */

@@ -150,6 +150,11 @@ describe('the phone script and IS tables', () => {
     expect($('#t').classList.contains('reis-compact')).toBe(true);
     expect($('#n').classList.contains('reis-numeric')).toBe(true);
     expect($('#w').classList.contains('reis-numeric')).toBe(false);
+
+    // Judged again after IS changed the cell to words, it may wrap again.
+    $('#n').textContent = 'neomezeno';
+    window.dispatchEvent(new Event('load'));
+    expect($('#n').classList.contains('reis-numeric')).toBe(false);
   });
 
   it('lets a one-row layout table (a filter form) wrap', () => {
