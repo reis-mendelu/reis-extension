@@ -1794,8 +1794,6 @@
     "partnersBody": "Vybíráme si je sami, podle oborů, které se tu studují. Jde nám o stáže a akce. Nevidí žádná data z tvého ISu."
   },
   "impersonation": {
-    "entry": "Zobrazit jako student…",
-    "entrySub": "Plán a rozvrh jiného oboru",
     "title": "Zobrazit jako student",
     "faculty": "Fakulta",
     "programme": "Obor",
@@ -1813,6 +1811,7 @@
     "errorNoPlan": "Pro tento obor a ročník IS nemá studijní plán.",
     "errorNoSemester": "Plán tohoto oboru nemá semestr pro zvolený ročník.",
     "errorNotAdmin": "Jen pro správce reIS.",
+    "errorStorage": "Zobrazení se nepodařilo uložit v tomto zařízení.",
     "expired": "Zobrazení jako student skončilo s koncem semestru.",
     "bannerLabel": "Zobrazuješ jako {programme} · {year}. ročník",
     "bannerExit": "Ukončit",
@@ -1823,7 +1822,12 @@
       "zaznamnik": "Záznamník",
       "averagesAndBoxes": "Průměry a odevzdávárny"
     },
-    "close": "Zavřít"
+    "close": "Zavřít",
+    "personas": {
+      "title": "Zobrazit jako",
+      "me": "Já",
+      "other": "Jiný obor…"
+    }
   },
   "odevzdavarny": {
     "title": "Odevzdávárny",
