@@ -63,7 +63,7 @@ body { font-size: 16px; line-height: 1.45; }
 .mainpage { overflow-wrap: break-word; }
 /* ...except in a box IS sizes to zero width on purpose: its label is meant to overflow (the
    "Dnes" marker on Mapa mých studií broke one letter per line). */
-.mainpage [style*="width: 0px"], .mainpage [style*="width:0px"] { overflow-wrap: normal; }
+.mainpage .reis-zero { overflow-wrap: normal; }
 .mainpage .reis-wrap { flex-wrap: wrap !important; max-width: 100% !important; width: auto !important; }
 .mainpage .reis-wrap > * { max-width: 100% !important; box-sizing: border-box; }
 .mainpage .reis-stack { grid-template-columns: minmax(0, 1fr) !important; grid-template-areas: none !important; grid-auto-flow: row !important; max-width: 100% !important; width: auto !important; }

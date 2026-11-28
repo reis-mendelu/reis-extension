@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { $, IS_PAGE, page, run, setUrl, size, tags } from './isPhoneTablesFixtures';
+import { $, IS_PAGE, nodes, page, run, sameNodes, setUrl, size } from './isPhoneTablesFixtures';
 
 /**
  * Boxes that are not tables: IS's flex rows (the "Zobrazit:" column toggles)
@@ -57,8 +57,27 @@ describe('the phone script and boxes wider than the phone', () => {
     Object.defineProperty($('#t'), 'getBoundingClientRect', {
       value: () => ({ width: 1000, height: 400, left: 0, right: 1000, top: 0, bottom: 400 }),
     });
-    Object.defineProperty($('#g'), 'clientWidth', { get: () => 382, configurable: true });
-    Object.defineProperty($('.mainpage'), 'clientWidth', { get: () => 382, configurable: true });
+    pageEdges();
+    run();
+    expect($('#g').classList.contains('reis-scroll')).toBe(true);
+  });
+
+  /** The content column of a 412 px phone: 15 px in from each side. */
+  function pageEdges() {
+    Object.defineProperty($('.mainpage'), 'getBoundingClientRect', {
+      value: () => ({ width: 382, height: 900, left: 15, right: 397, top: 0, bottom: 900 }),
+    });
+  }
+  function drawnAt(left: number, width: number) {
+    Object.defineProperty($('#t'), 'getBoundingClientRect', {
+      value: () => ({ width, height: 70, left, right: left + width, top: 0, bottom: 70 }),
+    });
+  }
+
+  it('also scrolls a picture narrower than the page that starts too far right', () => {
+    document.body.innerHTML = page(`<div id="g"><svg id="t" style="width: 300px"></svg></div>`);
+    drawnAt(200, 300);
+    pageEdges();
     run();
     expect($('#g').classList.contains('reis-scroll')).toBe(true);
   });
@@ -66,13 +85,21 @@ describe('the phone script and boxes wider than the phone', () => {
   // IS's home tiles: a 70 px icon in a 64 px column. Making that column scroll cut the icon off.
   it('leaves a picture that only overflows its own box, not the page', () => {
     document.body.innerHTML = page(`<div id="g"><svg id="t" style="width: 70px"></svg></div>`);
-    Object.defineProperty($('#t'), 'getBoundingClientRect', {
-      value: () => ({ width: 70, height: 70, left: 0, right: 70, top: 0, bottom: 70 }),
-    });
+    drawnAt(23, 70);
     Object.defineProperty($('#g'), 'clientWidth', { get: () => 64, configurable: true });
-    Object.defineProperty($('.mainpage'), 'clientWidth', { get: () => 382, configurable: true });
+    pageEdges();
     run();
     expect($('#g').classList.contains('reis-scroll')).toBe(false);
+  });
+
+  // Mapa mých studií's "Dnes": a label in a box IS sizes to zero width, meant to overflow.
+  it('marks a box IS sizes to zero width, and not one with only a zero minimum', () => {
+    document.body.innerHTML = page(
+      `<div id="t" style="width: 0px; padding: 0"><div>Dnes</div></div><div id="m" style="min-width: 0px">x</div>`
+    );
+    run();
+    expect($('#t').classList.contains('reis-zero')).toBe(true);
+    expect($('#m').classList.contains('reis-zero')).toBe(false);
   });
 
   it('gives text a line height no smaller than the text, and leaves normal text alone', () => {
@@ -92,9 +119,9 @@ describe('the phone script and boxes wider than the phone', () => {
       `<form action="/x"><div id="t" style="display: flex"><input name="q" value="abc"><span>x</span></div></form>`
     );
     size('#t', 900);
-    const before = tags();
+    const before = nodes();
     run();
-    expect(tags()).toEqual(before);
+    expect(sameNodes(before)).toBe(true);
     expect(($('input[name="q"]') as HTMLInputElement).value).toBe('abc');
   });
 });

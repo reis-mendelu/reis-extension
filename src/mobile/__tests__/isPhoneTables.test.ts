@@ -13,7 +13,8 @@ import {
   run,
   setUrl,
   size,
-  tags,
+  nodes,
+  sameNodes,
 } from './isPhoneTablesFixtures';
 
 /**
@@ -159,10 +160,10 @@ describe('the phone script and IS tables', () => {
         `<form action="/x"><input name="q" value="abc">${html}</form>`
       );
       size('#t', 1200);
-      const before = tags();
+      const before = nodes();
       const text = document.body.textContent;
       run();
-      expect(tags()).toEqual(before);
+      expect(sameNodes(before)).toBe(true);
       expect(document.body.textContent).toBe(text);
       expect(($('input[name="q"]') as HTMLInputElement).value).toBe('abc');
     }

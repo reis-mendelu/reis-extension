@@ -125,12 +125,13 @@ add(t,isExam?'reis-exam':'reis-cards');
 function ownText(e){for(var c=e.firstChild;c;c=c.nextSibling)if(c.nodeType===3&&/\S/.test(c.data))return true;return false;}
 function inTable(e){for(var p=e.parentElement;p;p=p.parentElement){if(p.tagName==='TABLE')return true;if(p.classList&&p.classList.contains('mainpage'))return false;}return false;}
 function boxes(){
-var BOX=['reis-wrap','reis-stack','reis-scroll','reis-lh'];
+var BOX=['reis-wrap','reis-stack','reis-scroll','reis-lh','reis-zero'];
 arr(d.querySelectorAll('.mainpage .'+BOX.join(', .mainpage .'))).forEach(function(e){BOX.forEach(function(k){e.classList.remove(k);});});
-var main=d.querySelector('.mainpage'),room=(main?main.clientWidth:0)+1;
+var main=d.querySelector('.mainpage'),edge=main?main.getBoundingClientRect():null;
 arr(d.querySelectorAll('.mainpage *')).forEach(function(e){
 var name=e.tagName.toLowerCase();
-if(name==='svg'||name==='canvas'){var p=e.parentElement;if(p&&!inTable(e)&&e.getBoundingClientRect().width>room)add(p,'reis-scroll');return;}
+if(name==='svg'||name==='canvas'){var p=e.parentElement,b=e.getBoundingClientRect();if(p&&edge&&!inTable(e)&&(b.right>edge.right+1||b.left<edge.left-1))add(p,'reis-scroll');return;}
+if(e.style&&/^0(px)?$/.test(e.style.width))add(e,'reis-zero');
 var cs=getComputedStyle(e);
 if(/px$/.test(cs.lineHeight)&&parseFloat(cs.lineHeight)<parseFloat(cs.fontSize)&&ownText(e))add(e,'reis-lh');
 if(e.tagName==='TABLE'||inTable(e))return;

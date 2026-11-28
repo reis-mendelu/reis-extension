@@ -24,7 +24,13 @@ export function size(sel: string, needs: number, has = 380) {
   Object.defineProperty(t, 'scrollWidth', { get: () => needs, configurable: true });
   Object.defineProperty(t, 'clientWidth', { get: () => has, configurable: true });
 }
-export const tags = () => $$('body *').map((el) => el.tagName);
+/** Every element on the page, as the objects themselves: compare with `sameNodes`. */
+export const nodes = () => $$('body *');
+/** True when the page holds exactly these elements, the very same objects, in the same order. */
+export const sameNodes = (before: HTMLElement[]) => {
+  const after = nodes();
+  return after.length === before.length && after.every((el, i) => el === before[i]);
+};
 
 export const SIMPLE = `<table id="t"><thead><tr><th></th><th>Název</th><th>Komentář</th><th>Vložil</th><th>Zobrazit</th><th>Body</th></tr></thead>
   <tbody><tr><td><img alt=""></td><td>Studijní opora Management</td><td></td><td><a href="#">J. Vzorová</a></td><td><a href="#"><img alt=""></a></td><td>-</td></tr>
