@@ -171,10 +171,10 @@ input, select, textarea, button { font-size: 16px; }
 
 /* What the script could not re-read: tighter cells; a one-row filter form wraps. */
 .mainpage table.reis-compact td, .mainpage table.reis-compact th { font-size: 12px !important; padding: 3px !important; white-space: normal !important; }
-.mainpage table.reis-flow tbody, .mainpage table.reis-flow tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.mainpage table.reis-flow td { display: block !important; padding: 0 !important; max-width: 100%; }
+.mainpage table.reis-flow > tbody, .mainpage table.reis-flow > tbody > tr, .mainpage table.reis-flow > tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.mainpage table.reis-flow > tbody > tr > td, .mainpage table.reis-flow > tr > td { display: block !important; padding: 0 !important; max-width: 100%; }
 .mainpage table.reis-flow select, .mainpage table.reis-flow input { max-width: calc(100vw - 30px); }
-/* A column IS itself hides (the row number; "Období" until the student switches it on) stays
+/* A column or row IS itself hides (the row number; "Období" until the student switches it on) stays
    hidden in a card. Last on purpose: it has to win over every display rule above. */
-.mainpage table[class*="reis-"] tr[class] > td.UISTMNumberCellHidden, .mainpage table[class*="reis-"] tr[class] > td[style*="display: none"], .mainpage table[class*="reis-"] tr[class] > td[style*="display:none"] { display: none !important; }
+.mainpage table[class*="reis-"] tr[class][style*="display: none"], .mainpage table[class*="reis-"] tr[class][style*="display:none"], .mainpage table[class*="reis-"] tr[class] > td.UISTMNumberCellHidden, .mainpage table[class*="reis-"] tr[class] > td[style*="display: none"], .mainpage table[class*="reis-"] tr[class] > td[style*="display:none"] { display: none !important; }
 `;

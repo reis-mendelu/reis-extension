@@ -103,6 +103,10 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
           return `${k} ${cs.fontSize} pad ${cs.paddingLeft}`;
         })
         .join(', '),
+      hiddenRow:
+        document.getElementById('hidden-row')!.getBoundingClientRect().height === 0
+          ? 'hidden'
+          : 'shown',
       peopleSizes: (() => {
         const rows = [...document.querySelectorAll('#people tr.reis-person')];
         const photo = document.querySelector('#people td.reis-photo img')?.getBoundingClientRect();

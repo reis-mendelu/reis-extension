@@ -68,7 +68,7 @@ c.setAttribute('data-label',label);
 var s=txt(c);
 if(!s&&pic(c))add(c,'reis-icon');
 else if(!s&&!c.querySelector('a,input,select,button,textarea'))add(c,'reis-empty');
-else if(DASH.test(s)&&!pic(c)&&!c.querySelector('a'))add(c,'reis-dash');
+else if(DASH.test(s)&&!pic(c)&&!c.querySelector('a,input,select,button,textarea'))add(c,'reis-dash');
 }
 function squeeze(t){
 add(t,'reis-compact');
