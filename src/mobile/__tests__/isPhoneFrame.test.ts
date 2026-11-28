@@ -183,7 +183,7 @@ describe('IS_PHONE_FRAME_CSS', () => {
   // but its rows and cells keep theirs. No rule may style those on their own.
   it('styles a tagged row or cell only inside a table that is being shown that way', () => {
     const tagged =
-      /\.(reis-(card|plain|head|title|icon|empty|dash|person|photo|num)|a-(main|cont|title|slot|week|op\d?|set|pad)|kv-(pair|label)|x-[a-z]+)\b/;
+      /\.(reis-(card|plain|head|title|icon|empty|dash|person|photo|num|numeric)|a-(main|cont|title|slot|week|op\d?|set|pad)|kv-(pair|label)|x-[a-z]+)\b/;
     const parts = rules
       .flatMap((r) => r.selector.split(/,(?![^(]*\))/))
       .filter((part) => tagged.test(part));

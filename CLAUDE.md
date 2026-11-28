@@ -476,8 +476,8 @@ These are enforced by linting and project convention:
   custom CSS, not less. The rule is about app chrome, where DaisyUI applies.
   A second standing exception is **old IS pages on a phone**: the in-app
   browser sends one stylesheet with every is.mendelu.cz page so a desktop page
-  is readable at phone width. It lives in `src/mobile/isPhoneFrameCss.ts` and
-  nowhere else, and leaves a page it does not recognise as it is. It styles the
+  is readable at phone width. It lives in `src/mobile/isPhoneFrameCss.ts` (and
+  `isPhoneFrameCssTables.ts`, split out for length) and nowhere else, and leaves a page it does not recognise as it is. It styles the
   frame all IS pages share, shows tables that do not fit as cards (and those
   that fit only by squeezing: a header row of at least three `<th>` cells and
   a natural width over 1.5x the room; a table without such a header is left

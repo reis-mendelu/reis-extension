@@ -81,7 +81,7 @@ else if(!s&&!c.querySelector('a,input,select,button,textarea'))add(c,'reis-empty
 else if(DASH.test(s)&&!pic(c)&&!c.querySelector('a'))add(c,'reis-dash');
 }
 function squeeze(t){
-add(t,'reis-compact');
+add(t,'reis-compact');arr(t.querySelectorAll('td')).forEach(function(c){var x=txt(c);if(x.length>3&&/\d/.test(x)&&/^[\d\s.,:%-]+$/.test(x))add(c,'reis-numeric');});
 var k=t.clientWidth/t.scrollWidth;
 if(k<1&&k>=0.92){add(t,'reis-fit');t.style.zoom=String(Math.floor(k*100)/100);}
 }

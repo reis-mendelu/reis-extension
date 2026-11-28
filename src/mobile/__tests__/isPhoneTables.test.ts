@@ -139,6 +139,19 @@ describe('the phone script and IS tables', () => {
     }
   });
 
+  // Account quotas: "2 000 000" broke into three lines that read as three numbers.
+  it('keeps a number in a tightened table whole, and leaves words free to wrap', () => {
+    document.body.innerHTML = page(
+      '<table id="t"><tr><td>Server</td><td>kB</td></tr><tr><td colspan="2">Skupina</td></tr>' +
+        '<tr><td id="w">akela disk</td><td id="n">2 000 000</td></tr></table>'
+    );
+    size('#t', 900);
+    run();
+    expect($('#t').classList.contains('reis-compact')).toBe(true);
+    expect($('#n').classList.contains('reis-numeric')).toBe(true);
+    expect($('#w').classList.contains('reis-numeric')).toBe(false);
+  });
+
   it('lets a one-row layout table (a filter form) wrap', () => {
     document.body.innerHTML = page(
       '<table id="t"><tr><td>Předmět</td><td><select><option>x</option></select></td></tr></table>'

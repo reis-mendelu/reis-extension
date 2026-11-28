@@ -67,8 +67,12 @@ describe('IS phone frame placement', () => {
     expect(users.sort()).toEqual(['mobile/isPhoneFrame.ts', 'mobile/isPhoneTablesScript.ts']);
   });
 
-  it('keeps every IS style in the one file the CLAUDE.md exception names', () => {
+  it('keeps every IS style in the files the CLAUDE.md exception names', () => {
     const styled = sourcesUnder('.').filter((f) => read(f).includes('IS_PHONE_FRAME_CSS'));
-    expect(styled.sort()).toEqual(['mobile/isPhoneFrame.ts', 'mobile/isPhoneFrameCss.ts']);
+    expect(styled.sort()).toEqual([
+      'mobile/isPhoneFrame.ts',
+      'mobile/isPhoneFrameCss.ts',
+      'mobile/isPhoneFrameCssTables.ts',
+    ]);
   });
 });
