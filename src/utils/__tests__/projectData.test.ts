@@ -2,20 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { isProjectDataAudience, projectDataUrl } from '../projectData';
 
 describe('projectDataUrl', () => {
-  it('sends EBC-VWA to the web section and EBC-PJ to the Java section', () => {
-    expect(projectDataUrl('EBC-VWA', 'cz')).toBe('https://reisapp.cz/navody/data-pro-projekty#web');
-    expect(projectDataUrl('EBC-PJ', 'cz')).toBe('https://reisapp.cz/navody/data-pro-projekty#java');
-  });
-
-  it('gives the English page for any language that is not Czech', () => {
-    expect(projectDataUrl('EBC-VWA', 'en')).toBe('https://reisapp.cz/en/guides/project-data#web');
-    expect(projectDataUrl('EBC-PJ', 'en')).toBe('https://reisapp.cz/en/guides/project-data#java');
-  });
-
-  it('is null for an unlisted subject and for a box with no course code', () => {
-    expect(projectDataUrl('EBC-M', 'cz')).toBeNull();
-    expect(projectDataUrl(undefined, 'cz')).toBeNull();
-    expect(projectDataUrl('', 'cz')).toBeNull();
+  it('is the Czech page for Czech and the English page for any other language', () => {
+    expect(projectDataUrl('cz')).toBe('https://reisapp.cz/navody/data-pro-projekty');
+    expect(projectDataUrl('en')).toBe('https://reisapp.cz/en/guides/project-data');
   });
 });
 

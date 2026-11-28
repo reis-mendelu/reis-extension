@@ -88,7 +88,7 @@ export function SubmissionBoxCard({ box, now, testId, isNew }: SubmissionBoxCard
         </span>
       </a>
       {box.instructions && <BoxInstructions text={box.instructions} />}
-      <ProjectDataLink courseCode={box.courseCode} />
+      <ProjectDataLink />
     </div>
   );
 }

@@ -1,24 +1,16 @@
 import type { AudienceViewer } from './partnerAudience';
 import { isReisForClaudeAudience } from './reisForClaude';
 
-/** The subjects whose boxes get the line, and the section of the page that fits their project. */
-const SECTION_BY_COURSE: Readonly<Record<string, 'web' | 'java'>> = {
-  'EBC-VWA': 'web',
-  'EBC-PJ': 'java',
-};
-
 /**
- * The page on reisapp.cz with the datasets, at the section for this subject, or
- * null when the subject is not listed (or the box has no course code: boxes
- * cached by an older build have none). `language` takes the app's own codes;
- * anything that is not Czech gets the English page, as in guidesIndexUrl.
+ * The page on reisapp.cz with the datasets. The same page for every subject (Dominik,
+ * 2026-11-28: it does not matter which subject the box belongs to); the page itself
+ * splits web from Java. `language` takes the app's own codes; anything that is not
+ * Czech gets the English page, as in guidesIndexUrl.
  */
-export function projectDataUrl(courseCode: string | undefined, language: string): string | null {
-  const section = courseCode ? SECTION_BY_COURSE[courseCode] : undefined;
-  if (!section) return null;
+export function projectDataUrl(language: string): string {
   return language === 'cz'
-    ? `https://reisapp.cz/navody/data-pro-projekty#${section}`
-    : `https://reisapp.cz/en/guides/project-data#${section}`;
+    ? 'https://reisapp.cz/navody/data-pro-projekty'
+    : 'https://reisapp.cz/en/guides/project-data';
 }
 
 /**

@@ -30,38 +30,36 @@ describe('SubmissionBoxCard — Data pro projekt', () => {
   });
   afterEach(cleanup);
 
-  it('shows the line to a B-OI student on EBC-VWA, linking the web section', () => {
+  it('shows the line to a B-OI student, linking the page', () => {
     setViewer('B-OI');
     renderBox();
     const link = screen.getByTestId('project-data-link');
-    expect(link.getAttribute('href')).toBe('https://reisapp.cz/navody/data-pro-projekty#web');
+    expect(link.getAttribute('href')).toBe('https://reisapp.cz/navody/data-pro-projekty');
     expect(link.textContent).toContain('Data pro projekt');
   });
 
-  it('links the Java section on EBC-PJ and the English page in English', () => {
+  it('shows it on any subject, and links the English page in English', () => {
     setViewer('B-AII', 'PEF', 'en');
-    renderBox({ courseCode: 'EBC-PJ' });
+    renderBox({ courseCode: 'EBC-M' });
     expect(screen.getByTestId('project-data-link').getAttribute('href')).toBe(
-      'https://reisapp.cz/en/guides/project-data#java'
+      'https://reisapp.cz/en/guides/project-data'
     );
   });
 
   it.each([
-    ['another programme', 'B-EM', 'PEF', 'EBC-VWA'],
-    ['no programme', null, 'PEF', 'EBC-VWA'],
-    ['another faculty', 'B-OI', 'AF', 'EBC-VWA'],
-    ['an unlisted subject', 'B-OI', 'PEF', 'EBC-M'],
-  ])('shows nothing for %s', (_label, programme, faculty, courseCode) => {
+    ['another programme', 'B-EM', 'PEF'],
+    ['no programme', null, 'PEF'],
+    ['another faculty', 'B-OI', 'AF'],
+  ])('shows nothing for %s', (_label, programme, faculty) => {
     setViewer(programme, faculty);
-    renderBox({ courseCode });
+    renderBox();
     expect(screen.queryByTestId('project-data-link')).toBeNull();
   });
 
-  it('shows nothing, and does not crash, on a box cached without a course code', () => {
+  it('shows it on a box cached without a course code too', () => {
     setViewer('B-OI');
     renderBox({ courseCode: undefined });
-    expect(screen.queryByTestId('project-data-link')).toBeNull();
-    expect(screen.getByTestId('b')).toBeTruthy();
+    expect(screen.getByTestId('project-data-link')).toBeTruthy();
   });
 
   it('follows the impersonated student, not the admin', () => {

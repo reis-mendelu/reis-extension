@@ -1,5 +1,7 @@
 # Project data links Implementation Plan
 
+> **Changed 2026-11-28 (Dominik: "it doesn't matter for which subject it is"):** the line shows on every open odevzdávárna for the informatics audience, with no subject list and no `#web`/`#java` deep link. `projectDataUrl(language)` takes only the language and `ProjectDataLink` takes no props. The subject-specific lines below are history.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** A B-OI student reading an open odevzdávárna for EBC-VWA or EBC-PJ sees a "Data pro projekt" line that opens a reisapp.cz page with real, name-free MENDELU datasets.

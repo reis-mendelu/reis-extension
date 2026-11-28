@@ -5,9 +5,9 @@ import { trackFeatureSignal } from '../../api/featureUsage';
 import { isProjectDataAudience, projectDataUrl } from '../../utils/projectData';
 
 /**
- * "Data pro projekt": under an open odevzdávárna of EBC-VWA or EBC-PJ, for the
+ * "Data pro projekt": under an open odevzdávárna of any subject, for the
  * informatics students only, a link to the page with the datasets a project can
- * use (utils/projectData holds who and which subjects). Rendered inside the
+ * use (utils/projectData holds who). Rendered inside the
  * shared card, so the extension, phone and iPad all have it. The viewer is the
  * impersonated student while a reis_admin impersonates.
  *
@@ -15,17 +15,16 @@ import { isProjectDataAudience, projectDataUrl } from '../../utils/projectData';
  * a middle-click, never a right-click (`auxclick` fires for it too). Nothing
  * about the student, the subject or the box goes with it.
  */
-export function ProjectDataLink({ courseCode }: { courseCode: string | undefined }) {
+export function ProjectDataLink() {
   const { t, language } = useTranslation();
   const viewer = useViewer();
-  const url = projectDataUrl(courseCode, language);
-  if (!url || !isProjectDataAudience(viewer)) return null;
+  if (!isProjectDataAudience(viewer)) return null;
 
   const count = () => void trackFeatureSignal('project_data_opened');
   return (
     <a
       data-testid="project-data-link"
-      href={url}
+      href={projectDataUrl(language)}
       target="_blank"
       rel="noopener noreferrer"
       onClick={count}

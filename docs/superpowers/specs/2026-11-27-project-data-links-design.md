@@ -51,7 +51,7 @@ assignment sees, in one tap, where to get real MENDELU data for it.
 - `reisapp.cz` is already a listed host in `noStudentDataLeaves`, so no new host.
 - The audience is matched on the device (`matchesAudience`); nothing about who
   matched is sent.
-- `courseCode` on a box is optional (old caches): a box without it shows no link.
+- `courseCode` on a box is optional (old caches); since 2026-11-28 the line does not read it, so old boxes show it too.
 - The reisapp.cz page follows `reis-page/CLAUDE.md` "Page rules" (scannable,
   visual, persona test).
 
@@ -76,8 +76,7 @@ My calls, for him to check:
   by calling `isReisForClaudeAudience`. Built that way because the guard
   `noProgrammeListsInCode` refuses a second programme list in code; the two can
   be split later in `utils/projectData.ts`.
-- Subjects to start with: **EBC-VWA and EBC-PJ**. More are added once we see
-  which other technical subjects hand in projects.
+- **Any subject (Dominik, 2026-11-28: "it doesn't matter for which subject it is").** The line shows under every open odevzdávárna for the informatics audience, and links the page top; the page itself splits web from Java. This replaces the earlier EBC-VWA / EBC-PJ list with `#web` / `#java` deep links.
 - Shown on open boxes only, as a second fold line under Pokyny, not on submitted
   or closed ones.
 - One counter label (no partner is involved), say `project_data_opened`.
