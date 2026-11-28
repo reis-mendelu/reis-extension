@@ -1,0 +1,156 @@
+<!--
+  Part of scripts/fixtures/isPhoneFrame.html (the check script inserts it): the tables the phone
+  script cannot re-read. Made up; no real student, subject or teacher.
+-->
+<!-- Rows that do not line up with a header, a little too wide: tightened, and shrunk to fit
+ on the narrowest phone, where tightening alone is not enough. -->
+<table id="plan" data-expect="reis-compact">
+  <tr>
+    <td>Kód</td>
+    <td>Název předmětu</td>
+    <td>Ukončení</td>
+    <td>Kredity</td>
+    <td>Zapsáno</td>
+    <td>Stav splnění</td>
+  </tr>
+  <tr>
+    <td colspan="6">1. semestr</td>
+  </tr>
+  <tr>
+    <td>XYZ-ABC</td>
+    <td>Vzorový předmět</td>
+    <td>zk</td>
+    <td>6</td>
+    <td>1x</td>
+    <td>SPLNĚNO (05.01.2030)</td>
+  </tr>
+</table>
+<!-- The same shape but far too wide: the one case that still scrolls inside its own box. -->
+<table id="scroller" data-expect="scroll">
+  <tr>
+    <td>Název předmětu</td>
+    <td>Název</td>
+    <td>Typ</td>
+    <td>Vypsáno pro</td>
+    <td>Dokdy</td>
+    <td>Téma</td>
+    <td>Podrobnosti</td>
+    <td>Počet souborů</td>
+    <td>Pokyny</td>
+    <td>Vypsal</td>
+    <td>Vkládat soubory</td>
+    <td id="last-column">Poslední sloupec</td>
+  </tr>
+  <tr>
+    <td colspan="12">Nenalezena žádná vyhovující data.</td>
+  </tr>
+  <tr>
+    <td colspan="12">Skupina předmětů povinných</td>
+  </tr>
+</table>
+<!-- A people list (Moji spolužáci): rows with a photo, a small photo on the left. -->
+<table id="people" data-expect="reis-cards">
+  <tr class="zahlavi">
+    <th></th>
+    <th>Fotografie</th>
+    <th>Jméno spolužáka</th>
+    <th>Informace o&nbsp;studiu</th>
+    <th>Poslat e-mail</th>
+    <th>Poznámka</th>
+  </tr>
+  <tr>
+    <td align="right">1.</td>
+    <td>
+      <a href="#"><img width="77" height="96" alt="" align="left" /></a>
+    </td>
+    <td><a href="#">Vzorová-Příkladová Marie Anežka Kristýna</a></td>
+    <td>PEF B-OI-ZBOI prez [sem 3, roč 2]</td>
+    <td align="center">
+      <a href="#"
+        ><span class="uf-icon sm"><svg width="32" height="32"></svg></span
+      ></a>
+    </td>
+    <td>-</td>
+  </tr>
+  <tr>
+    <td align="right">2.</td>
+    <td>
+      <a href="#"><img width="77" height="96" alt="" align="left" /></a>
+    </td>
+    <td><a href="#">Vzor Jan</a></td>
+    <td>PEF B-OI-ZBOI prez [sem 1, roč 1]</td>
+    <td align="center">
+      <a href="#"
+        ><span class="uf-icon sm"><svg width="32" height="32"></svg></span
+      ></a>
+    </td>
+    <td></td>
+  </tr>
+</table>
+<!-- Not tables (round two, 2026-11-28). IS's column toggles ("Zobrazit:"): a flex row that does not wrap. -->
+<div class="clm_main" style="display: flex; white-space: nowrap; gap: 12px">
+  <span class="clm_toggle">Období</span><span class="clm_toggle">Kód předmětu</span
+  ><span class="clm_toggle">Vyučující</span><span class="clm_toggle">Přihlášeno / kapacita</span
+  ><span class="clm_toggle">Typ termínu</span>
+</div>
+<!-- A filter grid placed by named areas, wider than a phone. -->
+<div
+  class="query-filters"
+  style="display: grid; grid-template-columns: 200px 300px; grid-template-areas: 'h f'"
+>
+  <div class="filter-header" style="grid-area: h; width: 502px">Formulář</div>
+  <select name="kc" style="grid-area: f; width: 402px">
+    <option>-- všechny požadavky --</option>
+  </select>
+</div>
+<!-- A folder tree laid out for one line per row (10 px lines for 13 px text). -->
+<table class="strom">
+  <tr>
+    <td class="strom" style="line-height: 10px; white-space: normal">
+      <a href="#"
+        >Ekologie a ochrana životního prostředí, krajiny a přírodních zdrojů v regionech</a
+      >
+      (5 objektů)
+    </td>
+  </tr>
+</table>
+<!-- A chart drawn at a fixed width. -->
+<div id="graph_1"><svg style="width: 1000px; height: 60px"></svg></div>
+<!-- A home-page tile heading as IS styles it (measured): a one-line title that grows from zero
+     (flex 1 1 0%) and two small buttons, in a narrow column. -->
+<div style="width: 200px">
+  <span
+    class="sekce-nadpis"
+    style="display: flex; gap: 8.8px; white-space: nowrap; overflow: hidden"
+    ><b style="flex: 1 1 0%">Přizpůsobení informačního systému</b>
+    <div><svg style="width: 15px; height: 15px"></svg></div>
+    <div><svg style="width: 15px; height: 10px"></svg></div
+  ></span>
+</div>
+<!-- A label IS places in a zero-width box on purpose, to overflow (Mapa mých studií's "Dnes"). -->
+<div style="width: 0px; padding: 0">
+  <div style="height: 18px; position: relative; line-height: 18px">Dnes</div>
+</div>
+<!-- A one-row filter form: its cells wrap. -->
+<table id="filter" data-expect="reis-flow">
+  <tr>
+    <td>Předmět</td>
+    <td>
+      <select name="p">
+        <option>-- všechny předměty a všechna období od počátku studia --</option>
+      </select>
+    </td>
+    <td>druh termínu</td>
+    <td>
+      <select name="d">
+        <option>-- neomezeno --</option>
+      </select>
+    </td>
+    <td>vypsal</td>
+    <td>
+      <select name="v">
+        <option>-- neomezeno --</option>
+      </select>
+    </td>
+  </tr>
+</table>

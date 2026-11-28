@@ -1,0 +1,39 @@
+/* IS's icon-beside-label row, measured on the saved page: a grid of links, each an
+   icon box beside its label. */
+.rada-ikon[data-dir='right'] {
+  display: grid;
+  grid-template-columns: repeat(var(--_col_count), auto);
+}
+.rada-ikon[data-dir='right'] .app-ikona {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 8.8px;
+  width: auto;
+}
+.app-ikona-text {
+  display: block;
+  font-size: 14px;
+}
+/* As IS draws its small icons (measured on List záznamníku): a 36 px box, a 24 px drawing. */
+.uf-icon {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 36px;
+  flex: none;
+}
+.uf-icon svg {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 24px;
+  height: 24px;
+}
+.uf-icon svg[data-size-sysid='decorator'] {
+  left: 9px;
+  top: 14px;
+  width: 18px;
+  height: 18px;
+  z-index: 10;
+}

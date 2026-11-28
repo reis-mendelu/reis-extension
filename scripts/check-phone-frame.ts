@@ -12,7 +12,9 @@
  * tests could have seen that.
  *
  * The page is `scripts/fixtures/isPhoneFrame.html`: made up, in the shape of a
- * signed-in IS page, with the things that make one too wide. It is served to
+ * signed-in IS page, with the things that make one too wide and one table for
+ * each treatment the script gives (exam rows, cards, attendance, shrink to fit,
+ * a wrapping filter form, and the one that still scrolls sideways). It is served to
  * the browser as an is.mendelu.cz URL (the script acts on that host only) and
  * every other request is refused, so this never contacts IS.
  */
@@ -21,24 +23,27 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPhoneFrameScript, PHONE_FRAME_STYLE_ID } from '../src/mobile/isPhoneFrame';
+import { findCrushedText, findOverlaps } from './lib/phoneOverlaps.mjs';
+import { problems, type Facts } from './lib/phoneFrameProblems';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const FIXTURE = readFileSync(resolve(HERE, 'fixtures/isPhoneFrame.html'), 'utf8');
+const part = (name: string) => readFileSync(resolve(HERE, 'fixtures', name), 'utf8');
+/** The page shell with its two table fixtures put in (three files, each short enough to read). */
+const FIXTURE = part('isPhoneFrame.html')
+  .replace(
+    /<!-- TABLES:[^>]*-->/,
+    () => part('isPhoneFrameTablesRead.html') + part('isPhoneFrameTablesRest.html')
+  )
+  .replace(/\/\* ICONS:[^*]*\*\//, () => part('isPhoneFrameIcons.css'));
+if (
+  !FIXTURE.includes('data-expect') ||
+  !FIXTURE.includes("svg[data-size-sysid='decorator']") ||
+  FIXTURE.includes('/* ICONS:')
+)
+  throw new Error('check:phone-frame: the table or icon fixtures were not inserted');
 const URL_ON_IS = 'https://is.mendelu.cz/auth/reis-phone-frame-fixture';
 /** The widths the app claims to support. Same three `scripts/shot.ts` uses. */
 const WIDTHS = [320, 390, 430];
-
-interface Facts {
-  styled: boolean;
-  layoutWidth: number;
-  pageScrollWidth: number;
-  /** Elements wider than the page that are not inside a box that scrolls. */
-  stickingOut: string[];
-  /** Form controls whose right edge is past the page's. */
-  controlsPastEdge: string[];
-  tableScrollsInside: boolean;
-  lastColumnReachable: boolean;
-}
 
 async function gather(page: Page, styleId: string): Promise<Facts> {
   return page.evaluate((id) => {
@@ -51,44 +56,69 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
       }
       return false;
     };
-    const past = (el: Element) => el.getBoundingClientRect().right > width + 1;
-    const table = document.getElementById('wide')!;
-    // `hidden` would pass the size test and scroll from script, but not by touch.
-    const overflowX = getComputedStyle(table).overflowX;
-    const scrolls =
-      table.scrollWidth > table.clientWidth + 1 && (overflowX === 'auto' || overflowX === 'scroll');
-    table.scrollLeft = table.scrollWidth;
-    const last = document.getElementById('last-column')!.getBoundingClientRect();
-    const box = table.getBoundingClientRect();
-    const facts = {
+    const shown = (el: Element) => el.getBoundingClientRect().width > 0;
+    const past = (el: Element) => shown(el) && el.getBoundingClientRect().right > width + 1;
+    const tables = [...document.querySelectorAll<HTMLElement>('table[data-expect]')].map((t) => {
+      const overflowX = getComputedStyle(t).overflowX;
+      const needs = t.scrollWidth > t.clientWidth + 1;
+      const cellsPastEdge = [...t.querySelectorAll('td, th')].filter(past).length;
+      const last = t.querySelector('#last-column');
+      let reachable = true;
+      if (last) {
+        t.scrollLeft = t.scrollWidth;
+        const cell = last.getBoundingClientRect();
+        reachable =
+          cell.width > 0 &&
+          cell.right <= t.getBoundingClientRect().right + 1 &&
+          cell.right <= width + 1;
+        t.scrollLeft = 0;
+      }
+      return {
+        id: t.id,
+        expect: t.dataset['expect'] ?? '',
+        classes: t.className,
+        needsSidewaysScroll: needs,
+        // `hidden` would pass the size test and scroll from script, but not by touch.
+        scrollsByTouch: needs && (overflowX === 'auto' || overflowX === 'scroll'),
+        cellsPastEdge,
+        lastColumnReachable: reachable,
+      };
+    });
+    const register = document.getElementById('register')!.getBoundingClientRect();
+    return {
       styled: !!document.getElementById(id),
       layoutWidth: width,
       pageScrollWidth: document.documentElement.scrollWidth,
       stickingOut: [...document.querySelectorAll('body *')]
-        .filter((el) => el.getBoundingClientRect().width > 0 && past(el) && !inScrollBox(el))
+        .filter((el) => past(el) && !inScrollBox(el))
         .map(name),
       controlsPastEdge: [...document.querySelectorAll('input, select, textarea, button')]
         .filter(past)
         .map(name),
-      tableScrollsInside: scrolls,
-      lastColumnReachable: last.width > 0 && last.right <= box.right + 1 && last.right <= width + 1,
+      tables,
+      registerVisible: register.width > 0 && register.right <= width + 1,
+      examSizes: ['x-predmet', 'x-druh', 'x-datum']
+        .map((k) => {
+          const cs = getComputedStyle(document.querySelector(`#exam td.${k}`)!);
+          return `${k} ${cs.fontSize} pad ${cs.paddingLeft}`;
+        })
+        .join(', '),
+      hiddenRow:
+        document.getElementById('hidden-row')!.getBoundingClientRect().height === 0
+          ? 'hidden'
+          : 'shown',
+      peopleSizes: (() => {
+        const rows = [...document.querySelectorAll('#people tr.reis-person')];
+        const photo = document.querySelector('#people td.reis-photo img')?.getBoundingClientRect();
+        const tallest = Math.max(...rows.map((r) => r.getBoundingClientRect().height));
+        const blanks = [
+          ...document.querySelectorAll('#people td.reis-dash, #people td.reis-empty'),
+        ];
+        const shown = blanks.filter((c) => c.getBoundingClientRect().width > 0).length;
+        return `${rows.length} rows, photo ${photo?.width}x${photo?.height}, ${tallest <= 110 ? 'short' : `${tallest}px tall`}, ${shown}/${blanks.length} blanks shown`;
+      })(),
     };
-    table.scrollLeft = 0;
-    return facts;
   }, styleId);
-}
-
-function problems(width: number, f: Facts): string[] {
-  const out: string[] = [];
-  if (!f.styled) out.push('the frame stylesheet was not applied');
-  if (f.layoutWidth !== width) out.push(`laid out ${f.layoutWidth}px wide, not ${width}px`);
-  if (f.pageScrollWidth > width) out.push(`the page scrolls sideways (${f.pageScrollWidth}px)`);
-  if (f.stickingOut.length) out.push(`sticking out of the page: ${f.stickingOut.join(', ')}`);
-  if (f.controlsPastEdge.length)
-    out.push(`form controls past the edge: ${f.controlsPastEdge.join(', ')}`);
-  if (!f.tableScrollsInside) out.push('the wide table does not scroll inside its own box');
-  if (!f.lastColumnReachable) out.push('the last table column cannot be scrolled into view');
-  return out;
 }
 
 async function main() {
@@ -116,6 +146,11 @@ async function main() {
       );
       await page.goto(URL_ON_IS, { waitUntil: 'load' });
       const found = problems(width, await gather(page, PHONE_FRAME_STYLE_ID));
+      // The fixture has no overlaps of its own, so any is the phone script's.
+      for (const o of await page.evaluate(findOverlaps))
+        found.push(`drawn over each other (${o.size}px): ${o.key}`);
+      for (const o of await page.evaluate(findCrushedText))
+        found.push(`squeezed to a few letters per line: ${o.key}`);
       failed ||= found.length > 0;
       process.stdout.write(
         found.length

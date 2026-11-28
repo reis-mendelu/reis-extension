@@ -26,7 +26,9 @@ function sourcesUnder(dir: string): string[] {
   const abs = resolve(process.cwd(), 'src', dir);
   return readdirSync(abs).flatMap((name) => {
     const rel = join(dir, name);
-    if (statSync(resolve(abs, name)).isDirectory()) return sourcesUnder(rel);
+    // Test helpers live beside the tests and never reach a bundle.
+    if (statSync(resolve(abs, name)).isDirectory())
+      return name === '__tests__' ? [] : sourcesUnder(rel);
     return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [rel] : [];
   });
 }
@@ -58,6 +60,11 @@ describe('IS phone frame placement', () => {
     const src = read('mobile/isPhoneFrame.ts');
     expect(src).toContain('const TABLET_MIN_SIDE = 600');
     expect(src).toContain('Math.min(screen.width,screen.height)>=${TABLET_MIN_SIDE}');
+  });
+
+  it('keeps the table script out of everything but the frame script', () => {
+    const users = sourcesUnder('.').filter((f) => read(f).includes('PHONE_TABLES_JS'));
+    expect(users.sort()).toEqual(['mobile/isPhoneFrame.ts', 'mobile/isPhoneTablesScript.ts']);
   });
 
   it('keeps every IS style in the one file the CLAUDE.md exception names', () => {

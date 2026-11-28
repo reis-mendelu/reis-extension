@@ -5,8 +5,7 @@
 
   IS's own stylesheet is not ours to ship, so the styles below reproduce only
   the things that make a real IS page too wide for a phone: a fixed-height flex
-  header, a grid content area with a 250px floated side column, a 14-column
-  table that does not wrap, a three-column icon grid, a page-number bar that
+  header, a grid content area with a 250px floated side column, tables that do not wrap, a three-column icon grid, a page-number bar that
   does not wrap, and form controls with desktop widths. There is deliberately no
   viewport tag: IS sends none.
 -->
@@ -82,6 +81,7 @@
         display: grid;
         width: 120px;
       }
+      /* ICONS: the check script puts isPhoneFrameIcons.css here. */
       .paginator {
         display: flex;
         list-style: none;
@@ -136,9 +136,23 @@
                 </select>
                 <button type="submit">Dohledat</button>
               </form>
-              <div class="rada-ikon">
+              <div class="rada-ikon" data-dir="bottom">
                 <a class="app-ikona">Hromadné kopírování</a><a class="app-ikona">Archiv dokumentů</a
                 ><a class="app-ikona">Možnosti složky</a>
+              </div>
+              <!-- Icon BESIDE its label, as IS writes it on a person's page (captured 2026-11-28):
+                 one column, an icon box (one icon layers a small drawing on its base) and a
+                 label. The icon grid must leave it alone. -->
+              <div style="--_col_count: 1" class="rada-ikon" data-dir="right">
+                <a href="#" class="app-ikona"
+                  ><span class="uf-icon sm" data-sysid="posta-export"
+                    ><svg data-size-sysid="base"></svg></span
+                  ><span class="app-ikona-text">Uživatelské informace ve formátu vCard</span></a
+                ><a href="#" class="app-ikona"
+                  ><span class="uf-icon sm" data-sysid="post-import"
+                    ><svg data-size-sysid="decorator"></svg><svg data-size-sysid="base"></svg></span
+                  ><span class="app-ikona-text">Import osoby do poštovních kontaktů</span></a
+                >
               </div>
               <ul class="paginator">
                 <li>|&lt;</li>
@@ -149,40 +163,7 @@
                 <li>&gt;</li>
                 <li>&gt;|</li>
               </ul>
-              <table id="wide">
-                <tr>
-                  <th>Poř.</th>
-                  <th>Stav</th>
-                  <th>Kód</th>
-                  <th>Předmět</th>
-                  <th>Datum termínu</th>
-                  <th>Kde</th>
-                  <th>Druh (forma)</th>
-                  <th>Vypsal</th>
-                  <th>Přihlášeno</th>
-                  <th>Typ termínu</th>
-                  <th>Přihlašování od</th>
-                  <th>Odhlašování do</th>
-                  <th>Operace</th>
-                  <th id="last-column">Přihlásit</th>
-                </tr>
-                <tr>
-                  <td>1.</td>
-                  <td>●</td>
-                  <td>XYZ-ABC</td>
-                  <td>Vzorový předmět s dlouhým názvem</td>
-                  <td>07.12.2030 11:00 (po)</td>
-                  <td>Q05 (ČP)</td>
-                  <td>zkouška (písemná)</td>
-                  <td>J. Vzorový</td>
-                  <td>14/14</td>
-                  <td>řádný</td>
-                  <td>06.12.2030 17:00</td>
-                  <td>06.12.2030 17:00</td>
-                  <td>info</td>
-                  <td>přihlásit</td>
-                </tr>
-              </table>
+              <!-- TABLES: the check script puts the two table fixtures here. -->
             </div>
           </div>
         </div>

@@ -48,6 +48,12 @@ describe('attendance lives in Záznamník', () => {
     expect(readers).toEqual([
       'components/SubjectFileDrawer/Zaznamnik/AttendanceSection.tsx',
       'components/SubjectFileDrawer/ZaznamnikTab.tsx',
+      // Not a reIS attendance display and not a reader of reIS's data: these two
+      // restyle IS's OWN "List záznamníku" page when a student opens it in the
+      // phone's in-app browser (its week columns become a strip of boxes). They
+      // never see the store. Added on purpose, 2026-11-28.
+      'mobile/isPhoneFrameCss.ts',
+      'mobile/isPhoneTablesScript.ts',
     ]);
   });
 
