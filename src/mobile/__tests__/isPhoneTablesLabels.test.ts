@@ -57,6 +57,18 @@ describe('the phone script and label/value tables', () => {
     expect(document.body.innerHTML).toBe(before);
   });
 
+  it('needs most first cells to be labels, not just half', () => {
+    document.body.innerHTML = page(
+      `<table id="t"><tbody>${row('Kód:', 'X')}${row('Název:', 'Y')}${row('A', 'Z')}${row(
+        'B',
+        'W'
+      )}</tbody></table>`
+    );
+    size('#t', 900);
+    run();
+    expect($('#t').classList.contains('reis-kv')).toBe(false);
+  });
+
   // The syllabus's topic list: "1.", "a." beside a topic. Not labels.
   it('does not take a numbered list for labels', () => {
     document.body.innerHTML = page(

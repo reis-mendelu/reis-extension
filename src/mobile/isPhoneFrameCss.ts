@@ -174,12 +174,13 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-compact td, .mainpage table.reis-compact th { font-size: 12px !important; padding: 3px !important; white-space: normal !important; }
 .mainpage table.reis-flow tbody, .mainpage table.reis-flow tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .mainpage table.reis-flow td { display: block !important; padding: 0 !important; max-width: 100%; }
-/* Label/value pairs (the syllabus's details): each value under its label, nothing scrolls sideways. */
+/* Label/value pairs (the syllabus's details): each value under its label, nothing scrolls sideways.
+   Only the list's own rows and cells: a table inside a value (the topic list) keeps its own layout. */
 .mainpage table.reis-kv { display: block !important; overflow: visible !important; animation: none !important; -webkit-mask-image: none !important; mask-image: none !important; width: auto !important; }
-.mainpage table.reis-kv tbody, .mainpage table.reis-kv tr { display: block !important; }
-.mainpage table.reis-kv tr.kv-pair { margin: 0 0 8px; }
-.mainpage table.reis-kv tr > td { display: block !important; width: auto !important; padding: 0 !important; white-space: normal !important; overflow-wrap: anywhere; }
-.mainpage table.reis-kv tr > td.kv-label, .mainpage table.reis-kv tr > td.kv-label * { font-size: 12px !important; color: #5b6670; white-space: normal !important; }
+.mainpage table.reis-kv > tbody, .mainpage table.reis-kv > tbody > tr { display: block !important; }
+.mainpage table.reis-kv > tbody > tr.kv-pair { margin: 0 0 8px; }
+.mainpage table.reis-kv > tbody > tr > td { display: block !important; width: auto !important; padding: 0 !important; white-space: normal !important; overflow-wrap: anywhere; }
+.mainpage table.reis-kv > tbody > tr > td.kv-label, .mainpage table.reis-kv > tbody > tr > td.kv-label * { font-size: 12px !important; color: #5b6670; white-space: normal !important; }
 .mainpage table.reis-kv .nowrap { white-space: normal !important; }
 /* A filter's label starts its own line, so its control sits right under it, never at the start of the next. */
 .mainpage table.reis-flow td.reis-lab { flex-basis: 100%; }

@@ -117,6 +117,13 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
             : 'apart';
         })
         .join(' '),
+      // A table inside a label/value cell (the syllabus's topic list) keeps its own rows.
+      topics: (() => {
+        const [n, t] = [...document.querySelectorAll('#topics tr')][0]!.children;
+        return Math.abs(n!.getBoundingClientRect().top - t!.getBoundingClientRect().top) < 2
+          ? 'beside'
+          : 'stacked';
+      })(),
       peopleSizes: (() => {
         const rows = [...document.querySelectorAll('#people tr.reis-person')];
         const photo = document.querySelector('#people td.reis-photo img')?.getBoundingClientRect();

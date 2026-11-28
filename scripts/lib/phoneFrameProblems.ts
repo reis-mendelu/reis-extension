@@ -29,6 +29,8 @@ export interface Facts {
   examSizes: string;
   /** People rows: a small photo, and a row no taller than about two lines of text beside it. */
   peopleSizes: string;
+  /** A topic number and its text inside a label/value cell: 'beside' each other. */
+  topics: string;
   /** Each filter label in a one-row form, relative to its control: 'above' when the control sits right under it. */
   filterPairs: string;
   /** A tiny icon-only link's tap area: 'bigger' at 18 px or more, and a tap on its neighbour still reaches the neighbour. */
@@ -55,6 +57,10 @@ export function problems(width: number, f: Facts): string[] {
   if (f.tapSize !== 'bigger')
     out.push(
       `the folder-tree toggle's tap area is ${f.tapSize}, expected at least 18 px without reaching a neighbour`
+    );
+  if (f.topics !== 'beside')
+    out.push(
+      'the topic list inside a label/value cell is stacked; its numbers belong beside their text'
     );
   if (!f.registerVisible)
     out.push('the exam register control is not on screen without scrolling sideways');

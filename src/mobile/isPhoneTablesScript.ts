@@ -113,7 +113,7 @@ rows=rows.filter(function(r){for(var p=r.parentElement;p;p=p.parentElement)if(p.
 var two=rows.filter(function(r){return own(r).length===2;});
 if(two.length<3||rows.some(function(r){return own(r).length>2;}))return false;
 var lab=two.filter(function(r){var x=txt(own(r)[0]);return x.length<=40&&/:$/.test(x);});
-if(lab.length<two.length/2)return false;
+if(lab.length<=two.length/2)return false;
 rows.forEach(function(r){if(own(r).length===2){add(r,'kv-pair');add(own(r)[0],'kv-label');}else add(r,'reis-plain');});
 add(t,'reis-kv');return true;
 }
