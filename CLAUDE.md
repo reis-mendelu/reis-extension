@@ -474,6 +474,12 @@ These are enforced by linting and project convention:
   Tailwind utilities cannot reach that DOM without `!important` fighting
   Leaflet's own `.leaflet-tooltip` background, border and shadow — which is more
   custom CSS, not less. The rule is about app chrome, where DaisyUI applies.
+  A second standing exception is **old IS pages on a phone**: the in-app
+  browser sends one stylesheet with every is.mendelu.cz page so a desktop page
+  is readable at phone width. It lives in `src/mobile/isPhoneFrameCss.ts` and
+  nowhere else, styles only the frame all IS pages share (no per-page rules,
+  nothing hidden, moved or generated), and leaves a page it does not recognise
+  as it is. Phone only: `src/test/guards/isPhoneFrameIsPhoneOnly.test.ts`.
 - **NO generic state** — all state lives in Zustand slices
 - **Max 200 lines per file** — convention, not lint-enforced; split proactively when a file grows past this
 - **Direct imports only** — no middleman re-export barrels; import from the specific file

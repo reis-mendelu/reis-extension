@@ -1,0 +1,192 @@
+<!doctype html>
+<!--
+  A made-up page in the shape of a signed-in IS Mendelu page, for
+  `npm run check:phone-frame`. No real student, subject or teacher is in it.
+
+  IS's own stylesheet is not ours to ship, so the styles below reproduce only
+  the things that make a real IS page too wide for a phone: a fixed-height flex
+  header, a grid content area with a 250px floated side column, a 14-column
+  table that does not wrap, a three-column icon grid, a page-number bar that
+  does not wrap, and form controls with desktop widths. There is deliberately no
+  viewport tag: IS sends none.
+-->
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Fixture</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: sans-serif;
+        font-size: 14.08px;
+      }
+      #header {
+        display: flex;
+        justify-content: space-between;
+        height: 114px;
+        padding: 8px;
+      }
+      #header .left,
+      #header .right {
+        display: flex;
+      }
+      #uis-logo {
+        width: 155px;
+        height: 97px;
+        background: #333;
+      }
+      #pfp {
+        width: 77px;
+        height: 77px;
+        border-radius: 50%;
+        background: #ccc;
+      }
+      nav {
+        display: flex;
+        height: 47px;
+        background: #8fbf4a;
+      }
+      .breadcrumb {
+        display: flex;
+        list-style: none;
+        margin: 0;
+      }
+      #stranka {
+        display: grid;
+        grid-template-columns: 268px 1fr;
+        grid-template-areas: 'left main';
+      }
+      #stranka > div:first-child {
+        grid-area: left;
+      }
+      .mainpage {
+        grid-area: main;
+        padding: 0 15px;
+      }
+      .mainpage div.small {
+        width: 810px;
+      }
+      .mainpage table {
+        border-collapse: separate;
+        white-space: nowrap;
+      }
+      .mainpage td,
+      .mainpage th {
+        padding: 6px 12px;
+      }
+      .rada-ikon {
+        display: inline-grid;
+        grid-template-columns: repeat(3, 120px);
+      }
+      .app-ikona {
+        display: grid;
+        width: 120px;
+      }
+      .paginator {
+        display: flex;
+        list-style: none;
+        padding: 0;
+      }
+      .paginator li {
+        padding: 8px 22px;
+        border: 1px solid #ccc;
+        white-space: nowrap;
+      }
+      input[type='text'] {
+        width: 420px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wholepage">
+      <div id="header">
+        <div class="left"><img id="uis-logo" alt="" />Vzorová univerzita v Brně</div>
+        <div class="right">
+          <div class="info">Svátek<br />1. 1. 2030 10:00<br />Jana Vzorová</div>
+          <div id="pfp"></div>
+        </div>
+      </div>
+      <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">Domů</li>
+          <li class="breadcrumb-item">Dokumentový server</li>
+          <li class="breadcrumb-item">
+            Vzorova_slozka_s_velmi_dlouhym_nazvem_bez_jedine_mezery_ktery_se_na_radek_nevejde
+          </li>
+          <li class="breadcrumb-item active">Přihlašování na zkoušky</li>
+        </ol>
+      </nav>
+      <div id="base">
+        <div id="base-right">
+          <div id="stranka">
+            <div>
+              <div class="portletbar" style="float: left; width: 250px; padding-right: 1em">
+                Zapsané termíny
+              </div>
+            </div>
+            <div class="mainpage">
+              <div class="small">
+                Tato aplikace umožňuje studentům přihlašovat se ke zkouškám a jiným akcím. S
+                případnými problémy kontaktujte svého systémového integrátora.
+              </div>
+              <form>
+                <input type="text" name="hledat" />
+                <select name="predmet">
+                  <option>-- všechny předměty a všechna období od počátku studia --</option>
+                </select>
+                <button type="submit">Dohledat</button>
+              </form>
+              <div class="rada-ikon">
+                <a class="app-ikona">Hromadné kopírování</a><a class="app-ikona">Archiv dokumentů</a
+                ><a class="app-ikona">Možnosti složky</a>
+              </div>
+              <ul class="paginator">
+                <li>|&lt;</li>
+                <li>&lt;</li>
+                <li>1–10</li>
+                <li>11–20</li>
+                <li>21–30</li>
+                <li>&gt;</li>
+                <li>&gt;|</li>
+              </ul>
+              <table id="wide">
+                <tr>
+                  <th>Poř.</th>
+                  <th>Stav</th>
+                  <th>Kód</th>
+                  <th>Předmět</th>
+                  <th>Datum termínu</th>
+                  <th>Kde</th>
+                  <th>Druh (forma)</th>
+                  <th>Vypsal</th>
+                  <th>Přihlášeno</th>
+                  <th>Typ termínu</th>
+                  <th>Přihlašování od</th>
+                  <th>Odhlašování do</th>
+                  <th>Operace</th>
+                  <th id="last-column">Přihlásit</th>
+                </tr>
+                <tr>
+                  <td>1.</td>
+                  <td>●</td>
+                  <td>XYZ-ABC</td>
+                  <td>Vzorový předmět s dlouhým názvem</td>
+                  <td>07.12.2030 11:00 (po)</td>
+                  <td>Q05 (ČP)</td>
+                  <td>zkouška (písemná)</td>
+                  <td>J. Vzorový</td>
+                  <td>14/14</td>
+                  <td>řádný</td>
+                  <td>06.12.2030 17:00</td>
+                  <td>06.12.2030 17:00</td>
+                  <td>info</td>
+                  <td>přihlásit</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

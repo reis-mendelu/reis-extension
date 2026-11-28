@@ -115,6 +115,12 @@ jobs:
 
       - name: App health check
         run: npm run check:app
+      # IS Mendelu pages opened in the phone app get a stylesheet so they fit a
+      # phone (src/mobile/isPhoneFrame.ts). Unit tests cannot see layout; this
+      # lays a made-up IS-shaped page out in the same browser at 320/390/430
+      # and fails if the page scrolls sideways. No network, no credentials.
+      - name: IS phone frame layout check
+        run: npm run check:phone-frame
       # The regression this job exists to catch: the strip plugin silently
       # stops being reached and the (decoy, here) student snapshot ships in a
       # bundle that gets deployed to a public URL.
