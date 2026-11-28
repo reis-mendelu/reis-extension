@@ -81,31 +81,7 @@
         display: grid;
         width: 120px;
       }
-      /* IS's icon-beside-label row: the icon's svg is placed inside its span. */
-      .rada-ikon[data-dir='right'] {
-        display: grid;
-        grid-template-columns: repeat(var(--_col_count), auto);
-      }
-      .rada-ikon[data-dir='right'] .app-ikona {
-        display: flex;
-        align-items: center;
-        width: auto;
-      }
-      /* As IS draws its small icons (measured on List záznamníku): a 36 px box, a 24 px drawing. */
-      .uf-icon {
-        position: relative;
-        display: inline-block;
-        width: 36px;
-        height: 36px;
-        flex: none;
-      }
-      .uf-icon svg {
-        position: absolute;
-        left: 6px;
-        top: 6px;
-        width: 24px;
-        height: 24px;
-      }
+      /* ICONS: the check script puts isPhoneFrameIcons.css here. */
       .paginator {
         display: flex;
         list-style: none;
@@ -164,12 +140,18 @@
                 <a class="app-ikona">Hromadné kopírování</a><a class="app-ikona">Archiv dokumentů</a
                 ><a class="app-ikona">Možnosti složky</a>
               </div>
-              <!-- Icon BESIDE its label (a person's page): the icon grid must leave it alone. -->
-              <div class="rada-ikon" data-dir="right" style="--_col_count: 2">
-                <a class="app-ikona"
-                  ><span class="uf-icon"><svg></svg></span>Uživatelské informace ve formátu vCard</a
-                ><a class="app-ikona"
-                  ><span class="uf-icon"><svg></svg></span>Import osoby do poštovních kontaktů</a
+              <!-- Icon BESIDE its label, as IS writes it on a person's page (captured 2026-11-28):
+                 one column, an icon box (one icon layers a small drawing on its base) and a
+                 label. The icon grid must leave it alone. -->
+              <div style="--_col_count: 1" class="rada-ikon" data-dir="right">
+                <a href="#" class="app-ikona"
+                  ><span class="uf-icon sm" data-sysid="posta-export"
+                    ><svg data-size-sysid="base"></svg></span
+                  ><span class="app-ikona-text">Uživatelské informace ve formátu vCard</span></a
+                ><a href="#" class="app-ikona"
+                  ><span class="uf-icon sm" data-sysid="post-import"
+                    ><svg data-size-sysid="decorator"></svg><svg data-size-sysid="base"></svg></span
+                  ><span class="app-ikona-text">Import osoby do poštovních kontaktů</span></a
                 >
               </div>
               <ul class="paginator">

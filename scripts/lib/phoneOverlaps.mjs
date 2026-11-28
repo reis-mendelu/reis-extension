@@ -63,7 +63,7 @@ export function findOverlaps() {
     const key = icon
       ? 'icon:' + (icon.getAttribute('data-sysid') || icon.getAttribute('data-id') || '?')
       : 'img:' + (el.getAttribute('width') || '') + 'x' + (el.getAttribute('height') || '');
-    marks.push({ kind: 'pic', el, key, box: b });
+    marks.push({ kind: 'pic', el, key, box: b, icon });
   }
   // Text: each line box of each text node.
   const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -84,8 +84,17 @@ export function findOverlaps() {
     const a = marks[i];
     for (let j = i + 1; j < marks.length && marks[j].box.top < a.box.bottom - 2; j++) {
       const b = marks[j];
-      if (a.kind === 'text' && b.kind === 'text' && a.el === b.el) continue;
-      if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+      if (a.kind === b.kind) {
+        // Nested boxes of one kind are one thing (a span in a link, an svg in an img's wrapper).
+        if (a.el === b.el || a.el.contains(b.el) || b.el.contains(a.el)) continue;
+        // One IS icon is several drawings layered in one box (a base and a decorator).
+        if (a.kind === 'pic' && a.icon && a.icon === b.icon) continue;
+      } else {
+        // Text drawn inside a picture belongs to it; an icon over its OWN label is a fault.
+        const pic = a.kind === 'pic' ? a : b;
+        const text = pic === a ? b : a;
+        if (pic.el.contains(text.el)) continue;
+      }
       const w = Math.min(a.box.right, b.box.right) - Math.max(a.box.left, b.box.left);
       const h = Math.min(a.box.bottom, b.box.bottom) - Math.max(a.box.top, b.box.top);
       if (w <= 2 || h <= 2) continue;
