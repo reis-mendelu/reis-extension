@@ -132,7 +132,7 @@ describe('Erasmus persona: English in memory only', () => {
     expect(await savedLanguage()).toBe('cz');
   });
 
-  it('IS logout: nothing was saved, so a fresh boot reads the admin language', async () => {
+  it('IS logout reloads the app: nothing was saved, so the reload reads the admin language', async () => {
     await s().switchToPersona('erasmus');
     useAppStore.setState(overlayWrite({ impersonation: null, personaLanguage: null }));
     await s().loadLanguage();
@@ -157,10 +157,43 @@ describe('Erasmus persona: English in memory only', () => {
   it('a boot language read that lands after the restore does not undo en', async () => {
     await s().switchToPersona('erasmus');
     useAppStore.setState(overlayWrite({ impersonation: null, personaLanguage: null }));
-    const slowRead = s().loadLanguage(); // the boot's read, still in IndexedDB
+    // The boot's read of the saved language, held in IndexedDB until the
+    // restore has applied Erasmus.
+    const get = IndexedDBService.get.bind(IndexedDBService);
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    vi.spyOn(IndexedDBService, 'get').mockImplementation((async (store: never, key: never) => {
+      if (key === 'reis_language') await gate;
+      return get(store, key);
+    }) as never);
+    const slowRead = s().loadLanguage();
     await s().restoreImpersonation();
+    expect(s().language).toBe('en');
+    release();
     await slowRead;
     expect(s().language).toBe('en');
+  });
+
+  it('a background refresh keeps the language the admin picked meanwhile', async () => {
+    await s().switchToPersona('erasmus');
+    // A boot a day later restores Erasmus (English) and refetches it in the background.
+    useAppStore.setState(overlayWrite({ impersonation: null, personaLanguage: null }));
+    vi.setSystemTime(new Date(2026, 8, 28));
+    const release = setup.gatedFetch(fetchImpersonation, 'Z-EXC-2');
+    await s().restoreImpersonation();
+    expect(s().language).toBe('en');
+    // The admin picks Czech while the refresh is out; then it lands.
+    await s().setLanguage('cz');
+    release();
+    await vi.waitFor(() => expect(codes()).toEqual(['Z-EXC-2']));
+    expect(s().language).toBe('cz');
+  });
+
+  it('entering the demo restores the admin language', async () => {
+    await s().switchToPersona('erasmus');
+    await s().enterDemo();
+    expect(s().impersonation).toBeNull();
+    await vi.waitFor(() => expect(s().language).toBe('cz'));
   });
 
   it("the admin's own pick while Erasmus is active wins and is saved", async () => {

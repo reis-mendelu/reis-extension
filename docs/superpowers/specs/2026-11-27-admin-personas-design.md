@@ -195,7 +195,8 @@ credentials never leave the laptop). Run before shipping and at each semester st
   timetable.
 - **Resolving codes:** `loadOptions` now also keeps each faculty's timetable course select
   (`FacultyOptions.courses`, from the criteria forms it already posts: no extra request). The
-  Erasmus request takes the pinned codes that resolve; none at all is `noPlan`. A code that stops
+  Erasmus request takes the pinned codes that resolve, each with the timetable it was listed in;
+  none at all is `noPlan`. A code that stops
   resolving is left out in the app and fails `personas:check`.
 - **Fetch:** `fetchImpersonation` branches on `selection.erasmus` (so a background refresh of the
   cached persona takes it too) to `fetchExchange`: each course asked for on its own **without a
@@ -205,7 +206,12 @@ credentials never leave the laptop). Run before shipping and at each semester st
   while set, so a reload from another tab, a sync or the boot read cannot undo it; every apply sets
   it from the persona, `stopImpersonation` and entering the demo clear it, and a change fires
   `LANGUAGE_UPDATE` so the menu, files and map events follow. The admin choosing a language in
-  settings mid-persona wins and is saved, as any choice is.
+  settings mid-persona wins and is saved, as any choice is; a background refresh does not touch the
+  language (same persona), so a pick made while one runs stays.
+- **What the persona showed at once** (left as findings, not changed): partner surfaces (Stáže, EY
+  in the profile's partner block) match by faculty through `matchingPartners`, not
+  `canSee`, so an exchange student at PEF sees PEF-wide partners; and with no plan, the plan page
+  shows its skeleton forever (`StudyPlanPage`), as it does for a real Z-EXC student.
 - **Name:** "Erasmus · PEF" in the list and the banner (`personaName`: the faculty where there is
   no programme code).
 

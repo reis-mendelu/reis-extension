@@ -78,8 +78,11 @@ export interface ImpersonationSelection {
    * fetch asks for `courses` instead of a plan (fetchExchange).
    */
   erasmus?: boolean;
-  /** Erasmus only: the pinned courses that resolved, with this period's ids. */
-  courses?: { code: string; predmetId: string }[];
+  /**
+   * Erasmus only: the pinned courses that resolved, with this period's ids and
+   * the timetable each was listed in (absent = the selection's `rozvrh`).
+   */
+  courses?: { code: string; predmetId: string; rozvrh?: RozvrhRef }[];
   /**
    * Set when this came from the one-tap persona list (`features/personas.ts`):
    * which one, so the list can check it and the banner can name it. Absent for

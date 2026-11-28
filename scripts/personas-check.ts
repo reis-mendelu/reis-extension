@@ -21,6 +21,7 @@ async function main() {
   // Before the login: the persona list is plain data (features/personas.ts
   // imports no fetcher), so a mistyped id costs no browser and no IS request.
   const { PERSONAS } = await import('@/features/personas');
+  const { EXCHANGE_PROGRAMME } = await import('@/utils/eventAudience');
   // `--detail zf`: every subject's lessons of that persona, to tell a broken
   // group filter from a subject that really meets at several times.
   const detailAt = process.argv.indexOf('--detail');
@@ -92,7 +93,10 @@ async function main() {
       });
     } catch (e) {
       const error = e instanceof ImpersonationError ? e.code : String(e);
-      rows.push({ id: p.id, code: p.shortCode, group: null, groups, stats: null, error });
+      // Erasmus has no programme code: name its IS programme, so the row reads
+      // as the error it is, not as "unresolved".
+      const code = p.shortCode ?? (p.erasmus ? EXCHANGE_PROGRAMME : null);
+      rows.push({ id: p.id, code, group: null, groups, stats: null, error });
     }
   }
 

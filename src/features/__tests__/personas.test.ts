@@ -153,7 +153,9 @@ describe('personaRequest, Erasmus', () => {
       personaId: 'erasmus',
       rozvrh: rozvrh('PEF'),
     });
-    expect(req.courses).toEqual([
+    // Each course keeps the timetable it was listed in.
+    expect(req.courses?.every((c) => c.rozvrh?.id === 'r-PEF')).toBe(true);
+    expect(req.courses?.map(({ code, predmetId }) => ({ code, predmetId }))).toEqual([
       { code: 'EBA-MAR', predmetId: '900' },
       { code: 'EBA-MI', predmetId: '901' },
       { code: 'EBA-MT', predmetId: '902' },

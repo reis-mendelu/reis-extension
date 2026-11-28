@@ -170,7 +170,7 @@ function exchangeRequest(
     group: null,
     rozvrh: first.rozvrh,
     erasmus: true,
-    courses: found.map(({ code, predmetId }) => ({ code, predmetId })),
+    courses: found.map(({ code, predmetId, rozvrh }) => ({ code, predmetId, rozvrh })),
     personaId: p.id,
   };
 }

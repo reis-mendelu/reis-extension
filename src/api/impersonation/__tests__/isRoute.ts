@@ -65,7 +65,8 @@ const onlyMt = (json: string) => edit(json, (l) => l.courseCode === 'EBC-MT');
 
 /**
  * The Erasmus persona's five English-taught courses (ids from PEF's course
- * select, live 2026-11-28). Each answers like EBC-FT, renamed: a lecture slot
+ * select, live 2026-11-28; their options in rozvrh-criteria.html are copied
+ * verbatim from that page, so `parseCourses` reads real IS markup). Each answers like EBC-FT, renamed: a lecture slot
  * and two seminar parallels. Asked WITH a year, IS would answer lectures only,
  * so a fetch that sent `rocnik` would come back without seminars.
  */

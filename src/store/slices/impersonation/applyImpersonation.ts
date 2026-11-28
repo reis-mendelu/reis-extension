@@ -51,8 +51,11 @@ export async function applyImpersonation(
     })
   );
   // The Erasmus persona's English, in memory only; any other view gives the
-  // admin's own language back (design 2026-11-27 §2 "Language").
-  await get().setPersonaLanguage(personaById(active.selection.personaId)?.language ?? null);
+  // admin's own language back (design 2026-11-27 §2 "Language"). Not on a
+  // background refresh: the same persona, and a language the admin picked
+  // meanwhile is theirs.
+  if (!opts.background)
+    await get().setPersonaLanguage(personaById(active.selection.personaId)?.language ?? null);
   void get()
     .fetchSuccessRateBatch(failRateCodes(active.result))
     .catch(() => {});

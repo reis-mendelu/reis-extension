@@ -21,8 +21,8 @@ import { EXCHANGE_PROGRAMME } from '../../utils/eventAudience';
 export async function fetchExchange(sel: ImpersonationSelection): Promise<ImpersonationResult> {
   const courses = sel.courses ?? [];
   if (!courses.length) throw new ImpersonationError('noPlan');
-  const per = await mapLimit(courses, 3, ({ predmetId }) =>
-    lessonsFor(sel, { predmet: predmetId }, firstSlotOnly)
+  const per = await mapLimit(courses, 3, ({ predmetId, rozvrh }) =>
+    lessonsFor({ rozvrh: rozvrh ?? sel.rozvrh }, { predmet: predmetId }, firstSlotOnly)
   );
   const schedule = per.flat();
   const fetchedAt = new Date().toISOString();
