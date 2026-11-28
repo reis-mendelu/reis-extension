@@ -35,7 +35,10 @@ export function BottomActions() {
   // "Profil a nastavení" unmounts the focused row: hand focus to the
   // profile's first control so a keyboard user keeps their place.
   useEffect(() => {
-    if (onProfile) panelRef.current?.querySelector<HTMLElement>('button, input')?.focus();
+    if (onProfile)
+      panelRef.current
+        ?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled)')
+        ?.focus();
   }, [onProfile]);
 
   useEffect(() => {

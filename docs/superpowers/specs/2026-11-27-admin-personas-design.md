@@ -247,7 +247,8 @@ credentials never leave the laptop). Run before shipping and at each semester st
   the current identity.
 - `PersonaUnavailable` replaces the empty state on each listed view.
 - Kept-real `getUserParams` readers pinned in `src/test/guards/` with reasons.
-- Tree parity: the list on `ProfilePopup` and `ProfileScreen`; `verify-ui` at 320/390/430 and tablet
+- Tree parity: the list on `Sidebar/PersonaPopup.tsx` and `mobile/sheets/PersonasSheet.tsx`, both opened
+  from the avatar (decision #16); `verify-ui` at 320/390/430 and tablet
   width, both themes, before/after PNGs to Dominik.
 - Live: `npm run personas:check` green, then each persona opened on the dev webapp and the iPad.
 
