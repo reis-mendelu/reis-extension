@@ -90,7 +90,13 @@ export const createPersonaSlice: AppSlice<PersonaSlice> = (set, get) => {
   // persona on disk (it cleared them), so a save that raced it is undone.
   const keep = async (id: PersonaId, active: ActiveImpersonation) => {
     if (!isAdmin()) return false;
-    await savePersona(id, active);
+    try {
+      await savePersona(id, active);
+    } catch (e) {
+      // The same answer as a failed save of the active view (applyImpersonation).
+      logError('Persona.save', e, { persona: id });
+      throw new ImpersonationError('storage');
+    }
     if (isAdmin()) return true;
     await clearPersonaCache().catch(() => {});
     return false;

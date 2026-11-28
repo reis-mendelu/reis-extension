@@ -222,4 +222,19 @@ describe('persona races (review 2026-11-27)', () => {
     expect(s().impersonation).toBeNull();
     spy.mockRestore();
   });
+
+  it('a failed persona-cache write says storage, not timetable', async () => {
+    const set = IndexedDBService.set.bind(IndexedDBService);
+    const spy = vi
+      .spyOn(IndexedDBService, 'set')
+      .mockImplementation(async (store, key, value) =>
+        key === 'persona:finance'
+          ? Promise.reject(new Error('quota'))
+          : set(store, key, value as never)
+      );
+    expect(await s().switchToPersona('finance')).toBe(false);
+    expect(s().personaRows.finance).toBe('storage');
+    expect(s().impersonation).toBeNull();
+    spy.mockRestore();
+  });
 });
