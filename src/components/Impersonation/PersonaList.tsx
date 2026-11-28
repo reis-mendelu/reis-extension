@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AlertCircle, Check, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { PERSONAS, type PersonaId } from '../../features/personas';
+import { PERSONAS, personaName, type PersonaId } from '../../features/personas';
 import { IMPERSONATION_ERROR_KEY } from './errorKeys';
 import { logError } from '../../utils/reportError';
 
@@ -60,7 +60,7 @@ function Row({
 
 /**
  * "Zobrazit jako" for reIS admins (design 2026-11-27 §6): Já, the seven
- * programme personas, then "Jiný obor…" for today's picker. One component on
+ * programme personas and Erasmus, then "Jiný obor…" for today's picker. One component on
  * both trees, so they cannot drift. Every fetch starts from a tap here, never
  * from an effect.
  */
@@ -76,6 +76,16 @@ export function PersonaList(props: Props) {
   const [leaving, setLeaving] = useState(false);
   const activeId = active?.selection.personaId;
   const busy = Object.values(rows).includes('loading');
+  // A switch outlives the list: closed meanwhile, its late onDone would close
+  // whatever surface is open by then (another sheet, the reopened popup).
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => void (mounted.current = false);
+  }, []);
+  const done = () => {
+    if (mounted.current) onDone?.();
+  };
 
   // Same double-tap guard as the banner: exit re-reads nine stores.
   const me = async () => {
@@ -83,11 +93,11 @@ export function PersonaList(props: Props) {
     // freed at once; with nothing applied yet that is all it has to do.
     cancel();
     if (leaving) return;
-    if (!active) return onDone?.();
+    if (!active) return done();
     setLeaving(true);
     try {
       await stop();
-      onDone?.();
+      done();
     } catch (e) {
       logError('PersonaList.exit', e);
     } finally {
@@ -95,7 +105,7 @@ export function PersonaList(props: Props) {
     }
   };
   const pick = async (id: PersonaId) => {
-    if (await switchTo(id)) onDone?.();
+    if (await switchTo(id)) done();
   };
 
   return (
@@ -131,9 +141,7 @@ export function PersonaList(props: Props) {
               )
             }
           >
-            <span className="truncate font-medium">
-              {p.label[language]} · {p.shortCode}
-            </span>
+            <span className="truncate font-medium">{personaName(p, language)}</span>
             {error && (
               // The glyph carries the colour: text-error on base-100 is 3.9:1.
               <span className="flex items-center gap-1 text-xs text-base-content/70">

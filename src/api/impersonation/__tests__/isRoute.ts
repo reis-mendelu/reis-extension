@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { loadOptions } from '../options';
+import { personaById, personaRequest } from '../../../features/personas';
 import type { ImpersonationSelection } from '../types';
 
 /**
@@ -63,6 +64,37 @@ const withoutMtLectures = (json: string) =>
   edit(json, (l) => !(l.courseCode === 'EBC-MT' && l.isSeminar === 'false'));
 const onlyMt = (json: string) => edit(json, (l) => l.courseCode === 'EBC-MT');
 
+/**
+ * The Erasmus persona's five English-taught courses (ids from PEF's course
+ * select, live 2026-11-28; their options in rozvrh-criteria.html are copied
+ * verbatim from that page, so `parseCourses` reads real IS markup). Each answers like EBC-FT, renamed: a lecture slot
+ * and two seminar parallels. Asked WITH a year, IS would answer lectures only,
+ * so a fetch that sent `rocnik` would come back without seminars.
+ */
+export const EXCHANGE_COURSES: Record<string, string> = {
+  '164024': 'EBA-MAR',
+  '164120': 'EBA-MI',
+  '164118': 'EBA-MT',
+  '164119': 'EBA-PE',
+  '164023': 'EBA-FT',
+};
+/** Each course's own names (the timetable's), so a mixed-up subject shows. */
+export const EXCHANGE_NAMES: Record<string, { cz: string; en: string }> = {
+  'EBA-MAR': { cz: 'Marketing 1 v AJ', en: 'Marketing 1' },
+  'EBA-MI': { cz: 'Mikroekonomie 1 v AJ', en: 'Microeconomics 1' },
+  'EBA-MT': { cz: 'Matematika v AJ', en: 'Mathematics' },
+  'EBA-PE': { cz: 'Podniková ekonomika 1 v AJ', en: 'Business Economics 1' },
+  'EBA-FT': { cz: 'Finanční trhy v AJ', en: 'Financial Markets' },
+};
+const asCourse = (json: string, predmet: string) => {
+  const code = EXCHANGE_COURSES[predmet]!;
+  return json
+    .replaceAll('EBC-FT', code)
+    .replaceAll('164066', predmet)
+    .replaceAll('Finanční trhy', EXCHANGE_NAMES[code]!.cz)
+    .replaceAll('Financial Markets', EXCHANGE_NAMES[code]!.en);
+};
+
 /** Answers each request with the real IS page that request got on 2026-09-26. */
 export function route(url: string, init?: RequestInit): string {
   const body = new URLSearchParams(typeof init?.body === 'string' ? init.body : '');
@@ -70,6 +102,11 @@ export function route(url: string, init?: RequestInit): string {
   if (url.includes('rozvrhy_view.pl?konf=1;z=')) return raw('rozvrh-range.html');
   if (url.includes('rozvrhy_view.pl') && !body.has('format')) return raw('rozvrh-criteria.html');
   if (body.get('format') === 'list') return raw('rozvrh-list-bf-y1.html');
+  const exchange = body.get('predmet') ?? '';
+  if (body.get('format') === 'json' && exchange in EXCHANGE_COURSES) {
+    const ft = asCourse(raw(`rozvrh-predmet-ft.${body.get('lang')}.json`), exchange);
+    return body.get('rocnik') === '0' ? ft : edit(ft, (l) => l.isSeminar === 'false');
+  }
   if (
     body.get('format') === 'json' &&
     body.get('predmet') === '164066' &&
@@ -138,4 +175,11 @@ export async function bfSelection(year: number): Promise<ImpersonationSelection>
     rozvrh: bf.rozvrh,
     periodLabel: 'ZS 2026/2027',
   };
+}
+
+/** The Erasmus persona's request: built by `personaRequest` itself, from `loadOptions`. */
+export async function erasmusSelection(): Promise<ImpersonationSelection> {
+  const erasmus = personaById('erasmus')!;
+  const req = await personaRequest(erasmus, await loadOptions(SEPT), async () => []);
+  return { ...req, periodLabel: 'ZS 2026/2027' };
 }

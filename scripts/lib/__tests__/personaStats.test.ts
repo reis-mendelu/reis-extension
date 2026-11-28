@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { personaStats, personaVerdict, type PersonaRow } from '../personaStats';
+import { courseStats, personaStats, personaVerdict, type PersonaRow } from '../personaStats';
 import type { ImpersonationResult } from '../../../src/api/impersonation/types';
 import type { BlockLesson } from '../../../src/types/schedule';
 
@@ -91,5 +91,74 @@ describe('personaVerdict', () => {
     expect(personaVerdict({ ...ok, stats: { ...ok.stats!, maxSeminarSlots: 6 } })).toContain(
       'seminars not narrowed to one group'
     );
+  });
+});
+
+describe('the Erasmus row', () => {
+  const noPlan = (schedule: BlockLesson[], subjects: string[]): ImpersonationResult =>
+    ({ ...result(schedule, subjects), plan: null }) as ImpersonationResult;
+  const r = noPlan(
+    [
+      lesson('EBA-MAR', false, '20260923', '08:00'),
+      lesson('EBA-MAR', true, '20260923', '10:00'),
+      lesson('EBA-MI', false, '20260923', '11:00'),
+    ],
+    ['EBA-MAR', 'EBA-MI']
+  );
+
+  it('has no plan: 0 plan rows, every taught subject is "only in timetable"', () => {
+    expect(personaStats(r)).toMatchObject({
+      planRows: 0,
+      planSubjects: 0,
+      subjects: 2,
+      timetableOnly: 2,
+    });
+  });
+
+  it('counts each pinned course, resolved or not', () => {
+    expect(courseStats(r, ['EBA-MAR', 'EBA-MI', 'EBA-GONE'])).toEqual([
+      { code: 'EBA-MAR', lectures: 1, seminars: 1 },
+      { code: 'EBA-MI', lectures: 1, seminars: 0 },
+      { code: 'EBA-GONE', lectures: 0, seminars: 0 },
+    ]);
+  });
+
+  const erasmus = (resolved: string[]): PersonaRow => ({
+    id: 'erasmus',
+    code: 'Z-EXC',
+    group: null,
+    stats: personaStats(r),
+    courses: {
+      pinned: ['EBA-MAR', 'EBA-MI', 'EBA-GONE'],
+      resolved,
+      stats: courseStats(r, ['EBA-MAR', 'EBA-MI', 'EBA-GONE']),
+    },
+  });
+
+  it('fails a pinned code IS no longer lists, and a course with no lecture or seminar', () => {
+    const v = personaVerdict(erasmus(['EBA-MAR', 'EBA-MI']));
+    expect(v).toContain('unresolved: EBA-GONE');
+    expect(v).toContain('EBA-MI: 0 seminars');
+    // Not the programme personas' plan rules: Erasmus has no plan by design.
+    expect(v).not.toContain('0 plan subjects');
+  });
+
+  it('passes when every course resolves with a lecture and a seminar', () => {
+    const full = noPlan(
+      ['EBA-MAR', 'EBA-MI'].flatMap((c) => [
+        lesson(c, false, '20260923', '08:00'),
+        lesson(c, true, '20260924', '10:00'),
+      ]),
+      ['EBA-MAR', 'EBA-MI']
+    );
+    const pinned = ['EBA-MAR', 'EBA-MI'];
+    const row: PersonaRow = {
+      id: 'erasmus',
+      code: 'Z-EXC',
+      group: null,
+      stats: personaStats(full),
+      courses: { pinned, resolved: pinned, stats: courseStats(full, pinned) },
+    };
+    expect(personaVerdict(row)).toEqual([]);
   });
 });

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { overlayWrite } from '../../../store/overlay/overlayGuard';
 import { PersonaList } from '../PersonaList';
-import { PERSONAS } from '../../../features/personas';
+import { PERSONAS, personaName } from '../../../features/personas';
 
 const active = (personaId?: string) => ({
   selection: {
@@ -39,14 +39,19 @@ beforeEach(() =>
 );
 
 describe('PersonaList', () => {
-  it('lists Já, the seven personas, then Jiný obor…, with Já checked by default', () => {
+  it('lists Já, the eight personas, then Jiný obor…, with Já checked by default', () => {
     render(<PersonaList variant="compact" onOther={() => {}} />);
     const labels = radios().map((r) => r.textContent);
     expect(labels[0]).toContain('Já');
-    PERSONAS.forEach((p, i) => expect(labels[i + 1]).toContain(`· ${p.shortCode}${p.faculty}`));
+    PERSONAS.forEach((p, i) =>
+      expect(labels[i + 1]).toContain(`${personaName(p, 'cz')}${p.faculty}`)
+    );
     expect(labels[1]).toContain('IT · B-OI');
     expect(labels[1]).toContain('PEF');
-    expect(labels[8]).toContain('Jiný obor…');
+    // Erasmus last before Jiný obor…, named by its faculty: no programme to show.
+    expect(labels[8]).toContain('Erasmus · PEF');
+    expect(labels.join()).not.toContain('null');
+    expect(labels[9]).toContain('Jiný obor…');
     expect(checked()).toHaveLength(1);
     expect(checked()[0]).toContain('Já');
   });
@@ -130,5 +135,32 @@ describe('PersonaList', () => {
     fireEvent.click(screen.getByRole('radio', { name: /Já/ }));
     expect(cancel).toHaveBeenCalledOnce();
     expect(stop).toHaveBeenCalledOnce();
+  });
+
+  // onDone closes the surface around the list (decision #16, 2026-11-28).
+  it('Já with a persona applied calls onDone only once the exit is done', async () => {
+    let exit!: () => void;
+    const stop = vi.fn(() => new Promise<void>((r) => (exit = r)));
+    const onDone = vi.fn();
+    useAppStore.setState(
+      overlayWrite({ impersonation: active('finance'), stopImpersonation: stop })
+    );
+    render(<PersonaList variant="compact" onOther={() => {}} onDone={onDone} />);
+    fireEvent.click(screen.getByRole('radio', { name: /Já/ }));
+    expect(onDone).not.toHaveBeenCalled();
+    await act(async () => exit());
+    expect(onDone).toHaveBeenCalledOnce();
+  });
+
+  it('a switch that lands after the list closed calls no onDone', async () => {
+    let land!: (ok: boolean) => void;
+    const go = vi.fn(() => new Promise<boolean>((r) => (land = r)));
+    const onDone = vi.fn();
+    useAppStore.setState(overlayWrite({ switchToPersona: go }));
+    const { unmount } = render(<PersonaList variant="touch" onOther={() => {}} onDone={onDone} />);
+    fireEvent.click(screen.getByRole('radio', { name: /IT · B-OI/ }));
+    unmount();
+    await act(async () => land(true));
+    expect(onDone).not.toHaveBeenCalled();
   });
 });

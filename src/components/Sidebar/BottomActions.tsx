@@ -13,6 +13,7 @@ export function BottomActions() {
   // the profile (decision #16, 2026-11-28). Every close goes back to the list.
   const [onProfile, setOnProfile] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const avatarRef = useRef<HTMLButtonElement>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useTranslation();
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
@@ -42,6 +43,8 @@ export function BottomActions() {
       if (e.key !== 'Escape') return;
       setOpen(false);
       setOnProfile(false);
+      // Back to where a keyboard user opened it from, not to <body>.
+      avatarRef.current?.focus();
     };
     document.addEventListener('mousedown', outside);
     document.addEventListener('keydown', esc);
@@ -88,6 +91,7 @@ export function BottomActions() {
         {/* A click opens it too, so the keyboard reaches it; the mouse has
             already opened it by hovering. */}
         <button
+          ref={avatarRef}
           type="button"
           aria-expanded={isOpen}
           onClick={handleEnter}

@@ -78,6 +78,7 @@ describe('the sidebar avatar', () => {
     fireEvent.click(avatar());
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(personaDialog()).toBeNull();
+    expect(avatar()).toHaveFocus();
     fireEvent.click(avatar());
     fireEvent.mouseDown(document.body);
     expect(personaDialog()).toBeNull();

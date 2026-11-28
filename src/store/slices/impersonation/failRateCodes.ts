@@ -11,7 +11,8 @@ import type { ImpersonationResult } from '../../../api/impersonation/types';
  * codes it already has or has in flight.
  */
 export function failRateCodes(result: ImpersonationResult): string[] {
-  const inPlan = result.plan.cz.blocks.flatMap((b) =>
+  // The Erasmus persona has no plan: its subjects are all there is.
+  const inPlan = (result.plan?.cz.blocks ?? []).flatMap((b) =>
     b.groups.flatMap((g) => g.subjects.map((s) => s.code))
   );
   return [...new Set([...Object.keys(result.subjects.data), ...inPlan])];

@@ -35,6 +35,13 @@ export const variant = (programId: string, shortCode: string) => ({
 export const OPTIONS: FacultyOptions[] = [
   {
     faculty: 'PEF',
+    // The Erasmus persona's courses in PEF's course select (made-up ids 1–5).
+    courses: ['EBA-MAR', 'EBA-MI', 'EBA-MT', 'EBA-PE', 'EBA-FT'].map((code, i) => ({
+      code,
+      name: code,
+      predmetId: String(i + 1),
+      rozvrh: ROZVRH,
+    })),
     programmes: [
       {
         ...variant('1', 'B-OI'),

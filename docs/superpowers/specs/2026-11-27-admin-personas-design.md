@@ -198,6 +198,36 @@ credentials never leave the laptop). Run before shipping and at each semester st
   every group. `--detail <id>` prints one persona's lessons and plan. It bundles with esbuild
   like `npm run snapshots` (the fetchers read `import.meta.env`).
 
+## Step C: what the build decided (2026-11-28)
+
+- **Courses:** EBA-MAR (Marketing 1), EBA-MI (Microeconomics 1), EBA-MT (Mathematics), EBA-PE
+  (Business Economics 1), EBA-FT (Financial Markets): English-taught PEF bachelor courses with a
+  lecture and a seminar this term whose slots do not collide (one a day, Mon–Fri). IS tags only two
+  courses to Z-EXC itself (EBA-DSND, EBA-PS, both seminar-only), and `stupen=41` ("Zahraniční
+  studenti") answers the same two, so the pick comes from the EBA- courses in PEF's prezenční
+  timetable.
+- **Resolving codes:** `loadOptions` now also keeps each faculty's timetable course select
+  (`FacultyOptions.courses`, from the criteria forms it already posts: no extra request). The
+  Erasmus request takes the pinned codes that resolve, each with the timetable it was listed in;
+  none at all is `noPlan`. A code that stops
+  resolving is left out in the app and fails `personas:check`.
+- **Fetch:** `fetchImpersonation` branches on `selection.erasmus` (so a background refresh of the
+  cached persona takes it too) to `fetchExchange`: each course asked for on its own **without a
+  year**, one lecture slot and the first seminar parallel (`firstSlotOnly`), subjects named from
+  the timetable, `plan: null`.
+- **Language:** the i18n slice holds `personaLanguage` (memory only). `loadLanguage` returns it
+  while set, so a reload from another tab, a sync or the boot read cannot undo it; every apply sets
+  it from the persona, `stopImpersonation` and entering the demo clear it, and a change fires
+  `LANGUAGE_UPDATE` so the menu, files and map events follow. The admin choosing a language in
+  settings mid-persona wins and is saved, as any choice is; a background refresh does not touch the
+  language (same persona), so a pick made while one runs stays.
+- **What the persona showed at once** (left as findings, not changed): partner surfaces (Stáže, EY
+  in the profile's partner block) match by faculty through `matchingPartners`, not
+  `canSee`, so an exchange student at PEF sees PEF-wide partners; and with no plan, the plan page
+  shows its skeleton forever (`StudyPlanPage`), as it does for a real Z-EXC student.
+- **Name:** "Erasmus · PEF" in the list and the banner (`personaName`: the faculty where there is
+  no programme code).
+
 ## Out of scope
 
 - Years 2+ as personas (the old picker still does them).
@@ -228,7 +258,7 @@ credentials never leave the laptop). Run before shipping and at each semester st
 | A | A persona started from today's picker changes faculty, programme and Erasmus for every reader (design §2, without language). | — | On test |
 | D | Screens a persona cannot fill show one "Persona: not available" note (design §5). | — | On test |
 | B | The avatar opens the one-tap list of the seven programme personas, cached, with "Já" and "Jiný obor…", checked by `npm run personas:check` (design §1, §3, §6, §7). | A | On test |
-| C | The Erasmus persona: pinned English PEF courses, Z-EXC identity, English UI in memory, in the list and the check (design §1, §2 language, §4). | B | Defined |
+| C | The Erasmus persona: pinned English PEF courses, Z-EXC identity, English UI in memory, in the list and the check (design §1, §2 language, §4). | B | On test |
 
 A and D touch different files and run in parallel. B and C run after the step before them merges.
 
