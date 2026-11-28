@@ -134,6 +134,10 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
           .getBoundingClientRect();
         return i.top < f.bottom && i.bottom > f.top ? 'together' : 'apart';
       })(),
+      hiddenRow:
+        document.getElementById('hidden-row')!.getBoundingClientRect().height === 0
+          ? 'hidden'
+          : 'shown',
       peopleSizes: (() => {
         const rows = [...document.querySelectorAll('#people tr.reis-person')];
         const photo = document.querySelector('#people td.reis-photo img')?.getBoundingClientRect();

@@ -199,8 +199,21 @@ export interface ThemeSlice {
 export interface I18nSlice {
   language: Language;
   isLanguageLoading: boolean;
+  /**
+   * The active persona's language (the Erasmus persona's English), held in
+   * memory only and never saved. Null = the student's own saved language.
+   */
+  personaLanguage: Language | null;
+  /**
+   * The "view as" request token current when the student last picked a
+   * language: a persona request that began at or before it does not set its
+   * own language when it lands (that pick is newer).
+   */
+  languagePickedAt: number;
   setLanguage: (lang: Language) => Promise<void>;
   loadLanguage: () => Promise<void>;
+  /** Set or clear the persona's language; the impersonation apply and exit call it. */
+  setPersonaLanguage: (lang: Language | null) => Promise<void>;
 }
 
 export interface SuccessRateSlice {
@@ -520,6 +533,8 @@ export type MobileSheet =
   | { kind: 'settings' }
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
+  /** A reIS admin's "Zobrazit jako", opened from their own avatar (decision #16). */
+  | { kind: 'personas' }
   | { kind: 'menu'; dayIso: string; week?: string[] }
   // The ISIC balance and Dobít, from the profile (phone only — the same row
   // the menu sheet shows; src/test/guards/desktopHasNoIskam.test.ts).
@@ -804,6 +819,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createOsmTileAccessSlice').OsmTileAccessSlice &
   import('./slices/createReportSlice').ReportSlice &
   import('./slices/createImpersonationSlice').ImpersonationSlice &
+  import('./slices/createPersonaSlice').PersonaSlice &
   DemoSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

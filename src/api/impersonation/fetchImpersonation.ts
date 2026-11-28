@@ -1,4 +1,3 @@
-import { mergeDualLanguageLessons } from '../schedule';
 import type { BlockLesson } from '../../types/schedule';
 import type { SubjectInfo } from '../../types/documents';
 import {
@@ -9,7 +8,8 @@ import {
 } from './types';
 import { parseDoc } from './text';
 import { intakeLabel, targetSemester } from './intake';
-import { timetableBody, readTimetableAnswer, type TimetableFilter } from './timetableQuery';
+import { lessonsFor } from './lessonsFor';
+import { fetchExchange } from './fetchExchange';
 import {
   CATALOG_URL,
   FACULTY_IDS,
@@ -18,27 +18,10 @@ import {
   programmeUrl,
   findLeafUrl,
 } from './catalogNav';
-import { parseCatalogPlan, subjectsToAttend, toStudyPlan, type CatalogRow } from './catalogPlan';
-import { firstSlotOnly } from './pickSlots';
-import { text, post, mapLimit } from './transport';
-
-/** Both languages or failure — a half-fetched timetable is never applied. */
-async function lessonsFor(
-  sel: ImpersonationSelection,
-  f: TimetableFilter,
-  pickFirst: boolean
-): Promise<BlockLesson[]> {
-  const [cz, en] = await Promise.all(
-    (['cz', 'en'] as const).map(async (lang) =>
-      readTimetableAnswer(await post(timetableBody(sel.rozvrh, f, lang, 'json')))
-    )
-  );
-  if (!cz || !en || cz.kind === 'failed' || en.kind === 'failed')
-    throw new ImpersonationError('timetable');
-  const czL = cz.kind === 'lessons' ? cz.lessons : [];
-  const enL = en.kind === 'lessons' ? en.lessons : [];
-  return mergeDualLanguageLessons(pickFirst ? firstSlotOnly(czL) : czL, enL);
-}
+import { parseCatalogPlan, subjectsToAttend, toStudyPlan } from './catalogPlan';
+import { firstSlotOnly, oneSeminarParallel } from './pickSlots';
+import { text, mapLimit } from './transport';
+import { taughtSubjects } from './taughtSubjects';
 
 /**
  * One subject, one parallel. `rocnik` narrows it to the slots open to this
@@ -51,8 +34,22 @@ async function subjectLessons(
   sel: ImpersonationSelection,
   predmet: string
 ): Promise<BlockLesson[]> {
-  const narrowed = await lessonsFor(sel, { predmet, rocnik: sel.year }, true);
-  return narrowed.length ? narrowed : lessonsFor(sel, { predmet }, true);
+  const narrowed = await lessonsFor(sel, { predmet, rocnik: sel.year }, firstSlotOnly);
+  return narrowed.length ? narrowed : lessonsFor(sel, { predmet }, firstSlotOnly);
+}
+
+/**
+ * Only the lectures of a subject, for one whose seminars came with the group.
+ * At AF the year-tagged answer holds the seminars and no lecture (live
+ * 2026-11-27), so "not empty" is not enough to skip the year-less ask.
+ */
+async function subjectLectures(
+  sel: ImpersonationSelection,
+  predmet: string
+): Promise<BlockLesson[]> {
+  const lectures = (ls: BlockLesson[]) => ls.filter((l) => l.isSeminar !== 'true');
+  const narrowed = lectures(await lessonsFor(sel, { predmet, rocnik: sel.year }, firstSlotOnly));
+  return narrowed.length ? narrowed : lectures(await lessonsFor(sel, { predmet }, firstSlotOnly));
 }
 
 /**
@@ -86,6 +83,9 @@ export async function fetchImpersonation(
   requested: ImpersonationSelection,
   now = new Date()
 ): Promise<ImpersonationResult> {
+  // Erasmus (design 2026-11-27 §4): no plan, its pinned courses. Keyed on the
+  // selection, so a background refresh of the cached persona takes it too.
+  if (requested.erasmus) return fetchExchange(requested);
   const { leaf, variant } = await fetchPlanLeaf(requested, now);
   // From here on, the version that has the plan: its id drives the timetable.
   const sel = { ...requested, ...variant };
@@ -106,13 +106,22 @@ export async function fetchImpersonation(
   let schedule: BlockLesson[] = [];
   if (sel.year === 1) {
     const f = { program: sel.programId, rocnik: 1, skupina: sel.group ?? 0 };
-    schedule = await lessonsFor(sel, f, false);
+    // "All groups" (no group) asked for every parallel on purpose: none narrowed.
+    schedule = await lessonsFor(sel, f, sel.group === null ? (l) => l : oneSeminarParallel);
   }
+  // A subject the group answer has seminars of but no lecture (AF: AGRMT, BZRV,
+  // DMEP, BZZV, live 2026-11-27) has its lectures tagged to no programme: they
+  // are asked for on their own too, and only the lectures are taken.
   const covered = new Set(schedule.map((l) => l.courseCode));
-  const missing = attend.filter(
-    (r): r is CatalogRow & { predmetId: string } => r.predmetId !== null && !covered.has(r.code)
+  const lectured = new Set(schedule.filter((l) => l.isSeminar !== 'true').map((l) => l.courseCode));
+  const ask = attend.flatMap((r) =>
+    r.predmetId === null || lectured.has(r.code)
+      ? []
+      : [{ predmetId: r.predmetId, lecturesOnly: covered.has(r.code) }]
   );
-  const per = await mapLimit(missing, 3, (r) => subjectLessons(sel, r.predmetId));
+  const per = await mapLimit(ask, 3, ({ predmetId, lecturesOnly }) =>
+    lecturesOnly ? subjectLectures(sel, predmetId) : subjectLessons(sel, predmetId)
+  );
   schedule = schedule.concat(per.flat());
 
   const title = `${sel.shortCode} ${sel.name} · ${intakeLabel(sel.year, now)}`;
@@ -134,6 +143,8 @@ export async function fetchImpersonation(
       fetchedAt,
     };
   }
+  const planned = new Set(semester.groups.flatMap((g) => g.rows.map((r) => r.code)));
+  Object.assign(data, taughtSubjects(schedule, planned, fetchedAt));
   return {
     resolved: variant,
     plan: { cz: toStudyPlan(czSems, title, enrolled), en: toStudyPlan(enSems, title, enrolled) },

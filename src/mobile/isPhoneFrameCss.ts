@@ -173,7 +173,7 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-att tr > td.a-week .uf-icon, .mainpage table.reis-att tr > td.a-week img { flex: 0 0 auto; margin: 0 !important; transform: scale(0.72); transform-origin: center top; }
 
 ${IS_PHONE_FRAME_CSS_TABLES}
-/* A column IS itself hides (the row number; "Období" until the student switches it on) stays
+/* A column or row IS itself hides (the row number; "Období" until the student switches it on) stays
    hidden in a card. Last on purpose: it has to win over every display rule above. */
-.mainpage table[class*="reis-"] tr[class] > td.UISTMNumberCellHidden, .mainpage table[class*="reis-"] tr[class] > td[style*="display: none"], .mainpage table[class*="reis-"] tr[class] > td[style*="display:none"] { display: none !important; }
+.mainpage table[class*="reis-"] tr[class][style*="display: none"], .mainpage table[class*="reis-"] tr[class][style*="display:none"], .mainpage table[class*="reis-"] tr[class] > td.UISTMNumberCellHidden, .mainpage table[class*="reis-"] tr[class] > td[style*="display: none"], .mainpage table[class*="reis-"] tr[class] > td[style*="display:none"] { display: none !important; }
 `;

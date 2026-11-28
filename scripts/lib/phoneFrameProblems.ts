@@ -27,6 +27,8 @@ export interface Facts {
   registerVisible: boolean;
   /** Computed sizes inside an exam row: the stylesheet's rules compete on weight, and have lost before. */
   examSizes: string;
+  /** A table row IS itself hides (display: none): 'hidden' as a card too. */
+  hiddenRow: string;
   /** People rows: a small photo, and a row no taller than about two lines of text beside it. */
   peopleSizes: string;
   /** A date field and its calendar icon: 'together' on one line. */
@@ -66,6 +68,7 @@ export function problems(width: number, f: Facts): string[] {
     );
   if (f.dateField !== 'together')
     out.push('the date field and its calendar icon are on separate lines');
+  if (f.hiddenRow !== 'hidden') out.push('a row IS hides is shown as a card');
   if (!f.registerVisible)
     out.push('the exam register control is not on screen without scrolling sideways');
   for (const t of f.tables) {

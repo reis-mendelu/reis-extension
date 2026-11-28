@@ -78,7 +78,7 @@ c.setAttribute('data-label',label);
 var s=txt(c);
 if(!s&&pic(c))add(c,'reis-icon');
 else if(!s&&!c.querySelector('a,input,select,button,textarea'))add(c,'reis-empty');
-else if(DASH.test(s)&&!pic(c)&&!c.querySelector('a'))add(c,'reis-dash');
+else if(DASH.test(s)&&!pic(c)&&!c.querySelector('a,input,select,button,textarea'))add(c,'reis-dash');
 }
 function squeeze(t){
 add(t,'reis-compact');arr(t.querySelectorAll('td')).forEach(function(c){var x=txt(c);if(x.length>3&&/\d/.test(x)&&/^[\d\s.,:%-]+$/.test(x))add(c,'reis-numeric');else if(c.classList.contains('reis-numeric'))c.classList.remove('reis-numeric');});

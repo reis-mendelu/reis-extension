@@ -117,9 +117,9 @@ export function findOverlaps() {
     for (let j = i + 1; j < marks.length && marks[j].box.top < a.box.bottom - 2; j++) {
       const b = marks[j];
       if (a.kind === 'text' && b.kind === 'text') {
-        // Lines of one text node follow each other; two different text nodes must not cross,
-        // even when one sits inside the other's element (a link inside its table cell).
-        if (a.node === b.node) continue;
+        // Text never skips text: two text nodes must not cross even when one sits inside the
+        // other's element, and two lines of one node must not either (a line height smaller
+        // than the text draws them over each other).
       } else if (a.kind === b.kind) {
         // Nested pictures are one picture (an svg inside an image's wrapper).
         if (a.el === b.el || a.el.contains(b.el) || b.el.contains(a.el)) continue;

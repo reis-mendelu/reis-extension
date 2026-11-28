@@ -157,6 +157,15 @@ describe('the phone script and IS tables', () => {
     expect($('#n').classList.contains('reis-numeric')).toBe(false);
   });
 
+  it('never hides a cell that holds a control, even beside a dash', () => {
+    document.body.innerHTML = page(
+      SIMPLE.replace('<td>-</td>', '<td id="c"><input type="checkbox"> -</td>')
+    );
+    size('#t', 900);
+    run();
+    expect($('#c').classList.contains('reis-dash')).toBe(false);
+  });
+
   it('lets a one-row layout table (a filter form) wrap', () => {
     document.body.innerHTML = page(
       '<table id="t"><tr><td>Předmět</td><td><select><option>x</option></select></td></tr></table>'

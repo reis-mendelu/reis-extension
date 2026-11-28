@@ -1,13 +1,5 @@
 import { useRef, useState } from 'react';
-import {
-  Wifi,
-  FileText,
-  MessageSquarePlus,
-  LogOut,
-  UserCog,
-  ShieldCheck,
-  Settings,
-} from 'lucide-react';
+import { Wifi, FileText, MessageSquarePlus, LogOut, ShieldCheck, Settings } from 'lucide-react';
 import { useAppStore } from '../../../store/useAppStore';
 import { useTranslation } from '../../../hooks/useTranslation';
 import { SignOutConfirm } from '../sheets/SignOutConfirm';
@@ -38,11 +30,9 @@ export function ProfileScreen() {
   const [signOutOpen, setSignOutOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   // Signed in to the console on this device (held the name once): keep a way back.
   const hasAdminSession = useAppStore((s) => s.adminSession !== null);
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
-  const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
 
   return (
     <div data-testid="profile-screen" className="relative flex flex-1 flex-col overflow-hidden">
@@ -112,19 +102,6 @@ export function ProfileScreen() {
 
           {hasAdminSession && (
             <NavRow icon={ShieldCheck} label={t('admin.entry')} onClick={openSocietyAdmin} />
-          )}
-
-          {/* reIS admins only. Options load from the tap, never from an effect. */}
-          {isReisAdmin && (
-            <NavRow
-              icon={UserCog}
-              label={t('impersonation.entry')}
-              sublabel={t('impersonation.entrySub')}
-              onClick={() => {
-                void loadImpersonationOptions();
-                pushSheet({ kind: 'impersonation' });
-              }}
-            />
           )}
 
           <div className="mx-4 my-2 h-px bg-base-content/10" />

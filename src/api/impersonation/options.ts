@@ -1,4 +1,9 @@
-import { ImpersonationError, type FacultyOptions, type ProgrammeOption } from './types';
+import {
+  ImpersonationError,
+  type CourseOption,
+  type FacultyOptions,
+  type ProgrammeOption,
+} from './types';
 import { parseDoc } from './text';
 import {
   parseRanges,
@@ -6,6 +11,7 @@ import {
   parseRozvrhRows,
   parseCriteria,
   parseGroupNumbers,
+  parseCourses,
 } from './timetableForm';
 import { TIMETABLE_URL, criteriaBody, timetableBody } from './timetableQuery';
 import { FACULTY_IDS, typStudiaFor } from './catalogNav';
@@ -43,8 +49,14 @@ export async function loadOptions(now = new Date()): Promise<FacultyOptions[]> {
     (r) => r.form === 'prezenční' && r.faculty in FACULTY_IDS
   );
   const byFaculty = new Map<string, ProgrammeOption[]>();
+  const courses = new Map<string, CourseOption[]>();
   for (const r of rozvrhy) {
-    const form = parseCriteria(parseDoc(await post(criteriaBody(r))));
+    const doc = parseDoc(await post(criteriaBody(r)));
+    const form = parseCriteria(doc);
+    const known = courses.get(r.faculty) ?? [];
+    for (const c of parseCourses(doc))
+      if (!known.some((k) => k.code === c.code)) known.push({ ...c, rozvrh: r });
+    courses.set(r.faculty, known);
     const list = byFaculty.get(r.faculty) ?? [];
     for (const p of form.programmes) {
       if (!typStudiaFor(p.shortCode) || list.some((x) => x.programId === p.programId)) continue;
@@ -59,7 +71,11 @@ export async function loadOptions(now = new Date()): Promise<FacultyOptions[]> {
     }
     byFaculty.set(r.faculty, list);
   }
-  return [...byFaculty].map(([faculty, list]) => ({ faculty, programmes: mergeVersions(list) }));
+  return [...byFaculty].map(([faculty, list]) => ({
+    faculty,
+    programmes: mergeVersions(list),
+    courses: courses.get(faculty) ?? [],
+  }));
 }
 
 /**

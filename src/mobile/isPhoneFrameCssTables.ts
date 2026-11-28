@@ -15,8 +15,8 @@ export const IS_PHONE_FRAME_CSS_TABLES = `
 .mainpage table.reis-compact input.hasDatepicker { width: calc(100% - 36px) !important; min-width: 0 !important; box-sizing: border-box; }
 /* Footnote marks in restyled tables stay readable (the timetable's "(3)" came out at 10 px). */
 .mainpage table[class*="reis-"] sup, .mainpage table[class*="reis-"] sub { font-size: max(11px, 0.75em) !important; }
-.mainpage table.reis-flow tbody, .mainpage table.reis-flow tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.mainpage table.reis-flow td { display: block !important; padding: 0 !important; max-width: 100%; }
+.mainpage table.reis-flow > tbody, .mainpage table.reis-flow > tbody > tr, .mainpage table.reis-flow > tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.mainpage table.reis-flow > tbody > tr > td, .mainpage table.reis-flow > tr > td { display: block !important; padding: 0 !important; max-width: 100%; }
 /* Label/value pairs (the syllabus's details): each value under its label, nothing scrolls sideways.
    Only the list's own rows and cells: a table inside a value (the topic list) keeps its own layout. */
 .mainpage table.reis-kv { display: block !important; overflow: visible !important; animation: none !important; -webkit-mask-image: none !important; mask-image: none !important; width: auto !important; }

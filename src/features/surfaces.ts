@@ -32,6 +32,7 @@ export const PHONE_SHEET_CAPABILITY = {
   docs: 'studyDocuments',
   settings: 'settings',
   impersonation: 'impersonation',
+  personas: 'impersonation',
   menu: 'menu',
   isic: 'isic',
   venue: 'venueAppChooser',
