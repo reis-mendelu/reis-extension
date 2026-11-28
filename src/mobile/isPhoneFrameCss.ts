@@ -101,7 +101,7 @@ input, select, textarea, button { font-size: 16px; }
 
 /* Exam terms: status, subject, date and room, then the rest small; register and info on the right. */
 .mainpage table.reis-exam tr.reis-card { display: grid !important; grid-template-columns: 16px auto 1fr auto; gap: 2px 8px; align-items: center; grid-template-areas: "stav predmet predmet akce" "stav datum kde oper" ". druh vypsal prihl" ". okno okno typ"; }
-.mainpage table.reis-exam tr > td { display: block !important; font-size: 12px !important; line-height: 1.3; color: #55606a; }
+.mainpage table.reis-exam tr.reis-card > td { display: block !important; font-size: 12px !important; line-height: 1.3; color: #55606a; }
 .mainpage table.reis-exam tr > td.x-por, .mainpage table.reis-exam tr > td.x-kod, .mainpage table.reis-exam tr > td.x-obdobi, .mainpage table.reis-exam tr > td.reis-empty { display: none !important; }
 .mainpage table.reis-exam tr > td.x-stav { grid-area: stav; align-self: start; padding-top: 4px !important; }
 .mainpage table.reis-exam tr > td.x-predmet { grid-area: predmet; font-size: 15px !important; font-weight: 700; color: #111; }

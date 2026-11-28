@@ -59,6 +59,8 @@ interface Facts {
   controlsPastEdge: string[];
   tables: TableFacts[];
   registerVisible: boolean;
+  /** Computed sizes inside an exam row: the stylesheet's rules compete on weight, and have lost before. */
+  examSizes: string;
 }
 
 async function gather(page: Page, styleId: string): Promise<Facts> {
@@ -113,6 +115,12 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
         .map(name),
       tables,
       registerVisible: register.width > 0 && register.right <= width + 1,
+      examSizes: ['x-predmet', 'x-druh', 'x-datum']
+        .map((k) => {
+          const cs = getComputedStyle(document.querySelector(`#exam td.${k}`)!);
+          return `${k} ${cs.fontSize} pad ${cs.paddingLeft}`;
+        })
+        .join(', '),
     };
   }, styleId);
 }
@@ -125,6 +133,8 @@ function problems(width: number, f: Facts): string[] {
   if (f.stickingOut.length) out.push(`sticking out of the page: ${f.stickingOut.join(', ')}`);
   if (f.controlsPastEdge.length)
     out.push(`form controls past the edge: ${f.controlsPastEdge.join(', ')}`);
+  const sizes = 'x-predmet 15px pad 0px, x-druh 12px pad 0px, x-datum 14px pad 0px';
+  if (f.examSizes !== sizes) out.push(`exam row sizes are "${f.examSizes}", expected "${sizes}"`);
   if (!f.registerVisible)
     out.push('the exam register control is not on screen without scrolling sideways');
   for (const t of f.tables) {
