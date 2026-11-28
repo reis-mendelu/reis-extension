@@ -76,7 +76,7 @@ export function findOverlaps() {
     r.selectNodeContents(n);
     for (const b of r.getClientRects())
       if (b.width > 2 && b.height > 2)
-        marks.push({ kind: 'text', el, key: 'text:' + s.slice(0, 40), box: b });
+        marks.push({ kind: 'text', el, node: n, key: 'text:' + s.slice(0, 40), box: b });
   }
   marks.sort((a, b) => a.box.top - b.box.top);
   const found = new Map();
@@ -84,8 +84,12 @@ export function findOverlaps() {
     const a = marks[i];
     for (let j = i + 1; j < marks.length && marks[j].box.top < a.box.bottom - 2; j++) {
       const b = marks[j];
-      if (a.kind === b.kind) {
-        // Nested boxes of one kind are one thing (a span in a link, an svg in an img's wrapper).
+      if (a.kind === 'text' && b.kind === 'text') {
+        // Lines of one text node follow each other; two different text nodes must not cross,
+        // even when one sits inside the other's element (a link inside its table cell).
+        if (a.node === b.node) continue;
+      } else if (a.kind === b.kind) {
+        // Nested pictures are one picture (an svg inside an image's wrapper).
         if (a.el === b.el || a.el.contains(b.el) || b.el.contains(a.el)) continue;
         // One IS icon is several drawings layered in one box (a base and a decorator).
         if (a.kind === 'pic' && a.icon && a.icon === b.icon) continue;

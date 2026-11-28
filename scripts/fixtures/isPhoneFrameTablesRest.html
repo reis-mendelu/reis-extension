@@ -87,6 +87,50 @@
     <td></td>
   </tr>
 </table>
+<!-- Not tables (round two, 2026-11-28). IS's column toggles ("Zobrazit:"): a flex row that does not wrap. -->
+<div class="clm_main" style="display: flex; white-space: nowrap; gap: 12px">
+  <span class="clm_toggle">Období</span><span class="clm_toggle">Kód předmětu</span
+  ><span class="clm_toggle">Vyučující</span><span class="clm_toggle">Přihlášeno / kapacita</span
+  ><span class="clm_toggle">Typ termínu</span>
+</div>
+<!-- A filter grid placed by named areas, wider than a phone. -->
+<div
+  class="query-filters"
+  style="display: grid; grid-template-columns: 200px 300px; grid-template-areas: 'h f'"
+>
+  <div class="filter-header" style="grid-area: h; width: 502px">Formulář</div>
+  <select name="kc" style="grid-area: f; width: 402px">
+    <option>-- všechny požadavky --</option>
+  </select>
+</div>
+<!-- A folder tree laid out for one line per row (10 px lines for 13 px text). -->
+<table class="strom">
+  <tr>
+    <td class="strom" style="line-height: 10px; white-space: normal">
+      <a href="#"
+        >Ekologie a ochrana životního prostředí, krajiny a přírodních zdrojů v regionech</a
+      >
+      (5 objektů)
+    </td>
+  </tr>
+</table>
+<!-- A chart drawn at a fixed width. -->
+<div id="graph_1"><svg style="width: 1000px; height: 60px"></svg></div>
+<!-- A home-page tile heading as IS styles it (measured): a one-line title that grows from zero
+     (flex 1 1 0%) and two small buttons, in a narrow column. -->
+<div style="width: 200px">
+  <span
+    class="sekce-nadpis"
+    style="display: flex; gap: 8.8px; white-space: nowrap; overflow: hidden"
+    ><b style="flex: 1 1 0%">Přizpůsobení informačního systému</b>
+    <div><svg style="width: 15px; height: 15px"></svg></div>
+    <div><svg style="width: 15px; height: 10px"></svg></div
+  ></span>
+</div>
+<!-- A label IS places in a zero-width box on purpose, to overflow (Mapa mých studií's "Dnes"). -->
+<div style="width: 0px; padding: 0">
+  <div style="height: 18px; position: relative; line-height: 18px">Dnes</div>
+</div>
 <!-- A one-row filter form: its cells wrap. -->
 <table id="filter" data-expect="reis-flow">
   <tr>

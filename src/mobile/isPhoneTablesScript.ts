@@ -34,6 +34,18 @@
  * 5. **Anything else** (`reis-compact`): tighter cells, then shrunk by up to
  *    20 % if that makes it fit (`reis-fit`); otherwise it scrolls sideways
  *    inside its own box, as every wide table did before.
+ *
+ * Then the boxes outside tables, judged the same way (round two of the
+ * phone loop, 2026-11-28, from 125 saved pages): a flex row or grid wider
+ * than its room wraps: a flex row (IS's column toggles) gets `reis-wrap` and
+ * its items move to the next line at their own size, a grid (filters, app
+ * logos) gets `reis-stack` and becomes one column; a picture drawn wider than its box (a d3 chart at
+ * 1000 px), one that would stick out of the page itself and not merely its
+ * own box (IS's tile icons overflow theirs by a few pixels on purpose), makes
+ * that box `reis-scroll`. One that fits is left alone. Text
+ * whose line height is smaller than the text itself (IS's folder tree: 10 px
+ * lines for 13 px text) gets `reis-lh`: it was laid out for one line, and on
+ * a phone its second line is drawn over the first.
  */
 export const PHONE_TABLES_JS = String.raw`
 function reisTables(d){
@@ -110,6 +122,23 @@ if(isExam)return;if(photo(c)){add(c,'reis-photo');add(r,'reis-person');}else if(
 });
 add(t,isExam?'reis-exam':'reis-cards');
 }
+function ownText(e){for(var c=e.firstChild;c;c=c.nextSibling)if(c.nodeType===3&&/\S/.test(c.data))return true;return false;}
+function inTable(e){for(var p=e.parentElement;p;p=p.parentElement){if(p.tagName==='TABLE')return true;if(p.classList&&p.classList.contains('mainpage'))return false;}return false;}
+function boxes(){
+var BOX=['reis-wrap','reis-stack','reis-scroll','reis-lh'];
+arr(d.querySelectorAll('.mainpage .'+BOX.join(', .mainpage .'))).forEach(function(e){BOX.forEach(function(k){e.classList.remove(k);});});
+var main=d.querySelector('.mainpage'),room=(main?main.clientWidth:0)+1;
+arr(d.querySelectorAll('.mainpage *')).forEach(function(e){
+var name=e.tagName.toLowerCase();
+if(name==='svg'||name==='canvas'){var p=e.parentElement;if(p&&!inTable(e)&&e.getBoundingClientRect().width>room)add(p,'reis-scroll');return;}
+var cs=getComputedStyle(e);
+if(/px$/.test(cs.lineHeight)&&parseFloat(cs.lineHeight)<parseFloat(cs.fontSize)&&ownText(e))add(e,'reis-lh');
+if(e.tagName==='TABLE'||inTable(e))return;
+if(!/flex|grid/.test(cs.display)||cs.overflowX==='auto'||cs.overflowX==='scroll')return;
+if(wide(e))add(e,/grid/.test(cs.display)?'reis-stack':'reis-wrap');
+});
+}
 var list=arr(d.querySelectorAll('.mainpage table:not(.portal_menu)'));
 for(var n=list.length-1;n>=0;n--){try{one(list[n]);}catch(e){}}
+try{boxes();}catch(e){}
 }`;

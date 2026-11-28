@@ -55,6 +55,25 @@ body { font-size: 16px; line-height: 1.45; }
 .mainpage .rada-ikon[data-dir="bottom"] { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)) !important; width: calc(100vw - 42px); box-sizing: border-box; gap: 4px; }
 .mainpage .rada-ikon[data-dir="bottom"] .app-ikona { width: auto !important; min-width: 0; }
 .mainpage .paginator { flex-wrap: wrap; row-gap: 4px; }
+/* Boxes the script measured as wider than their room (isPhoneTablesScript.ts): rows wrap with
+   their items at their own size (a title IS keeps on one line must not shrink under the buttons
+   beside it), grids become one column, a picture drawn too wide scrolls in its own box. Long text that IS glued
+   together with non-breaking spaces breaks only where it would run off the screen
+   (break-word, unlike anywhere, leaves tables' own widths as they are). */
+.mainpage { overflow-wrap: break-word; }
+/* ...except in a box IS sizes to zero width on purpose: its label is meant to overflow (the
+   "Dnes" marker on Mapa mých studií broke one letter per line). */
+.mainpage [style*="width: 0px"], .mainpage [style*="width:0px"] { overflow-wrap: normal; }
+.mainpage .reis-wrap { flex-wrap: wrap !important; max-width: 100% !important; width: auto !important; }
+.mainpage .reis-wrap > * { max-width: 100% !important; box-sizing: border-box; }
+.mainpage .reis-stack { grid-template-columns: minmax(0, 1fr) !important; grid-template-areas: none !important; grid-auto-flow: row !important; max-width: 100% !important; width: auto !important; }
+.mainpage .reis-stack > * { grid-area: auto !important; min-width: 0; max-width: 100% !important; box-sizing: border-box; }
+/* An IS icon draws inside a fixed box (an absolutely placed svg); a flex row that shrinks the
+   box lets the drawing spill onto the text beside it (IS's info boxes at 320 px). */
+.mainpage .uf-icon { flex-shrink: 0; }
+/* Text laid out for one line with a line height smaller than itself (the script's reis-lh). */
+.mainpage .reis-lh { line-height: 1.25 !important; }
+.mainpage .reis-scroll { overflow-x: auto !important; max-width: 100% !important; -webkit-overflow-scrolling: touch; }
 .mainpage .sekce-nadpis { font-size: 14px; }
 
 .mainpage table { display: block; width: auto !important; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
