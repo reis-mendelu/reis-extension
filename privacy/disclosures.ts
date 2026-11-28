@@ -172,7 +172,7 @@ export const FLOWS: Flow[] = [
   },
   {
     id: 'feature_counters',
-    what: 'Nineteen feature counters on the random install id and the school label, one whitelisted label each: seven feature uses (one a tap on a partner programme card in Stáže, one a tap on the new-version row in Novinky, one a tap on the study-aids link under Předměty) and twelve screens opened.',
+    what: 'Twenty-six feature counters on the random install id and the school label, one whitelisted label each: fourteen feature uses (taps and actions, among them a tap on a partner programme card in Stáže, on the new-version row in Novinky, on a study-aids link under Předměty and on the project-data line of an open odevzdávárna) and twelve screens opened.',
     when: 'background',
     identifier: 'install_id',
     files: ['src/api/featureUsage.ts'],
@@ -232,6 +232,11 @@ export const FLOWS: Flow[] = [
         'Fixed version explained',
         'reIS marked your version as broken by a change in IS and the mobile app shows the window explaining it (at most twice), or you tap its Update button or the one on an empty Předměty or Zkoušky, once per app session; stored as one row per install per day',
         'the random install identifier, the school and one fixed label (`critical_update_shown`, `critical_update_opened`). We cannot see whether you go on to update',
+      ],
+      [
+        'Project data line opened',
+        'you tap the "Data pro projekt" line above the open odevzdávárny of any subject (shown only to students of Otevřená informatika and Aplikovaná informatika), once per app session; stored as one row per install per day',
+        'the random install identifier, the school and the fixed `project_data_opened` label. We cannot see which subject or box, and nothing about what you do with the data',
       ],
     ],
     stores: {
