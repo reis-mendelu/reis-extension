@@ -59,21 +59,21 @@ describe('ProfilePopup — report a problem', () => {
   });
 });
 
-describe('ProfilePopup — view as a student', () => {
+describe('ProfilePopup — view as (personas)', () => {
   it('is absent for everyone but a reis_admin', () => {
     useAppStore.setState({ adminRole: 'association' });
     render(<ProfilePopup isOpen />);
-    expect(screen.queryByRole('button', { name: /View as a student/ })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'View as' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /Another programme/ })).toBeNull();
   });
 
-  it('for a reis_admin, opens the picker and closes the popup', () => {
-    const open = vi.fn();
-    useAppStore.setState({ adminRole: 'reis_admin', openImpersonationPicker: open });
-    const onClose = vi.fn();
-    render(<ProfilePopup isOpen onClose={onClose} />);
-    fireEvent.click(screen.getByRole('button', { name: /View as a student/ }));
-    expect(open).toHaveBeenCalledOnce();
-    expect(onClose).toHaveBeenCalled();
+  // Moved to the avatar's own dialog (decision #16, 2026-11-28):
+  // BottomActions.personas.test.tsx.
+  it('is absent for a reis_admin too: their avatar opens the personas first', () => {
+    useAppStore.setState({ adminRole: 'reis_admin', impersonation: null });
+    render(<ProfilePopup isOpen />);
+    expect(screen.queryByRole('radiogroup', { name: 'View as' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /Another programme/ })).toBeNull();
   });
 });
 

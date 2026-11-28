@@ -8,6 +8,9 @@ import { boxKey } from '../../utils/newBoxDetection';
  * tab is actually on screen, however it got there: a tab tap, a row that opened straight on it, or a tapped
  * notification. Points arriving while the student is looking clear at once.
  * Both drawers call it: desktop's state hook and the phone's sheet.
+ *
+ * Never while an admin impersonates: the tab then shows the persona note, not
+ * the marks, so the admin's own new points and boxes have not been seen.
  */
 export function useMarkZaznamnikSeen(
   courseCode: string | undefined,
@@ -28,11 +31,12 @@ export function useMarkZaznamnikSeen(
       )
   );
   const markBoxesSeen = useAppStore((s) => s.markBoxesSeen);
+  const impersonating = useAppStore((s) => s.impersonation != null);
+  const onScreen = isOpen && !impersonating && !!courseCode && activeTab === 'zaznamnik';
   useEffect(() => {
-    if (isOpen && isNew && courseCode && activeTab === 'zaznamnik') void markSeen(courseCode);
-  }, [isOpen, isNew, courseCode, activeTab, markSeen]);
+    if (onScreen && isNew && courseCode) void markSeen(courseCode);
+  }, [onScreen, isNew, courseCode, markSeen]);
   useEffect(() => {
-    if (isOpen && hasNewBoxes && courseCode && activeTab === 'zaznamnik')
-      void markBoxesSeen(courseCode);
-  }, [isOpen, hasNewBoxes, courseCode, activeTab, markBoxesSeen]);
+    if (onScreen && hasNewBoxes && courseCode) void markBoxesSeen(courseCode);
+  }, [onScreen, hasNewBoxes, courseCode, markBoxesSeen]);
 }

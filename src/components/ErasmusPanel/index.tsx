@@ -45,6 +45,7 @@ export function ErasmusPanel({
   const plan = useStudyPlan();
   const tableBCourses = useAppStore((s) => s.erasmusTableBCourses);
   const tableAOptions = useAppStore((s) => s.erasmusTableAOptions);
+  const faculty = useAppStore((s) => s.userFaculty);
   const addOption = useAppStore((s) => s.addErasmusTableAOption);
   const activeTab = useAppStore((s) => s.erasmusActiveTab);
   const setActiveTab = useAppStore((s) => s.setErasmusActiveTab);
@@ -67,14 +68,14 @@ export function ErasmusPanel({
   const [dob, setDob] = useState('');
 
   useEffect(() => {
-    // getUserParams is unconditional: the Explore tab's faculty filter reads
-    // userParams.facultyLabel, and Explore is the one tab the phone shows.
-    getUserParams().then(setUserParams);
-    // The date of birth is not. It renders in exactly one place —
-    // StudentInfoSection, inside the Learning Agreement tab — so with the LA
-    // hidden this was pulling a student's birth date that nothing could
-    // display. Fetch no personal data a surface cannot render.
+    // Both render in exactly one place — StudentInfoSection, inside the
+    // Learning Agreement tab — so with the LA hidden this was pulling a
+    // student's birth date that nothing could display. Fetch no personal data a
+    // surface cannot render. The Explore tab's faculty filter reads the store,
+    // not these params: it follows a reis_admin's persona, the LA does not
+    // (src/test/guards/personaIdentityReaders.test.ts).
     if (!showLearningAgreement) return;
+    getUserParams().then(setUserParams);
     fetchKontrolaData().then((data) => {
       if (!data) return;
       const [year, month, day] = data.datumNarozeni.split('-');
@@ -98,13 +99,10 @@ export function ErasmusPanel({
   const filteredReports = useMemo(() => {
     let base = reports.filter((r) => r.stay.durationMonths > 2);
     if (schoolFilter) base = base.filter((r) => r.host.name === schoolFilter);
-    const fullFaculty =
-      facultyFilter && userParams?.facultyLabel
-        ? FACULTY_ABBREV_TO_NAME[userParams.facultyLabel]
-        : null;
+    const fullFaculty = facultyFilter && faculty ? FACULTY_ABBREV_TO_NAME[faculty] : null;
     if (fullFaculty) base = base.filter((r) => r.student.faculty === fullFaculty);
     return base;
-  }, [reports, schoolFilter, facultyFilter, userParams]);
+  }, [reports, schoolFilter, facultyFilter, faculty]);
 
   const displayedReports = useMemo(() => {
     return showAll ? filteredReports : filteredReports.slice(0, 10);
@@ -257,7 +255,7 @@ export function ErasmusPanel({
         setSchoolFilter={setSchoolFilter}
         facultyFilter={facultyFilter}
         setFacultyFilter={setFacultyFilter}
-        userParams={userParams}
+        faculty={faculty}
         showAll={showAll}
         setShowAll={setShowAll}
         loading={loading}

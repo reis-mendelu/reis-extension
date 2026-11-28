@@ -14,6 +14,7 @@ import { MenuSheet } from './MenuSheet';
 import { IskamSheet } from './IskamSheet';
 import { VenueSheet } from './VenueSheet';
 import { ImpersonationSheet } from './ImpersonationSheet';
+import { PersonasSheet } from './PersonasSheet';
 import { HideLessonSheet } from './HideLessonSheet';
 import { LibraryBookSheet } from './LibraryBookSheet';
 import { LibraryCancelSheet } from './LibraryCancelSheet';
@@ -70,6 +71,8 @@ export function SheetHost() {
             return <SearchSheet key={index} sheet={sheet} onClose={popSheet} />;
           case 'impersonation':
             return <ImpersonationSheet key={index} onClose={popSheet} />;
+          case 'personas':
+            return <PersonasSheet key={index} onClose={popSheet} />;
           case 'hideLesson':
             return <HideLessonSheet key={index} lesson={sheet.lesson} onClose={popSheet} />;
           case 'libraryBook':

@@ -18,6 +18,7 @@ import { DocumentNoteEditor } from './DocumentNoteEditor';
 import { groupAndSortFiles } from './utils/groupFiles';
 import type { PdfRowMeta } from './types';
 import { useOdevzdavarny } from '../../hooks/data/useOdevzdavarny';
+import { zaznamnikTabCount } from '../../utils/zaznamnik/tabCount';
 
 const PdfViewer = lazy(() => import('./PdfViewer').then((m) => ({ default: m.PdfViewer })));
 
@@ -61,7 +62,6 @@ export function SubjectFileDrawer({
   const hasFiles = !!state.files?.length;
 
   const phSections = zaznamnikData?.ph.sections;
-  const vtTests = zaznamnikData?.vt.tests;
   const maxZaznamnikCols = useMemo(() => {
     if (!phSections) return 0;
     return phSections.reduce(
@@ -70,18 +70,15 @@ export function SubjectFileDrawer({
     );
   }, [phSections]);
 
-  const tabCounts = useMemo(() => {
-    const phCount =
-      phSections?.reduce((n, s) => n + s.arches.filter((a) => !a.empty).length, 0) ?? 0;
-    const vtCount = vtTests?.length ?? 0;
-    return {
+  const impersonating = useAppStore((s) => s.impersonation != null);
+  const tabCounts = useMemo(
+    () => ({
       files: state.files?.reduce((acc, f) => acc + f.files.length, 0) || 0,
       classmates: classmatesCount || 0,
-      // Records plus submission boxes — both live on this tab (see ZaznamnikTab).
-      zaznamnik:
-        zaznamnikData !== undefined || boxCount > 0 ? phCount + vtCount + boxCount : undefined,
-    };
-  }, [state.files, classmatesCount, zaznamnikData, phSections, vtTests, boxCount]);
+      zaznamnik: zaznamnikTabCount(zaznamnikData, boxCount, impersonating),
+    }),
+    [state.files, classmatesCount, zaznamnikData, boxCount, impersonating]
+  );
 
   const flushDocumentNotes = useAppStore((s) => s.flushDocumentNotes);
 

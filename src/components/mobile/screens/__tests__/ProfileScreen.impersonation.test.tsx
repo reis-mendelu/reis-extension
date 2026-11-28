@@ -1,25 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { ProfileScreen } from '../ProfileScreen';
 import { useAppStore } from '../../../../store/useAppStore';
+import { overlayWrite } from '../../../../store/overlay/overlayGuard';
 
 vi.mock('../../../../hooks/data/usePersonPhoto', () => ({ usePersonPhoto: () => null }));
 
-beforeEach(() => useAppStore.setState({ language: 'cz', mobileSheets: [] }));
+beforeEach(() =>
+  useAppStore.setState(
+    overlayWrite({
+      language: 'cz' as const,
+      mobileSheets: [],
+      impersonation: null,
+      personaRows: {},
+    })
+  )
+);
 
-describe('ProfileScreen — view as a student', () => {
+describe('ProfileScreen — view as (personas)', () => {
   it('is absent for everyone but a reis_admin', () => {
     useAppStore.setState({ adminRole: 'association' });
     render(<ProfileScreen />);
-    expect(screen.queryByText('Zobrazit jako student…')).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'Zobrazit jako' })).toBeNull();
+    expect(screen.queryByText('Jiný obor…')).toBeNull();
   });
 
-  it('for a reis_admin, opens the sheet and asks for the options', () => {
-    const load = vi.fn(async () => {});
-    useAppStore.setState({ adminRole: 'reis_admin', loadImpersonationOptions: load });
+  // A reIS admin's list moved to the avatar's sheet (decision #16,
+  // 2026-11-28): ProfileScreen.personas.test.tsx and PersonasSheet.test.tsx.
+  it('is not inline for a reis_admin either', () => {
+    useAppStore.setState({ adminRole: 'reis_admin' });
     render(<ProfileScreen />);
-    fireEvent.click(screen.getByText('Zobrazit jako student…'));
-    expect(load).toHaveBeenCalledOnce();
-    expect(useAppStore.getState().mobileSheets.map((s) => s.kind)).toContain('impersonation');
+    expect(screen.queryByRole('radiogroup', { name: 'Zobrazit jako' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Zobrazit jako' })).toBeInTheDocument();
   });
 });

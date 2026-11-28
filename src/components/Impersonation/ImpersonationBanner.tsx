@@ -3,6 +3,7 @@ import { UserCog } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
+import { personaById, personaName } from '../../features/personas';
 
 /**
  * Not dismissible, on both trees: an admin must never mistake another
@@ -15,8 +16,10 @@ export function ImpersonationBanner({ variant }: { variant: 'row' | 'floating' }
   const active = useAppStore((s) => s.impersonation);
   const stop = useAppStore((s) => s.stopImpersonation);
   const [pending, setPending] = useState(false);
+  const language = useAppStore((s) => s.language);
   if (!active) return null;
   const { selection } = active;
+  const persona = personaById(selection.personaId);
 
   // Same double-tap guard as DemoBanner: exit re-reads nine stores.
   const exit = async () => {
@@ -40,14 +43,24 @@ export function ImpersonationBanner({ variant }: { variant: 'row' | 'floating' }
     <div className={cls} role="status">
       <UserCog size={14} className="flex-shrink-0 text-info" />
       <span className="font-semibold">
-        {t('impersonation.bannerLabel', { programme: selection.shortCode, year: selection.year })}
-        {selection.group !== null && ` · ${t('impersonation.groupN', { n: selection.group })}`}
+        {persona ? (
+          // The list's own name for it, so banner and list read the same.
+          personaName(persona, language)
+        ) : (
+          <>
+            {t('impersonation.bannerLabel', {
+              programme: selection.shortCode,
+              year: selection.year,
+            })}
+            {selection.group !== null && ` · ${t('impersonation.groupN', { n: selection.group })}`}
+          </>
+        )}
       </span>
       <button className="btn btn-ghost btn-xs" onClick={() => void exit()} disabled={pending}>
         {pending ? (
           <span className="loading loading-spinner loading-xs" />
         ) : (
-          t('impersonation.bannerExit')
+          t(persona ? 'impersonation.personas.me' : 'impersonation.bannerExit')
         )}
       </button>
     </div>

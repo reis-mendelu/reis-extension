@@ -4,6 +4,7 @@ import { IndexedDBService } from '../../services/storage';
 import { MockManager } from '../../utils/mock/MockManager';
 import { MOCK_REGISTRY } from '../../utils/mock/registry';
 import { demoContext } from '../../utils/mock/data/demo';
+import { overlayWrite } from '../overlay/overlayGuard';
 
 /**
  * IS-derived stores: everything a real sync would repopulate. Cleared on the
@@ -64,7 +65,7 @@ async function wipeSeeded(): Promise<void> {
   }
 }
 
-export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
+export const createDemoSlice: AppSlice<DemoSlice> = (set, get) => ({
   // Reads the module-level flag rather than hardcoding false: on the
   // deployed preview, dev/earlyDemoMode.ts calls setDemoModeFlag(true)
   // before this slice (and the store that owns it) ever evaluates. Several
@@ -91,18 +92,28 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
     // The fabricated identity goes in with the flag, not through
     // loadContext: that path reads IS and is blocked in demo mode, and
     // several screens gate live controls on these IDs being present.
-    set((state) => ({
-      demoMode: true,
-      isNotices: { cz: [], en: [] },
-      isNoticesFetchedAt: null,
-      isNoticesTriedAt: null,
-      ...demoContext,
-      syncStatus: { ...state.syncStatus, handshakeDone: true },
-      // For the same reason, one step further: the demo dataset is already
-      // complete, and no sync will ever run to set this, so without it every
-      // screen with no rows in the fixture would sit on a skeleton forever.
-      firstSyncSettled: true,
-    }));
+    // overlayWrite and `impersonation: null`: a persona cannot start in demo
+    // mode and the demo is entered signed out, after the restart that drops
+    // one, but should a persona be in memory anyway, the overlay guard would
+    // keep its identity over the sample student's. The demo ends it instead
+    // (wipeSeeded already removed its saved copy).
+    set((state) =>
+      overlayWrite({
+        impersonation: null,
+        demoMode: true,
+        isNotices: { cz: [], en: [] },
+        isNoticesFetchedAt: null,
+        isNoticesTriedAt: null,
+        ...demoContext,
+        syncStatus: { ...state.syncStatus, handshakeDone: true },
+        // For the same reason, one step further: the demo dataset is already
+        // complete, and no sync will ever run to set this, so without it every
+        // screen with no rows in the fixture would sit on a skeleton forever.
+        firstSyncSettled: true,
+      })
+    );
+    // Its language goes with it (the Erasmus persona's English is memory only).
+    await get().setPersonaLanguage(null);
   },
 
   exitDemo: async () => {

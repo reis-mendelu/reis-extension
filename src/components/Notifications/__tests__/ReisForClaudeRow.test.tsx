@@ -2,6 +2,8 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ReisForClaudeRow } from '../ReisForClaudeRow';
 import { useAppStore } from '../../../store/useAppStore';
+import { overlayWrite } from '../../../store/overlay/overlayGuard';
+import { identityOverlay } from '../../../store/overlay/identityOverlay';
 import { useReisForClaude } from '../../../hooks/useReisForClaude';
 import {
   REIS_FOR_CLAUDE_KEY,
@@ -24,12 +26,23 @@ const setUp = (
   state: ReisForClaudeState = 'new',
   faculty: string | null = 'PEF'
 ) =>
-  useAppStore.setState({
-    userFaculty: faculty,
-    userProgramme: programme,
-    reisForClaude: state,
-    impersonation: null,
-  });
+  useAppStore.setState(
+    overlayWrite({
+      userFaculty: faculty,
+      userProgramme: programme,
+      reisForClaude: state,
+      impersonation: null,
+    })
+  );
+
+/** A persona as createImpersonationSlice applies it: the identity is in the store. */
+const impersonate = (selection: { faculty: string; shortCode: string }) =>
+  useAppStore.setState(
+    overlayWrite({
+      impersonation: { selection, result: {} } as never,
+      ...identityOverlay(selection),
+    })
+  );
 
 describe('ReisForClaudeRow', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -57,15 +70,11 @@ describe('ReisForClaudeRow', () => {
 
   it('follows the impersonated student, not the admin', () => {
     setUp('B-EKO', 'new', 'AF');
-    useAppStore.setState({
-      impersonation: { selection: { faculty: 'PEF', shortCode: 'B-AII' }, result: {} } as never,
-    });
+    impersonate({ faculty: 'PEF', shortCode: 'B-AII' });
     expect(render(<ReisForClaudeRow />).container.innerHTML).not.toBe('');
     // …and an admin in the launch programme sees what a B-EKO student would.
     setUp('B-OI', 'new', 'PEF');
-    useAppStore.setState({
-      impersonation: { selection: { faculty: 'PEF', shortCode: 'B-EKO' }, result: {} } as never,
-    });
+    impersonate({ faculty: 'PEF', shortCode: 'B-EKO' });
     expect(render(<ReisForClaudeRow />).container.innerHTML).toBe('');
   });
 

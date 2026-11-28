@@ -1,16 +1,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import type { ImpersonationErrorCode } from '../../api/impersonation/types';
-
-const ERROR_KEY: Record<ImpersonationErrorCode, string> = {
-  options: 'impersonation.errorOptions',
-  timetable: 'impersonation.errorTimetable',
-  noPlan: 'impersonation.errorNoPlan',
-  noSemester: 'impersonation.errorNoSemester',
-  notAdmin: 'impersonation.errorNotAdmin',
-  expired: 'impersonation.expired',
-};
+import { IMPERSONATION_ERROR_KEY } from './errorKeys';
 
 function Field({ label, children }: { label: string; children: (id: string) => ReactNode }) {
   const id = useId();
@@ -165,7 +156,7 @@ export function ImpersonationPicker({ onStarted }: { onStarted?: () => void }) {
       )}
       <p className="text-xs text-base-content/70">{t('impersonation.scopeNote')}</p>
       {(error || status === 'error') && (
-        <p className="text-xs text-error">{t(ERROR_KEY[error ?? 'options'])}</p>
+        <p className="text-xs text-error">{t(IMPERSONATION_ERROR_KEY[error ?? 'options'])}</p>
       )}
       <button
         className="btn btn-primary btn-sm"

@@ -1,0 +1,270 @@
+# Admin personas: one-tap "view as" for reIS admins — design
+
+**Date:** 2026-11-27 · **Status:** agreed with Dominik in chat (grilling, 2 rounds), pending plan
+**Builds on:** `2026-09-26-admin-student-impersonation-design.md` (the overlay, the live IS fetch, the picker)
+
+## Goal
+
+A reIS admin taps the avatar and becomes a student of another programme in one tap, and back
+again with "Já". The point is to **spot mistakes we never see**, because we only ever look at reIS
+as students of our own programmes. A persona must therefore look like that student everywhere a
+student's identity changes what reIS shows, not only in the plan and timetable.
+
+## Decisions (Dominik, 2026-11-27)
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Which personas | Eight fixed personas, all **1st year**: B-OI (IT), B-F (finance), B-EM (economics, our largest group), B-METS (FRRMS), B-ZIN (AF), B-SNBD (LDF), B-RASZ (ZF), Erasmus. B-OI stays even though Dominik is B-OI: Tonda (B-F) uses it. |
+| 2 | What a persona changes | The **whole identity**: faculty, programme, Erasmus/exchange status and year, for every reader, plus plan, subjects and timetable. |
+| 3 | Gesture | **Avatar only**: tap the avatar → one-tap persona list, "Já" first. No ‹ › on the banner. |
+| 4 | Speed | Cache each persona after its first use; a switch to a cached persona is instant. No prefetch at boot. |
+| 5 | Erasmus content | `Z-EXC` at PEF, ~5 real English-taught PEF courses (lecture + first seminar each), **no study plan** (IS's catalogue has none for Z-EXC). |
+| 6 | Erasmus language | The UI switches to English while the Erasmus persona is active, in memory only; "Já" restores the admin's language. |
+| 7 | Screens a persona cannot fill | Exams, grades, files, Záznamník, odevzdávárny show a "Persona: not available" note instead of their normal empty state. |
+| 8 | Where the list lives | A constant in code. No Supabase row, no migration, no disclosure. |
+| 9 | The old picker | Stays, as "Jiný obor…" at the bottom of the persona list. |
+| 10 | Study group | The **first group IS lists** for the programme (not a literal `1`: a group that does not exist silently returns lectures only). |
+| 11 | Freshness | A cached persona refreshes from IS in the background when older than one day. |
+| 12 | Lifetime | The active persona survives a restart (as today). |
+| 13 | Indicator | A slim, non-dismissible banner: persona name + "Já". |
+| 14 | Who | `reis_admin` only (Dominik and Tonda). |
+| 15 | Data must work | Every persona is checked live against IS before shipping and at each semester start (see *Persona check*). |
+| 16 | Where the avatar leads (2026-11-28) | The avatar opens the persona dialog; the profile is one row down. Students see no change. |
+
+Usage numbers behind #1 (prod `daily_active_usage`, distinct installs, last 14 days, 2026-11-27):
+B-EM 772, B-F 282, B-MOS 216, B-METS 216, B-OI 181, B-RER 129, … AF B-ZIN 85, LDF B-SNBD 49,
+ZF B-RASZ 17, Z-EXC ≈ 130 across faculties (PEF 43, the most).
+
+## Facts the design rests on
+
+- **Today's impersonation** (`createImpersonationSlice.ts`, `ImpersonationPicker.tsx`) is four selects
+  and a Start button, then a live IS fetch: ~4 requests for year 1, ~2 POSTs per subject for year 2+.
+  It overlays `OVERLAY_KEYS` (`src/store/overlay/overlayGuard.ts`) and nothing else.
+- **What it leaves as the admin's own today:** `userProgramme` (partner `faculty:programme`
+  audiences, Novinky programme targeting, the programme Discord card), `isErasmus` (hard-coded false
+  in `useViewer`), `userFaculty` (menu tabs, faculty search, `buildFeed`), and `getUserParams()`
+  readers (`ErasmusPanel` faculty filter, `api/feedback.ts`). `useViewer` special-cases the
+  impersonated faculty only.
+- **Exchange students** are IS programme `Z-EXC` (`EXCHANGE_PROGRAMME`, `utils/eventAudience.ts`).
+  `viewer.exchange` shows ESN's events (Erasmus-only ones included) and reIS's own rows, nobody
+  else's, no partners (decision 2026-10-29). The persona inherits exactly that rule.
+- The IS plan catalogue has no plan for `Z-EXC` (checked against reis-scraper's
+  `data/study-plans/study-plans.json`).
+
+## Design
+
+### 1. The persona list — `src/features/personas.ts` (new)
+
+```ts
+interface Persona {
+  id: 'it' | 'finance' | 'economics' | 'frrms' | 'af' | 'ldf' | 'zf' | 'erasmus';
+  label: { cz: string; en: string };   // "IT · B-OI", "Erasmus · PEF"
+  faculty: 'PEF' | 'FRRMS' | 'AF' | 'LDF' | 'ZF';
+  /** Matched against loadOptions() by shortCode, so a re-accreditation (B-RSZ → B-RASZ) resolves. */
+  shortCode: string | null;            // null for Erasmus
+  year: 1;
+  erasmus?: { courses: string[] };     // subject codes, Erasmus only
+  language?: 'en';                     // Erasmus only
+}
+```
+
+Codes are resolved at use, never stored as IS ids: programme ids change with every accreditation.
+The Erasmus course codes are picked from IS's course list for incoming exchange students during
+the build and pinned here; the persona check fails loudly when one stops resolving.
+
+### 2. Identity overlay — the whole student, one place
+
+Extend the overlay from "data" to "identity":
+
+- Add `userFaculty`, `userProgramme`, `isErasmus` to the guarded keys (a separate
+  `IDENTITY_OVERLAY_KEYS` list next to `OVERLAY_KEYS`, guarded by the same `overlayGuard`), so the
+  real `loadContext` keeps writing IndexedDB but cannot overwrite the persona in memory.
+- The persona's identity: its faculty label, its **base** programme code (`Z-EXC` for Erasmus), and
+  `isErasmus: true` for Erasmus.
+- `useViewer` drops its impersonation special case and reads the store like any other reader; the
+  persona is already in the store. Same for `buildFeed`.
+- `getUserParams()` readers that render identity (`ErasmusPanel`'s faculty, and any other found in
+  the build by grepping `facultyLabel|studyProgram`) read the store's identity instead, so there is
+  one source while a persona is active. `api/feedback.ts` keeps the **real** params: a report an
+  admin sends must say who sent it. Each kept-real reader is listed with its reason in a guard test.
+- **Language (Erasmus):** the persona sets the store's language without persisting it
+  (`setLanguage` writes Chrome sync / storage; the persona path must not). Exit restores the admin's
+  persisted language.
+- Context ids (`studiumId`, `obdobiId`, `facultyId`, `studentId`) stay the admin's, as today: they
+  address IS, and IS is still the admin's session.
+
+### 3. Persona cache
+
+- IndexedDB `meta`, one key per persona (`persona:<id>`): `{ selection, result, fetchedAt }`. No
+  new object store, so no IndexedDB version bump (same as `impersonationStorage.ts`).
+- **Switch:** cached → apply at once; if `fetchedAt` is older than 24 h, refetch in the background
+  and re-apply only if the persona is still active. Not cached → fetch (spinner on that row), then
+  apply. The old picker's one-offs are not cached.
+- A failed fetch leaves the current identity in place and shows the error on that persona's row.
+  Never half-applied.
+- Cleared with the rest on admin logout, IS logout and an identity change (the existing exit paths).
+  A cached result from another period is dropped, like today's `expired`.
+
+### 4. Erasmus fetch
+
+No plan. For each pinned course code: the timetable's `predmet=<id>` query, keeping the lecture(s)
+and the first seminar slot (the existing year-2+ path, `pickSlots.ts`). Subjects are built from those
+courses. The plan screen shows what a student with no plan sees.
+
+### 5. Screens a persona cannot fill
+
+While a persona is active, the views for exams, grades/stats, files, Záznamník and odevzdávárny
+render one shared `PersonaUnavailable` note ("Persona: not available here" / CZ) instead of their
+empty state. One component, used on both trees.
+
+### 6. UI — both trees
+
+- **Desktop (decision #16, 2026-11-28):** for a reIS admin the avatar opens "Zobrazit jako" as
+  its own dialog (`Sidebar/PersonaPopup.tsx`, the popup's position): "Já" (checked when no
+  persona), the eight personas (label, faculty chip, a check on the active one, a spinner while
+  fetching, an error line on failure), "Jiný obor…" which opens today's drawer, a divider, then
+  "Profil a nastavení ›", which swaps in today's `ProfilePopup` (focus moves into it). A pick that
+  takes effect (a persona applied, or "Já") closes the dialog, and so do Esc (focus back on the
+  avatar) and a click outside. A failed switch keeps it open, so the row can show its error.
+  Students get the popup as before.
+- **Phone/iPad (decision #16, 2026-11-28):** for a reIS admin the avatar at the top of Profil
+  (photo or initials) pushes a "Zobrazit jako" sheet (`mobile/sheets/PersonasSheet.tsx`, kind
+  `personas`, its own scroller), so Android back closes it. "Jiný obor…" puts today's
+  `impersonation` sheet in its place. A pick that takes effect closes the sheet, but only while it
+  is still the top sheet. The admin loses the photo lightbox on their own avatar. A student's
+  avatar keeps it. Holding the name still opens the admin console. Verify at tablet width too.
+- *Superseded (step B, 2026-11-27):* the list was a section inside `ProfilePopup` and inline on
+  `ProfileScreen`. Neither carries it any more.
+- **Banner:** today's `ImpersonationBanner`, labelled with the persona ("Erasmus · PEF") and a "Já"
+  button. Non-dismissible.
+- One shared list component (`PersonaList`) under `src/components/Impersonation/`, rendered by both
+  trees, so the trees cannot drift.
+
+### 7. Persona check — `npm run personas:check` (new, local only)
+
+Signs in with the admin's own IS credentials from `.env` (the `scrape-real-data` pattern), runs the
+real fetch for all eight personas and prints one row each: resolved programme code, group, plan
+rows, subjects, lectures, seminars, Erasmus courses resolved. Exits non-zero when any persona has
+0 subjects, 0 lectures, 0 seminars (year 1 with a group), or an unresolved code. Never in CI (IS
+credentials never leave the laptop). Run before shipping and at each semester start.
+
+## Step B: what the build decided (2026-11-27)
+
+- **Phone:** the list sits on Profil itself (reIS admins only), one tap from the avatar, rather
+  than behind a row; a student's Profil is unchanged. "Jiný obor…" pushes today's picker sheet.
+  **Desktop:** inline in the avatar popup's admin section; "Jiný obor…" opens the drawer.
+  *Placement superseded by decision #16 (2026-11-28): see §6.*
+- **The banner** names a persona the way the list does ("Finance · B-F") with "Já" to exit; a
+  one-off from the picker keeps today's wording and "Ukončit". The list checks "Jiný obor…" and
+  names its code while a one-off is active.
+- **One request at a time:** every start (persona, picker) and exit (Já, a cancel, admin logout)
+  takes a new request token; a fetch that lands under an older one is cached but not applied, so
+  "Já" or another persona tapped meanwhile wins. The token is checked again after the save, so an
+  exit that began meanwhile also ends clean on disk. Other persona rows are held while one
+  fetches; "Já" never is, and it always cancels a fetch in flight (freeing that row at once).
+  Closing the picker cancels the latest one-off still starting; only that one owns the
+  picker's spinner and error. The boot restore yields to anything the admin does while it
+  reads IndexedDB. A failed save applies nothing and says so ("storage" on the row or picker).
+- **reis_admin only, also mid-fetch:** a fetch that lands after an admin logout saves and applies
+  nothing (the logout clears the cache last, once the role is gone).
+- **Background refresh** (> 24 h) runs on a switch and for the persona restored at boot (the
+  one being looked at; no other persona is fetched at boot), reuses the cached
+  selection (no `loadOptions`: a POST per faculty) and re-applies only under the token of the
+  latest switch to that persona (a re-tap keeps it; Já or another persona ends it), without
+  touching the picker's drawer or spinner. Once per persona at a time. A failed refresh keeps the
+  cached persona applied and puts the error on its row.
+- **Cache clears:** admin logout (every persona, active or not), a boot that finds no admin
+  session (looked up only when a persona is cached), and IS logout / identity change through
+  `clearAll`. Not "Já".
+- **What the live check found, fixed in `fetchImpersonation` (year 1, shared with the picker):**
+  - ZF B-RASZ: a subject's seminar parallels carrying no group in IS (ZABAH: four Tuesday
+    parallels for every group) all came back. Where a subject's seminars collide on two dates or
+    more, each colliding date keeps one: the earliest colliding parallel where it runs, else
+    that date's earliest (`oneSeminarParallel`). Dates without a collision, and a one-off block
+    day, stay. LDF had the same shape (126 → 113).
+    The picker's "Všechny skupiny" (no group) asks for every parallel on purpose and is never
+    narrowed.
+  - AF B-ZIN: four subjects came back with seminars but no lecture (lectures tagged to no
+    programme; the year-tagged per-subject answer has the seminars only). They are now asked
+    for their lectures on their own, without the year if it finds none (12 → 57 lectures).
+  - ZF B-RASZ: the new accreditation's plan lists 3 first-semester subjects while the group is
+    taught 7. Subjects the timetable teaches that the plan semester does not list at all (any
+    group, electives included) join the persona's subject list, named from the timetable; the
+    plan screen stays IS's catalogue.
+  - Cost: a seminar-only subject (a language) is now asked for lectures it does not have: up to
+    4 more timetable POSTs each per year-1 fetch.
+- **`personas:check`** also prints the most weekly seminar slots of any one subject and fails
+  above 2 ("not narrowed to one group"), since "seminars > 0" passes a query that returned
+  every group. `--detail <id>` prints one persona's lessons and plan. It bundles with esbuild
+  like `npm run snapshots` (the fetchers read `import.meta.env`).
+
+## Step C: what the build decided (2026-11-28)
+
+- **Courses:** EBA-MAR (Marketing 1), EBA-MI (Microeconomics 1), EBA-MT (Mathematics), EBA-PE
+  (Business Economics 1), EBA-FT (Financial Markets): English-taught PEF bachelor courses with a
+  lecture and a seminar this term whose slots do not collide (one a day, Mon–Fri). IS tags only two
+  courses to Z-EXC itself (EBA-DSND, EBA-PS, both seminar-only), and `stupen=41` ("Zahraniční
+  studenti") answers the same two, so the pick comes from the EBA- courses in PEF's prezenční
+  timetable.
+- **Resolving codes:** `loadOptions` now also keeps each faculty's timetable course select
+  (`FacultyOptions.courses`, from the criteria forms it already posts: no extra request). The
+  Erasmus request takes the pinned codes that resolve, each with the timetable it was listed in;
+  none at all is `noPlan`. A code that stops
+  resolving is left out in the app and fails `personas:check`.
+- **Fetch:** `fetchImpersonation` branches on `selection.erasmus` (so a background refresh of the
+  cached persona takes it too) to `fetchExchange`: each course asked for on its own **without a
+  year**, one lecture slot and the first seminar parallel (`firstSlotOnly`), subjects named from
+  the timetable, `plan: null`.
+- **Language:** the i18n slice holds `personaLanguage` (memory only). `loadLanguage` returns it
+  while set, so a reload from another tab, a sync or the boot read cannot undo it; every apply sets
+  it from the persona, `stopImpersonation` and entering the demo clear it, and a change fires
+  `LANGUAGE_UPDATE` so the menu, files and map events follow. The admin choosing a language in
+  settings mid-persona wins and is saved, as any choice is; a background refresh does not touch the
+  language (same persona), so a pick made while one runs stays.
+- **What the persona showed at once** (left as findings, not changed): partner surfaces (Stáže, EY
+  in the profile's partner block) match by faculty through `matchingPartners`, not
+  `canSee`, so an exchange student at PEF sees PEF-wide partners; and with no plan, the plan page
+  shows its skeleton forever (`StudyPlanPage`), as it does for a real Z-EXC student.
+- **Name:** "Erasmus · PEF" in the list and the banner (`personaName`: the faculty where there is
+  no programme code).
+
+## Out of scope
+
+- Years 2+ as personas (the old picker still does them).
+- Exams, grades, files etc. for a persona: personal in IS, cannot be fetched for a programme.
+- Prefetching personas at boot.
+
+## Tests (test first)
+
+- `personas.ts`: every persona resolves against a trimmed `loadOptions` fixture; B-RSZ/B-RASZ-style
+  variants resolve by name.
+- Identity overlay: with a persona active, `loadContext` writing a real faculty/programme/Erasmus
+  reaches IndexedDB but not the store; exit restores the real identity. One test per exit path.
+- Viewer: the Erasmus persona sees ESN + reIS rows only; the B-OI persona matches a `pef:B-OI`
+  partner and not `pef:B-F`.
+- Language: entering Erasmus sets `en` in memory, writes nothing to storage; exit restores.
+- Cache: cached switch applies without a fetch; >24 h triggers one background fetch; a failure keeps
+  the current identity.
+- `PersonaUnavailable` replaces the empty state on each listed view.
+- Kept-real `getUserParams` readers pinned in `src/test/guards/` with reasons.
+- Tree parity: the list on `Sidebar/PersonaPopup.tsx` and `mobile/sheets/PersonasSheet.tsx`, both opened
+  from the avatar (decision #16); `verify-ui` at 320/390/430 and tablet
+  width, both themes, before/after PNGs to Dominik.
+- Live: `npm run personas:check` green, then each persona opened on the dev webapp and the iPad.
+
+## Steps (one PR each, into `test`)
+
+| # | Step | Depends on | State |
+|---|---|---|---|
+| A | A persona started from today's picker changes faculty, programme and Erasmus for every reader (design §2, without language). | — | On test |
+| D | Screens a persona cannot fill show one "Persona: not available" note (design §5). | — | On test |
+| B | The avatar opens the one-tap list of the seven programme personas, cached, with "Já" and "Jiný obor…", checked by `npm run personas:check` (design §1, §3, §6, §7). | A | On test |
+| C | The Erasmus persona: pinned English PEF courses, Z-EXC identity, English UI in memory, in the list and the check (design §1, §2 language, §4). | B | On test |
+
+A and D touch different files and run in parallel. B and C run after the step before them merges.
+
+## Privacy and counting
+
+- No new data leaves the device. The fetch is the admin's own IS session, as today; nothing goes to
+  Supabase. `privacy/disclosures.ts` does not change.
+- No feature counter: admin-only, two users. The PR says so in one line.

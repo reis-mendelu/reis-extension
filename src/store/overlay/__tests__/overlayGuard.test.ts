@@ -1,11 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { create } from 'zustand';
-import { overlayGuard, overlayWrite, OVERLAY_KEYS } from '../overlayGuard';
+import { overlayGuard, overlayWrite, OVERLAY_KEYS, IDENTITY_OVERLAY_KEYS } from '../overlayGuard';
 
 type S = {
   impersonation: object | null;
   schedule: { data: string[] };
   theme: string;
+  userFaculty: string | null;
   setSchedule: (d: string[]) => void;
 };
 
@@ -16,6 +17,7 @@ const make = () =>
       impersonation: null,
       schedule: { data: ['real'] },
       theme: 'light',
+      userFaculty: 'FRRMS',
       setSchedule: (d: string[]) => set({ schedule: { data: d } }),
     })) as never) as never
   );
@@ -65,5 +67,19 @@ describe('overlayGuard', () => {
         'subjects',
       ].sort()
     );
+  });
+
+  // The persona is the whole student (spec 2026-11-27 §2): the real loadContext
+  // keeps running, and must not put the admin's own faculty back in memory.
+  it('guards the identity too', () => {
+    const s = make();
+    s.setState(overlayWrite({ impersonation: {}, userFaculty: 'PEF' }));
+    s.setState({ userFaculty: 'FRRMS' });
+    expect(s.getState().userFaculty).toBe('PEF');
+    expect([...IDENTITY_OVERLAY_KEYS].sort()).toEqual([
+      'isErasmus',
+      'userFaculty',
+      'userProgramme',
+    ]);
   });
 });

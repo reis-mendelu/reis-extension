@@ -2,7 +2,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { ErasmusReportCard } from './ErasmusReportCard';
 import type { ErasmusReport } from '@/types/erasmus';
 import type { ErasmusConfig } from '@/types/erasmus';
-import type { UserParams } from '@/utils/userParams';
 import { GraduationCap, X, Filter, ChevronDown, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { AdaptiveDrawer } from '@/components/ui/AdaptiveDrawer';
@@ -32,7 +31,11 @@ interface ErasmusDrawerProps {
   setSchoolFilter: (v: string | null) => void;
   facultyFilter: boolean;
   setFacultyFilter: (v: boolean) => void;
-  userParams: UserParams | null;
+  /**
+   * The store's faculty: the persona's while a reis_admin views as one
+   * (design 2026-11-27 §2), so its coordinator and filter show.
+   */
+  faculty: string | null;
   showAll: boolean;
   setShowAll: (v: boolean) => void;
   loading: boolean;
@@ -50,7 +53,7 @@ export function ErasmusDrawer({
   setSchoolFilter,
   facultyFilter,
   setFacultyFilter,
-  userParams,
+  faculty,
   showAll,
   setShowAll,
   loading,
@@ -69,15 +72,15 @@ export function ErasmusDrawer({
             {filteredReports.length} {t('erasmus.reports')}
             {schoolFilter && ` · ${schoolFilter}`}
           </p>
-          {config && userParams?.facultyLabel && config.faculties[userParams.facultyLabel] && (
+          {config && faculty && config.faculties[faculty] && (
             <p className="text-[11px] text-base-content/70 flex items-center gap-2 mt-1 px-0.5">
               <span className="shrink-0">{t('erasmus.coordinator')}:</span>
               <span className="font-medium text-base-content/80 truncate">
-                {config.faculties[userParams.facultyLabel].coordinator}
+                {config.faculties[faculty].coordinator}
               </span>
               <button
                 onClick={() => {
-                  const email = config.faculties[userParams.facultyLabel!].email;
+                  const email = config.faculties[faculty!].email;
                   navigator.clipboard
                     .writeText(email)
                     .then(() => {
@@ -94,7 +97,7 @@ export function ErasmusDrawer({
                     });
                 }}
                 className="btn btn-ghost btn-xs w-6 h-6 p-0 min-h-0 text-[var(--tone-primary)] hover:bg-primary/10 transition-colors shrink-0"
-                title={config.faculties[userParams.facultyLabel].email}
+                title={config.faculties[faculty].email}
               >
                 <Mail size={12} />
               </button>
@@ -146,7 +149,7 @@ export function ErasmusDrawer({
                 </DropdownMenuContent>
               </DropdownMenu>
             )}
-            {userParams?.facultyLabel && FACULTY_ABBREV_TO_NAME[userParams.facultyLabel] && (
+            {faculty && FACULTY_ABBREV_TO_NAME[faculty] && (
               <button
                 onClick={() => {
                   setFacultyFilter(!facultyFilter);
@@ -155,7 +158,7 @@ export function ErasmusDrawer({
                 className={`btn btn-sm w-32 gap-1.5 shrink-0 border ${facultyFilter ? 'btn-primary border-primary' : 'btn-ghost border-base-300'}`}
               >
                 <GraduationCap size={14} />
-                {userParams.facultyLabel}
+                {faculty}
               </button>
             )}
           </div>

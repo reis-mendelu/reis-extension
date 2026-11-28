@@ -6,7 +6,6 @@ import {
   LogOut,
   Wifi,
   ChevronRight,
-  UserCog,
   ShieldCheck,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
@@ -33,8 +32,6 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
   const openEduroamFor = useAppStore((state) => state.openEduroamFor);
   const setIsEduroamOpen = useAppStore((state) => state.setIsEduroamOpen);
   const openReport = useAppStore((state) => state.openReport);
-  const isReisAdmin = useAppStore((state) => state.adminRole === 'reis_admin');
-  const openImpersonationPicker = useAppStore((state) => state.openImpersonationPicker);
   const hasAdminSession = useAppStore((state) => state.adminSession !== null);
   const openSocietyAdmin = useAppStore((state) => state.openSocietyAdmin);
   const openAdmin = () => {
@@ -149,30 +146,18 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
         </div>
 
         {/* Admin section: only for a device signed in to the console. Students
-            have nothing here — societies are not chosen (spec 2026-10-08). */}
-        {(hasAdminSession || isReisAdmin) && currentSchool.has('adminConsole') && (
+            have nothing here — societies are not chosen (spec 2026-10-08). A
+            reIS admin's personas are not here either: the avatar opens them
+            first, and this popup is one row down (decision #16, 2026-11-28). */}
+        {hasAdminSession && currentSchool.has('adminConsole') && (
           <div className="py-1 border-b border-base-200">
-            {hasAdminSession && (
-              <button
-                onClick={openAdmin}
-                className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
-              >
-                <ShieldCheck size={16} className="text-base-content/50" />
-                <span className="text-xs opacity-70">{t('admin.entry')}</span>
-              </button>
-            )}
-            {isReisAdmin && (
-              <button
-                onClick={() => {
-                  openImpersonationPicker();
-                  onClose?.();
-                }}
-                className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
-              >
-                <UserCog size={16} className="text-base-content/50" />
-                <span className="text-xs opacity-70">{t('impersonation.entry')}</span>
-              </button>
-            )}
+            <button
+              onClick={openAdmin}
+              className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
+            >
+              <ShieldCheck size={16} className="text-base-content/50" />
+              <span className="text-xs opacity-70">{t('admin.entry')}</span>
+            </button>
           </div>
         )}
 

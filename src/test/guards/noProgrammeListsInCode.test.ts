@@ -18,6 +18,10 @@ const ALLOWED: Record<string, string> = {
   // The exchange-student programme is a fixed IS code with its own semantics
   // (it hides events), not an audience anyone picks.
   'src/utils/eventAudience.ts': 'Z-EXC',
+  // The admin personas (design 2026-11-27, decision #8: a constant in code). Not
+  // an audience: nothing is shown to students of these programmes; a reIS admin
+  // views reIS AS one. Resolved against IS by code, never stored as an IS id.
+  'src/features/personas.ts': 'B-OI, B-F, B-EM, B-METS, B-ZIN, B-SNBD, B-RASZ',
   // Moving to audience tokens in its own PR (reIS v Claude + impersonation).
   'src/utils/reisForClaude.ts': 'B-OI, B-AII, N-OI',
 };
