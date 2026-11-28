@@ -369,6 +369,11 @@ export const EXEMPT: Exempt[] = [
     why: 'Admin console read, signed-in reis_admin.',
   },
   {
+    call: 'society_event_map_views',
+    files: ['src/api/societyPosts.ts'],
+    why: 'Admin console read, signed-in society or reis_admin: the map-open total of the signed-in society’s own events (an event id and a count, no identifier), already collected by the map-open counter.',
+  },
+  {
     call: 'suggestions',
     files: ['src/api/suggestionsAdmin.ts'],
     why: 'Admin inbox read and status update, signed-in reis_admin.',

@@ -1,4 +1,4 @@
-import { Eye, MousePointerClick } from 'lucide-react';
+import { Eye, MapPin, MousePointerClick } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { SpolkyEventRow } from '../../api/societyPosts';
@@ -8,7 +8,11 @@ import type { SpolkyEventRow } from '../../api/societyPosts';
 // society's session. The note below says what they are:
 //   * view_count — once per DEVICE, when the Novinky row scrolls into view
 //     (markNotificationViewed dedupes through IndexedDB);
-//   * click_count — every tap on that row (useOpenNotification).
+//   * click_count — every tap on that row (useOpenNotification);
+//   * map_views — opens on the map, summed over all days. Another table
+//     (event_map_views), merged in by listMyPosts, absent until its migration
+//     lands. An event past the Novinky week is on the map and not in Novinky,
+//     so it can have these and no views.
 
 const byId = (posts: SpolkyEventRow[], id: string) => posts.find((p) => p.id === id);
 
@@ -18,11 +22,16 @@ const hasCounts = (
 ): post is SpolkyEventRow & { view_count: number; click_count: number } =>
   typeof post?.view_count === 'number' && typeof post.click_count === 'number';
 
+/** A notice is on no map, so a 0 there would only suggest nobody looked. */
+const mapViewsOf = (post: SpolkyEventRow | undefined): number | undefined =>
+  post?.kind === 'notice' ? undefined : post?.map_views;
+
 /** The counts line for one row, or nothing when the row has no counters. */
 export function EventStats({ eventId }: { eventId: string }) {
   const { t } = useTranslation();
   const post = useAppStore((s) => byId(s.societyPosts, eventId));
   if (!hasCounts(post)) return null;
+  const mapViews = mapViewsOf(post);
   return (
     <span className="mt-0.5 flex items-center gap-2.5 text-[11px] text-base-content/70">
       <span className="flex items-center gap-1">
@@ -41,6 +50,16 @@ export function EventStats({ eventId }: { eventId: string }) {
             : t('admin.eventClicks', { count: post.click_count })}
         </span>
       </span>
+      {typeof mapViews === 'number' && (
+        <span className="flex items-center gap-1">
+          <MapPin size={11} className="flex-shrink-0" aria-hidden />
+          <span>
+            {mapViews === 1
+              ? t('admin.eventMapOpensOne')
+              : t('admin.eventMapOpens', { count: mapViews })}
+          </span>
+        </span>
+      )}
     </span>
   );
 }
@@ -49,8 +68,14 @@ export function EventStats({ eventId }: { eventId: string }) {
 export function EventStatsNote({ eventIds }: { eventIds: string[] }) {
   const { t } = useTranslation();
   const any = useAppStore((s) => eventIds.some((id) => hasCounts(byId(s.societyPosts, id))));
+  const anyMap = useAppStore((s) =>
+    eventIds.some((id) => typeof mapViewsOf(byId(s.societyPosts, id)) === 'number')
+  );
   if (!any) return null;
   return (
-    <p className="px-3 pb-4 pt-3 text-[11px] text-base-content/70">{t('admin.eventStatsNote')}</p>
+    <p className="px-3 pb-4 pt-3 text-[11px] text-base-content/70">
+      {t('admin.eventStatsNote')}
+      {anyMap && ` ${t('admin.eventStatsMapNote')}`}
+    </p>
   );
 }
