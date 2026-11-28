@@ -478,8 +478,10 @@ These are enforced by linting and project convention:
   browser sends one stylesheet with every is.mendelu.cz page so a desktop page
   is readable at phone width. It lives in `src/mobile/isPhoneFrameCss.ts` and
   nowhere else, and leaves a page it does not recognise as it is. It styles the
-  frame all IS pages share, shows tables that do not fit (or fit only by
-  squeezing every cell to a word or two) as cards, and gives two
+  frame all IS pages share, shows tables that do not fit as cards (and those
+  that fit only by squeezing: a header row of at least three `<th>` cells and
+  a natural width over 1.5x the room; a table without such a header is left
+  alone), and gives two
   pages a layout of their own (exam terms, List záznamníku); a third needs
   Dominik's OK, since a page students open often belongs in reIS as a screen.
   The script beside it (`isPhoneTablesScript.ts`) only sets classes, labels and

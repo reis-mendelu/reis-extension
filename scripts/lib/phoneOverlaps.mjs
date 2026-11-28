@@ -43,7 +43,7 @@ export function findCrushedText() {
 }
 
 /**
- * Finds text drawn smaller than 11 px: the font size times every `zoom` on
+ * Finds text drawn smaller than 11 px: the font size times every `zoom` and transform on
  * the way up (a table tightened to 12 px and zoomed to 0.86 is 10 px on
  * screen; the syllabus details came out so on 2026-11-28). The week numbers
  * in List záznamníku's attendance boxes are exempt: Dominik approved them
@@ -60,8 +60,15 @@ export function findSmallText() {
     const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || el.getBoundingClientRect().width === 0) continue;
     let size = parseFloat(cs.fontSize);
-    for (let p = el; p; p = p.parentElement)
-      size *= parseFloat(getComputedStyle(p).zoom || '1') || 1;
+    for (let p = el; p; p = p.parentElement) {
+      const ps = getComputedStyle(p);
+      size *= parseFloat(ps.zoom || '1') || 1;
+      // A transform scales text too (exam rows scale their badge column to 0.8).
+      if (ps.transform && ps.transform !== 'none') {
+        const m = new DOMMatrixReadOnly(ps.transform);
+        size *= Math.hypot(m.a, m.b);
+      }
+    }
     if (size < 10.95) out.set('text:' + s.slice(0, 40), Math.round(size * 10) / 10 + 'px');
   }
   return [...out].map(([key, size]) => ({ key, size }));
@@ -142,9 +149,31 @@ export function treeToggleTap() {
   // Every link or control near the toggle, tapped at its point nearest the toggle, must still
   // be what the tap reaches (an earlier one, drawn under the toggle, is the one at risk).
   document.getElementById('tree-toggle').scrollIntoView({ block: 'center' });
-  const r = document.getElementById('tree-toggle').getBoundingClientRect();
+  const toggle = document.getElementById('tree-toggle');
+  // Only the part a finger can reach: a scrolling box (IS's tables are) clips the padding.
+  let r = toggle.getBoundingClientRect();
+  for (let p = toggle.parentElement; p; p = p.parentElement) {
+    if (getComputedStyle(p).overflow === 'visible') continue;
+    const c = p.getBoundingClientRect();
+    const left = Math.max(r.left, c.left),
+      right = Math.min(r.right, c.right);
+    const top = Math.max(r.top, c.top),
+      bottom = Math.min(r.bottom, c.bottom);
+    r = {
+      left,
+      right,
+      top,
+      bottom,
+      width: Math.max(0, right - left),
+      height: Math.max(0, bottom - top),
+    };
+  }
   const icon = document.querySelector('#tree-toggle img').getBoundingClientRect();
-  const stolen = [...document.querySelectorAll('.mainpage a, .mainpage input, .mainpage select')]
+  const stolen = [
+    ...document.querySelectorAll(
+      '.mainpage a, .mainpage button, .mainpage input, .mainpage select, .mainpage textarea'
+    ),
+  ]
     .filter((o) => o.id !== 'tree-toggle')
     .flatMap((o) => [...o.getClientRects()].map((b) => ({ o, b })))
     .filter(
@@ -160,7 +189,7 @@ export function treeToggleTap() {
     .filter(({ o, b }) => {
       const x = Math.min(Math.max((icon.left + icon.right) / 2, b.left + 1), b.right - 1);
       const y = Math.min(Math.max((icon.top + icon.bottom) / 2, b.top + 1), b.bottom - 1);
-      return document.elementFromPoint(x, y)?.closest('a, input, select') !== o;
+      return document.elementFromPoint(x, y)?.closest('a, button, input, select, textarea') !== o;
     });
   const size =
     Math.min(r.width, r.height) >= 18 ? 'bigger' : `${Math.round(r.width)}x${Math.round(r.height)}`;

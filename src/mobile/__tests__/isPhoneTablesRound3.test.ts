@@ -71,7 +71,9 @@ describe('the phone script, round three', () => {
 
     document.head.innerHTML = '';
     document.body.innerHTML = page(
-      '<table id="t"><tr><td>Jméno</td><td>dlouhý popis</td></tr><tr><td>Obor</td><td>dlouhý popis</td></tr></table>'
+      '<table id="t"><tr><td>Jméno</td><td>dlouhý popis</td><td>poznámka</td></tr>' +
+        '<tr><td>Obor</td><td>dlouhý popis</td><td>poznámka</td></tr>' +
+        '<tr><td>Forma</td><td>dlouhý popis</td><td>poznámka</td></tr></table>'
     );
     squeezed(2000);
     const plain = document.body.innerHTML;

@@ -143,11 +143,11 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-exam tr > td.x-vypsal { grid-area: vypsal; }
 .mainpage table.reis-exam tr > td.x-prihl { grid-area: prihl; justify-self: end; font-size: 13px !important; color: #111; white-space: nowrap !important; }
 .mainpage table.reis-exam tr > td.x-prihl::before { content: attr(data-label) ' '; font-size: 11px; color: #55606a; }
-.mainpage table.reis-exam tr > td.x-typ { grid-area: typ; justify-self: end; transform: scale(0.8); transform-origin: right center; }
+.mainpage table.reis-exam tr > td.x-typ { grid-area: typ; justify-self: end; font-size: 14px !important; transform: scale(0.8); transform-origin: right center; }
 .mainpage table.reis-exam tr > td.x-okno { grid-area: okno; display: flex !important; gap: 8px; font-size: 11px !important; }
 .mainpage table.reis-exam tr > td.x-okno::before { content: attr(data-label); white-space: pre-line; }
 .mainpage table.reis-exam tr > td.x-akce { grid-area: akce; justify-self: end; align-self: start; padding: 4px 0 4px 10px !important; }
-.mainpage table.reis-exam tr > td.x-oper { grid-area: oper; justify-self: end; white-space: nowrap !important; transform: scale(0.8); transform-origin: right center; }
+.mainpage table.reis-exam tr > td.x-oper { grid-area: oper; justify-self: end; white-space: nowrap !important; font-size: 14px !important; transform: scale(0.8); transform-origin: right center; }
 
 /* List záznamníku: subject with its operation icons, then per time slot a line and twelve week boxes.
    IS gives each attendance cell an inline "padding: 0.5em !important" that no stylesheet can

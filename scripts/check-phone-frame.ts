@@ -112,7 +112,9 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
         .map((lab) => {
           const a = lab.getBoundingClientRect();
           const b = lab.nextElementSibling!.getBoundingClientRect();
-          return b.top >= a.bottom - 1 && Math.abs(b.left - a.left) <= 2 ? 'above' : 'apart';
+          return b.top >= a.bottom - 1 && b.top <= a.bottom + 12 && Math.abs(b.left - a.left) <= 2
+            ? 'above'
+            : 'apart';
         })
         .join(' '),
       peopleSizes: (() => {
