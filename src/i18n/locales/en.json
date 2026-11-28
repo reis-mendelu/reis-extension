@@ -1826,7 +1826,8 @@
     "personas": {
       "title": "View as",
       "me": "Me",
-      "other": "Another programme…"
+      "other": "Another programme…",
+      "profile": "Profile and settings"
     }
   },
   "odevzdavarny": {

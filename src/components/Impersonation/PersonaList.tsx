@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { AlertCircle, Check, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { PERSONAS } from '../../features/personas';
+import { PERSONAS, type PersonaId } from '../../features/personas';
 import { IMPERSONATION_ERROR_KEY } from './errorKeys';
 import { logError } from '../../utils/reportError';
 
@@ -11,6 +11,14 @@ interface Props {
   variant: 'compact' | 'touch';
   /** "Jiný obor…": the tree opens today's picker its own way (drawer / sheet). */
   onOther: () => void;
+  /**
+   * After a pick has taken effect — a persona applied, or back to Já — so the
+   * surface around the list closes (decision #16). Not after a failed switch:
+   * the row stays to say why.
+   */
+  onDone?: () => void;
+  /** The sheet's header already says "Zobrazit jako". */
+  hideTitle?: boolean;
 }
 
 const ROW = {
@@ -57,7 +65,7 @@ function Row({
  * from an effect.
  */
 export function PersonaList(props: Props) {
-  const { variant, onOther } = props;
+  const { variant, onOther, onDone, hideTitle } = props;
   const { t } = useTranslation();
   const language = useAppStore((s) => s.language);
   const active = useAppStore((s) => s.impersonation);
@@ -74,24 +82,31 @@ export function PersonaList(props: Props) {
     // Já always ends a fetch in flight (persona or picker), so its row is
     // freed at once; with nothing applied yet that is all it has to do.
     cancel();
-    if (!active || leaving) return;
+    if (leaving) return;
+    if (!active) return onDone?.();
     setLeaving(true);
     try {
       await stop();
+      onDone?.();
     } catch (e) {
       logError('PersonaList.exit', e);
     } finally {
       setLeaving(false);
     }
   };
+  const pick = async (id: PersonaId) => {
+    if (await switchTo(id)) onDone?.();
+  };
 
   return (
     <div role="radiogroup" aria-label={t('impersonation.personas.title')}>
-      <div
-        className={`font-bold uppercase tracking-wider text-base-content/60 text-xs ${variant === 'compact' ? 'px-1 pb-1 pt-1.5' : 'px-4 pb-0.5 pt-2'}`}
-      >
-        {t('impersonation.personas.title')}
-      </div>
+      {!hideTitle && (
+        <div
+          className={`font-bold uppercase tracking-wider text-base-content/60 text-xs ${variant === 'compact' ? 'px-1 pb-1 pt-1.5' : 'px-4 pb-0.5 pt-2'}`}
+        >
+          {t('impersonation.personas.title')}
+        </div>
+      )}
       <Row {...props} checked={!active} onClick={() => void me()} disabled={leaving}>
         <span className="font-medium">{t('impersonation.personas.me')}</span>
       </Row>
@@ -104,7 +119,7 @@ export function PersonaList(props: Props) {
             {...props}
             checked={activeId === p.id}
             disabled={busy}
-            onClick={() => void switchTo(p.id)}
+            onClick={() => void pick(p.id)}
             trail={
               state === 'loading' ? (
                 <span

@@ -12,7 +12,6 @@ import { NavRow } from '../primitives/NavRow';
 import { ScreenHeader } from './calendar/ScreenHeader';
 import { AlwaysScrollable } from '../primitives/AlwaysScrollable';
 import { ScrollMoreFade } from '../primitives/ScrollMoreFade';
-import { PersonaList } from '../../Impersonation/PersonaList';
 
 /**
  * The profile TAB: a way into Nastavení, eduroam setup, documents, feedback and
@@ -31,11 +30,9 @@ export function ProfileScreen() {
   const [signOutOpen, setSignOutOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   // Signed in to the console on this device (held the name once): keep a way back.
   const hasAdminSession = useAppStore((s) => s.adminSession !== null);
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
-  const loadImpersonationOptions = useAppStore((s) => s.loadImpersonationOptions);
 
   return (
     <div data-testid="profile-screen" className="relative flex flex-1 flex-col overflow-hidden">
@@ -105,20 +102,6 @@ export function ProfileScreen() {
 
           {hasAdminSession && (
             <NavRow icon={ShieldCheck} label={t('admin.entry')} onClick={openSocietyAdmin} />
-          )}
-
-          {/* reIS admins only, so a student's row budget above is untouched.
-              The persona list sits on Profil itself, one tap from the avatar
-              (design 2026-11-27 §6); "Jiný obor…" opens today's picker sheet.
-              Options load from that tap, never from an effect. */}
-          {isReisAdmin && (
-            <PersonaList
-              variant="touch"
-              onOther={() => {
-                void loadImpersonationOptions();
-                pushSheet({ kind: 'impersonation' });
-              }}
-            />
           )}
 
           <div className="mx-4 my-2 h-px bg-base-content/10" />

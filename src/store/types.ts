@@ -520,6 +520,8 @@ export type MobileSheet =
   | { kind: 'settings' }
   // reIS admins only: "view as a student" of another programme.
   | { kind: 'impersonation' }
+  /** A reIS admin's "Zobrazit jako", opened from their own avatar (decision #16). */
+  | { kind: 'personas' }
   | { kind: 'menu'; dayIso: string; week?: string[] }
   // The ISIC balance and Dobít, from the profile (phone only — the same row
   // the menu sheet shows; src/test/guards/desktopHasNoIskam.test.ts).
