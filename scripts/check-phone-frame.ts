@@ -33,11 +33,14 @@ import { problems, type Facts } from './lib/phoneFrameProblems';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const part = (name: string) => readFileSync(resolve(HERE, 'fixtures', name), 'utf8');
-/** The page shell with its two table fixtures put in (three files, each short enough to read). */
+/** The page shell with its table fixtures and icon styles put in (each file short enough to read). */
 const FIXTURE = part('isPhoneFrame.html')
   .replace(
     /<!-- TABLES:[^>]*-->/,
-    () => part('isPhoneFrameTablesRead.html') + part('isPhoneFrameTablesRest.html')
+    () =>
+      part('isPhoneFrameTablesRead.html') +
+      part('isPhoneFrameTablesLists.html') +
+      part('isPhoneFrameTablesRest.html')
   )
   .replace(/\/\* ICONS:[^*]*\*\//, () => part('isPhoneFrameIcons.css'));
 if (

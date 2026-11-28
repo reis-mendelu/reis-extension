@@ -49,6 +49,28 @@ describe('the phone script and label/value tables', () => {
     expect($('#t').classList.contains('reis-kv')).toBe(true);
   });
 
+  // Inner tables are judged first, while the list around them is still wide; a schedule that fits
+  // its cell then stops fitting once the list takes its new shape. One run must catch it, without
+  // waiting for the next page event to judge everything again.
+  it('judges a table inside a value again once the list around it changed shape', () => {
+    document.body.innerHTML = page(
+      DETAILS.replace(
+        'prezenční',
+        '<table id="s"><tr><th>Den</th><th>Od-do</th><th>Místnost</th></tr><tr><td>Po</td><td>11.00</td><td>Q05</td></tr></table>'
+      )
+    );
+    size('#t', 900);
+    const s = $('#s');
+    Object.defineProperty(s, 'scrollWidth', {
+      get: () => ($('#t').classList.contains('reis-kv') ? 700 : 380),
+      configurable: true,
+    });
+    Object.defineProperty(s, 'clientWidth', { get: () => 380, configurable: true });
+    run();
+    expect($('#t').classList.contains('reis-kv')).toBe(true);
+    expect(s.classList.contains('reis-cards')).toBe(true);
+  });
+
   it('leaves a label/value table that fits', () => {
     document.body.innerHTML = page(DETAILS);
     size('#t', 380);
