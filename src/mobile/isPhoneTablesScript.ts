@@ -26,7 +26,10 @@
  *    does not hands its columns to the second row. A subject's second time
  *    slot is a short row holding only those handed-over columns.
  * 3. **Cards** (`reis-cards`): a plain `<th>` header whose rows line up with
- *    it. Each cell is labelled with its column's header.
+ *    it. Each cell is labelled with its column's header. A row with a photo
+ *    (a big picture and no text: people lists) is `reis-person`, so the photo
+ *    sits small on the left; a bare number under an empty header is
+ *    `reis-num` (the row number) and is not shown.
  * 4. **A one-row layout table** (`reis-flow`): IS's filter forms. Cells wrap.
  * 5. **Anything else** (`reis-compact`): tighter cells, then shrunk by up to
  *    20 % if that makes it fit (`reis-fit`); otherwise it scrolls sideways
@@ -39,7 +42,7 @@ var KEYS=[['por',/^(Poř|Ord)/],['stav',/^(Stav|Status)/],['kod',/^(Kód|Code)/]
 ['obdobi',/^(Období|Study period)/],['datum',/^(Datum|Date)/],['kde',/^(Kde|Where)/],['druh',/^(Druh|Type \()/],
 ['vypsal',/^(Vypsal|Put up)/],['prihl',/^(Přihlášeno|Registered)/],['typ',/^(Typ |Type of)/],
 ['okno',/^(Přihlašování od|Registration from)/],['oper',/^(Operace|Info|Actions)/],['akce',/^(Přihlásit|Odhlásit|Register|Log out)$/]];
-var TITLE=/^(Předmět|Název|Jméno|Příspěvky|Studium|Instituce|Course|Name|Title)/,WEEK=/^\d+\.$/,DASH=/^[-–—]+$/;
+var TITLE=/^(Předmět|Název|Jméno|Příspěvky|Studium|Instituce|Course|Name|Title)/,WEEK=/^\d+\.$/,NUM=/^\d+\.?$/,DASH=/^[-–—]+$/;
 function txt(el){return (el.textContent||'').replace(/\s+/g,' ').trim();}
 function lab(el){var s='';(function walk(n){for(var c=n.firstChild;c;c=c.nextSibling){if(c.nodeType===3)s+=c.data;else if(c.nodeName==='BR')s+='\n';else walk(c);}})(el);return s.replace(/[^\S\n]+/g,' ').replace(/ ?\n ?/g,'\n').trim();}
 function span(c,a){return parseInt(c.getAttribute(a)||'1',10)||1;}
@@ -47,6 +50,7 @@ function arr(x){return [].slice.call(x);}
 function add(el,names){names.split(' ').forEach(function(n){el.classList.add(n);});}
 function pic(c){return !!c.querySelector('img,svg,.uf-icon');}
 function wide(t){return t.scrollWidth>t.clientWidth+1;}
+function photo(c){var m=c.querySelector('img');if(!m||txt(c)||c.querySelector('.uf-icon'))return false;return (parseInt(m.getAttribute('height')||'0',10)||m.height||0)>=48;}
 function mark(c,label){
 c.setAttribute('data-label',label);
 var s=txt(c);
@@ -101,7 +105,8 @@ add(rows[0],'reis-head');
 body.forEach(function(r){
 if(fit.indexOf(r)<0){add(r,'reis-plain');return;}
 add(r,'reis-card');
-arr(r.cells).forEach(function(c,i){mark(c,labels[i]);if(isExam&&keys[i])add(c,'x-'+keys[i]);if(i===title)add(c,'reis-title');});
+arr(r.cells).forEach(function(c,i){mark(c,labels[i]);if(isExam&&keys[i])add(c,'x-'+keys[i]);if(i===title)add(c,'reis-title');
+if(isExam)return;if(photo(c)){add(c,'reis-photo');add(r,'reis-person');}else if(!labels[i]&&NUM.test(txt(c)))add(c,'reis-num');});
 });
 add(t,isExam?'reis-exam':'reis-cards');
 }

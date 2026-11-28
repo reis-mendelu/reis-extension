@@ -61,6 +61,8 @@ interface Facts {
   registerVisible: boolean;
   /** Computed sizes inside an exam row: the stylesheet's rules compete on weight, and have lost before. */
   examSizes: string;
+  /** People rows: a small photo, and a row no taller than about two lines of text beside it. */
+  peopleSizes: string;
 }
 
 async function gather(page: Page, styleId: string): Promise<Facts> {
@@ -121,6 +123,12 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
           return `${k} ${cs.fontSize} pad ${cs.paddingLeft}`;
         })
         .join(', '),
+      peopleSizes: (() => {
+        const rows = [...document.querySelectorAll('#people tr.reis-person')];
+        const photo = document.querySelector('#people td.reis-photo img')?.getBoundingClientRect();
+        const tallest = Math.max(...rows.map((r) => r.getBoundingClientRect().height));
+        return `${rows.length} rows, photo ${photo?.width}x${photo?.height}, ${tallest <= 110 ? 'short' : `${tallest}px tall`}`;
+      })(),
     };
   }, styleId);
 }
@@ -135,6 +143,9 @@ function problems(width: number, f: Facts): string[] {
     out.push(`form controls past the edge: ${f.controlsPastEdge.join(', ')}`);
   const sizes = 'x-predmet 15px pad 0px, x-druh 12px pad 0px, x-datum 14px pad 0px';
   if (f.examSizes !== sizes) out.push(`exam row sizes are "${f.examSizes}", expected "${sizes}"`);
+  const people = '2 rows, photo 44x55, short';
+  if (f.peopleSizes !== people)
+    out.push(`people rows are "${f.peopleSizes}", expected "${people}"`);
   if (!f.registerVisible)
     out.push('the exam register control is not on screen without scrolling sideways');
   for (const t of f.tables) {

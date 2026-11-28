@@ -99,6 +99,18 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-cards tr.reis-card > td.reis-title::before { content: none; }
 .mainpage table.reis-cards tr.reis-card > td.reis-empty, .mainpage table.reis-cards tr.reis-card > td.reis-dash { display: none !important; }
 
+/* Card rows with a photo (people lists): photo small on the left, the name
+   with its icons beside it, the rest below the name. No labels: a name and a
+   study need none. The row number is not shown. */
+.mainpage table.reis-cards tr.reis-card.reis-person { display: grid !important; grid-template-columns: 44px fit-content(calc(100% - 88px)) minmax(24px, 1fr); column-gap: 10px; row-gap: 2px; align-items: center; padding: 8px 12px; margin: 0 0 8px; }
+.mainpage table.reis-cards tr.reis-card.reis-person > td { display: block !important; grid-column: 2 / span 2; font-size: 12px !important; color: #55606a; line-height: 1.35; }
+.mainpage table.reis-cards tr.reis-card.reis-person > td::before { content: none; }
+.mainpage table.reis-cards tr.reis-card.reis-person > td.reis-photo { grid-column: 1; grid-row: 1 / span 2; line-height: 0; }
+.mainpage table.reis-cards tr.reis-card.reis-person > td.reis-photo img { width: 44px !important; height: 55px !important; object-fit: cover; border-radius: 8px; display: block; float: none !important; margin: 0 !important; }
+.mainpage table.reis-cards tr.reis-card.reis-person > td.reis-title { grid-column: 2; grid-row: 1; order: 0; font-size: 15px !important; color: #111; }
+.mainpage table.reis-cards tr.reis-card.reis-person > td.reis-icon:not(.reis-photo) { grid-column: 3; grid-row: 1; justify-self: start; line-height: 0; }
+.mainpage table.reis-cards tr.reis-card.reis-person > td.reis-num { display: none !important; }
+
 /* Exam terms: status, subject, date and room, then the rest small; register and info on the right. */
 .mainpage table.reis-exam tr.reis-card { display: grid !important; grid-template-columns: 16px auto 1fr auto; gap: 2px 8px; align-items: center; grid-template-areas: "stav predmet predmet akce" "stav datum kde oper" ". druh vypsal prihl" ". okno okno typ"; }
 .mainpage table.reis-exam tr.reis-card > td { display: block !important; font-size: 12px !important; line-height: 1.3; color: #55606a; }

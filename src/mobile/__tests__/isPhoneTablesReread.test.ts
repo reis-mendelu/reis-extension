@@ -78,4 +78,23 @@ describe('the phone script re-reading IS tables', () => {
     expect($('#t').classList.contains('reis-cards')).toBe(true);
     Reflect.deleteProperty(document, 'fonts');
   });
+
+  // `fonts.ready` is read when the script starts, at document start, before
+  // the page has asked for any font, so it can resolve at once. A font that
+  // starts loading later is caught by `loadingdone` instead (seen on the
+  // classmates list: 1 render in 25 kept a wide table).
+  it('judges again when a font finishes loading after fonts.ready', () => {
+    const fonts = new EventTarget() as EventTarget & { ready: Promise<void> };
+    fonts.ready = Promise.resolve();
+    Object.defineProperty(document, 'fonts', { value: fonts, configurable: true });
+    document.body.innerHTML = page(SIMPLE);
+    size('#t', 380);
+    run();
+    expect($('#t').classList.contains('reis-cards')).toBe(false);
+
+    size('#t', 900);
+    fonts.dispatchEvent(new Event('loadingdone'));
+    expect($('#t').classList.contains('reis-cards')).toBe(true);
+    Reflect.deleteProperty(document, 'fonts');
+  });
 });

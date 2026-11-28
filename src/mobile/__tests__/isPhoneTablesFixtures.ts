@@ -83,6 +83,12 @@ export const EXAM_KEYS = [
   'akce',
 ];
 
+/** Moji spolužáci: a row number, a photo, a name, the study, an e-mail icon. */
+export const PEOPLE = `<table id="t"><tbody>
+  <tr><th></th><th>Fotografie</th><th>Jméno spolužáka</th><th>Informace o studiu</th><th>Poslat e-mail</th></tr>
+  <tr><td>1.</td><td><a href="#"><img width="77" height="96" alt=""></a></td><td><a href="#">Vzorová Jana</a></td><td>PEF B-XX prez [sem 3, roč 2]</td><td><a href="#"><span class="uf-icon"><svg></svg></span></a></td></tr>
+</tbody></table>`;
+
 /** List záznamníku: two header rows, and a second time slot as a short row. */
 export const weeks = (n: number) =>
   Array.from({ length: n }, (_, i) => `<td>${i + 1}.</td>`).join('');
