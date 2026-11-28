@@ -99,13 +99,20 @@ My calls, for him to check:
   the public repo exactly as today. A map dataset on the page can come later,
   as its own decision.
 
-Still open, his to answer before the page ships:
-- **Licence for `reis-data`.** It has none today. Proposal: a short licence
-  file covering reIS's own compilation of what the page offers, with its
-  sources named (IS statistics, MENDELU's public Erasmus pages).
-- **Teacher names.** Proposal: the page links only a name-free export
-  (no `garant`, `teachers`, `course_teachers`); the existing files stay as they
-  are for the app.
+Page went live on Dominik's go (2026-11-28: "Ano, pošli a zmerguj"). Status of the
+items that were open before it:
+- **Teacher names: resolved.** The page links only a name-free export (no
+  `garant`, `teachers`, `course_teachers`); the existing files stay as they are
+  for the app.
+- **Anonymisation of Erasmus: resolved** for what the page links (numbers
+  only, a build that fails on any `@`). Still open, his to decide: whether the
+  older Erasmus files should lose `student.name`, which the app shows on report
+  cards, and whether the e-mail addresses removed in reis-data#10 are purged
+  from the repository's git history.
+- **Licence for `reis-data`: still open, his to decide.** It has none today.
+  Proposal: a short licence file covering reIS's own compilation of what the
+  page offers, with its sources named (IS statistics, MENDELU's public Erasmus
+  pages). The page asks for the credit "data from reIS" in the meantime.
 
 ## Order of work
 
