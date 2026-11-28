@@ -41,7 +41,7 @@ export function problems(width: number, f: Facts): string[] {
     out.push(`form controls past the edge: ${f.controlsPastEdge.join(', ')}`);
   const sizes = 'x-predmet 15px pad 0px, x-druh 12px pad 0px, x-datum 14px pad 0px';
   if (f.examSizes !== sizes) out.push(`exam row sizes are "${f.examSizes}", expected "${sizes}"`);
-  const people = '2 rows, photo 44x55, short';
+  const people = '2 rows, photo 44x55, short, 0/2 blanks shown';
   if (f.peopleSizes !== people)
     out.push(`people rows are "${f.peopleSizes}", expected "${people}"`);
   if (!f.registerVisible)

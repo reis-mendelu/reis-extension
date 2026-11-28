@@ -16,6 +16,32 @@
  * hidden or empty, text inside the icon it overlaps, and touches of 2 px or
  * less.
  */
+/**
+ * Finds text squeezed into a sliver: a few letters per line, stacked down the
+ * screen ("Q / 0 / 8 / ( / Č / P / )"). It neither overlaps anything nor
+ * sticks out, so the other checks pass it; seen on exam rows at 320 px on
+ * 2026-11-28, when a grid column was left no room. Same keys and use as
+ * `findOverlaps`.
+ */
+export function findCrushedText() {
+  const root = document.querySelector('.mainpage') || document.body;
+  const out = new Set();
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const s = n.data.replace(/\s+/g, ' ').trim();
+    const el = n.parentElement;
+    if (s.replace(/ /g, '').length < 4 || !el || el.closest('svg, script, style, select, option'))
+      continue;
+    const r = document.createRange();
+    r.selectNodeContents(n);
+    const lines = [...r.getClientRects()].filter((b) => b.width > 0 && b.height > 0);
+    if (lines.length < 3) continue;
+    const em = parseFloat(getComputedStyle(el).fontSize) || 16;
+    if (Math.max(...lines.map((b) => b.width)) < 2.5 * em) out.add('text:' + s.slice(0, 40));
+  }
+  return [...out].map((key) => ({ key, size: 'sliver' }));
+}
+
 export function findOverlaps() {
   const root = document.querySelector('.mainpage') || document.body;
   const fixed = (el) => {

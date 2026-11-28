@@ -35,7 +35,10 @@ import { PHONE_TABLES_JS } from './isPhoneTablesScript';
  * when the page is parsed, again when it has loaded and each time a web font
  * finishes loading (both change widths; a font can arrive after `load`, and
  * `fonts.ready` read at document start can resolve before any font was even
- * asked for, hence `loadingdone` too), and again when the phone is turned. A resize that leaves the
+ * asked for). So `fonts.ready` is read again one frame after `load`, when the
+ * page's text has been laid out and its fonts asked for, and `loadingdone`
+ * catches any font later still where it exists (Safari's is recent and
+ * incomplete, 2026). And again when the phone is turned. A resize that leaves the
  * width alone is the keyboard opening, and re-laying tables under someone
  * typing into IS's own form would be worse than doing nothing. Should the
  * script ever run twice on one page, only the run that added the stylesheet
@@ -72,9 +75,10 @@ var w=d.documentElement.clientWidth;
 if(turned&&w===lastW)return;
 lastW=w;reisTables(d);
 }
+function fonts(){if(d.fonts&&d.fonts.ready&&d.fonts.ready.then)d.fonts.ready.then(function(){tables(false);});}
 apply();
-window.addEventListener('load',function(){tables(false);});
-if(d.fonts&&d.fonts.ready&&d.fonts.ready.then)d.fonts.ready.then(function(){tables(false);});
+window.addEventListener('load',function(){tables(false);(window.requestAnimationFrame||setTimeout)(fonts);});
+fonts();
 if(d.fonts&&d.fonts.addEventListener)d.fonts.addEventListener('loadingdone',function(){tables(false);});
 window.addEventListener('resize',function(){tables(true);});
 if(done){if(d.readyState!=='loading')tables(false);else d.addEventListener('DOMContentLoaded',function(){tables(false);});return;}

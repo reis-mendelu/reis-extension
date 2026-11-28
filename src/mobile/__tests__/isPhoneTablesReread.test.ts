@@ -80,20 +80,49 @@ describe('the phone script re-reading IS tables', () => {
   });
 
   // `fonts.ready` is read when the script starts, at document start, before
-  // the page has asked for any font, so it can resolve at once. A font that
-  // starts loading later is caught by `loadingdone` instead (seen on the
-  // classmates list: 1 render in 25 kept a wide table).
-  it('judges again when a font finishes loading after fonts.ready', () => {
+  // the page has asked for any font, so it can resolve at once (seen on the
+  // classmates list: 1 render in 25 kept a wide table). A font later than
+  // that is caught by `loadingdone` where the browser has it...
+  it('judges again when a font finishes loading after fonts.ready', async () => {
     const fonts = new EventTarget() as EventTarget & { ready: Promise<void> };
     fonts.ready = Promise.resolve();
     Object.defineProperty(document, 'fonts', { value: fonts, configurable: true });
     document.body.innerHTML = page(SIMPLE);
     size('#t', 380);
     run();
+    await Promise.resolve();
+    await Promise.resolve();
     expect($('#t').classList.contains('reis-cards')).toBe(false);
 
     size('#t', 900);
     fonts.dispatchEvent(new Event('loadingdone'));
+    expect($('#t').classList.contains('reis-cards')).toBe(true);
+    Reflect.deleteProperty(document, 'fonts');
+  });
+
+  // ...and, where it does not (Safari's is recent and incomplete), by reading
+  // fonts.ready again one frame after `load`, once the text has asked for them.
+  it('reads fonts.ready again after load, without loadingdone', async () => {
+    let loaded = () => {};
+    const fonts: { ready: Promise<void> } = { ready: Promise.resolve() };
+    Object.defineProperty(document, 'fonts', { value: fonts, configurable: true });
+    document.body.innerHTML = page(SIMPLE);
+    size('#t', 380);
+    run();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    fonts.ready = new Promise<void>((resolve) => {
+      loaded = resolve;
+    });
+    window.dispatchEvent(new Event('load'));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect($('#t').classList.contains('reis-cards')).toBe(false);
+
+    size('#t', 900);
+    loaded();
+    await fonts.ready;
+    await Promise.resolve();
     expect($('#t').classList.contains('reis-cards')).toBe(true);
     Reflect.deleteProperty(document, 'fonts');
   });

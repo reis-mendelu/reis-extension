@@ -109,15 +109,15 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-cards tr.reis-card.reis-person > td.reis-photo img { width: 44px !important; height: 55px !important; object-fit: cover; border-radius: 8px; display: block; float: none !important; margin: 0 !important; }
 .mainpage table.reis-cards tr.reis-card.reis-person > td.reis-title { grid-column: 2; grid-row: 1; order: 0; font-size: 15px !important; color: #111; }
 .mainpage table.reis-cards tr.reis-card.reis-person > td.reis-icon:not(.reis-photo) { grid-column: 3; grid-row: 1; justify-self: start; line-height: 0; }
-.mainpage table.reis-cards tr.reis-card.reis-person > td.reis-num { display: none !important; }
+.mainpage table.reis-cards tr.reis-card.reis-person > td.reis-num, .mainpage table.reis-cards tr.reis-card.reis-person > td.reis-empty, .mainpage table.reis-cards tr.reis-card.reis-person > td.reis-dash { display: none !important; }
 
 /* Exam terms: status, subject, date and room, then the rest small; register and info on the right. */
-.mainpage table.reis-exam tr.reis-card { display: grid !important; grid-template-columns: 16px auto 1fr auto; gap: 2px 8px; align-items: center; grid-template-areas: "stav predmet predmet akce" "stav datum kde oper" ". druh vypsal prihl" ". okno okno typ"; }
+.mainpage table.reis-exam tr.reis-card { display: grid !important; grid-template-columns: 16px auto minmax(56px, 1fr) auto; gap: 2px 8px; align-items: center; grid-template-areas: "stav predmet predmet akce" "stav datum kde oper" ". druh vypsal prihl" ". okno okno typ"; }
 .mainpage table.reis-exam tr.reis-card > td { display: block !important; font-size: 12px !important; line-height: 1.3; color: #55606a; }
 .mainpage table.reis-exam tr > td.x-por, .mainpage table.reis-exam tr > td.x-kod, .mainpage table.reis-exam tr > td.x-obdobi, .mainpage table.reis-exam tr > td.reis-empty { display: none !important; }
 .mainpage table.reis-exam tr > td.x-stav { grid-area: stav; align-self: start; padding-top: 4px !important; }
 .mainpage table.reis-exam tr > td.x-predmet { grid-area: predmet; font-size: 15px !important; font-weight: 700; color: #111; }
-.mainpage table.reis-exam tr > td.x-datum { grid-area: datum; font-size: 14px !important; color: #111; white-space: nowrap !important; }
+.mainpage table.reis-exam tr > td.x-datum { grid-area: datum; font-size: 14px !important; color: #111; }
 .mainpage table.reis-exam tr > td.x-kde { grid-area: kde; font-size: 14px !important; }
 .mainpage table.reis-exam tr > td.x-druh { grid-area: druh; }
 .mainpage table.reis-exam tr > td.x-vypsal { grid-area: vypsal; }

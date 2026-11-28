@@ -23,7 +23,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPhoneFrameScript, PHONE_FRAME_STYLE_ID } from '../src/mobile/isPhoneFrame';
-import { findOverlaps } from './lib/phoneOverlaps.mjs';
+import { findCrushedText, findOverlaps } from './lib/phoneOverlaps.mjs';
 import { problems, type Facts } from './lib/phoneFrameProblems';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -101,7 +101,11 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
         const rows = [...document.querySelectorAll('#people tr.reis-person')];
         const photo = document.querySelector('#people td.reis-photo img')?.getBoundingClientRect();
         const tallest = Math.max(...rows.map((r) => r.getBoundingClientRect().height));
-        return `${rows.length} rows, photo ${photo?.width}x${photo?.height}, ${tallest <= 110 ? 'short' : `${tallest}px tall`}`;
+        const blanks = [
+          ...document.querySelectorAll('#people td.reis-dash, #people td.reis-empty'),
+        ];
+        const shown = blanks.filter((c) => c.getBoundingClientRect().width > 0).length;
+        return `${rows.length} rows, photo ${photo?.width}x${photo?.height}, ${tallest <= 110 ? 'short' : `${tallest}px tall`}, ${shown}/${blanks.length} blanks shown`;
       })(),
     };
   }, styleId);
@@ -135,6 +139,8 @@ async function main() {
       // The fixture has no overlaps of its own, so any is the phone script's.
       for (const o of await page.evaluate(findOverlaps))
         found.push(`drawn over each other (${o.size}px): ${o.key}`);
+      for (const o of await page.evaluate(findCrushedText))
+        found.push(`squeezed to a few letters per line: ${o.key}`);
       failed ||= found.length > 0;
       process.stdout.write(
         found.length
