@@ -221,6 +221,13 @@ describe('Erasmus persona: English in memory only', () => {
     expect(await savedLanguage()).toBe('cz');
   });
 
+  it('a language whose save fails changes nothing', async () => {
+    vi.spyOn(IndexedDBService, 'set').mockRejectedValueOnce(new Error('quota'));
+    await s().setLanguage('en');
+    expect(s().language).toBe('cz');
+    expect(await savedLanguage()).toBe('cz');
+  });
+
   it('entering the demo restores the admin language', async () => {
     await s().switchToPersona('erasmus');
     await s().enterDemo();

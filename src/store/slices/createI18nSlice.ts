@@ -35,14 +35,19 @@ export const createI18nSlice: AppSlice<I18nSlice> = (set, get) => {
       show(get().personaLanguage ?? language);
     },
     setLanguage: async (newLang: Language) => {
-      // The pick takes effect at once, before the save: a persona tapped
-      // while the save is out is the newer word and applies after it. The
-      // admin's own pick, even mid-persona, is theirs from now on, also over
-      // a persona still being fetched (applyImpersonation reads the token).
-      set({ personaLanguage: null, languagePickedAt: currentImpersonationEpoch() });
-      show(newLang);
+      // Saved first, as always: a failed save changes nothing, and a read
+      // already under way cannot land over the pick. The "view as" request
+      // current at the pick is kept: a persona tapped while the save is out is
+      // the newer word, so the pick is then saved for later but not shown.
+      const pickedAt = currentImpersonationEpoch();
       try {
         await IndexedDBService.set('meta', STORAGE_KEY, newLang);
+        // The admin's own pick, even mid-persona: theirs from now on, also over
+        // a persona still being fetched (applyImpersonation reads the token).
+        if (currentImpersonationEpoch() === pickedAt) {
+          set({ personaLanguage: null, languagePickedAt: pickedAt });
+          show(newLang);
+        }
 
         // Trigger global refresh for other components/tabs
         syncService.triggerRefresh('LANGUAGE_UPDATE');
