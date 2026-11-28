@@ -103,6 +103,19 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
           return `${k} ${cs.fontSize} pad ${cs.paddingLeft}`;
         })
         .join(', '),
+      filterPairs: [...document.querySelectorAll('#filter td.reis-lab')]
+        .map((lab) => {
+          const a = lab.getBoundingClientRect();
+          const b = lab.nextElementSibling!.getBoundingClientRect();
+          return b.top >= a.bottom - 1 && Math.abs(b.left - a.left) <= 2 ? 'above' : 'apart';
+        })
+        .join(' '),
+      tapSize: (() => {
+        const r = document.getElementById('tree-toggle')!.getBoundingClientRect();
+        return Math.min(r.width, r.height) >= 32
+          ? 'big'
+          : `${Math.round(r.width)}x${Math.round(r.height)}`;
+      })(),
       peopleSizes: (() => {
         const rows = [...document.querySelectorAll('#people tr.reis-person')];
         const photo = document.querySelector('#people td.reis-photo img')?.getBoundingClientRect();

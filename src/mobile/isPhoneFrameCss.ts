@@ -83,7 +83,7 @@ img, select, textarea, input { max-width: 100%; }
 input, select, textarea, button { font-size: 16px; }
 
 @supports (animation-timeline: scroll()) {
-  .mainpage table { animation: reis-more-columns linear both; animation-timeline: scroll(self inline); }
+  .mainpage table, .mainpage .reis-scroll { animation: reis-more-columns linear both; animation-timeline: scroll(self inline); }
   @keyframes reis-more-columns {
     0%, 96% { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
     100% { -webkit-mask-image: linear-gradient(to right, #000 100%, transparent); mask-image: linear-gradient(to right, #000 100%, transparent); }
@@ -173,6 +173,12 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-compact td, .mainpage table.reis-compact th { font-size: 12px !important; padding: 3px !important; white-space: normal !important; }
 .mainpage table.reis-flow tbody, .mainpage table.reis-flow tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .mainpage table.reis-flow td { display: block !important; padding: 0 !important; max-width: 100%; }
+/* A filter's label starts its own line, so its control sits right under it, never at the start of the next. */
+.mainpage table.reis-flow td.reis-lab { flex-basis: 100%; }
+/* While the script measures a table's natural width (it never stays). */
+.mainpage table.reis-measure { display: table !important; width: max-content !important; max-width: none !important; }
+/* A tiny icon-only link (the folder tree's expand/collapse boxes): a bigger tap area, nothing moves. */
+.mainpage a.reis-tap { display: inline-block; padding: 12px; margin: -12px; }
 .mainpage table.reis-flow select, .mainpage table.reis-flow input { max-width: calc(100vw - 30px); }
 /* A column IS itself hides (the row number; "Období" until the student switches it on) stays
    hidden in a card. Last on purpose: it has to win over every display rule above. */

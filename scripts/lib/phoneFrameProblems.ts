@@ -29,6 +29,10 @@ export interface Facts {
   examSizes: string;
   /** People rows: a small photo, and a row no taller than about two lines of text beside it. */
   peopleSizes: string;
+  /** Each filter label in a one-row form, relative to its control: 'above' when the control sits right under it. */
+  filterPairs: string;
+  /** A tiny icon-only link's tap area: 'big' at 32 px or more. */
+  tapSize: string;
 }
 
 export function problems(width: number, f: Facts): string[] {
@@ -44,6 +48,12 @@ export function problems(width: number, f: Facts): string[] {
   const people = '2 rows, photo 44x55, short, 0/2 blanks shown';
   if (f.peopleSizes !== people)
     out.push(`people rows are "${f.peopleSizes}", expected "${people}"`);
+  if (f.filterPairs !== 'above above above')
+    out.push(
+      `filter labels and their controls: "${f.filterPairs}", expected each control right under its label`
+    );
+  if (f.tapSize !== 'big')
+    out.push(`the folder-tree toggle's tap area is ${f.tapSize}, expected 32 px or more`);
   if (!f.registerVisible)
     out.push('the exam register control is not on screen without scrolling sideways');
   for (const t of f.tables) {

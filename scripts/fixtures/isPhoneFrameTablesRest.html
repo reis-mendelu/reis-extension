@@ -107,6 +107,7 @@
 <table class="strom">
   <tr>
     <td class="strom" style="line-height: 10px; white-space: normal">
+      <a id="tree-toggle" href="#"><img alt="" width="10" height="10" /></a>
       <a href="#"
         >Ekologie a ochrana životního prostředí, krajiny a přírodních zdrojů v regionech</a
       >
@@ -131,6 +132,40 @@
 <div style="width: 0px; padding: 0">
   <div style="height: 18px; position: relative; line-height: 18px">Dnes</div>
 </div>
+<!-- Round three. A list with no data: a wide header and one message row. -->
+<table id="empty" data-expect="reis-cards">
+  <tr>
+    <th>Kód předmětu</th>
+    <th>Název předmětu</th>
+    <th>Datum a čas</th>
+    <th>Místnost</th>
+    <th>Vyučující</th>
+  </tr>
+  <tr>
+    <td colspan="5">Nenalezena žádná vyhovující data.</td>
+  </tr>
+</table>
+<!-- A table that fits only by squeezing every cell to a word or two. -->
+<table id="squeezed" data-expect="reis-cards" style="white-space: normal">
+  <tr>
+    <th>Kód</th>
+    <th>Předmět</th>
+    <th>Garant</th>
+    <th>Pracoviště</th>
+  </tr>
+  <tr>
+    <td style="white-space: normal">XYZ:ABC-DEF</td>
+    <td style="white-space: normal">Vzorová aplikovaná ekofyziologie lesních dřevin a krajiny</td>
+    <td style="white-space: normal">doc. Ing. Jana Vzorová Příkladová, Ph.D.</td>
+    <td style="white-space: normal">Ústav vzorových studií a příkladů</td>
+  </tr>
+  <tr>
+    <td style="white-space: normal">XYZ:GHI-JKL</td>
+    <td style="white-space: normal">Architektury informačních systémů pro vzorové účely</td>
+    <td style="white-space: normal">prof. Ing. Jan Vzor Příklad, CSc.</td>
+    <td style="white-space: normal">Ústav vzorových studií a příkladů</td>
+  </tr>
+</table>
 <!-- A one-row filter form: its cells wrap. -->
 <table id="filter" data-expect="reis-flow">
   <tr>
