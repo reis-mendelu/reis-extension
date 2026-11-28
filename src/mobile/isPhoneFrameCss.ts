@@ -24,8 +24,9 @@
  *   on `#stranka`'s children). In the markup it still comes first; only the
  *   visual order changes. On a desktop it sits beside the content; stacked in
  *   one column it would otherwise push every page's content half a screen down.
- * - **A table that fits is left alone.** One that does not becomes cards, exam
- *   rows or attendance strips, or is tightened and shrunk by up to 20 %; only
+ * - **A table that fits is left alone**, unless it fits only by squeezing every
+ *   cell to a word or two (isPhoneTablesScript.ts). One that does not becomes cards, exam
+ *   rows or attendance strips, or is tightened and shrunk by up to 8 %; only
  *   what is left after that scrolls sideways inside its own box.
  *
  * Selectors are IS's own ids and classes as dumped from live IS (new design,
@@ -177,8 +178,12 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-flow td.reis-lab { flex-basis: 100%; }
 /* While the script measures a table's natural width (it never stays). */
 .mainpage table.reis-measure { display: table !important; width: max-content !important; max-width: none !important; }
-/* A tiny icon-only link (the folder tree's expand/collapse boxes): a bigger tap area, nothing moves. */
+/* A tiny icon-only link (the folder tree's expand/collapse boxes): a bigger tap area, nothing moves.
+   The script picks the step that stays within half the gap to the nearest other link or control,
+   so a tap on a neighbour still reaches the neighbour. */
 .mainpage a.reis-tap { display: inline-block; padding: 12px; margin: -12px; }
+.mainpage a.reis-tap-8 { display: inline-block; padding: 8px; margin: -8px; }
+.mainpage a.reis-tap-4 { display: inline-block; padding: 4px; margin: -4px; }
 .mainpage table.reis-flow select, .mainpage table.reis-flow input { max-width: calc(100vw - 30px); }
 /* A column IS itself hides (the row number; "Období" until the student switches it on) stays
    hidden in a card. Last on purpose: it has to win over every display rule above. */

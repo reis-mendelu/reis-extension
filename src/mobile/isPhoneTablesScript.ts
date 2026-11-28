@@ -15,8 +15,12 @@
  * with. A table that still holds other tables is layout, never data, so it is
  * only ever wrapped (one row) or tightened.
  *
- * A table that fits the phone is left alone. One that does not gets the first
- * treatment that matches (decided with mock-ups on real pages, 2026-11-28):
+ * A table that fits the phone is left alone, unless it fits only by squeezing:
+ * one with a header row whose natural width is at least 1.5x its room (every
+ * cell down to a word or two) is treated as not fitting, and can only become
+ * cards or exam rows (round three, 2026-11-28; it changes Dominik's "cards for
+ * tables that don't fit" and is his to veto). One that does not fit gets the
+ * first treatment that matches (decided with mock-ups on real pages, 2026-11-28):
  *
  * 1. **Exam terms** (`reis-exam`): a header with a subject and a date column.
  *    Columns are found by header WORDS, Czech or English, never by position,
@@ -31,9 +35,10 @@
  *    sits small on the left; a bare number under an empty header is
  *    `reis-num` (the row number) and is not shown.
  * 4. **A one-row layout table** (`reis-flow`): IS's filter forms. Cells wrap.
- * 5. **Anything else** (`reis-compact`): tighter cells, then shrunk by up to
- *    20 % if that makes it fit (`reis-fit`); otherwise it scrolls sideways
- *    inside its own box, as every wide table did before.
+ * 5. **Anything else** (`reis-compact`): tighter cells (12 px), then shrunk
+ *    by up to 8 % if that makes it fit (`reis-fit`): no further, or the text
+ *    drops under 11 px; otherwise it scrolls sideways inside its own box, as
+ *    every wide table did before.
  *
  * Then the boxes outside tables, judged the same way (round two of the
  * phone loop, 2026-11-28, from 125 saved pages): a flex row or grid wider
@@ -74,7 +79,7 @@ else if(DASH.test(s)&&!pic(c)&&!c.querySelector('a'))add(c,'reis-dash');
 function squeeze(t){
 add(t,'reis-compact');
 var k=t.clientWidth/t.scrollWidth;
-if(k<1&&k>=0.8){add(t,'reis-fit');t.style.zoom=String(Math.floor(k*100)/100);}
+if(k<1&&k>=0.92){add(t,'reis-fit');t.style.zoom=String(Math.floor(k*100)/100);}
 }
 function attendance(t,rows,head){
 var sub=arr(rows[1].cells),at=0,full=[],weeks=0;
@@ -103,7 +108,7 @@ function one(t){
 ALL.forEach(function(n){if(t.classList.contains(n))t.classList.remove(n);});if(t.style.zoom)t.style.zoom='';
 var rows=arr(t.rows),soft=!wide(t);
 if(soft){
-if(rows.length<3||t.querySelector('table'))return;
+if(rows.length<2||t.querySelector('table'))return;
 var top=arr(rows[0].cells);
 if(top.length<3||!top.every(function(c){return c.tagName==='TH';})||natural(t)<=t.clientWidth*1.5)return;
 }
@@ -139,21 +144,33 @@ add(t,isExam?'reis-exam':'reis-cards');
 }
 function ownText(e){for(var c=e.firstChild;c;c=c.nextSibling)if(c.nodeType===3&&/\S/.test(c.data))return true;return false;}
 function inTable(e){for(var p=e.parentElement;p;p=p.parentElement){if(p.tagName==='TABLE')return true;if(p.classList&&p.classList.contains('mainpage'))return false;}return false;}
+function tap(tiny){
+if(!tiny.length)return;
+var others=arr(d.querySelectorAll('.mainpage a, .mainpage button, .mainpage input, .mainpage select, .mainpage textarea'));
+tiny.forEach(function(t){
+var b=t[1],g=99;
+others.forEach(function(o){if(o===t[0]||o.contains(t[0])||t[0].contains(o))return;var rs=o.getClientRects?arr(o.getClientRects()):[];if(!rs.length)rs=[o.getBoundingClientRect()];
+rs.forEach(function(r){if(r.width)g=Math.min(g,Math.max(0,r.left-b.right,b.left-r.right,r.top-b.bottom,b.top-r.bottom));});});
+var c=g>=24?'reis-tap':g>=16?'reis-tap-8':g>=8?'reis-tap-4':'';if(c)add(t[0],c);
+});
+}
 function boxes(){
-var BOX=['reis-wrap','reis-stack','reis-scroll','reis-lh','reis-zero','reis-tap'];
+var BOX=['reis-wrap','reis-stack','reis-scroll','reis-lh','reis-zero','reis-tap','reis-tap-8','reis-tap-4'];
 arr(d.querySelectorAll('.mainpage .'+BOX.join(', .mainpage .'))).forEach(function(e){BOX.forEach(function(k){e.classList.remove(k);});});
 var main=d.querySelector('.mainpage'),edge=main?main.getBoundingClientRect():null;
+var tiny=[];
 arr(d.querySelectorAll('.mainpage *')).forEach(function(e){
 var name=e.tagName.toLowerCase();
 if(name==='svg'||name==='canvas'){var p=e.parentElement,b=e.getBoundingClientRect();if(p&&edge&&!inTable(e)&&(b.right>edge.right+1||b.left<edge.left-1))add(p,'reis-scroll');return;}
 if(e.style&&/^0(px)?$/.test(e.style.width))add(e,'reis-zero');
 var cs=getComputedStyle(e);
 if(/px$/.test(cs.lineHeight)&&parseFloat(cs.lineHeight)<parseFloat(cs.fontSize)&&ownText(e))add(e,'reis-lh');
-if(name==='a'&&!txt(e)){var m=e.querySelector('img,svg');if(m){var b=m.getBoundingClientRect();if(b.width>0&&b.width<24&&b.height<24)add(e,'reis-tap');}}
+if(name==='a'&&!txt(e)){var m=e.querySelector('img,svg');if(m){var b=m.getBoundingClientRect();if(b.width>0&&b.width<24&&b.height<24)tiny.push([e,b]);}}
 if(e.tagName==='TABLE'||inTable(e))return;
 if(!/flex|grid/.test(cs.display)||cs.overflowX==='auto'||cs.overflowX==='scroll')return;
 if(wide(e))add(e,/grid/.test(cs.display)?'reis-stack':'reis-wrap');
 });
+tap(tiny);
 }
 var list=arr(d.querySelectorAll('.mainpage table:not(.portal_menu)'));
 for(var n=list.length-1;n>=0;n--){try{one(list[n]);}catch(e){}}

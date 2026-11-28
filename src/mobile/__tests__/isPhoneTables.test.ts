@@ -122,17 +122,21 @@ describe('the phone script and IS tables', () => {
   it('only tightens a table it cannot read, and shrinks it when that is enough', () => {
     const irregular = `<table id="t"><tr><td>Kód</td><td>Název</td></tr><tr><td colspan="2">1. semestr</td></tr><tr><td>a</td><td>b</td></tr></table>`;
     document.body.innerHTML = page(irregular);
-    size('#t', 420);
+    size('#t', 400);
     run();
     expect($('#t').className).toBe('reis-compact reis-fit');
-    expect($('#t').style.zoom).toBe('0.9');
+    expect($('#t').style.zoom).toBe('0.95');
 
-    document.head.innerHTML = '';
-    document.body.innerHTML = page(irregular);
-    size('#t', 900);
-    run();
-    expect($('#t').className).toBe('reis-compact');
-    expect($('#t').style.zoom).toBe('');
+    // Shrinking 12 px text below 0.92 would take it under 11 px (the syllabus
+    // details came out at about 10 px): such a table scrolls in its box instead.
+    for (const needs of [420, 900]) {
+      document.head.innerHTML = '';
+      document.body.innerHTML = page(irregular);
+      size('#t', needs);
+      run();
+      expect($('#t').className).toBe('reis-compact');
+      expect($('#t').style.zoom).toBe('');
+    }
   });
 
   it('lets a one-row layout table (a filter form) wrap', () => {

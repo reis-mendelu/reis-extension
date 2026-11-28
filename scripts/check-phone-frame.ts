@@ -23,7 +23,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPhoneFrameScript, PHONE_FRAME_STYLE_ID } from '../src/mobile/isPhoneFrame';
-import { findCrushedText, findOverlaps } from './lib/phoneOverlaps.mjs';
+import {
+  findCrushedText,
+  findOverlaps,
+  findSmallText,
+  treeToggleTap,
+} from './lib/phoneOverlaps.mjs';
 import { problems, type Facts } from './lib/phoneFrameProblems';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -110,12 +115,6 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
           return b.top >= a.bottom - 1 && Math.abs(b.left - a.left) <= 2 ? 'above' : 'apart';
         })
         .join(' '),
-      tapSize: (() => {
-        const r = document.getElementById('tree-toggle')!.getBoundingClientRect();
-        return Math.min(r.width, r.height) >= 32
-          ? 'big'
-          : `${Math.round(r.width)}x${Math.round(r.height)}`;
-      })(),
       peopleSizes: (() => {
         const rows = [...document.querySelectorAll('#people tr.reis-person')];
         const photo = document.querySelector('#people td.reis-photo img')?.getBoundingClientRect();
@@ -154,12 +153,16 @@ async function main() {
           : route.abort()
       );
       await page.goto(URL_ON_IS, { waitUntil: 'load' });
-      const found = problems(width, await gather(page, PHONE_FRAME_STYLE_ID));
+      const facts = await gather(page, PHONE_FRAME_STYLE_ID);
+      facts.tapSize = await page.evaluate(treeToggleTap);
+      const found = problems(width, facts);
       // The fixture has no overlaps of its own, so any is the phone script's.
       for (const o of await page.evaluate(findOverlaps))
         found.push(`drawn over each other (${o.size}px): ${o.key}`);
       for (const o of await page.evaluate(findCrushedText))
         found.push(`squeezed to a few letters per line: ${o.key}`);
+      for (const o of await page.evaluate(findSmallText))
+        found.push(`text under 11 px (${o.size}): ${o.key}`);
       failed ||= found.length > 0;
       process.stdout.write(
         found.length

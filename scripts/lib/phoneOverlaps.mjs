@@ -42,6 +42,31 @@ export function findCrushedText() {
   return [...out].map((key) => ({ key, size: 'sliver' }));
 }
 
+/**
+ * Finds text drawn smaller than 11 px: the font size times every `zoom` on
+ * the way up (a table tightened to 12 px and zoomed to 0.86 is 10 px on
+ * screen; the syllabus details came out so on 2026-11-28). The week numbers
+ * in List záznamníku's attendance boxes are exempt: Dominik approved them
+ * small to fit twelve weeks in a row. Same keys and use as `findOverlaps`.
+ */
+export function findSmallText() {
+  const root = document.querySelector('.mainpage') || document.body;
+  const out = new Map();
+  const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const s = n.data.replace(/\s+/g, ' ').trim();
+    const el = n.parentElement;
+    if (!s || !el || el.closest('svg, script, style, select, option, td.a-week')) continue;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || el.getBoundingClientRect().width === 0) continue;
+    let size = parseFloat(cs.fontSize);
+    for (let p = el; p; p = p.parentElement)
+      size *= parseFloat(getComputedStyle(p).zoom || '1') || 1;
+    if (size < 10.95) out.set('text:' + s.slice(0, 40), Math.round(size * 10) / 10 + 'px');
+  }
+  return [...out].map(([key, size]) => ({ key, size }));
+}
+
 export function findOverlaps() {
   const root = document.querySelector('.mainpage') || document.body;
   const fixed = (el) => {
@@ -107,4 +132,39 @@ export function findOverlaps() {
     }
   }
   return [...found].map(([key, size]) => ({ key, size }));
+}
+
+/**
+ * check:phone-frame's folder-tree toggle (#tree-toggle, a 10 px icon link): 'bigger' when its
+ * tap area grew to 18 px or more without taking taps from the links around it.
+ */
+export function treeToggleTap() {
+  // Every link or control near the toggle, tapped at its point nearest the toggle, must still
+  // be what the tap reaches (an earlier one, drawn under the toggle, is the one at risk).
+  document.getElementById('tree-toggle').scrollIntoView({ block: 'center' });
+  const r = document.getElementById('tree-toggle').getBoundingClientRect();
+  const icon = document.querySelector('#tree-toggle img').getBoundingClientRect();
+  const stolen = [...document.querySelectorAll('.mainpage a, .mainpage input, .mainpage select')]
+    .filter((o) => o.id !== 'tree-toggle')
+    .flatMap((o) => [...o.getClientRects()].map((b) => ({ o, b })))
+    .filter(
+      ({ b }) =>
+        b.width > 2 &&
+        Math.max(
+          b.left - icon.right,
+          icon.left - b.right,
+          b.top - icon.bottom,
+          icon.top - b.bottom
+        ) < 40
+    )
+    .filter(({ o, b }) => {
+      const x = Math.min(Math.max((icon.left + icon.right) / 2, b.left + 1), b.right - 1);
+      const y = Math.min(Math.max((icon.top + icon.bottom) / 2, b.top + 1), b.bottom - 1);
+      return document.elementFromPoint(x, y)?.closest('a, input, select') !== o;
+    });
+  const size =
+    Math.min(r.width, r.height) >= 18 ? 'bigger' : `${Math.round(r.width)}x${Math.round(r.height)}`;
+  return stolen.length
+    ? `${size}, and a tap meant for a neighbouring ${stolen[0].o.tagName.toLowerCase()} reaches the toggle`
+    : size;
 }

@@ -52,6 +52,16 @@ describe('the phone script, round three', () => {
     expect($('#t').classList.contains('reis-measure')).toBe(false);
   });
 
+  it('treats a header with a single squeezed row the same as many rows', () => {
+    document.body.innerHTML = page(
+      '<table id="t"><tr><th>Kód</th><th>Předmět</th><th>Garant</th><th>Pracoviště</th></tr>' +
+        '<tr><td>XYZ</td><td>Dlouhý název</td><td>Ing. Vzor</td><td>Ústav</td></tr></table>'
+    );
+    squeezed(700);
+    run();
+    expect($('#t').classList.contains('reis-cards')).toBe(true);
+  });
+
   it('leaves a table that fits comfortably, and one with no header to label cards', () => {
     document.body.innerHTML = page(SIMPLE);
     squeezed(450);
@@ -81,17 +91,43 @@ describe('the phone script, round three', () => {
     expect($$('#t tr').map((r) => r.className)).toEqual(['reis-head', 'reis-plain']);
   });
 
+  /** Puts an element's box at x..x+width on one line. */
+  function at(el: Element, left: number, width: number) {
+    Object.defineProperty(el, 'getBoundingClientRect', {
+      value: () => ({ width, height: 10, left, right: left + width, top: 0, bottom: 10 }),
+    });
+  }
+
   // The folder tree's expand/collapse boxes are about 10 px: too small to hit.
   it('gives a tiny icon-only link a bigger tap area, and leaves labelled links alone', () => {
     document.body.innerHTML = page(
       '<a id="t" href="#"><img alt=""></a> <a id="l" href="#"><img alt="">Složka</a>'
     );
-    for (const id of ['#t', '#l'])
-      Object.defineProperty($(id).querySelector('img')!, 'getBoundingClientRect', {
-        value: () => ({ width: 10, height: 10, left: 0, right: 10, top: 0, bottom: 10 }),
-      });
+    at($('#t').querySelector('img')!, 0, 10);
+    at($('#t'), 0, 10);
+    at($('#l').querySelector('img')!, 200, 10);
+    at($('#l'), 200, 60);
     run();
     expect($('#t').classList.contains('reis-tap')).toBe(true);
-    expect($('#l').classList.contains('reis-tap')).toBe(false);
+    expect($('#l').className).toBe('');
+  });
+
+  // A bigger tap area must not reach over the link beside it: the toggle sits right before
+  // the folder's name, and tapping the name's first letters must still open the folder.
+  it.each([
+    [30, 'reis-tap'],
+    [20, 'reis-tap-8'],
+    [10, 'reis-tap-4'],
+    [6, ''],
+  ])('keeps the tap area within half the gap to a neighbour %d px away (%s)', (gap, cls) => {
+    document.body.innerHTML = page(
+      '<a id="t" href="#"><img alt=""></a><a id="n" href="#">Ekologie</a>'
+    );
+    at($('#t').querySelector('img')!, 0, 10);
+    at($('#t'), 0, 10);
+    at($('#n'), 10 + gap, 60);
+    run();
+    const tap = [...$('#t').classList].filter((k) => k.startsWith('reis-tap'));
+    expect(tap).toEqual(cls ? [cls] : []);
   });
 });

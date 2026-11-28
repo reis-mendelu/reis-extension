@@ -31,7 +31,7 @@ export interface Facts {
   peopleSizes: string;
   /** Each filter label in a one-row form, relative to its control: 'above' when the control sits right under it. */
   filterPairs: string;
-  /** A tiny icon-only link's tap area: 'big' at 32 px or more. */
+  /** A tiny icon-only link's tap area: 'bigger' at 18 px or more, and a tap on its neighbour still reaches the neighbour. */
   tapSize: string;
 }
 
@@ -52,8 +52,10 @@ export function problems(width: number, f: Facts): string[] {
     out.push(
       `filter labels and their controls: "${f.filterPairs}", expected each control right under its label`
     );
-  if (f.tapSize !== 'big')
-    out.push(`the folder-tree toggle's tap area is ${f.tapSize}, expected 32 px or more`);
+  if (f.tapSize !== 'bigger')
+    out.push(
+      `the folder-tree toggle's tap area is ${f.tapSize}, expected at least 18 px without reaching a neighbour`
+    );
   if (!f.registerVisible)
     out.push('the exam register control is not on screen without scrolling sideways');
   for (const t of f.tables) {
@@ -65,8 +67,11 @@ export function problems(width: number, f: Facts): string[] {
     }
     if (!t.classes.split(' ').includes(t.expect))
       out.push(`#${t.id} should be ${t.expect}, is "${t.classes}"`);
-    if (t.needsSidewaysScroll) out.push(`#${t.id} still needs sideways scrolling`);
-    if (t.cellsPastEdge)
+    // A tightened table may not shrink past 11 px text; when it still does not fit, it must at
+    // least scroll by touch inside its own box. Every other treatment must fit.
+    const mayScroll = t.expect === 'reis-compact' && t.scrollsByTouch;
+    if (t.needsSidewaysScroll && !mayScroll) out.push(`#${t.id} still needs sideways scrolling`);
+    if (t.cellsPastEdge && !mayScroll)
       out.push(`#${t.id}: ${t.cellsPastEdge} cells are past the edge of the page`);
   }
   return out;
