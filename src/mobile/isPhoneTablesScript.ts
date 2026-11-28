@@ -34,8 +34,12 @@
  *    (a big picture and no text: people lists) is `reis-person`, so the photo
  *    sits small on the left; a bare number under an empty header is
  *    `reis-num` (the row number) and is not shown.
- * 4. **A one-row layout table** (`reis-flow`): IS's filter forms. Cells wrap.
- * 5. **Anything else** (`reis-compact`): tighter cells (12 px), then shrunk
+ * 4. **Label/value pairs** (`reis-kv`): at least three rows of two cells, the
+ *    rest single full-width cells, most first cells a label ending with a
+ *    colon (the syllabus's details). Each value goes
+ *    under its label. A numbered list ("1.", "a.") is not labels.
+ * 5. **A one-row layout table** (`reis-flow`): IS's filter forms. Cells wrap.
+ * 6. **Anything else** (`reis-compact`): tighter cells (12 px), then shrunk
  *    by up to 8 % if that makes it fit (`reis-fit`): no further, or the text
  *    drops under 11 px; otherwise it scrolls sideways inside its own box, as
  *    every wide table did before.
@@ -54,7 +58,7 @@
  */
 export const PHONE_TABLES_JS = String.raw`
 function reisTables(d){
-var ALL=['reis-exam','reis-att','reis-cards','reis-flow','reis-compact','reis-fit'];
+var ALL=['reis-exam','reis-att','reis-cards','reis-kv','reis-flow','reis-compact','reis-fit'];
 var KEYS=[['por',/^(Poř|Ord)/],['stav',/^(Stav|Status)/],['kod',/^(Kód|Code)/],['predmet',/^(Předmět|Course)/],
 ['obdobi',/^(Období|Study period)/],['datum',/^(Datum|Date)/],['kde',/^(Kde|Where)/],['druh',/^(Druh|Type \()/],
 ['vypsal',/^(Vypsal|Put up)/],['prihl',/^(Přihlášeno|Registered)/],['typ',/^(Typ |Type of)/],
@@ -103,6 +107,16 @@ arr(r.cells).forEach(function(c,i){add(c,map[i].k);mark(c,map[i].l);});
 });
 add(t,'reis-att');return true;
 }
+function own(r){return arr(r.children).filter(function(c){return c.tagName==='TD'||c.tagName==='TH';});}
+function pairs(t,rows){
+rows=rows.filter(function(r){for(var p=r.parentElement;p;p=p.parentElement)if(p.tagName==='TABLE')return p===t;return false;});
+var two=rows.filter(function(r){return own(r).length===2;});
+if(two.length<3||rows.some(function(r){return own(r).length>2;}))return false;
+var lab=two.filter(function(r){var x=txt(own(r)[0]);return x.length<=40&&/:$/.test(x);});
+if(lab.length<two.length/2)return false;
+rows.forEach(function(r){if(own(r).length===2){add(r,'kv-pair');add(own(r)[0],'kv-label');}else add(r,'reis-plain');});
+add(t,'reis-kv');return true;
+}
 function natural(t){var had=t.hasAttribute('class');add(t,'reis-measure');var w=t.scrollWidth;t.classList.remove('reis-measure');if(!had&&!t.className)t.removeAttribute('class');return w;}
 function one(t){
 ALL.forEach(function(n){if(t.classList.contains(n))t.classList.remove(n);});if(t.style.zoom)t.style.zoom='';
@@ -119,6 +133,7 @@ arr(rows[0].cells).forEach(function(c,i,a){var nx=a[i+1];if(nx&&txt(c)&&!c.query
 }
 return;
 }
+if(!soft&&pairs(t,rows))return;
 if(t.querySelector('table')){squeeze(t);return;}
 var head=arr(rows[0].cells),labels=head.map(lab);
 var grouped=head.some(function(c){return span(c,'colspan')>1;});
@@ -174,5 +189,7 @@ tap(tiny);
 }
 var list=arr(d.querySelectorAll('.mainpage table:not(.portal_menu)'));
 for(var n=list.length-1;n>=0;n--){try{one(list[n]);}catch(e){}}
+// A table judged before the one around it changed shape (a table inside a label/value cell) is judged again if it no longer fits.
+for(n=list.length-1;n>=0;n--){try{var u=list[n];if(!ALL.some(function(k){return u.classList.contains(k);})&&wide(u))one(u);}catch(e){}}
 try{boxes();}catch(e){}
 }`;
