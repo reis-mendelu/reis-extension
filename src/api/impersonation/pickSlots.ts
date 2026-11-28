@@ -22,3 +22,39 @@ export function firstSlotOnly(lessons: BlockLesson[]): BlockLesson[] {
   for (const l of sorted) if (!chosen.has(l.isSeminar)) chosen.set(l.isSeminar, slotKey(l));
   return sorted.filter((l) => chosen.get(l.isSeminar) === slotKey(l));
 }
+
+/**
+ * Year 1 (programme + group query): IS returns, besides the group's own
+ * events, every event of the year that carries no group. Where a subject's
+ * seminar parallels carry none, all of them come back, several on one date
+ * (ZF B-RASZ ZABAH: four Tuesday parallels for every group, live 2026-11-27).
+ * One student attends one, so the slots that collide keep their earliest.
+ *
+ * Narrowed only where the collision recurs (two dates or more): a one-off
+ * block day is one student's day. Slots that never collide stay, so two slots
+ * on different days remain a real student's week (TAVKA1).
+ */
+export function oneSeminarParallel(lessons: BlockLesson[]): BlockLesson[] {
+  const byCode = new Map<string, BlockLesson[]>();
+  for (const l of lessons)
+    if (l.isSeminar === 'true') byCode.set(l.courseCode, [...(byCode.get(l.courseCode) ?? []), l]);
+  const drop = new Set<BlockLesson>();
+  for (const seminars of byCode.values()) {
+    const byDate = new Map<string, BlockLesson[]>();
+    for (const l of seminars) byDate.set(l.date, [...(byDate.get(l.date) ?? []), l]);
+    const colliding = [...byDate.values()].filter((ls) => new Set(ls.map(slotKey)).size > 1);
+    if (colliding.length < 2) continue;
+    // The parallel a student would be in: the earliest that collides. A date it
+    // does not run on keeps its own earliest, so no colliding date ends empty.
+    const byTime = (a: BlockLesson, b: BlockLesson) =>
+      `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`);
+    const chosen = slotKey(colliding.flat().sort(byTime)[0]!);
+    for (const ls of colliding) {
+      const keep = ls.some((l) => slotKey(l) === chosen)
+        ? chosen
+        : slotKey([...ls].sort(byTime)[0]!);
+      for (const l of ls) if (slotKey(l) !== keep) drop.add(l);
+    }
+  }
+  return lessons.filter((l) => !drop.has(l));
+}

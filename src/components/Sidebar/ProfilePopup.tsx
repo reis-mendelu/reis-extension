@@ -6,7 +6,6 @@ import {
   LogOut,
   Wifi,
   ChevronRight,
-  UserCog,
   ShieldCheck,
 } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
@@ -24,6 +23,7 @@ import { desktopEduroamTarget } from '../../utils/desktopEduroamTarget';
 import { useLongPress } from '../../hooks/ui/useLongPress';
 import { StudySwitcher } from '../StudySwitcher/StudySwitcher';
 import { currentSchool } from '../../utils/school';
+import { PersonaList } from '../Impersonation/PersonaList';
 
 export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: () => void }) {
   const { isDark, isLoading: tLoading, toggle: tTheme } = useTheme();
@@ -161,17 +161,16 @@ export function ProfilePopup({ isOpen, onClose }: { isOpen: boolean; onClose?: (
                 <span className="text-xs opacity-70">{t('admin.entry')}</span>
               </button>
             )}
+            {/* One tap from the avatar (design 2026-11-27 §6); "Jiný obor…"
+                opens today's picker in its drawer. */}
             {isReisAdmin && (
-              <button
-                onClick={() => {
+              <PersonaList
+                variant="compact"
+                onOther={() => {
                   openImpersonationPicker();
                   onClose?.();
                 }}
-                className="w-full flex items-center gap-2 px-1 py-2 hover:bg-base-200 rounded-lg transition-colors"
-              >
-                <UserCog size={16} className="text-base-content/50" />
-                <span className="text-xs opacity-70">{t('impersonation.entry')}</span>
-              </button>
+              />
             )}
           </div>
         )}

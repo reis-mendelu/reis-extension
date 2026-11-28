@@ -59,19 +59,29 @@ describe('ProfilePopup — report a problem', () => {
   });
 });
 
-describe('ProfilePopup — view as a student', () => {
+describe('ProfilePopup — view as (personas)', () => {
   it('is absent for everyone but a reis_admin', () => {
     useAppStore.setState({ adminRole: 'association' });
     render(<ProfilePopup isOpen />);
-    expect(screen.queryByRole('button', { name: /View as a student/ })).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'View as' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /Another programme/ })).toBeNull();
   });
 
-  it('for a reis_admin, opens the picker and closes the popup', () => {
+  it('for a reis_admin, lists the personas inline, one tap from the avatar', () => {
+    const go = vi.fn(async () => true);
+    useAppStore.setState({ adminRole: 'reis_admin', impersonation: null, switchToPersona: go });
+    render(<ProfilePopup isOpen />);
+    expect(screen.getByRole('radiogroup', { name: 'View as' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('radio', { name: /Finance · B-F/ }));
+    expect(go).toHaveBeenCalledWith('finance');
+  });
+
+  it('"Another programme…" opens the picker and closes the popup', () => {
     const open = vi.fn();
     useAppStore.setState({ adminRole: 'reis_admin', openImpersonationPicker: open });
     const onClose = vi.fn();
     render(<ProfilePopup isOpen onClose={onClose} />);
-    fireEvent.click(screen.getByRole('button', { name: /View as a student/ }));
+    fireEvent.click(screen.getByRole('radio', { name: /Another programme/ }));
     expect(open).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalled();
   });
