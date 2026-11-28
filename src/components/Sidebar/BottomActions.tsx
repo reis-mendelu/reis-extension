@@ -14,6 +14,7 @@ export function BottomActions() {
   const [onProfile, setOnProfile] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useTranslation();
   const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
@@ -30,6 +31,12 @@ export function BottomActions() {
   const handleLeave = () => {
     timeout.current = setTimeout(() => setIsOpen(false), 300);
   };
+
+  // "Profil a nastavení" unmounts the focused row: hand focus to the
+  // profile's first control so a keyboard user keeps their place.
+  useEffect(() => {
+    if (onProfile) panelRef.current?.querySelector<HTMLElement>('button, input')?.focus();
+  }, [onProfile]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -100,7 +107,12 @@ export function BottomActions() {
           <Settings className="w-5 h-5" />
           <span className="text-[10px] mt-1 font-medium">{t('sidebar.profile')}</span>
         </button>
-        <div onMouseEnter={handleEnter} onMouseLeave={handleLeave}>
+        <div
+          ref={panelRef}
+          data-testid="persona-panel"
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+        >
           {isOpen && personasFirst ? (
             <PersonaPopup onClose={() => setIsOpen(false)} onProfile={() => setOnProfile(true)} />
           ) : (

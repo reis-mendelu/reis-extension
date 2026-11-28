@@ -17,6 +17,7 @@ describe('PersonasSheet', () => {
     useAppStore.setState(
       overlayWrite({
         language: 'cz' as const,
+        mobileSheets: [{ kind: 'personas' as const }],
         adminRole: 'reis_admin' as const,
         impersonation: null,
         personaRows: {},
@@ -65,5 +66,17 @@ describe('PersonasSheet', () => {
     fireEvent.click(screen.getByRole('radio', { name: /Jiný obor/ }));
     expect(loadOptions).toHaveBeenCalledOnce();
     expect(replaceSheet).toHaveBeenCalledWith({ kind: 'impersonation' });
+  });
+
+  it('a switch that lands under another sheet leaves that sheet open', async () => {
+    let land!: (ok: boolean) => void;
+    useAppStore.setState({
+      switchToPersona: vi.fn(() => new Promise<boolean>((r) => (land = r))),
+    });
+    render(<PersonasSheet onClose={onClose} />);
+    fireEvent.click(screen.getByRole('radio', { name: /IT · B-OI/ }));
+    useAppStore.setState({ mobileSheets: [{ kind: 'personas' }, { kind: 'notifications' }] });
+    await act(async () => land(true));
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

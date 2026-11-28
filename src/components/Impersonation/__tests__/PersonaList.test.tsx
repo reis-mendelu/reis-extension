@@ -163,4 +163,14 @@ describe('PersonaList', () => {
     await act(async () => land(true));
     expect(onDone).not.toHaveBeenCalled();
   });
+
+  it('a failed switch calls no onDone, so the row can say why', async () => {
+    const onDone = vi.fn();
+    useAppStore.setState(overlayWrite({ switchToPersona: vi.fn(async () => false) }));
+    render(<PersonaList variant="touch" onOther={() => {}} onDone={onDone} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('radio', { name: /IT · B-OI/ }));
+    });
+    expect(onDone).not.toHaveBeenCalled();
+  });
 });

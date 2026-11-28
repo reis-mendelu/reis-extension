@@ -59,6 +59,8 @@ describe('the sidebar avatar', () => {
     fireEvent.click(screen.getByRole('button', { name: /Profil a nastavení/ }));
     expect(profilePopup()).toBeInTheDocument();
     expect(personaDialog()).toBeNull();
+    // Focus moves into the profile rather than falling to <body>.
+    expect(screen.getByTestId('persona-panel').contains(document.activeElement)).toBe(true);
   });
 
   it('opens on the persona list again after it was closed on the profile', () => {
