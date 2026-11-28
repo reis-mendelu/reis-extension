@@ -31,6 +31,14 @@ export interface Facts {
   hiddenRow: string;
   /** People rows: a small photo, and a row no taller than about two lines of text beside it. */
   peopleSizes: string;
+  /** A date field and its calendar icon: 'together' on one line. */
+  dateField: string;
+  /** A topic number and its text inside a label/value cell: 'beside' each other. */
+  topics: string;
+  /** Each filter label in a one-row form, relative to its control: 'above' when the control sits right under it. */
+  filterPairs: string;
+  /** A tiny icon-only link's tap area: 'bigger' at 18 px or more, and a tap on its neighbour still reaches the neighbour. */
+  tapSize: string;
 }
 
 export function problems(width: number, f: Facts): string[] {
@@ -46,6 +54,20 @@ export function problems(width: number, f: Facts): string[] {
   const people = '2 rows, photo 44x55, short, 0/2 blanks shown';
   if (f.peopleSizes !== people)
     out.push(`people rows are "${f.peopleSizes}", expected "${people}"`);
+  if (f.filterPairs !== 'above above above')
+    out.push(
+      `filter labels and their controls: "${f.filterPairs}", expected each control right under its label`
+    );
+  if (f.tapSize !== 'bigger')
+    out.push(
+      `the folder-tree toggle's tap area is ${f.tapSize}, expected at least 18 px without reaching a neighbour`
+    );
+  if (f.topics !== 'beside')
+    out.push(
+      'the topic list inside a label/value cell is stacked; its numbers belong beside their text'
+    );
+  if (f.dateField !== 'together')
+    out.push('the date field and its calendar icon are on separate lines');
   if (f.hiddenRow !== 'hidden') out.push('a row IS hides is shown as a card');
   if (!f.registerVisible)
     out.push('the exam register control is not on screen without scrolling sideways');
@@ -58,8 +80,11 @@ export function problems(width: number, f: Facts): string[] {
     }
     if (!t.classes.split(' ').includes(t.expect))
       out.push(`#${t.id} should be ${t.expect}, is "${t.classes}"`);
-    if (t.needsSidewaysScroll) out.push(`#${t.id} still needs sideways scrolling`);
-    if (t.cellsPastEdge)
+    // A tightened table may not shrink past 11 px text; when it still does not fit, it must at
+    // least scroll by touch inside its own box. Every other treatment must fit.
+    const mayScroll = t.expect === 'reis-compact' && t.scrollsByTouch;
+    if (t.needsSidewaysScroll && !mayScroll) out.push(`#${t.id} still needs sideways scrolling`);
+    if (t.cellsPastEdge && !mayScroll)
       out.push(`#${t.id}: ${t.cellsPastEdge} cells are past the edge of the page`);
   }
   return out;

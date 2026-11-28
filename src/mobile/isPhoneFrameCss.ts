@@ -1,3 +1,5 @@
+import { IS_PHONE_FRAME_CSS_TABLES } from './isPhoneFrameCssTables';
+
 /**
  * The stylesheet reIS adds to an old IS page on a phone (see isPhoneFrame.ts).
  *
@@ -24,8 +26,9 @@
  *   on `#stranka`'s children). In the markup it still comes first; only the
  *   visual order changes. On a desktop it sits beside the content; stacked in
  *   one column it would otherwise push every page's content half a screen down.
- * - **A table that fits is left alone.** One that does not becomes cards, exam
- *   rows or attendance strips, or is tightened and shrunk by up to 20 %; only
+ * - **A table that fits is left alone**, unless it fits only by squeezing every
+ *   cell to a word or two (isPhoneTablesScript.ts). One that does not becomes cards, exam
+ *   rows or attendance strips, or is tightened and shrunk by up to 8 %; only
  *   what is left after that scrolls sideways inside its own box.
  *
  * Selectors are IS's own ids and classes as dumped from live IS (new design,
@@ -83,7 +86,7 @@ img, select, textarea, input { max-width: 100%; }
 input, select, textarea, button { font-size: 16px; }
 
 @supports (animation-timeline: scroll()) {
-  .mainpage table { animation: reis-more-columns linear both; animation-timeline: scroll(self inline); }
+  .mainpage table, .mainpage .reis-scroll { animation: reis-more-columns linear both; animation-timeline: scroll(self inline); }
   @keyframes reis-more-columns {
     0%, 96% { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
     100% { -webkit-mask-image: linear-gradient(to right, #000 100%, transparent); mask-image: linear-gradient(to right, #000 100%, transparent); }
@@ -142,11 +145,11 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-exam tr > td.x-vypsal { grid-area: vypsal; }
 .mainpage table.reis-exam tr > td.x-prihl { grid-area: prihl; justify-self: end; font-size: 13px !important; color: #111; white-space: nowrap !important; }
 .mainpage table.reis-exam tr > td.x-prihl::before { content: attr(data-label) ' '; font-size: 11px; color: #55606a; }
-.mainpage table.reis-exam tr > td.x-typ { grid-area: typ; justify-self: end; transform: scale(0.8); transform-origin: right center; }
+.mainpage table.reis-exam tr > td.x-typ { grid-area: typ; justify-self: end; font-size: 14px !important; transform: scale(0.8); transform-origin: right center; }
 .mainpage table.reis-exam tr > td.x-okno { grid-area: okno; display: flex !important; gap: 8px; font-size: 11px !important; }
 .mainpage table.reis-exam tr > td.x-okno::before { content: attr(data-label); white-space: pre-line; }
 .mainpage table.reis-exam tr > td.x-akce { grid-area: akce; justify-self: end; align-self: start; padding: 4px 0 4px 10px !important; }
-.mainpage table.reis-exam tr > td.x-oper { grid-area: oper; justify-self: end; white-space: nowrap !important; transform: scale(0.8); transform-origin: right center; }
+.mainpage table.reis-exam tr > td.x-oper { grid-area: oper; justify-self: end; white-space: nowrap !important; font-size: 14px !important; transform: scale(0.8); transform-origin: right center; }
 
 /* List záznamníku: subject with its operation icons, then per time slot a line and twelve week boxes.
    IS gives each attendance cell an inline "padding: 0.5em !important" that no stylesheet can
@@ -169,11 +172,7 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-att tr > td.a-week::before { content: attr(data-label); flex: 0 0 auto; font-size: 9px; line-height: 12px; color: #7a858f; }
 .mainpage table.reis-att tr > td.a-week .uf-icon, .mainpage table.reis-att tr > td.a-week img { flex: 0 0 auto; margin: 0 !important; transform: scale(0.72); transform-origin: center top; }
 
-/* What the script could not re-read: tighter cells; a one-row filter form wraps. */
-.mainpage table.reis-compact td, .mainpage table.reis-compact th { font-size: 12px !important; padding: 3px !important; white-space: normal !important; }
-.mainpage table.reis-flow > tbody, .mainpage table.reis-flow > tbody > tr, .mainpage table.reis-flow > tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
-.mainpage table.reis-flow > tbody > tr > td, .mainpage table.reis-flow > tr > td { display: block !important; padding: 0 !important; max-width: 100%; }
-.mainpage table.reis-flow select, .mainpage table.reis-flow input { max-width: calc(100vw - 30px); }
+${IS_PHONE_FRAME_CSS_TABLES}
 /* A column or row IS itself hides (the row number; "Období" until the student switches it on) stays
    hidden in a card. Last on purpose: it has to win over every display rule above. */
 .mainpage table[class*="reis-"] tr[class][style*="display: none"], .mainpage table[class*="reis-"] tr[class][style*="display:none"], .mainpage table[class*="reis-"] tr[class] > td.UISTMNumberCellHidden, .mainpage table[class*="reis-"] tr[class] > td[style*="display: none"], .mainpage table[class*="reis-"] tr[class] > td[style*="display:none"] { display: none !important; }

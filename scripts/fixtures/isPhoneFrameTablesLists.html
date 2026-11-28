@@ -1,0 +1,92 @@
+<!--
+  Part of scripts/fixtures/isPhoneFrame.html (the check script inserts it): label/value lists.
+  Made up; no real student, subject or teacher.
+-->
+<!-- Label/value pairs (a subject's syllabus details): too wide, so each value goes under its label. -->
+<table id="details" data-expect="reis-kv">
+  <tbody>
+    <tr>
+      <td width="100">
+        <b><span class="nowrap">Kód předmětu: </span></b>
+      </td>
+      <td>XYZ-ABC</td>
+    </tr>
+    <tr>
+      <td width="100">
+        <b><span class="nowrap">Garant předmětu: </span></b>
+      </td>
+      <td style="white-space: nowrap">
+        doc. Ing. Jana Vzorová Příkladová, Ph.D. (Ústav vzorových studií)
+      </td>
+    </tr>
+    <tr>
+      <td width="100">
+        <b><span class="nowrap">Způsob ukončení a forma zkoušky: </span></b>
+      </td>
+      <td style="white-space: nowrap">
+        zkouška (písemná a ústní), zápočet (aktivní účast na cvičeních)
+      </td>
+    </tr>
+    <tr>
+      <td width="100">
+        <b><span class="nowrap">Literatura: </span></b>
+      </td>
+      <td style="white-space: nowrap">
+        Vzorová, J. a Příklad, J.: Vzorové webové aplikace pro začátečníky i pokročilé, 3. vydání,
+        Brno 2030
+      </td>
+    </tr>
+    <tr>
+      <td width="100">
+        <b><span class="nowrap">Osnova: </span></b>
+      </td>
+      <td>
+        <table id="topics">
+          <tr>
+            <td>1.</td>
+            <td>Úvod do vzorových aplikací</td>
+          </tr>
+          <tr>
+            <td>2.</td>
+            <td>Návrh a ověření</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td width="100">
+        <b><span class="nowrap">Rozvrh: </span></b>
+      </td>
+      <td>
+        <!-- Judged first, while it fits its cell; once the list above takes its new shape it no
+             longer fits and must be judged again (it becomes cards). -->
+        <table id="schedule" data-expect="reis-cards">
+          <tr>
+            <th>Den</th>
+            <th>Od-do</th>
+            <th>Místnost</th>
+            <th>Akce</th>
+            <th>Četnost</th>
+            <th>Kapacita</th>
+          </tr>
+          <tr>
+            <td style="white-space: nowrap">Pondělí</td>
+            <td style="white-space: nowrap">11.00-12.50</td>
+            <td style="white-space: nowrap">Q05</td>
+            <td style="white-space: nowrap">Cvičení</td>
+            <td style="white-space: nowrap">Každý týden</td>
+            <td style="white-space: nowrap">25 studentů</td>
+          </tr>
+          <tr>
+            <td style="white-space: nowrap">Čtvrtek</td>
+            <td style="white-space: nowrap">7.00-8.50</td>
+            <td style="white-space: nowrap">Q03</td>
+            <td style="white-space: nowrap">Přednáška</td>
+            <td style="white-space: nowrap">Každý týden</td>
+            <td style="white-space: nowrap">25 studentů</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </tbody>
+</table>

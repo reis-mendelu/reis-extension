@@ -122,17 +122,39 @@ describe('the phone script and IS tables', () => {
   it('only tightens a table it cannot read, and shrinks it when that is enough', () => {
     const irregular = `<table id="t"><tr><td>Kód</td><td>Název</td></tr><tr><td colspan="2">1. semestr</td></tr><tr><td>a</td><td>b</td></tr></table>`;
     document.body.innerHTML = page(irregular);
-    size('#t', 420);
+    size('#t', 400);
     run();
     expect($('#t').className).toBe('reis-compact reis-fit');
-    expect($('#t').style.zoom).toBe('0.9');
+    expect($('#t').style.zoom).toBe('0.95');
 
-    document.head.innerHTML = '';
-    document.body.innerHTML = page(irregular);
+    // Shrinking 12 px text below 0.92 would take it under 11 px (the syllabus
+    // details came out at about 10 px): such a table scrolls in its box instead.
+    for (const needs of [420, 900]) {
+      document.head.innerHTML = '';
+      document.body.innerHTML = page(irregular);
+      size('#t', needs);
+      run();
+      expect($('#t').className).toBe('reis-compact');
+      expect($('#t').style.zoom).toBe('');
+    }
+  });
+
+  // Account quotas: "2 000 000" broke into three lines that read as three numbers.
+  it('keeps a number in a tightened table whole, and leaves words free to wrap', () => {
+    document.body.innerHTML = page(
+      '<table id="t"><tr><td>Server</td><td>kB</td></tr><tr><td colspan="2">Skupina</td></tr>' +
+        '<tr><td id="w">akela disk</td><td id="n">2 000 000</td></tr></table>'
+    );
     size('#t', 900);
     run();
-    expect($('#t').className).toBe('reis-compact');
-    expect($('#t').style.zoom).toBe('');
+    expect($('#t').classList.contains('reis-compact')).toBe(true);
+    expect($('#n').classList.contains('reis-numeric')).toBe(true);
+    expect($('#w').classList.contains('reis-numeric')).toBe(false);
+
+    // Judged again after IS changed the cell to words, it may wrap again.
+    $('#n').textContent = 'neomezeno';
+    window.dispatchEvent(new Event('load'));
+    expect($('#n').classList.contains('reis-numeric')).toBe(false);
   });
 
   it('never hides a cell that holds a control, even beside a dash', () => {

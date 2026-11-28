@@ -23,16 +23,24 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildPhoneFrameScript, PHONE_FRAME_STYLE_ID } from '../src/mobile/isPhoneFrame';
-import { findCrushedText, findOverlaps } from './lib/phoneOverlaps.mjs';
+import {
+  findCrushedText,
+  findOverlaps,
+  findSmallText,
+  treeToggleTap,
+} from './lib/phoneOverlaps.mjs';
 import { problems, type Facts } from './lib/phoneFrameProblems';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const part = (name: string) => readFileSync(resolve(HERE, 'fixtures', name), 'utf8');
-/** The page shell with its two table fixtures put in (three files, each short enough to read). */
+/** The page shell with its table fixtures and icon styles put in. */
 const FIXTURE = part('isPhoneFrame.html')
   .replace(
     /<!-- TABLES:[^>]*-->/,
-    () => part('isPhoneFrameTablesRead.html') + part('isPhoneFrameTablesRest.html')
+    () =>
+      part('isPhoneFrameTablesRead.html') +
+      part('isPhoneFrameTablesLists.html') +
+      part('isPhoneFrameTablesRest.html')
   )
   .replace(/\/\* ICONS:[^*]*\*\//, () => part('isPhoneFrameIcons.css'));
 if (
@@ -103,6 +111,29 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
           return `${k} ${cs.fontSize} pad ${cs.paddingLeft}`;
         })
         .join(', '),
+      filterPairs: [...document.querySelectorAll('#filter td.reis-lab')]
+        .map((lab) => {
+          const a = lab.getBoundingClientRect();
+          const b = lab.nextElementSibling!.getBoundingClientRect();
+          return b.top >= a.bottom - 1 && b.top <= a.bottom + 12 && Math.abs(b.left - a.left) <= 2
+            ? 'above'
+            : 'apart';
+        })
+        .join(' '),
+      // A table inside a label/value cell (the syllabus's topic list) keeps its own rows.
+      topics: (() => {
+        const [n, t] = [...document.querySelectorAll('#topics tr')][0]!.children;
+        return Math.abs(n!.getBoundingClientRect().top - t!.getBoundingClientRect().top) < 2
+          ? 'beside'
+          : 'stacked';
+      })(),
+      dateField: (() => {
+        const f = document.querySelector('#formtight input.hasDatepicker')!.getBoundingClientRect();
+        const i = document
+          .querySelector('#formtight .ui-datepicker-trigger')!
+          .getBoundingClientRect();
+        return i.top < f.bottom && i.bottom > f.top ? 'together' : 'apart';
+      })(),
       hiddenRow:
         document.getElementById('hidden-row')!.getBoundingClientRect().height === 0
           ? 'hidden'
@@ -145,12 +176,16 @@ async function main() {
           : route.abort()
       );
       await page.goto(URL_ON_IS, { waitUntil: 'load' });
-      const found = problems(width, await gather(page, PHONE_FRAME_STYLE_ID));
+      const facts = await gather(page, PHONE_FRAME_STYLE_ID);
+      facts.tapSize = await page.evaluate(treeToggleTap);
+      const found = problems(width, facts);
       // The fixture has no overlaps of its own, so any is the phone script's.
       for (const o of await page.evaluate(findOverlaps))
         found.push(`drawn over each other (${o.size}px): ${o.key}`);
       for (const o of await page.evaluate(findCrushedText))
         found.push(`squeezed to a few letters per line: ${o.key}`);
+      for (const o of await page.evaluate(findSmallText))
+        found.push(`text under 11 px (${o.size}): ${o.key}`);
       failed ||= found.length > 0;
       process.stdout.write(
         found.length
