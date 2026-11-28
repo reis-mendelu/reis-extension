@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { AlertCircle, Check, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
-import { PERSONAS } from '../../features/personas';
+import { PERSONAS, personaName } from '../../features/personas';
 import { IMPERSONATION_ERROR_KEY } from './errorKeys';
 import { logError } from '../../utils/reportError';
 
@@ -52,7 +52,7 @@ function Row({
 
 /**
  * "Zobrazit jako" for reIS admins (design 2026-11-27 §6): Já, the seven
- * programme personas, then "Jiný obor…" for today's picker. One component on
+ * programme personas and Erasmus, then "Jiný obor…" for today's picker. One component on
  * both trees, so they cannot drift. Every fetch starts from a tap here, never
  * from an effect.
  */
@@ -116,9 +116,7 @@ export function PersonaList(props: Props) {
               )
             }
           >
-            <span className="truncate font-medium">
-              {p.label[language]} · {p.shortCode}
-            </span>
+            <span className="truncate font-medium">{personaName(p, language)}</span>
             {error && (
               // The glyph carries the colour: text-error on base-100 is 3.9:1.
               <span className="flex items-center gap-1 text-xs text-base-content/70">

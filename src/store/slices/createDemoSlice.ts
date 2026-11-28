@@ -65,7 +65,7 @@ async function wipeSeeded(): Promise<void> {
   }
 }
 
-export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
+export const createDemoSlice: AppSlice<DemoSlice> = (set, get) => ({
   // Reads the module-level flag rather than hardcoding false: on the
   // deployed preview, dev/earlyDemoMode.ts calls setDemoModeFlag(true)
   // before this slice (and the store that owns it) ever evaluates. Several
@@ -112,6 +112,8 @@ export const createDemoSlice: AppSlice<DemoSlice> = (set) => ({
         firstSyncSettled: true,
       })
     );
+    // Its language goes with it (the Erasmus persona's English is memory only).
+    await get().setPersonaLanguage(null);
   },
 
   exitDemo: async () => {

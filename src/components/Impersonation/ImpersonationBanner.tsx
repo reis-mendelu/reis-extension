@@ -3,7 +3,7 @@ import { UserCog } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useTranslation } from '../../hooks/useTranslation';
 import { logError } from '../../utils/reportError';
-import { personaById } from '../../features/personas';
+import { personaById, personaName } from '../../features/personas';
 
 /**
  * Not dismissible, on both trees: an admin must never mistake another
@@ -45,7 +45,7 @@ export function ImpersonationBanner({ variant }: { variant: 'row' | 'floating' }
       <span className="font-semibold">
         {persona ? (
           // The list's own name for it, so banner and list read the same.
-          `${persona.label[language]} · ${persona.shortCode}`
+          personaName(persona, language)
         ) : (
           <>
             {t('impersonation.bannerLabel', {

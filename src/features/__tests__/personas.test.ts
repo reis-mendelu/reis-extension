@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { PERSONAS, resolvePersona, personaRequest } from '../personas';
+import { PERSONAS, resolvePersona, personaRequest, personaName } from '../personas';
 import type { FacultyOptions, ProgrammeOption, RozvrhRef } from '../../api/impersonation/types';
 
 const rozvrh = (faculty: string): RozvrhRef => ({
@@ -34,6 +34,13 @@ function programme(faculty: string, name: string, ...codes: string[]): Programme
 const OPTIONS: FacultyOptions[] = [
   {
     faculty: 'PEF',
+    // The PEF timetable's course select, as `loadOptions` keeps it (made-up ids).
+    courses: ['EBA-MAR', 'EBA-MI', 'EBA-MT', 'EBA-PE', 'EBA-FT', 'EBC-FT'].map((code, i) => ({
+      code,
+      name: code,
+      predmetId: String(900 + i),
+      rozvrh: rozvrh('PEF'),
+    })),
     programmes: [
       programme('PEF', 'Otevřená informatika', 'B-OI'),
       programme('PEF', 'Finance', 'B-F'),
@@ -51,7 +58,7 @@ const OPTIONS: FacultyOptions[] = [
 ];
 
 describe('PERSONAS', () => {
-  it('is the seven programme personas of decision #1, all first year', () => {
+  it('is the eight personas of decision #1, all first year, Erasmus last', () => {
     expect(PERSONAS.map((p) => p.shortCode)).toEqual([
       'B-OI',
       'B-F',
@@ -60,18 +67,32 @@ describe('PERSONAS', () => {
       'B-ZIN',
       'B-SNBD',
       'B-RASZ',
+      null,
     ]);
+    expect(PERSONAS.at(-1)?.id).toBe('erasmus');
     expect(PERSONAS.every((p) => p.year === 1)).toBe(true);
     expect(new Set(PERSONAS.map((p) => p.id)).size).toBe(PERSONAS.length);
   });
 
-  it('lists no Erasmus persona yet (step C)', () => {
-    expect(PERSONAS.some((p) => p.erasmus || p.language)).toBe(false);
+  it('Erasmus: PEF, no programme, English, five pinned English-taught courses (decision #5)', () => {
+    const erasmus = PERSONAS.find((p) => p.id === 'erasmus')!;
+    expect(erasmus).toMatchObject({ faculty: 'PEF', shortCode: null, language: 'en' });
+    expect(erasmus.erasmus?.courses).toEqual(['EBA-MAR', 'EBA-MI', 'EBA-MT', 'EBA-PE', 'EBA-FT']);
+    // Only Erasmus changes the language or carries courses.
+    expect(PERSONAS.filter((p) => p.erasmus || p.language).map((p) => p.id)).toEqual(['erasmus']);
+  });
+
+  it('names a persona by its programme, Erasmus by its faculty', () => {
+    const [it_, erasmus] = [PERSONAS[0]!, PERSONAS.find((p) => p.id === 'erasmus')!];
+    expect(personaName(it_, 'cz')).toBe('IT · B-OI');
+    expect(personaName(erasmus, 'cz')).toBe('Erasmus · PEF');
+    expect(personaName(erasmus, 'en')).toBe('Erasmus · PEF');
   });
 });
 
 describe('resolvePersona', () => {
-  it.each(PERSONAS.map((p) => [p.id, p] as const))('%s resolves against loadOptions', (_, p) => {
+  const programmes = PERSONAS.filter((p) => p.shortCode);
+  it.each(programmes.map((p) => [p.id, p] as const))('%s resolves against loadOptions', (_, p) => {
     const hit = resolvePersona(p, OPTIONS);
     expect(hit?.faculty).toBe(p.faculty);
     expect(hit?.variants.map((v) => v.shortCode)).toContain(p.shortCode);
@@ -113,6 +134,45 @@ describe('personaRequest', () => {
   it('fails with noPlan for a code IS no longer lists', async () => {
     await expect(
       personaRequest({ ...finance, shortCode: 'B-GONE' }, OPTIONS, async () => [1])
+    ).rejects.toMatchObject({ code: 'noPlan' });
+  });
+});
+
+describe('personaRequest, Erasmus', () => {
+  const erasmus = PERSONAS.find((p) => p.id === 'erasmus')!;
+
+  it('resolves without a programme: Z-EXC at PEF, its courses by code, no group', async () => {
+    const groups = vi.fn(async () => [1]);
+    const req = await personaRequest(erasmus, OPTIONS, groups);
+    expect(req).toMatchObject({
+      shortCode: 'Z-EXC',
+      faculty: 'PEF',
+      year: 1,
+      group: null,
+      erasmus: true,
+      personaId: 'erasmus',
+      rozvrh: rozvrh('PEF'),
+    });
+    // Each course keeps the timetable it was listed in.
+    expect(req.courses?.every((c) => c.rozvrh?.id === 'r-PEF')).toBe(true);
+    expect(req.courses?.map(({ code, predmetId }) => ({ code, predmetId }))).toEqual([
+      { code: 'EBA-MAR', predmetId: '900' },
+      { code: 'EBA-MI', predmetId: '901' },
+      { code: 'EBA-MT', predmetId: '902' },
+      { code: 'EBA-PE', predmetId: '903' },
+      { code: 'EBA-FT', predmetId: '904' },
+    ]);
+    // No programme, so no groups to ask IS for.
+    expect(groups).not.toHaveBeenCalled();
+  });
+
+  it('keeps the courses that resolve; none at all is noPlan', async () => {
+    const pef = OPTIONS[0]!;
+    const fewer = [{ ...pef, courses: pef.courses!.filter((c) => c.code !== 'EBA-MI') }];
+    const req = await personaRequest(erasmus, fewer, async () => []);
+    expect(req.courses?.map((c) => c.code)).toEqual(['EBA-MAR', 'EBA-MT', 'EBA-PE', 'EBA-FT']);
+    await expect(
+      personaRequest(erasmus, [{ ...pef, courses: [] }], async () => [])
     ).rejects.toMatchObject({ code: 'noPlan' });
   });
 });
