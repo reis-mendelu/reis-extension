@@ -1,6 +1,6 @@
-# Data for student projects — a link on the odevzdávárna card (design)
+# Data for student projects — a link above the open odevzdávárny (design)
 
-Discussed with Dominik on 2026-11-27. Status: **draft, awaiting his approval**; nothing is built.
+Discussed with Dominik on 2026-11-27 and 2026-11-28. Status: **approved and built** in the PR that carries this file. Where it differs from the first draft (any subject, once above the list), the Decisions section says so.
 
 ## Intent and why
 
@@ -15,11 +15,11 @@ assignment sees, in one tap, where to get real MENDELU data for it.
 
 ## Goals
 
-- A line on the odevzdávárna card, for informatics students and for listed
-  technical subjects, linking to a page on reisapp.cz with the datasets.
-- That page ("Data pro projekty"): per dataset a direct link, a plain
-  description of the fields and 3–4 project ideas, split into "pro web" and
-  "pro Javu".
+- One line above a subject's open odevzdávárny, for informatics students and
+  for any subject, linking to a page on reisapp.cz with the datasets.
+- That page ("Data pro projekty"): per dataset a direct link (JSON and CSV),
+  load snippets (web, Python, Java) and project ideas by kind of project, with
+  subjects only as examples.
 - Both product trees get it, because `SubmissionBoxes` is shared.
 - The link is counted (install-level feature counter).
 
@@ -40,7 +40,7 @@ assignment sees, in one tap, where to get real MENDELU data for it.
 
 ## Constraints
 
-- Both trees. `SubmissionBoxCard` is shared by the desktop `SubjectsPanel` and
+- Both trees. `SubmissionBoxList` is shared by the desktop `SubjectsPanel` and
   the phone's `SubjectsScreen`, so one edit lands on both; verify at tablet
   width too (`verify-ui`).
 - Counting rule (`docs/feature-counters.md`): one label in `FEATURE_SIGNALS`, a
@@ -57,9 +57,10 @@ assignment sees, in one tap, where to get real MENDELU data for it.
 
 ## Approaches considered
 
-1. **Link on the card, for listed subjects (chosen).** Appears when the student
-   reads the assignment. Costs a short subject list in code, and a release per
-   added subject. Can deep-link to `#web` or `#java`.
+1. **Link where the student reads the assignment, for listed subjects.** Costs
+   a short subject list in code, and a release per added subject. Can
+   deep-link to `#web` or `#java`. First draft's choice; replaced on 2026-11-28
+   by the any-subject, once-per-list line described under Decisions.
 2. **One general `study_aids` row under Předměty.** Almost free and retargetable
    from the admin console, but not where the student decides on a topic.
 3. **Both.** Cheap safety net for subjects not on the list. Not chosen for now;
@@ -68,7 +69,7 @@ assignment sees, in one tap, where to get real MENDELU data for it.
 ## Decisions
 
 Dominik's:
-- The link sits on the odevzdávárna card (2026-11-27).
+- The link sits with the odevzdávárny (2026-11-27); on 2026-11-28 he chose "once above the list" over a row on every card.
 - Informatics only; the page serves web and Java projects first.
 
 My calls, for him to check:
@@ -77,10 +78,11 @@ My calls, for him to check:
   `noProgrammeListsInCode` refuses a second programme list in code; the two can
   be split later in `utils/projectData.ts`.
 - **Any subject (Dominik, 2026-11-28: "it doesn't matter for which subject it is").** The line shows under every open odevzdávárna for the informatics audience, and links the page top; the page itself splits web from Java. This replaces the earlier EBC-VWA / EBC-PJ list with `#web` / `#java` deep links.
-- Shown on open boxes only, as a second fold line under Pokyny, not on submitted
-  or closed ones.
+- **Placement: once** above the open boxes of a subject (in the list header of
+  `SubmissionBoxList`), only when at least one box is open; not on each card,
+  and not when only submitted or closed boxes exist.
 - One counter label (no partner is involved), say `project_data_opened`.
-- Deep link `#web` for VWA, `#java` for PJ.
+- No deep link: the line opens the page top and the page itself splits web from Java and the rest.
 - **Erasmus is offered only as an anonymised, numbers-only export.** Found on
   2026-11-27: all 1 580 Erasmus reports in the public `reis-data` carry the
   student's name and university e-mail (`student.name`, `student.email`), plus
@@ -110,10 +112,9 @@ Still open, his to answer before the page ships:
 1. Migration for the label, applied to prod first.
 2. Name-free export and licence in `reis-data`.
 3. The page in `reis-page` (EN and CS) after reading its page rules.
-4. The card line, counter, disclosure, admin label, tests.
+4. The list line, counter, disclosure, admin label, tests.
 
 ## Left to the builder
 
 Wording of the line (cs/en), the exact data-page layout, file names of the
-name-free export, test shapes, and whether the line is a `<details>` fold or a
-plain link row.
+name-free export and test shapes. (Built as a plain bordered link row.)

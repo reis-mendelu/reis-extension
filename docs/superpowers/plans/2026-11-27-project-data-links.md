@@ -1,12 +1,12 @@
 # Project data links Implementation Plan
 
-> **Changed 2026-11-28 (Dominik: "it doesn't matter for which subject it is"):** the line shows on every open odevzdávárna for the informatics audience, with no subject list and no `#web`/`#java` deep link. `projectDataUrl(language)` takes only the language and `ProjectDataLink` takes no props. The subject-specific lines below are history.
+> **Shipped differently (Dominik, 2026-11-28: "it doesn't matter for which subject it is", then "Jednou nad seznamem"):** one line above a subject's open odevzdávárny, rendered by `SubmissionBoxList` (not per card), for the informatics audience, with no subject list and no `#web`/`#java` deep link. `projectDataUrl(language)` takes only the language and `ProjectDataLink` takes no props. Task 4 and Task 5 below are rewritten to match; the page's own anchors and the data tasks are unchanged.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A B-OI student reading an open odevzdávárna for EBC-VWA or EBC-PJ sees a "Data pro projekt" line that opens a reisapp.cz page with real, name-free MENDELU datasets.
+**Goal:** A B-OI student looking at a subject's open odevzdávárny sees one "Data pro projekt" line above them that opens a reisapp.cz page with real, name-free MENDELU datasets.
 
-**Architecture:** Three repos, shipped in this order: `reis-data` gets a name-free `student-data/` export (served by jsDelivr, CORS open); `reis-page` gets the page that lists it; `reis-extension` gets the counter and one line on the shared `SubmissionBoxCard`, which both product trees render. No backend, nothing hosted.
+**Architecture:** Three repos, shipped in this order: `reis-data` gets a name-free `student-data/` export (served by jsDelivr, CORS open); `reis-page` gets the page that lists it; `reis-extension` gets the counter and one line in the shared `SubmissionBoxList`, which both product trees render. No backend, nothing hosted.
 
 **Tech Stack:** Node ESM scripts + vitest/`node:test` in reis-data; static HTML in reis-page; React 19, Zustand, vitest, Supabase SQL migration in reis-extension.
 
@@ -15,18 +15,19 @@
 ## Global Constraints
 
 - Audience tokens: `pef:B-OI`, `pef:B-AII`, `pef:N-OI`; matched on the device with `matchesAudience` and `useViewer` (impersonation then follows the persona).
-- Subjects to start with: `EBC-VWA` (deep link `#web`) and `EBC-PJ` (deep link `#java`); any other `courseCode`, or none, shows no line.
-- The line is on **open** boxes only, a second fold row under Pokyny; never on submitted or closed ones.
+- Any subject: the line does not read `courseCode`, so old caches show it too. No deep link.
+- The line is shown **once** above the open boxes of a subject, only when at least one is open; never per card, and not when only submitted or closed boxes exist.
 - One counter label, `project_data_opened`; click and middle-click count, never right-click; nothing about the student goes with the link.
 - No teacher names, no student names or e-mails, no free text in anything the page links; no mention of My MENDELU anywhere; no buildings or rooms on the page.
-- Both trees: the edit is in `src/components/SubmissionBoxes/` (shared); verify at 320/390/430 and tablet 834 and on desktop (`verify-ui`).
-- Czech section ids in both languages (`#web`, `#java`); page rules in `reis-page/CLAUDE.md` apply (scannable, persona test, text in HTML).
+- Both trees: the edit is in `src/components/SubmissionBoxes/` (shared); verify at 390 and tablet 834 (the desktop tree renders the same shared list).
+- Czech section ids in both languages (shipped: `#data`, `#nacist`, `#napady`); page rules in `reis-page/CLAUDE.md` apply (scannable, persona test, text in HTML).
 - Migration is additive and applied to prod **before** the build that sends the label ships; no `begin;`/`commit;`.
 - `npm run check` before every push in reis-extension. Base the PR on `test`.
 
 ## Review Focus
 
-- A box with no `courseCode` (old cache) → no line, no crash.
+- A box with no `courseCode` (old cache) → the line still shows, no crash.
+- Several boxes (open and submitted) → exactly one line; none when no box is open.
 - A viewer with no programme label (`null`) or another faculty → no line.
 - English UI → English page URL (`/en/guides/project-data`), Czech → `/navody/data-pro-projekty`.
 - Impersonated persona outside the audience → no line, even if the real admin is in it.
@@ -36,15 +37,15 @@
 
 ### Task 0 (done 2026-11-28, before everything else): remove the leaked student e-mails
 
-Every Erasmus report in the public `reis-data` carried `student.email` (UČO@node.mendelu.cz): 1,717 addresses in 28 files. Removed in reis-mendelu/reis-data#10; the crawler that would bring them back is fixed in reis-mendelu/reis-scraper#25. **Both must be merged, and the changed files purged from jsDelivr, before Task 2's page goes live**, so a visitor who follows the page into the repo finds no addresses. Not done here: removing `student.name` (the app shows it) and history rewriting; both are Dominik's decisions. Task 5 also drops `email` from `ErasmusReport.student` in `src/types/erasmus.ts`.
+Every Erasmus report in the public `reis-data` carried `student.email` (UČO@node.mendelu.cz): 1,717 addresses in 28 files. Removed in reis-mendelu/reis-data#10; the crawler that would bring them back is fixed in reis-mendelu/reis-scraper#25. **Both must be merged, and the changed files purged from jsDelivr, before Task 2's page goes live**, so a visitor who follows the page into the repo finds no addresses. Not done here: removing `student.name` (the app shows it) and history rewriting; both are Dominik's decisions. This task also owns the extension side: `email` is dropped from `ErasmusReport.student` in `src/types/erasmus.ts` and from its schema-test fixture (done in the extension PR).
 
-**Distribution decision (Dominik, 2026-11-28):** the data is offered through the odevzdávárna card only. Nothing is posted in the B-OI Discord. Demand is read from the `project_data_opened` counter and, for the files themselves, from jsDelivr's per-file hit statistics.
+**Distribution decision (Dominik, 2026-11-28):** the data is offered through the line above the open odevzdávárny only. Nothing is posted in the B-OI Discord. Demand is read from the `project_data_opened` counter and, for the files themselves, from jsDelivr's per-file hit statistics.
 
 ### Task 1: Name-free export in reis-data
 
 **Files:**
-- Create: `/Users/Dominik.Holek/Documents/reis/reis-data/scripts/buildStudentData.mjs`
-- Create: `/Users/Dominik.Holek/Documents/reis/reis-data/scripts/buildStudentData.test.mjs`
+- Create (in the `reis-data` repo): `scripts/buildStudentData.mjs`
+- Create (in the `reis-data` repo): `scripts/buildStudentData.test.mjs`
 - Create (generated): `student-data/success-rates.json`, `success-rates.csv`, `erasmus.json`, `erasmus.csv`, `README.md`
 
 **Interfaces:**
@@ -65,9 +66,9 @@ Every Erasmus report in the public `reis-data` carried `student.email` (UČO@nod
 
 **Interfaces:**
 - Consumes: Task 1's file URLs.
-- Produces: stable anchors `#web` and `#java` on both pages.
+- Produces: the same stable section anchors on both pages.
 
-- [ ] **Step 1: Write the page**: first screen = what it is in one line, "termíny z roku 2026"; two sections `#web` and `#java`, each with the datasets as cards (direct URL, 4–5 sample fields, one copy-paste snippet: `fetch(url)` for web, a JSON read for Java) and three one-line project ideas (e.g. "Který předmět letos pálí", "Kolik stojí Erasmus v Helsinkách"). Text in the HTML, no JS-built content.
+- [ ] **Step 1: Write the page**: first screen = what it is in one line, "termíny z roku 2026"; shipped as subject-agnostic sections (datasets with JSON and CSV links, load snippets for web, Python and Java, ideas by kind of project with subjects only as examples). Text in the HTML, no JS-built content.
 - [ ] **Step 2: Run** `node scripts/guide-lists.mjs && node scripts/sitemap-lastmod.mjs`; add the `seo/changes.csv` row per `seo/README.md`.
 - [ ] **Step 3: Persona test**: a fresh subagent plays a B-OI first-year on a 390 px phone, 1–2 minutes; fix what it reports.
 - [ ] **Step 4: Verify**: serve locally, open both pages at 390 and desktop, click every dataset link and expect HTTP 200 with `access-control-allow-origin: *` (the files must be on `main` of reis-data first).
@@ -85,7 +86,7 @@ Every Erasmus report in the public `reis-data` carried `student.email` (UČO@nod
 
 - [ ] **Step 1: Add the label to `FEATURE_SIGNALS` only; run** `npx vitest run featureSignalWhitelist`. Expected: FAIL (migration disagrees).
 - [ ] **Step 2: Write the migration** by copying `20261127130000_feature_library_booking.sql` and widening the list in `track_feature_usage`, `track_feature_usage_v2` and the column check with `'project_data_opened'`.
-- [ ] **Step 3: Admin label, i18n, disclosure** (seven→eight feature uses; "a tap on the project-data line on an odevzdávárna card"), then `npm run privacy:generate`.
+- [ ] **Step 3: Admin label, i18n, disclosure** (seven→eight feature uses; "a tap on the project-data line above the open odevzdávárny"), then `npm run privacy:generate`.
 - [ ] **Step 4: Run** `npx vitest run featureSignalWhitelist privacyDisclosures`. Expected: PASS.
 - [ ] **Step 5: Commit.** The migration must be applied to prod before the build ships (`/release` does it; note it in the PR).
 
@@ -95,30 +96,30 @@ Every Erasmus report in the public `reis-data` carried `student.email` (UČO@nod
 - Create: `src/utils/projectData.ts`, `src/utils/__tests__/projectData.test.ts`
 
 **Interfaces:**
-- Produces: `projectDataUrl(courseCode: string | undefined, language: string): string | null` (`https://reisapp.cz/navody/data-pro-projekty#web` / `#java`, English `https://reisapp.cz/en/guides/project-data#web` / `#java`; `null` for any other code or none); `isProjectDataAudience(viewer: AudienceViewer): boolean`, which delegates to `isReisForClaudeAudience` (no new programme list in code: `noProgrammeListsInCode`).
+- Produces: `projectDataUrl(language: string): string` (`https://reisapp.cz/navody/data-pro-projekty` for `'cz'`, otherwise `https://reisapp.cz/en/guides/project-data`); `isProjectDataAudience(viewer: AudienceViewer): boolean`, which delegates to `isReisForClaudeAudience` (no new programme list in code: `noProgrammeListsInCode`).
 
-- [ ] **Step 1: Write tests**: EBC-VWA cz → `#web` URL; EBC-PJ en → `#java` English URL; `undefined` and `EBC-M` → `null`; viewer `{facultyKey: 'pef', programme: 'B-OI'}` true, `B-EM` false, `{facultyKey: 'af', programme: 'B-OI'}` false, `programme: null` false.
+- [ ] **Step 1: Write tests**: `'cz'` → the Czech URL, `'en'` → the English URL; viewer `{facultyKey: 'pef', programme: 'B-OI'}` true, `B-EM` false, `{facultyKey: 'af', programme: 'B-OI'}` false, `programme: null` false.
 - [ ] **Step 2: Run** `npx vitest run projectData`. Expected: FAIL.
-- [ ] **Step 3: Implement** with `matchesAudience` from `utils/partnerAudience.ts`; subject map is a const object in the same file.
+- [ ] **Step 3: Implement** both functions; the audience check calls `isReisForClaudeAudience`.
 - [ ] **Step 4: Run** the test. Expected: PASS. **Step 5: Commit.**
 
-### Task 5: The line on the box card
+### Task 5: The line above the open boxes
 
 **Files:**
 - Create: `src/components/SubmissionBoxes/ProjectDataLink.tsx`
-- Modify: `src/components/SubmissionBoxes/SubmissionBoxCard.tsx` (render it after `BoxInstructions`), `src/i18n/locales/cs.json` + `en.json` (`odevzdavarny.projectData`, `odevzdavarny.projectDataHint`)
-- Test: `src/components/SubmissionBoxes/__tests__/projectDataLink.test.tsx` (use `boxFixtures.ts`, render through `ZaznamnikTab` like `ZaznamnikTabBoxes.test.tsx`)
+- Modify: `src/components/SubmissionBoxes/SubmissionBoxList.tsx` (render it once, after the header and before the open boxes, only when `open.length > 0`), `src/i18n/locales/cs.json` + `en.json` (`odevzdavarny.projectData`, `odevzdavarny.projectDataHint`)
+- Test: `src/components/SubmissionBoxes/__tests__/projectDataLink.test.tsx` (renders `SubmissionBoxList`)
 
 **Interfaces:**
 - Consumes: `projectDataUrl`, `isProjectDataAudience` (Task 4), `trackFeatureSignal('project_data_opened')` (Task 3), `useViewer()`, `useTranslation()`.
-- Produces: `ProjectDataLink({ courseCode }: { courseCode: string | undefined }): JSX.Element | null`.
+- Produces: `ProjectDataLink(): JSX.Element | null`, no props.
 
-- [ ] **Step 1: Write failing tests**: B-OI viewer + EBC-VWA box → link with `href` ending `#web`, text from `odevzdavarny.projectData`; B-OI + `courseCode: undefined` → none; `B-EM` viewer → none; B-OI + EBC-M → none; click and `auxclick` with `button: 1` each call the tracker once, `button: 2` none; English language → `/en/guides/project-data`; impersonated persona `B-EM` while the real viewer is B-OI → none.
+- [ ] **Step 1: Write failing tests**: B-OI viewer → one link with the Czech URL; B-AII with English UI → the English URL on any subject; none for `B-EM`, no programme, or another faculty; a box without `courseCode` still shows it; several boxes (open and submitted) → exactly one link; no open box → none; impersonated persona `B-EKO` → none; click and `auxclick` with `button: 1` each call the tracker once, `button: 2` none.
 - [ ] **Step 2: Run** `npx vitest run projectDataLink`. Expected: FAIL.
-- [ ] **Step 3: Implement** `ProjectDataLink` as a plain `<a target="_blank" rel="noopener noreferrer">` row styled like `BoxInstructions` (`border-t border-base-content/10 px-3 py-1.5`, `text-xs`, `ExternalLink` icon), outside the card's own `<a>`; mount it inside the card wrapper after `BoxInstructions`.
-- [ ] **Step 4: Run** the new test plus `npx vitest run SubmissionBoxes SubjectsPanel` . Expected: PASS.
-- [ ] **Step 5: `verify-ui`** at 320/390/430, tablet 834 and desktop with a seeded B-OI persona and an EBC-VWA box; confirm the line is present, nothing overflows, and it is absent for a B-EM persona. Send Dominik before/after PNGs.
-- [ ] **Step 6: `npm run check`, commit, open the PR to `test`** (answer "does the tree-parity hook ask": the edit is in shared code, so both trees have it).
+- [ ] **Step 3: Implement** `ProjectDataLink` as a plain `<a target="_blank" rel="noopener noreferrer">` row (bordered, `text-xs`, `ExternalLink` icon) and mount it in `SubmissionBoxList` as above.
+- [ ] **Step 4: Run** the new test plus `npx vitest run SubmissionBoxes SubjectsPanel`. Expected: PASS.
+- [ ] **Step 5: `verify-ui`** at 390 and tablet 834 (the desktop tree renders the same shared list); confirm the line is present once, nothing overflows, and it is absent for a B-EM persona.
+- [ ] **Step 6: `npm run check`, commit, open the PR to `test`** (the edit is in shared code, so both trees have it).
 
 ---
 
