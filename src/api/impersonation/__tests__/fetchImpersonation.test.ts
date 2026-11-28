@@ -69,11 +69,11 @@ describe('fetchImpersonation', () => {
 
   it('year 2: intake 801 plan, semester 3, per-subject first slots, both languages', async () => {
     const r = await fetchImpersonation(await bfSelection(2), SEPT);
-    expect(r.plan.cz.blocks).toHaveLength(6);
-    expect(r.plan.en.blocks).toHaveLength(6);
-    const enrolled = r.plan.cz.blocks[2]!.groups.flatMap((g) => g.subjects).filter(
-      (s) => s.isEnrolled
-    );
+    expect(r.plan!.cz.blocks).toHaveLength(6);
+    expect(r.plan!.en.blocks).toHaveLength(6);
+    const enrolled = r
+      .plan!.cz.blocks[2]!.groups.flatMap((g) => g.subjects)
+      .filter((s) => s.isEnrolled);
     expect(enrolled.map((s) => s.code)).toContain('EBC-FT');
     // Only EBC-FT has a routed timetable; the rest answer no-results = no lessons, not failure.
     expect(new Set(r.schedule.map((l) => l.courseCode))).toEqual(new Set(['EBC-FT', 'EBC-AZD']));
@@ -116,7 +116,7 @@ describe('fetchImpersonation', () => {
     const outgoing = { ...current[0]!, programId: '9999', shortCode: 'B-OLD' };
     const r = await fetchImpersonation({ ...sel, variants: [outgoing, ...current] }, SEPT);
     expect(r.resolved).toMatchObject({ programId: '1889', shortCode: 'B-F' });
-    expect(r.plan.cz.blocks).toHaveLength(6);
+    expect(r.plan!.cz.blocks).toHaveLength(6);
   });
 
   it('a failed timetable leg fails the whole fetch (never half-applied)', async () => {

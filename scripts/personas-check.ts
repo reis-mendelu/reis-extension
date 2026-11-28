@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { installNodeRuntime } from './lib/nodeRuntime';
 import { isLogin } from './lib/isLogin';
-import { personaStats, personaVerdict, type PersonaRow } from './lib/personaStats';
+import { courseStats, personaStats, personaVerdict, type PersonaRow } from './lib/personaStats';
 
 /**
  * `npm run personas:check` — LOCAL ONLY, never CI (design 2026-11-27 §7).
@@ -10,7 +10,8 @@ import { personaStats, personaVerdict, type PersonaRow } from './lib/personaStat
  * each persona (`personaRequest` → `fetchImpersonation`) and prints one row
  * each. Exits non-zero on an unresolved code, 0 subjects, 0 lectures, 0
  * seminars for a year-1 group, or a subject whose seminars were not narrowed
- * to one group. Run it before shipping a persona change and at each semester
+ * to one group; for Erasmus, on a pinned course IS no longer lists or one
+ * with no lecture or no seminar. Run it before shipping a persona change and at each semester
  * start. Its requests are a first-year's worth per persona, one at a time.
  */
 /** Exits once what was written has drained: a piped table is never cut short. */
@@ -19,7 +20,8 @@ const exitAfterOutput = (code: number) => process.stdout.write('', () => process
 async function main() {
   // Before the login: the persona list is plain data (features/personas.ts
   // imports no fetcher), so a mistyped id costs no browser and no IS request.
-  const { PERSONAS } = await import('@/features/personas');
+  const { PERSONAS, personaById } = await import('@/features/personas');
+  const { EXCHANGE_PROGRAMME } = await import('@/utils/eventAudience');
   // `--detail zf`: every subject's lessons of that persona, to tell a broken
   // group filter from a subject that really meets at several times.
   const detailAt = process.argv.indexOf('--detail');
@@ -47,8 +49,8 @@ async function main() {
 
   for (const p of PERSONAS) {
     if (detail && p.id !== detail) continue;
-    process.stderr.write(`[personas] ${p.id} (${p.shortCode})…\n`);
-    if (!resolvePersona(p, options)) {
+    process.stderr.write(`[personas] ${p.id} (${p.shortCode ?? p.faculty})…\n`);
+    if (p.shortCode && !resolvePersona(p, options)) {
       rows.push({
         id: p.id,
         code: null,
@@ -66,9 +68,16 @@ async function main() {
         return groups;
       });
       const result = await fetchImpersonation({ ...req, periodLabel: period });
+      // Erasmus: each pinned course, whether IS still lists it, and its lessons.
+      const pinned = p.erasmus?.courses;
+      const courses = pinned && {
+        pinned,
+        resolved: (req.courses ?? []).map((c) => c.code),
+        stats: courseStats(result, pinned),
+      };
       if (detail) {
         printDetail(result.schedule);
-        for (const b of result.plan.cz.blocks)
+        for (const b of result.plan?.cz.blocks ?? [])
           for (const g of b.groups)
             process.stdout.write(
               `\nPLAN ${b.title} | ${g.name} | ${g.statusDescription} | min ${g.minCount ?? '-'}/${g.minCredits ?? '-'}\n  ${g.subjects.map((x) => `${x.code}${x.isEnrolled ? '*' : ''}(${x.credits})`).join(' ')}\n`
@@ -80,10 +89,14 @@ async function main() {
         group: req.group,
         groups,
         stats: personaStats(result),
+        ...(courses ? { courses } : {}),
       });
     } catch (e) {
       const error = e instanceof ImpersonationError ? e.code : String(e);
-      rows.push({ id: p.id, code: p.shortCode, group: null, groups, stats: null, error });
+      // Erasmus has no programme code: name its IS programme, so the row reads
+      // as the error it is, not as "unresolved".
+      const code = p.shortCode ?? (p.erasmus ? EXCHANGE_PROGRAMME : null);
+      rows.push({ id: p.id, code, group: null, groups, stats: null, error });
     }
   }
 
@@ -92,7 +105,8 @@ async function main() {
     return {
       persona: r.id,
       code: r.code ?? '—',
-      group: r.group ?? 'all',
+      // Erasmus has no group, also on a row that failed (no courses then).
+      group: personaById(r.id)?.erasmus ? '—' : (r.group ?? 'all'),
       'groups in IS': r.groups.join(',') || '—',
       'plan rows': r.stats?.planRows ?? '—',
       'plan subj': r.stats?.planSubjects ?? '—',
@@ -102,6 +116,9 @@ async function main() {
       'max sem slots': r.stats?.maxSeminarSlots ?? '—',
       'no lessons': r.stats?.subjectsWithoutLessons ?? '—',
       'only in timetable': r.stats?.timetableOnly ?? '—',
+      courses: r.courses
+        ? `${r.courses.resolved.length}/${r.courses.pinned.length}: ${r.courses.stats.map((c) => `${c.code} ${c.lectures}L/${c.seminars}S`).join(', ')}`
+        : '—',
       verdict: fail.length ? `FAIL: ${fail.join('; ')}` : 'ok',
     };
   });
