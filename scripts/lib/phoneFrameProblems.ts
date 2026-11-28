@@ -29,6 +29,8 @@ export interface Facts {
   examSizes: string;
   /** People rows: a small photo, and a row no taller than about two lines of text beside it. */
   peopleSizes: string;
+  /** A date field and its calendar icon: 'together' on one line. */
+  dateField: string;
   /** A topic number and its text inside a label/value cell: 'beside' each other. */
   topics: string;
   /** Each filter label in a one-row form, relative to its control: 'above' when the control sits right under it. */
@@ -62,6 +64,8 @@ export function problems(width: number, f: Facts): string[] {
     out.push(
       'the topic list inside a label/value cell is stacked; its numbers belong beside their text'
     );
+  if (f.dateField !== 'together')
+    out.push('the date field and its calendar icon are on separate lines');
   if (!f.registerVisible)
     out.push('the exam register control is not on screen without scrolling sideways');
   for (const t of f.tables) {

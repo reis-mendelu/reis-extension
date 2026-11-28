@@ -33,7 +33,7 @@ import { problems, type Facts } from './lib/phoneFrameProblems';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const part = (name: string) => readFileSync(resolve(HERE, 'fixtures', name), 'utf8');
-/** The page shell with its table fixtures and icon styles put in (each file short enough to read). */
+/** The page shell with its table fixtures and icon styles put in. */
 const FIXTURE = part('isPhoneFrame.html')
   .replace(
     /<!-- TABLES:[^>]*-->/,
@@ -126,6 +126,13 @@ async function gather(page: Page, styleId: string): Promise<Facts> {
         return Math.abs(n!.getBoundingClientRect().top - t!.getBoundingClientRect().top) < 2
           ? 'beside'
           : 'stacked';
+      })(),
+      dateField: (() => {
+        const f = document.querySelector('#formtight input.hasDatepicker')!.getBoundingClientRect();
+        const i = document
+          .querySelector('#formtight .ui-datepicker-trigger')!
+          .getBoundingClientRect();
+        return i.top < f.bottom && i.bottom > f.top ? 'together' : 'apart';
       })(),
       peopleSizes: (() => {
         const rows = [...document.querySelectorAll('#people tr.reis-person')];

@@ -175,8 +175,8 @@ input, select, textarea, button { font-size: 16px; }
 /* In a tightened table nothing holds a column open that could give: IS's no-wrap pieces may wrap, and a
    text field takes its cell's width instead of its own fixed one (a form keeps its layout, just narrower). */
 .mainpage table.reis-compact .nowrap, .mainpage table.reis-compact td span, .mainpage table.reis-compact th span { white-space: normal !important; }
-.mainpage table.reis-compact input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="hidden"]), .mainpage table.reis-compact select, .mainpage table.reis-compact textarea { width: 100% !important; min-width: 0 !important; max-width: 100%; box-sizing: border-box; }
-.mainpage table.reis-compact input.hasDatepicker { width: calc(100% - 28px) !important; }
+.mainpage table.reis-compact input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="hidden"]):not(.hasDatepicker), .mainpage table.reis-compact select, .mainpage table.reis-compact textarea { width: 100% !important; min-width: 0 !important; max-width: 100%; box-sizing: border-box; }
+.mainpage table.reis-compact input.hasDatepicker { width: calc(100% - 28px) !important; min-width: 0 !important; box-sizing: border-box; }
 /* Footnote marks in restyled tables stay readable (the timetable's "(3)" came out at 10 px). */
 .mainpage table[class*="reis-"] sup, .mainpage table[class*="reis-"] sub { font-size: max(11px, 0.75em) !important; }
 .mainpage table.reis-flow tbody, .mainpage table.reis-flow tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
