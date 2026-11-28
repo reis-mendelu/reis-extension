@@ -6,6 +6,8 @@ import type { SpolkyEventRow } from '../../api/societyPosts';
 import { listSocietyAccounts, type SocietyAccountRow } from '../../api/societyAccounts';
 import { loadSocietyPosts } from './admin/loadSocietyPosts';
 import { logError } from '../../utils/reportError';
+import { clearPersonaCache } from './impersonation/personaCache';
+import { nextImpersonationEpoch } from './impersonation/applyImpersonation';
 
 export type AdminRole = 'association' | 'reis_admin';
 
@@ -173,6 +175,8 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
     return {};
   },
   adminLogout: async () => {
+    // A persona or picker fetch still in flight must not land after this.
+    nextImpersonationEpoch();
     if (get().impersonation) await get().stopImpersonation();
     try {
       await adminAuthClient.auth.signOut();
@@ -193,6 +197,10 @@ export const createAdminSlice: AppSlice<AdminSlice> = (set, get) => ({
       suggestionsUnread: 0,
       suggestionsAnnouncedFor: null,
     });
+    // Every persona, active or not: they are the admin session's (design
+    // 2026-11-27 §3). Last, once adminRole is gone, so a fetch that lands
+    // meanwhile finds no admin and saves nothing after it.
+    await clearPersonaCache().catch((e) => logError('Admin.clearPersonas', e));
   },
   loadAdminSession: async () => {
     const { data } = await adminAuthClient.auth.getSession();

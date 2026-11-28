@@ -1,13 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-const FX = 'src/api/impersonation/__tests__/fixtures/';
-const raw = (n: string) => readFileSync(resolve(process.cwd(), FX + n), 'utf8');
-const noResults = readFileSync(
-  resolve(process.cwd(), 'src/api/__tests__/fixtures/is-rozvrh-no-results.html'),
-  'utf8'
-);
 
 const fetchWithAuth = vi.fn();
 vi.mock('../../client', () => ({
@@ -17,69 +8,15 @@ vi.mock('../../client', () => ({
 
 import { fetchImpersonation } from '../fetchImpersonation';
 import { loadOptions, loadYear1Groups } from '../options';
-import type { ImpersonationSelection } from '../types';
-
-/** Answers each request with the real IS page that request got on 2026-09-26. */
-function route(url: string, init?: RequestInit): string {
-  const body = new URLSearchParams(typeof init?.body === 'string' ? init.body : '');
-  if (url.includes('rozvrhy_view.pl?konf=1;lang=cz')) return raw('rozvrh-index.html');
-  if (url.includes('rozvrhy_view.pl?konf=1;z=')) return raw('rozvrh-range.html');
-  if (url.includes('rozvrhy_view.pl') && !body.has('format')) return raw('rozvrh-criteria.html');
-  if (body.get('format') === 'list') return raw('rozvrh-list-bf-y1.html');
-  if (
-    body.get('format') === 'json' &&
-    body.get('predmet') === '164066' &&
-    body.get('rocnik') === '2'
-  )
-    return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`);
-  // EBC-AZD (162664) behaves like AF/FRRMS/ZF subjects live: nothing under
-  // rocnik=2, a full timetable without the year filter (observed 2026-09-26).
-  if (
-    body.get('format') === 'json' &&
-    body.get('predmet') === '162664' &&
-    body.get('rocnik') === '0'
-  )
-    return raw(`rozvrh-predmet-ft.${body.get('lang')}.json`).replaceAll('EBC-FT', 'EBC-AZD');
-  if (body.get('format') === 'json' && body.get('skupina') === '2')
-    return raw(`rozvrh-bf-y1-g2.${body.get('lang')}.json`);
-  if (body.get('format') === 'json') return noResults;
-  if (url.includes('plany.pl?fakulta=2;lang=cz')) return raw('catalog-periods-pef.html');
-  // An outgoing programme version: IS's own "no forms of study" page.
-  if (url.includes('program=9999') && !url.includes('stud_plan'))
-    return raw('catalog-programme-no-forms.html');
-  if (url.includes('program=1889') && !url.includes('stud_plan'))
-    return raw('catalog-programme-bf-801.auth.html');
-  if (url.includes('stud_plan=12490') && url.includes('lang=en'))
-    return raw('catalog-plan-bf-801.en.html');
-  if (url.includes('stud_plan=12490')) return raw('catalog-plan-bf-801.cz.html');
-  throw new Error(`unrouted ${url}`);
-}
+import { route, resetShapes, SEPT, bfSelection } from './isRoute';
 
 beforeEach(() => {
+  resetShapes();
   fetchWithAuth.mockReset();
   fetchWithAuth.mockImplementation(
     async (url: string, init?: RequestInit) => new Response(route(url, init))
   );
 });
-
-const SEPT = new Date(2026, 8, 26);
-
-async function bfSelection(year: number): Promise<ImpersonationSelection> {
-  const bf = (await loadOptions(SEPT))
-    .find((f) => f.faculty === 'PEF')!
-    .programmes.find((p) => p.shortCode === 'B-F')!;
-  return {
-    variants: bf.variants,
-    programId: bf.programId,
-    shortCode: bf.shortCode,
-    name: bf.name,
-    faculty: 'PEF',
-    year,
-    group: year === 1 ? 2 : null,
-    rozvrh: bf.rozvrh,
-    periodLabel: 'ZS 2026/2027',
-  };
-}
 
 describe('loadOptions', () => {
   it('lists prezenční programmes of the current rozvrhy, B-/N- only', async () => {
@@ -164,8 +101,10 @@ describe('fetchImpersonation', () => {
     const perSubject = fetchWithAuth.mock.calls
       .map(([, init]) => new URLSearchParams(String(init?.body ?? '')))
       .filter((b) => b.get('format') === 'json' && b.get('predmet') !== '0');
-    const kom = perSubject.filter((b) => b.get('lang') === 'cz' && b.get('rocnik') === '1');
-    expect(kom.length).toBe(1);
+    const asked = perSubject.filter((b) => b.get('lang') === 'cz' && b.get('rocnik') === '1');
+    // EBC-KOM (158216), missing; and EBA-AJ1 (158903), seminars only, asked for
+    // lectures it turns out not to have.
+    expect(asked.map((b) => b.get('predmet')).sort()).toEqual(['158216', '158903']);
   });
 
   it('uses the programme version that has a plan for the intake, and says which', async () => {

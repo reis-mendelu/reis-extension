@@ -804,6 +804,7 @@ export type AppState = ScheduleSlice &
   import('./slices/createOsmTileAccessSlice').OsmTileAccessSlice &
   import('./slices/createReportSlice').ReportSlice &
   import('./slices/createImpersonationSlice').ImpersonationSlice &
+  import('./slices/createPersonaSlice').PersonaSlice &
   DemoSlice;
 
 export type AppSlice<T> = StateCreator<AppState, [], [], T>;

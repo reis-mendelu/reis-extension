@@ -55,6 +55,19 @@ export interface ImpersonationSelection {
   variants?: ProgrammeVariant[];
   /** The period this was fetched for, e.g. 'ZS 2026/2027'. A mismatch at boot ends it. */
   periodLabel: string;
+  /**
+   * An exchange student: the persona's programme is Z-EXC and `isErasmus` is
+   * true (store/overlay/identityOverlay). Today's picker never sets it; the
+   * Erasmus persona will (design 2026-11-27, step C). Absent = not Erasmus,
+   * which is also what a selection saved by an older build reads as.
+   */
+  erasmus?: boolean;
+  /**
+   * Set when this came from the one-tap persona list (`features/personas.ts`):
+   * which one, so the list can check it and the banner can name it. Absent for
+   * a one-off from the picker, and in a selection an older build saved.
+   */
+  personaId?: string;
 }
 
 export interface ImpersonationResult {
@@ -67,7 +80,14 @@ export interface ImpersonationResult {
 }
 
 export type ImpersonationErrorCode =
-  'options' | 'timetable' | 'noPlan' | 'noSemester' | 'expired' | 'notAdmin';
+  | 'options'
+  | 'timetable'
+  | 'noPlan'
+  | 'noSemester'
+  | 'expired'
+  | 'notAdmin'
+  /** IndexedDB refused to save the view: nothing was applied. */
+  | 'storage';
 
 export class ImpersonationError extends Error {
   readonly code: ImpersonationErrorCode;

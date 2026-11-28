@@ -56,6 +56,7 @@ import { createDemoSlice } from './slices/createDemoSlice';
 import { overlayGuard } from './overlay/overlayGuard';
 import { logError } from '../utils/reportError';
 import { createImpersonationSlice } from './slices/createImpersonationSlice';
+import { createPersonaSlice } from './slices/createPersonaSlice';
 import { createReportSlice } from './slices/createReportSlice';
 import { createRouteSlice } from './slices/createRouteSlice';
 import { createOsmTileAccessSlice } from './slices/createOsmTileAccessSlice';
@@ -130,6 +131,7 @@ export const useAppStore = create<AppState>()(
     ...createOsmTileAccessSlice(...a),
     ...createDemoSlice(...a),
     ...createImpersonationSlice(...a),
+    ...createPersonaSlice(...a),
     ...createReportSlice(...a),
   }))
 );

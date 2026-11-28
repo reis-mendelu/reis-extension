@@ -21,6 +21,22 @@ export const OVERLAY_KEYS = [
   'odevzdavarny',
 ] as const satisfies readonly (keyof AppState)[];
 
+/**
+ * Who the student is (design 2026-11-27 §2): a persona is the whole student,
+ * so its faculty, programme and Erasmus status replace the admin's in memory
+ * for every reader. The real `loadContext` keeps running and keeps writing
+ * `viewer_audience` to IndexedDB; this only keeps it from putting the admin
+ * back in memory. Context ids (studiumId, obdobiId, …) are NOT here: they
+ * address IS, and IS is still the admin's session.
+ */
+export const IDENTITY_OVERLAY_KEYS = [
+  'userFaculty',
+  'userProgramme',
+  'isErasmus',
+] as const satisfies readonly (keyof AppState)[];
+
+const GUARDED_KEYS = [...OVERLAY_KEYS, ...IDENTITY_OVERLAY_KEYS];
+
 const OVERLAY_WRITE = Symbol('overlayWrite');
 
 /** Marks a partial as the impersonation slice's own write. */
@@ -48,7 +64,7 @@ export function overlayGuard(
       const clean: Partialish = { ...next };
       delete clean[OVERLAY_WRITE];
       const active = (get() as { impersonation?: unknown }).impersonation != null;
-      if (active && !marked) for (const k of OVERLAY_KEYS) delete clean[k];
+      if (active && !marked) for (const k of GUARDED_KEYS) delete clean[k];
       return set(clean as never, replace as never);
     }) as typeof set;
     api.setState = guarded;

@@ -29,6 +29,7 @@
     "typecheck:nuia": "tsc -p tsconfig.app.json --noUncheckedIndexedAccess --noEmit",
     "nuia:gate": "node scripts/nuia-gate.mjs",
     "scrape:real": "node scripts/run-bundled.mjs scripts/scrape-real-data.ts",
+    "personas:check": "node scripts/personas-check.mjs",
     "snapshots": "node scripts/snapshots/start.mjs",
     "sanitise:snapshot": "tsx --tsconfig tsconfig.app.json scripts/sanitise-snapshot.mjs",
     "dev:web": "vite --config vite.web.config.ts",

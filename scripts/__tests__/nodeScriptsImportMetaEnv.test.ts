@@ -65,7 +65,11 @@ describe('scripts that run from an esbuild bundle', () => {
     expect(bundledRun).toContainEqual(['scrape:real', 'scripts/scrape-real-data.ts']);
   });
 
-  it.each([...bundledRun, ['snapshots', 'scripts/snapshots/run.ts']])(
+  it.each([
+    ...bundledRun,
+    ['snapshots', 'scripts/snapshots/run.ts'],
+    ['personas:check', 'scripts/personas-check.ts'],
+  ])(
     '%s bundles, and no import.meta.env is left in the bundle',
     async (_script, entry) => {
       const text = await bundleText(entry, undefined);
