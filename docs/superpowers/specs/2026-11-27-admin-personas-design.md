@@ -154,7 +154,8 @@ credentials never leave the laptop). Run before shipping and at each semester st
   reads IndexedDB. A failed save applies nothing and says so ("storage" on the row or picker).
 - **reis_admin only, also mid-fetch:** a fetch that lands after an admin logout saves and applies
   nothing (the logout clears the cache last, once the role is gone).
-- **Background refresh** (> 24 h) runs on a switch only, never at boot, reuses the cached
+- **Background refresh** (> 24 h) runs on a switch and for the persona restored at boot (the
+  one being looked at; no other persona is fetched at boot), reuses the cached
   selection (no `loadOptions`: a POST per faculty) and re-applies only under the token of the
   latest switch to that persona (a re-tap keeps it; Já or another persona ends it), without
   touching the picker's drawer or spinner. Once per persona at a time. A failed refresh keeps the

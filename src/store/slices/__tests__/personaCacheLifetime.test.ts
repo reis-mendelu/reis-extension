@@ -26,9 +26,10 @@ vi.mock('../../../utils/userParams', async (orig) => ({
 import { useAppStore } from '../../useAppStore';
 import { overlayWrite } from '../../overlay/overlayGuard';
 import { IndexedDBService } from '../../../services/storage';
+import type { ImpersonationSelection } from '../../../api/impersonation/types';
 import * as setup from './personaSliceSetup';
 
-const { s, codes } = setup;
+const { s, codes, resultFor } = setup;
 
 /** When the persona cache is kept and when it goes (design §3). */
 beforeEach(() => setup.resetPersonaStore(m));
@@ -70,5 +71,27 @@ describe('persona cache lifetime', () => {
     useAppStore.setState(overlayWrite({ adminRole: null }));
     await s().restoreImpersonation();
     expect(await IndexedDBService.get('meta', 'persona:finance')).toBeUndefined();
+  });
+
+  it('a persona restored at boot older than 24 h refreshes once in the background', async () => {
+    await s().switchToPersona('finance');
+    useAppStore.setState(overlayWrite({ impersonation: null }));
+    vi.setSystemTime(new Date(2026, 8, 28));
+    m.fetchImpersonation.mockClear();
+    m.fetchImpersonation.mockImplementation(async (sel: ImpersonationSelection) =>
+      resultFor(sel, 'B-F-2')
+    );
+    await s().restoreImpersonation();
+    await vi.waitFor(() => expect(codes()).toEqual(['B-F-2']));
+    expect(m.fetchImpersonation).toHaveBeenCalledOnce();
+  });
+
+  it('a fresh persona restored at boot asks IS nothing', async () => {
+    await s().switchToPersona('finance');
+    useAppStore.setState(overlayWrite({ impersonation: null }));
+    m.fetchImpersonation.mockClear();
+    await s().restoreImpersonation();
+    expect(s().impersonation?.selection.personaId).toBe('finance');
+    expect(m.fetchImpersonation).not.toHaveBeenCalled();
   });
 });

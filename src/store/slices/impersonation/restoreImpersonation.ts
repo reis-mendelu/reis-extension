@@ -42,7 +42,10 @@ export async function restoreImpersonation(set: Set, get: Get): Promise<void> {
   }
   const role = get().adminRole;
   if (role === 'reis_admin') {
-    await applyImpersonation(set, get, saved, { epoch }).catch(() => {});
+    const applied = await applyImpersonation(set, get, saved, { epoch }).catch(() => false);
+    // Decision #11 holds after a restart too: a persona older than a day is
+    // refetched in the background (the one being looked at, not a prefetch).
+    if (applied) get().refreshPersonaIfStale(saved, epoch);
     return;
   }
   if (role !== null || !(await hasAdminSession())) return drop();

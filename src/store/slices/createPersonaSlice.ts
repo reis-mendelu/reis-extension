@@ -26,6 +26,8 @@ export interface PersonaSlice {
   switchToPersona: (id: PersonaId) => Promise<boolean>;
   /** "Já" while nothing is applied yet: the fetch in flight is cached, never applied. */
   cancelPersonaSwitch: () => void;
+  /** Boot: the restored persona, refreshed in the background if older than 24 h. */
+  refreshPersonaIfStale: (active: ActiveImpersonation, epoch: number) => void;
 }
 
 /** A cached persona older than this refreshes in the background (decision #11). */
@@ -147,15 +149,24 @@ export const createPersonaSlice: AppSlice<PersonaSlice> = (set, get) => {
         const result = await fetchImpersonation(selection);
         const active = { selection: { ...selection, ...result.resolved }, result };
         const kept = await keep(id, active);
-        ownRow(id, epoch, null);
         // Já or another persona meanwhile: cached for next time, not applied.
-        return kept && (await applyImpersonation(set, get, active, { epoch }));
+        // The row stays this request's until the apply is done, so a failed
+        // save still reaches it.
+        const applied = kept && (await applyImpersonation(set, get, active, { epoch }));
+        ownRow(id, epoch, null);
+        return applied;
       } catch (e) {
         logError('Persona.switch', e, { persona: id });
         // A cancelled request leaves no error on its row either.
         ownRow(id, epoch, isCurrentImpersonationEpoch(epoch) ? codeOf(e) : null);
         return false;
       }
+    },
+
+    refreshPersonaIfStale: (active, epoch) => {
+      const id = personaById(active.selection.personaId)?.id;
+      if (!id || refreshing.has(id) || Date.now() - active.result.fetchedAt <= STALE_MS) return;
+      void refresh(id, active.selection, epoch);
     },
 
     cancelPersonaSwitch: () => {

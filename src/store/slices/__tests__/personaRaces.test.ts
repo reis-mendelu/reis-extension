@@ -207,4 +207,19 @@ describe('persona races (review 2026-11-27)', () => {
     expect(s().impersonation?.selection.personaId).toBe('finance');
     expect(codes()).toEqual(['B-F-1']);
   });
+
+  it('an uncached switch whose save fails says so on its row', async () => {
+    const set = IndexedDBService.set.bind(IndexedDBService);
+    const spy = vi
+      .spyOn(IndexedDBService, 'set')
+      .mockImplementation(async (store, key, value) =>
+        key === 'impersonation'
+          ? Promise.reject(new Error('quota'))
+          : set(store, key, value as never)
+      );
+    expect(await s().switchToPersona('finance')).toBe(false);
+    expect(s().personaRows.finance).toBe('storage');
+    expect(s().impersonation).toBeNull();
+    spy.mockRestore();
+  });
 });
