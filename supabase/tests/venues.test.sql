@@ -16,6 +16,17 @@ begin
   end if;
 end $$;
 
+-- 20261109160000 seeds design lab's espresso bar, under a society that is hidden
+do $$
+begin
+  if not exists (
+    select 1 from public.venues v join public.societies s on s.id = v.association_id
+    where v.id = 'designlab' and v.is_active and not s.is_active and v.menu = '[]'::jsonb
+  ) then
+    raise exception 'design lab was not seeded as a venue of a hidden society';
+  end if;
+end $$;
+
 -- a student sees only active venues
 do $$
 declare n int; t text;
