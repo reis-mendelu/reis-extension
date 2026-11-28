@@ -235,7 +235,7 @@ export const FLOWS: Flow[] = [
       ],
       [
         'Project data line opened',
-        'you tap the "Data pro projekt" line under an open odevzdávárna of EBC-VWA or EBC-PJ (shown only to students of Otevřená informatika and Aplikovaná informatika), once per app session; stored as one row per install per day',
+        'you tap the "Data pro projekt" line above the open odevzdávárny of any subject (shown only to students of Otevřená informatika and Aplikovaná informatika), once per app session; stored as one row per install per day',
         'the random install identifier, the school and the fixed `project_data_opened` label. We cannot see which subject or box, and nothing about what you do with the data',
       ],
     ],
