@@ -8,6 +8,10 @@ import { useLongPress } from '../../../../hooks/ui/useLongPress';
 const AVATAR =
   'flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-base-200 font-display text-base font-bold text-[var(--tone-primary)]';
 
+function Initials({ name }: { name: string }) {
+  return name ? <>{personInitials(name)}</> : <User size={18} />;
+}
+
 /**
  * Who the Profile tab belongs to: the student's own photo, name and ID, in a
  * full-width block under the header.
@@ -18,6 +22,7 @@ export function ProfileIdentity() {
   const studentId = useAppStore((s) => s.studentId);
   const pushSheet = useAppStore((s) => s.pushSheet);
   const openSocietyAdmin = useAppStore((s) => s.openSocietyAdmin);
+  const isReisAdmin = useAppStore((s) => s.adminRole === 'reis_admin');
   // The hidden door into the admin console: hold your name (spec 2026-10-08).
   const hold = useLongPress(openSocietyAdmin);
   // `studentId` is IS's "Identifikační číslo uživatele", the same id space
@@ -26,28 +31,52 @@ export function ProfileIdentity() {
   const photo = usePersonPhoto(studentId);
 
   const name = fullName ?? '';
+  const face = (alt: string) =>
+    photo ? <img src={photo} alt={alt} className="h-full w-full object-cover" /> : null;
+
+  const avatar = () => {
+    // A reIS admin's avatar, photo or initials, opens "Zobrazit jako" on the
+    // sheet stack (decision #16, 2026-11-28). It costs them the lightbox on
+    // their own face: the persona list is what they come to the avatar for.
+    if (isReisAdmin)
+      return (
+        <button
+          type="button"
+          aria-label={t('impersonation.personas.title')}
+          onClick={() => pushSheet({ kind: 'personas' })}
+          className={AVATAR}
+        >
+          {face('') ?? <Initials name={name} />}
+        </button>
+      );
+    // Tapping the photo opens the same lightbox a classmate's photo does,
+    // through the sheet stack, so Android's back closes it and leaves this tab
+    // as it was. A button only once there is a photo — PersonSheet's rule:
+    // initials blown up to full screen are nothing to look at. Not even a
+    // disabled one: a screen reader still announces that. Initials stay as the
+    // fallback while it loads or when there is no picture.
+    if (photo && studentId)
+      return (
+        <button
+          type="button"
+          aria-label={t('mobile.sheet.enlargePhoto')}
+          onClick={() => pushSheet({ kind: 'personPhoto', personId: studentId, name })}
+          className={AVATAR}
+        >
+          {face(name)}
+        </button>
+      );
+    return (
+      <div className={AVATAR}>
+        <Initials name={name} />
+      </div>
+    );
+  };
 
   return (
     <div className="flex-shrink-0">
       <div className="flex items-center gap-3 px-4 pb-3 pt-1">
-        {/* Tapping the photo opens the same lightbox a classmate's photo does,
-            through the sheet stack, so Android's back closes it and leaves this
-            tab as it was. A button only once there is a photo — PersonSheet's
-            rule: initials blown up to full screen are nothing to look at. Not
-            even a disabled one: a screen reader still announces that. Initials
-            stay as the fallback while it loads or when there is no picture. */}
-        {photo && studentId ? (
-          <button
-            type="button"
-            aria-label={t('mobile.sheet.enlargePhoto')}
-            onClick={() => pushSheet({ kind: 'personPhoto', personId: studentId, name })}
-            className={AVATAR}
-          >
-            <img src={photo} alt={name} className="h-full w-full object-cover" />
-          </button>
-        ) : (
-          <div className={AVATAR}>{name ? personInitials(name) : <User size={18} />}</div>
-        )}
+        {avatar()}
         {/* No close button: this is a tab, not a sheet — the nav is how you
             leave.
 

@@ -67,23 +67,13 @@ describe('ProfilePopup — view as (personas)', () => {
     expect(screen.queryByRole('radio', { name: /Another programme/ })).toBeNull();
   });
 
-  it('for a reis_admin, lists the personas inline, one tap from the avatar', () => {
-    const go = vi.fn(async () => true);
-    useAppStore.setState({ adminRole: 'reis_admin', impersonation: null, switchToPersona: go });
+  // Moved to the avatar's own dialog (decision #16, 2026-11-28):
+  // BottomActions.personas.test.tsx.
+  it('is absent for a reis_admin too: their avatar opens the personas first', () => {
+    useAppStore.setState({ adminRole: 'reis_admin', impersonation: null });
     render(<ProfilePopup isOpen />);
-    expect(screen.getByRole('radiogroup', { name: 'View as' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('radio', { name: /Finance · B-F/ }));
-    expect(go).toHaveBeenCalledWith('finance');
-  });
-
-  it('"Another programme…" opens the picker and closes the popup', () => {
-    const open = vi.fn();
-    useAppStore.setState({ adminRole: 'reis_admin', openImpersonationPicker: open });
-    const onClose = vi.fn();
-    render(<ProfilePopup isOpen onClose={onClose} />);
-    fireEvent.click(screen.getByRole('radio', { name: /Another programme/ }));
-    expect(open).toHaveBeenCalledOnce();
-    expect(onClose).toHaveBeenCalled();
+    expect(screen.queryByRole('radiogroup', { name: 'View as' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: /Another programme/ })).toBeNull();
   });
 });
 

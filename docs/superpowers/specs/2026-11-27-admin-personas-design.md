@@ -29,6 +29,7 @@ student's identity changes what reIS shows, not only in the plan and timetable.
 | 13 | Indicator | A slim, non-dismissible banner: persona name + "Já". |
 | 14 | Who | `reis_admin` only (Dominik and Tonda). |
 | 15 | Data must work | Every persona is checked live against IS before shipping and at each semester start (see *Persona check*). |
+| 16 | Where the avatar leads (2026-11-28) | The avatar opens the persona dialog; the profile is one row down. Students see no change. |
 
 Usage numbers behind #1 (prod `daily_active_usage`, distinct installs, last 14 days, 2026-11-27):
 B-EM 772, B-F 282, B-MOS 216, B-METS 216, B-OI 181, B-RER 129, … AF B-ZIN 85, LDF B-SNBD 49,
@@ -118,11 +119,22 @@ empty state. One component, used on both trees.
 
 ### 6. UI — both trees
 
-- **Desktop:** the avatar's `ProfilePopup` gets a "Zobrazit jako" section: "Já" (checked when no
+- **Desktop (decision #16, 2026-11-28):** for a reIS admin the avatar opens "Zobrazit jako" as
+  its own dialog (`Sidebar/PersonaPopup.tsx`, the popup's position): "Já" (checked when no
   persona), the eight personas (label, faculty chip, a check on the active one, a spinner while
-  fetching, an error line on failure), then "Jiný obor…" which opens today's drawer.
-- **Phone/iPad:** the same list in `ProfileScreen` (and the sheet that opens from it). Verify at
-  tablet width too.
+  fetching, an error line on failure), "Jiný obor…" which opens today's drawer, a divider, then
+  "Profil a nastavení ›", which swaps in today's `ProfilePopup` (focus moves into it). A pick that
+  takes effect (a persona applied, or "Já") closes the dialog, and so do Esc (focus back on the
+  avatar) and a click outside. A failed switch keeps it open, so the row can show its error.
+  Students get the popup as before.
+- **Phone/iPad (decision #16, 2026-11-28):** for a reIS admin the avatar at the top of Profil
+  (photo or initials) pushes a "Zobrazit jako" sheet (`mobile/sheets/PersonasSheet.tsx`, kind
+  `personas`, its own scroller), so Android back closes it. "Jiný obor…" puts today's
+  `impersonation` sheet in its place. A pick that takes effect closes the sheet, but only while it
+  is still the top sheet. The admin loses the photo lightbox on their own avatar. A student's
+  avatar keeps it. Holding the name still opens the admin console. Verify at tablet width too.
+- *Superseded (step B, 2026-11-27):* the list was a section inside `ProfilePopup` and inline on
+  `ProfileScreen`. Neither carries it any more.
 - **Banner:** today's `ImpersonationBanner`, labelled with the persona ("Erasmus · PEF") and a "Já"
   button. Non-dismissible.
 - One shared list component (`PersonaList`) under `src/components/Impersonation/`, rendered by both
@@ -141,6 +153,7 @@ credentials never leave the laptop). Run before shipping and at each semester st
 - **Phone:** the list sits on Profil itself (reIS admins only), one tap from the avatar, rather
   than behind a row; a student's Profil is unchanged. "Jiný obor…" pushes today's picker sheet.
   **Desktop:** inline in the avatar popup's admin section; "Jiný obor…" opens the drawer.
+  *Placement superseded by decision #16 (2026-11-28): see §6.*
 - **The banner** names a persona the way the list does ("Finance · B-F") with "Já" to exit; a
   one-off from the picker keeps today's wording and "Ukončit". The list checks "Jiný obor…" and
   names its code while a one-off is active.
@@ -234,7 +247,8 @@ credentials never leave the laptop). Run before shipping and at each semester st
   the current identity.
 - `PersonaUnavailable` replaces the empty state on each listed view.
 - Kept-real `getUserParams` readers pinned in `src/test/guards/` with reasons.
-- Tree parity: the list on `ProfilePopup` and `ProfileScreen`; `verify-ui` at 320/390/430 and tablet
+- Tree parity: the list on `Sidebar/PersonaPopup.tsx` and `mobile/sheets/PersonasSheet.tsx`, both opened
+  from the avatar (decision #16); `verify-ui` at 320/390/430 and tablet
   width, both themes, before/after PNGs to Dominik.
 - Live: `npm run personas:check` green, then each persona opened on the dev webapp and the iPad.
 

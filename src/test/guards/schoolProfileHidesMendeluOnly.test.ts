@@ -36,7 +36,7 @@ describe('school profiles in the build', () => {
       'impersonation',
       'impersonation',
     ],
-    'components/Sidebar/BottomActions.tsx': ['teamsOutlook'],
+    'components/Sidebar/BottomActions.tsx': ['teamsOutlook', 'adminConsole'],
     // 'reports' twice: the report form for MENDELU, and an e-mail to reIS
     // where a school has no reports (components/Sidebar/Profile/ContactLink.tsx).
     // Extension only, like every gate here: the phone app is MENDELU's alone.

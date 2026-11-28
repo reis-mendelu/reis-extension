@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, within, act } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { overlayWrite } from '../../../store/overlay/overlayGuard';
 import { PersonaList } from '../PersonaList';
@@ -135,5 +135,42 @@ describe('PersonaList', () => {
     fireEvent.click(screen.getByRole('radio', { name: /Já/ }));
     expect(cancel).toHaveBeenCalledOnce();
     expect(stop).toHaveBeenCalledOnce();
+  });
+
+  // onDone closes the surface around the list (decision #16, 2026-11-28).
+  it('Já with a persona applied calls onDone only once the exit is done', async () => {
+    let exit!: () => void;
+    const stop = vi.fn(() => new Promise<void>((r) => (exit = r)));
+    const onDone = vi.fn();
+    useAppStore.setState(
+      overlayWrite({ impersonation: active('finance'), stopImpersonation: stop })
+    );
+    render(<PersonaList variant="compact" onOther={() => {}} onDone={onDone} />);
+    fireEvent.click(screen.getByRole('radio', { name: /Já/ }));
+    expect(onDone).not.toHaveBeenCalled();
+    await act(async () => exit());
+    expect(onDone).toHaveBeenCalledOnce();
+  });
+
+  it('a switch that lands after the list closed calls no onDone', async () => {
+    let land!: (ok: boolean) => void;
+    const go = vi.fn(() => new Promise<boolean>((r) => (land = r)));
+    const onDone = vi.fn();
+    useAppStore.setState(overlayWrite({ switchToPersona: go }));
+    const { unmount } = render(<PersonaList variant="touch" onOther={() => {}} onDone={onDone} />);
+    fireEvent.click(screen.getByRole('radio', { name: /IT · B-OI/ }));
+    unmount();
+    await act(async () => land(true));
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
+  it('a failed switch calls no onDone, so the row can say why', async () => {
+    const onDone = vi.fn();
+    useAppStore.setState(overlayWrite({ switchToPersona: vi.fn(async () => false) }));
+    render(<PersonaList variant="touch" onOther={() => {}} onDone={onDone} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('radio', { name: /IT · B-OI/ }));
+    });
+    expect(onDone).not.toHaveBeenCalled();
   });
 });

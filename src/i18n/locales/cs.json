@@ -1826,7 +1826,8 @@
     "personas": {
       "title": "Zobrazit jako",
       "me": "Já",
-      "other": "Jiný obor…"
+      "other": "Jiný obor…",
+      "profile": "Profil a nastavení"
     }
   },
   "odevzdavarny": {

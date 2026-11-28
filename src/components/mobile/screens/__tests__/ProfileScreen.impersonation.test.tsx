@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { ProfileScreen } from '../ProfileScreen';
 import { useAppStore } from '../../../../store/useAppStore';
 import { overlayWrite } from '../../../../store/overlay/overlayGuard';
@@ -25,21 +25,12 @@ describe('ProfileScreen — view as (personas)', () => {
     expect(screen.queryByText('Jiný obor…')).toBeNull();
   });
 
-  it('for a reis_admin, lists the personas on Profil and switches in one tap', () => {
-    const go = vi.fn(async () => true);
-    useAppStore.setState({ adminRole: 'reis_admin', switchToPersona: go });
+  // A reIS admin's list moved to the avatar's sheet (decision #16,
+  // 2026-11-28): ProfileScreen.personas.test.tsx and PersonasSheet.test.tsx.
+  it('is not inline for a reis_admin either', () => {
+    useAppStore.setState({ adminRole: 'reis_admin' });
     render(<ProfileScreen />);
-    expect(screen.getByRole('radio', { name: /Já/ }).getAttribute('aria-checked')).toBe('true');
-    fireEvent.click(screen.getByRole('radio', { name: /Správa zeleně · B-RASZ/ }));
-    expect(go).toHaveBeenCalledWith('zf');
-  });
-
-  it('"Jiný obor…" opens the picker sheet and asks for the options', () => {
-    const load = vi.fn(async () => {});
-    useAppStore.setState({ adminRole: 'reis_admin', loadImpersonationOptions: load });
-    render(<ProfileScreen />);
-    fireEvent.click(screen.getByRole('radio', { name: /Jiný obor…/ }));
-    expect(load).toHaveBeenCalledOnce();
-    expect(useAppStore.getState().mobileSheets.map((s) => s.kind)).toContain('impersonation');
+    expect(screen.queryByRole('radiogroup', { name: 'Zobrazit jako' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Zobrazit jako' })).toBeInTheDocument();
   });
 });
