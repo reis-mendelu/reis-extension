@@ -37,9 +37,24 @@ export interface ProgrammeOption extends ProgrammeVariant {
   variants: ProgrammeVariant[];
 }
 
+/** One course of a rozvrh's course select: "EBA-MAR - Marketing 1 v AJ". */
+export interface CourseOption {
+  code: string;
+  name: string;
+  /** This period's IS subject id, what the timetable's `predmet` takes. */
+  predmetId: string;
+  rozvrh: RozvrhRef;
+}
+
 export interface FacultyOptions {
   faculty: string;
   programmes: ProgrammeOption[];
+  /**
+   * Every course of the faculty's prezenční timetables, kept from the same
+   * criteria forms the programmes come from: the Erasmus persona resolves its
+   * pinned codes here (design 2026-11-27 §4). Absent in older test data.
+   */
+  courses?: CourseOption[];
 }
 
 export interface ImpersonationSelection {
@@ -58,10 +73,13 @@ export interface ImpersonationSelection {
   /**
    * An exchange student: the persona's programme is Z-EXC and `isErasmus` is
    * true (store/overlay/identityOverlay). Today's picker never sets it; the
-   * Erasmus persona will (design 2026-11-27, step C). Absent = not Erasmus,
-   * which is also what a selection saved by an older build reads as.
+   * Erasmus persona does (design 2026-11-27, step C). Absent = not Erasmus,
+   * which is also what a selection saved by an older build reads as. Set, the
+   * fetch asks for `courses` instead of a plan (fetchExchange).
    */
   erasmus?: boolean;
+  /** Erasmus only: the pinned courses that resolved, with this period's ids. */
+  courses?: { code: string; predmetId: string }[];
   /**
    * Set when this came from the one-tap persona list (`features/personas.ts`):
    * which one, so the list can check it and the banner can name it. Absent for
@@ -73,7 +91,8 @@ export interface ImpersonationSelection {
 export interface ImpersonationResult {
   /** The programme version the plan and timetable came from. */
   resolved: ProgrammeVariant;
-  plan: DualLanguageStudyPlan;
+  /** Null for the Erasmus persona: IS's catalogue has no plan for Z-EXC. */
+  plan: DualLanguageStudyPlan | null;
   schedule: BlockLesson[];
   subjects: SubjectsData;
   fetchedAt: number;

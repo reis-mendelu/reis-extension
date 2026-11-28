@@ -7,6 +7,7 @@ import { failRateCodes } from './failRateCodes';
 import { saveImpersonation } from './impersonationStorage';
 import { logError } from '../../../utils/reportError';
 import { ImpersonationError } from '../../../api/impersonation/types';
+import { personaById } from '../../../features/personas';
 
 type Set = (partial: Partial<AppState>) => void;
 type Get = () => AppState;
@@ -49,6 +50,9 @@ export async function applyImpersonation(
       ...(opts.background ? {} : { impersonationStarting: false, impersonationPickerOpen: false }),
     })
   );
+  // The Erasmus persona's English, in memory only; any other view gives the
+  // admin's own language back (design 2026-11-27 §2 "Language").
+  await get().setPersonaLanguage(personaById(active.selection.personaId)?.language ?? null);
   void get()
     .fetchSuccessRateBatch(failRateCodes(active.result))
     .catch(() => {});

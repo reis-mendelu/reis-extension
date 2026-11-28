@@ -70,6 +70,22 @@ export function parseCriteria(doc: Document): { programmes: CriteriaProgramme[];
 }
 
 /**
+ * The criteria form's course select: "EBA-MAR - Marketing 1 v AJ" by its
+ * `predmet` value. New next to `parseCriteria` rather than inside it, so the
+ * programme parsing every persona relies on is untouched.
+ */
+export function parseCourses(doc: Document): { code: string; name: string; predmetId: string }[] {
+  const out: { code: string; name: string; predmetId: string }[] = [];
+  for (const o of Array.from(doc.querySelectorAll('select[name="predmet"] option'))) {
+    const predmetId = o.getAttribute('value') ?? '';
+    const m = /^(\S+) - (.+)$/.exec(txt(o));
+    if (!predmetId || predmetId === '0' || !m?.[1] || !m[2]) continue;
+    out.push({ code: m[1], name: m[2], predmetId });
+  }
+  return out;
+}
+
+/**
  * Study-group numbers of year `year`, from the `format=list` table's Omezení
  * column (the JSON has no group field). Located by header text, as reis-scraper
  * does: IS drops the column on timetables without groups. "1b-f2" → 2.

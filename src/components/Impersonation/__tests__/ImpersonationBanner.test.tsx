@@ -68,4 +68,16 @@ describe('ImpersonationBanner', () => {
     render(<ImpersonationBanner variant="row" />);
     expect(screen.getByRole('status').textContent).toContain('Správa zeleně · B-RASZ');
   });
+
+  it('names Erasmus by its faculty, in the English it switched to', () => {
+    const erasmus = {
+      ...active,
+      selection: { ...active.selection, shortCode: 'Z-EXC', personaId: 'erasmus', erasmus: true },
+    };
+    useAppStore.setState(overlayWrite({ impersonation: erasmus, language: 'en' as const }));
+    render(<ImpersonationBanner variant="row" />);
+    const text = screen.getByRole('status').textContent;
+    expect(text).toContain('Erasmus · PEF');
+    expect(text).not.toContain('null');
+  });
 });

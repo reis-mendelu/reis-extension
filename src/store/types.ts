@@ -199,8 +199,15 @@ export interface ThemeSlice {
 export interface I18nSlice {
   language: Language;
   isLanguageLoading: boolean;
+  /**
+   * The active persona's language (the Erasmus persona's English), held in
+   * memory only and never saved. Null = the student's own saved language.
+   */
+  personaLanguage: Language | null;
   setLanguage: (lang: Language) => Promise<void>;
   loadLanguage: () => Promise<void>;
+  /** Set or clear the persona's language; the impersonation apply and exit call it. */
+  setPersonaLanguage: (lang: Language | null) => Promise<void>;
 }
 
 export interface SuccessRateSlice {

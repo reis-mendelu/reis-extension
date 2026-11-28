@@ -160,6 +160,8 @@ export const createImpersonationSlice: AppSlice<ImpersonationSlice> = (set, get)
           ...(own ?? { userFaculty: null, userProgramme: null, isErasmus: false }),
         })
       );
+      // The admin's own language, from disk: a persona's was never saved.
+      await get().setPersonaLanguage(null);
       const s = get();
       await Promise.all([
         s.loadContext(),

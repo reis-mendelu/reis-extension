@@ -3,7 +3,7 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { useAppStore } from '../../../store/useAppStore';
 import { overlayWrite } from '../../../store/overlay/overlayGuard';
 import { PersonaList } from '../PersonaList';
-import { PERSONAS } from '../../../features/personas';
+import { PERSONAS, personaName } from '../../../features/personas';
 
 const active = (personaId?: string) => ({
   selection: {
@@ -39,14 +39,19 @@ beforeEach(() =>
 );
 
 describe('PersonaList', () => {
-  it('lists Já, the seven personas, then Jiný obor…, with Já checked by default', () => {
+  it('lists Já, the eight personas, then Jiný obor…, with Já checked by default', () => {
     render(<PersonaList variant="compact" onOther={() => {}} />);
     const labels = radios().map((r) => r.textContent);
     expect(labels[0]).toContain('Já');
-    PERSONAS.forEach((p, i) => expect(labels[i + 1]).toContain(`· ${p.shortCode}${p.faculty}`));
+    PERSONAS.forEach((p, i) =>
+      expect(labels[i + 1]).toContain(`${personaName(p, 'cz')}${p.faculty}`)
+    );
     expect(labels[1]).toContain('IT · B-OI');
     expect(labels[1]).toContain('PEF');
-    expect(labels[8]).toContain('Jiný obor…');
+    // Erasmus last before Jiný obor…, named by its faculty: no programme to show.
+    expect(labels[8]).toContain('Erasmus · PEF');
+    expect(labels.join()).not.toContain('null');
+    expect(labels[9]).toContain('Jiný obor…');
     expect(checked()).toHaveLength(1);
     expect(checked()[0]).toContain('Já');
   });

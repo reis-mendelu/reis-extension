@@ -1,4 +1,3 @@
-import { mergeDualLanguageLessons } from '../schedule';
 import type { BlockLesson } from '../../types/schedule';
 import type { SubjectInfo } from '../../types/documents';
 import {
@@ -9,7 +8,8 @@ import {
 } from './types';
 import { parseDoc } from './text';
 import { intakeLabel, targetSemester } from './intake';
-import { timetableBody, readTimetableAnswer, type TimetableFilter } from './timetableQuery';
+import { lessonsFor } from './lessonsFor';
+import { fetchExchange } from './fetchExchange';
 import {
   CATALOG_URL,
   FACULTY_IDS,
@@ -20,26 +20,8 @@ import {
 } from './catalogNav';
 import { parseCatalogPlan, subjectsToAttend, toStudyPlan } from './catalogPlan';
 import { firstSlotOnly, oneSeminarParallel } from './pickSlots';
-import { text, post, mapLimit } from './transport';
+import { text, mapLimit } from './transport';
 import { taughtSubjects } from './taughtSubjects';
-
-/** Both languages or failure — a half-fetched timetable is never applied. */
-async function lessonsFor(
-  sel: ImpersonationSelection,
-  f: TimetableFilter,
-  pick: (lessons: BlockLesson[]) => BlockLesson[]
-): Promise<BlockLesson[]> {
-  const [cz, en] = await Promise.all(
-    (['cz', 'en'] as const).map(async (lang) =>
-      readTimetableAnswer(await post(timetableBody(sel.rozvrh, f, lang, 'json')))
-    )
-  );
-  if (!cz || !en || cz.kind === 'failed' || en.kind === 'failed')
-    throw new ImpersonationError('timetable');
-  const czL = cz.kind === 'lessons' ? cz.lessons : [];
-  const enL = en.kind === 'lessons' ? en.lessons : [];
-  return mergeDualLanguageLessons(pick(czL), enL);
-}
 
 /**
  * One subject, one parallel. `rocnik` narrows it to the slots open to this
@@ -101,6 +83,9 @@ export async function fetchImpersonation(
   requested: ImpersonationSelection,
   now = new Date()
 ): Promise<ImpersonationResult> {
+  // Erasmus (design 2026-11-27 §4): no plan, its pinned courses. Keyed on the
+  // selection, so a background refresh of the cached persona takes it too.
+  if (requested.erasmus) return fetchExchange(requested);
   const { leaf, variant } = await fetchPlanLeaf(requested, now);
   // From here on, the version that has the plan: its id drives the timetable.
   const sel = { ...requested, ...variant };

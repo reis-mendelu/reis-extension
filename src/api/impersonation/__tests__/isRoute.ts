@@ -63,6 +63,22 @@ const withoutMtLectures = (json: string) =>
   edit(json, (l) => !(l.courseCode === 'EBC-MT' && l.isSeminar === 'false'));
 const onlyMt = (json: string) => edit(json, (l) => l.courseCode === 'EBC-MT');
 
+/**
+ * The Erasmus persona's five English-taught courses (ids from PEF's course
+ * select, live 2026-11-28). Each answers like EBC-FT, renamed: a lecture slot
+ * and two seminar parallels. Asked WITH a year, IS would answer lectures only,
+ * so a fetch that sent `rocnik` would come back without seminars.
+ */
+export const EXCHANGE_COURSES: Record<string, string> = {
+  '164024': 'EBA-MAR',
+  '164120': 'EBA-MI',
+  '164118': 'EBA-MT',
+  '164119': 'EBA-PE',
+  '164023': 'EBA-FT',
+};
+const asCourse = (json: string, predmet: string) =>
+  json.replaceAll('EBC-FT', EXCHANGE_COURSES[predmet]!).replaceAll('164066', predmet);
+
 /** Answers each request with the real IS page that request got on 2026-09-26. */
 export function route(url: string, init?: RequestInit): string {
   const body = new URLSearchParams(typeof init?.body === 'string' ? init.body : '');
@@ -70,6 +86,11 @@ export function route(url: string, init?: RequestInit): string {
   if (url.includes('rozvrhy_view.pl?konf=1;z=')) return raw('rozvrh-range.html');
   if (url.includes('rozvrhy_view.pl') && !body.has('format')) return raw('rozvrh-criteria.html');
   if (body.get('format') === 'list') return raw('rozvrh-list-bf-y1.html');
+  const exchange = body.get('predmet') ?? '';
+  if (body.get('format') === 'json' && exchange in EXCHANGE_COURSES) {
+    const ft = asCourse(raw(`rozvrh-predmet-ft.${body.get('lang')}.json`), exchange);
+    return body.get('rocnik') === '0' ? ft : edit(ft, (l) => l.isSeminar === 'false');
+  }
   if (
     body.get('format') === 'json' &&
     body.get('predmet') === '164066' &&
@@ -137,5 +158,26 @@ export async function bfSelection(year: number): Promise<ImpersonationSelection>
     group: year === 1 ? 2 : null,
     rozvrh: bf.rozvrh,
     periodLabel: 'ZS 2026/2027',
+  };
+}
+
+/** The Erasmus persona's request, the way `personaRequest` builds it from `loadOptions`. */
+export async function erasmusSelection(): Promise<ImpersonationSelection> {
+  const pef = (await loadOptions(SEPT)).find((f) => f.faculty === 'PEF')!;
+  const courses = (pef.courses ?? [])
+    .filter((c) => Object.values(EXCHANGE_COURSES).includes(c.code))
+    .map(({ code, predmetId }) => ({ code, predmetId }));
+  return {
+    programId: '',
+    shortCode: 'Z-EXC',
+    name: '',
+    faculty: 'PEF',
+    year: 1,
+    group: null,
+    rozvrh: pef.courses![0]!.rozvrh,
+    periodLabel: 'ZS 2026/2027',
+    erasmus: true,
+    courses,
+    personaId: 'erasmus',
   };
 }

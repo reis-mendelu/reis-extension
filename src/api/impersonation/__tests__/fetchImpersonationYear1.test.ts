@@ -46,7 +46,7 @@ describe('fetchImpersonation, year 1 shapes', () => {
     });
     for (const l of r.schedule) expect(r.subjects.data[l.courseCode]).toBeDefined();
     // The plan screen stays what IS's catalogue says.
-    const planCodes = r.plan.cz.blocks.flatMap((b) =>
+    const planCodes = r.plan!.cz.blocks.flatMap((b) =>
       b.groups.flatMap((g) => g.subjects.map((x) => x.code))
     );
     expect(planCodes).not.toContain('BOTAZ');

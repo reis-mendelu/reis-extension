@@ -22,6 +22,13 @@ export interface PersonaStats {
   timetableOnly: number;
 }
 
+/** One pinned Erasmus course: its lessons in the persona's timetable. */
+export interface CourseStats {
+  code: string;
+  lectures: number;
+  seminars: number;
+}
+
 export interface PersonaRow {
   id: string;
   /** The programme code IS resolved to; null when the persona did not resolve. */
@@ -29,7 +36,15 @@ export interface PersonaRow {
   group: number | null;
   stats: PersonaStats | null;
   error?: string;
+  /** Erasmus only: its pinned courses, which of them IS still lists, and each one's lessons. */
+  courses?: { pinned: string[]; resolved: string[]; stats: CourseStats[] };
 }
+
+/**
+ * A pinned Erasmus course that genuinely has no seminar, with the reason, so
+ * the check does not fail it. Empty: all five have one (live 2026-11-28).
+ */
+const SEMINARLESS: Record<string, string> = {};
 
 /**
  * A first-year group mostly has one seminar per subject a week; two is a real
@@ -44,7 +59,8 @@ const weekday = (yyyymmdd: string) =>
   new Date(+yyyymmdd.slice(0, 4), +yyyymmdd.slice(4, 6) - 1, +yyyymmdd.slice(6, 8)).getDay();
 
 export function personaStats(r: ImpersonationResult): PersonaStats {
-  const planRows = r.plan.cz.blocks.reduce(
+  const blocks = r.plan?.cz.blocks ?? [];
+  const planRows = blocks.reduce(
     (n, b) => n + b.groups.reduce((m, g) => m + g.subjects.length, 0),
     0
   );
@@ -66,7 +82,7 @@ export function personaStats(r: ImpersonationResult): PersonaStats {
   );
   const taught = new Set(r.schedule.map((l) => l.courseCode));
   const planned = new Set(
-    r.plan.cz.blocks.flatMap((b) =>
+    blocks.flatMap((b) =>
       b.groups.flatMap((g) => g.subjects.filter((x) => x.isEnrolled).map((x) => x.code))
     )
   );
@@ -82,11 +98,36 @@ export function personaStats(r: ImpersonationResult): PersonaStats {
   };
 }
 
+export function courseStats(r: ImpersonationResult, codes: string[]): CourseStats[] {
+  return codes.map((code) => {
+    const own = r.schedule.filter((l) => l.courseCode === code);
+    const seminars = own.filter((l) => l.isSeminar === 'true').length;
+    return { code, lectures: own.length - seminars, seminars };
+  });
+}
+
+/**
+ * Erasmus (design 2026-11-27 §7): every pinned code still resolves, and each
+ * course has a lecture and a seminar. No plan rules: it has none by design.
+ */
+function erasmusVerdict(c: NonNullable<PersonaRow['courses']>, s: PersonaStats): string[] {
+  const out = c.pinned.filter((x) => !c.resolved.includes(x)).map((x) => `unresolved: ${x}`);
+  for (const x of c.stats) {
+    if (!c.resolved.includes(x.code)) continue;
+    if (x.lectures === 0) out.push(`${x.code}: 0 lectures`);
+    if (x.seminars === 0 && !SEMINARLESS[x.code]) out.push(`${x.code}: 0 seminars`);
+  }
+  if (s.maxSeminarSlots > MAX_SLOTS_FOR_ONE_GROUP)
+    out.push('seminars not narrowed to one parallel');
+  return out;
+}
+
 /** Why a row fails; empty = it passes. */
 export function personaVerdict(row: PersonaRow): string[] {
   if (!row.code) return ['unresolved'];
   if (row.error || !row.stats) return [`error: ${row.error ?? 'unknown'}`];
   const s = row.stats;
+  if (row.courses) return erasmusVerdict(row.courses, s);
   const out: string[] = [];
   if (s.subjects === 0) out.push('0 subjects');
   if (s.planSubjects === 0) out.push('0 plan subjects');
