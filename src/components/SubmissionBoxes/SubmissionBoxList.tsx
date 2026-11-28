@@ -4,6 +4,7 @@ import { splitBoxes } from '../../utils/submissionBoxes';
 import { boxKey } from '../../utils/newBoxDetection';
 import { SubmissionBoxCard } from './SubmissionBoxCard';
 import { ClosedBoxes } from './ClosedBoxes';
+import { ProjectDataLink } from './ProjectDataLink';
 import { useBoxLabels } from './useBoxLabels';
 
 /**
@@ -31,6 +32,7 @@ export function SubmissionBoxList({ boxes }: { boxes: Odevzdavarna[] }) {
       <p className="text-[11px] font-bold uppercase tracking-wider text-base-content/70">
         {L.t('odevzdavarny.title')} · {boxes.length}
       </p>
+      {open.length > 0 && <ProjectDataLink />}
       {open.map((box, i) => (
         <SubmissionBoxCard
           key={box.odevzdavarnaId || `${box.name}-${i}`}

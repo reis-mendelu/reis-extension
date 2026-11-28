@@ -1839,7 +1839,7 @@
     "submitInIs": "Odevzdat v IS",
     "openInIs": "Otevřít v IS",
     "projectData": "Data pro projekt",
-    "projectDataHint": "Reálná data z MENDELU (JSON)",
+    "projectDataHint": "Reálná data z MENDELU (JSON, CSV)",
     "nothing": "nic",
     "filesOne": "{n} soubor",
     "filesFew": "{n} soubory",

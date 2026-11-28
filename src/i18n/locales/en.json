@@ -1839,7 +1839,7 @@
     "submitInIs": "Submit in IS",
     "openInIs": "Open in IS",
     "projectData": "Data for your project",
-    "projectDataHint": "Real MENDELU data (JSON)",
+    "projectDataHint": "Real MENDELU data (JSON, CSV)",
     "nothing": "nothing",
     "filesOne": "{n} file",
     "filesFew": "{n} files",

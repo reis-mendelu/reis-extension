@@ -5,10 +5,9 @@ import { trackFeatureSignal } from '../../api/featureUsage';
 import { isProjectDataAudience, projectDataUrl } from '../../utils/projectData';
 
 /**
- * "Data pro projekt": under an open odevzdávárna of any subject, for the
- * informatics students only, a link to the page with the datasets a project can
- * use (utils/projectData holds who). Rendered inside the
- * shared card, so the extension, phone and iPad all have it. The viewer is the
+ * "Data pro projekt": once above a subject's open odevzdávárny (any subject), for
+ * the informatics students only, a link to the page with the datasets a project can
+ * use (utils/projectData holds who). Rendered by the shared list, so the extension, phone and iPad all have it. The viewer is the
  * impersonated student while a reis_admin impersonates.
  *
  * A tap is counted on the install (`project_data_opened`): the primary click and
@@ -31,7 +30,7 @@ export function ProjectDataLink() {
       onAuxClick={(e) => {
         if (e.button === 1) count();
       }}
-      className="flex items-center gap-1 border-t border-base-content/10 px-3 py-2 text-xs hover:bg-base-200"
+      className="flex items-center gap-1 rounded-xl border border-base-300 bg-base-100 px-3 py-2.5 text-xs transition-colors hover:bg-base-200"
     >
       <span className="shrink-0 font-semibold">{t('odevzdavarny.projectData')}</span>
       <span className="min-w-0 truncate text-base-content/70">
