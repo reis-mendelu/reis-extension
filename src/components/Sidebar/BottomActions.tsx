@@ -114,7 +114,15 @@ export function BottomActions() {
           onMouseLeave={handleLeave}
         >
           {isOpen && personasFirst ? (
-            <PersonaPopup onClose={() => setIsOpen(false)} onProfile={() => setOnProfile(true)} />
+            <PersonaPopup
+              onClose={() => setIsOpen(false)}
+              // The picked row unmounts with the popup: focus back on the avatar.
+              onPicked={() => {
+                setIsOpen(false);
+                avatarRef.current?.focus();
+              }}
+              onProfile={() => setOnProfile(true)}
+            />
           ) : (
             <ProfilePopup isOpen={isOpen} onClose={() => setIsOpen(false)} />
           )}

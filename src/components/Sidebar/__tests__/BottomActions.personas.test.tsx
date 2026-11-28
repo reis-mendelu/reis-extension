@@ -106,6 +106,7 @@ describe('the sidebar avatar', () => {
     });
     expect(go).toHaveBeenCalledWith('it');
     expect(personaDialog()).toBeNull();
+    expect(avatar()).toHaveFocus();
   });
 
   it('stays open on a failed switch, so its row can say why', async () => {

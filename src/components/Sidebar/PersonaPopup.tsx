@@ -11,9 +11,12 @@ import { PersonaList } from '../Impersonation/PersonaList';
  */
 export function PersonaPopup({
   onClose,
+  onPicked,
   onProfile,
 }: {
   onClose: () => void;
+  /** A pick took effect: close and hand focus back to the avatar. */
+  onPicked: () => void;
   onProfile: () => void;
 }) {
   const { t } = useTranslation();
@@ -28,7 +31,7 @@ export function PersonaPopup({
     >
       <PersonaList
         variant="compact"
-        onDone={onClose}
+        onDone={onPicked}
         onOther={() => {
           openImpersonationPicker();
           onClose();
