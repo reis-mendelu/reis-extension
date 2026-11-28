@@ -81,6 +81,30 @@
         display: grid;
         width: 120px;
       }
+      /* IS's icon-beside-label row: the icon's svg is placed inside its span. */
+      .rada-ikon[data-dir='right'] {
+        display: grid;
+        grid-template-columns: repeat(var(--_col_count), auto);
+      }
+      .rada-ikon[data-dir='right'] .app-ikona {
+        display: flex;
+        align-items: center;
+        width: auto;
+      }
+      .uf-icon {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 48px;
+        flex: none;
+      }
+      .uf-icon svg {
+        position: absolute;
+        left: 8px;
+        top: 8px;
+        width: 32px;
+        height: 32px;
+      }
       .paginator {
         display: flex;
         list-style: none;
@@ -135,9 +159,17 @@
                 </select>
                 <button type="submit">Dohledat</button>
               </form>
-              <div class="rada-ikon">
+              <div class="rada-ikon" data-dir="bottom">
                 <a class="app-ikona">Hromadné kopírování</a><a class="app-ikona">Archiv dokumentů</a
                 ><a class="app-ikona">Možnosti složky</a>
+              </div>
+              <!-- Icon BESIDE its label (a person's page): the icon grid must leave it alone. -->
+              <div class="rada-ikon" data-dir="right" style="--_col_count: 2">
+                <a class="app-ikona"
+                  ><span class="uf-icon"><svg></svg></span>Uživatelské informace ve formátu vCard</a
+                ><a class="app-ikona"
+                  ><span class="uf-icon"><svg></svg></span>Import osoby do poštovních kontaktů</a
+                >
               </div>
               <ul class="paginator">
                 <li>|&lt;</li>

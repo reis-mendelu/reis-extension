@@ -52,8 +52,8 @@ body { font-size: 16px; line-height: 1.45; }
 
 .mainpage div, .mainpage p, .mainpage form { max-width: 100% !important; box-sizing: border-box; }
 .mainpage div.small { width: auto !important; }
-.mainpage .rada-ikon { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)) !important; width: calc(100vw - 42px); box-sizing: border-box; gap: 4px; }
-.mainpage .rada-ikon .app-ikona { width: auto !important; min-width: 0; }
+.mainpage .rada-ikon[data-dir="bottom"] { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)) !important; width: calc(100vw - 42px); box-sizing: border-box; gap: 4px; }
+.mainpage .rada-ikon[data-dir="bottom"] .app-ikona { width: auto !important; min-width: 0; }
 .mainpage .paginator { flex-wrap: wrap; row-gap: 4px; }
 .mainpage .sekce-nadpis { font-size: 14px; }
 
@@ -102,7 +102,7 @@ input, select, textarea, button { font-size: 16px; }
 /* Card rows with a photo (people lists): photo small on the left, the name
    with its icons beside it, the rest below the name. No labels: a name and a
    study need none. The row number is not shown. */
-.mainpage table.reis-cards tr.reis-card.reis-person { display: grid !important; grid-template-columns: 44px fit-content(calc(100% - 88px)) minmax(24px, 1fr); column-gap: 10px; row-gap: 2px; align-items: center; padding: 8px 12px; margin: 0 0 8px; }
+.mainpage table.reis-cards tr.reis-card.reis-person { display: grid !important; grid-template-columns: 44px fit-content(calc(100% - 112px)) minmax(min-content, 1fr); column-gap: 10px; row-gap: 2px; align-items: center; padding: 8px 12px; margin: 0 0 8px; }
 .mainpage table.reis-cards tr.reis-card.reis-person > td { display: block !important; grid-column: 2 / span 2; font-size: 12px !important; color: #55606a; line-height: 1.35; }
 .mainpage table.reis-cards tr.reis-card.reis-person > td::before { content: none; }
 .mainpage table.reis-cards tr.reis-card.reis-person > td.reis-photo { grid-column: 1; grid-row: 1 / span 2; line-height: 0; }
