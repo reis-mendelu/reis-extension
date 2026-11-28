@@ -171,7 +171,14 @@ input, select, textarea, button { font-size: 16px; }
 .mainpage table.reis-att tr > td.a-week .uf-icon, .mainpage table.reis-att tr > td.a-week img { flex: 0 0 auto; margin: 0 !important; transform: scale(0.72); transform-origin: center top; }
 
 /* What the script could not re-read: tighter cells; a one-row filter form wraps. */
-.mainpage table.reis-compact td, .mainpage table.reis-compact th { font-size: 12px !important; padding: 3px !important; white-space: normal !important; }
+.mainpage table.reis-compact td, .mainpage table.reis-compact th { font-size: 12px !important; padding: 2px 3px !important; white-space: normal !important; width: auto !important; }
+/* In a tightened table nothing holds a column open that could give: IS's no-wrap pieces may wrap, and a
+   text field takes its cell's width instead of its own fixed one (a form keeps its layout, just narrower). */
+.mainpage table.reis-compact .nowrap, .mainpage table.reis-compact td span, .mainpage table.reis-compact th span { white-space: normal !important; }
+.mainpage table.reis-compact input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="image"]):not([type="hidden"]), .mainpage table.reis-compact select, .mainpage table.reis-compact textarea { width: 100% !important; min-width: 0 !important; max-width: 100%; box-sizing: border-box; }
+.mainpage table.reis-compact input.hasDatepicker { width: calc(100% - 28px) !important; }
+/* Footnote marks in restyled tables stay readable (the timetable's "(3)" came out at 10 px). */
+.mainpage table[class*="reis-"] sup, .mainpage table[class*="reis-"] sub { font-size: max(11px, 0.75em) !important; }
 .mainpage table.reis-flow tbody, .mainpage table.reis-flow tr { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .mainpage table.reis-flow td { display: block !important; padding: 0 !important; max-width: 100%; }
 /* Label/value pairs (the syllabus's details): each value under its label, nothing scrolls sideways.

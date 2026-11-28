@@ -146,3 +146,29 @@
     </tr>
   </tbody>
 </table>
+<!-- An IS form whose fields have fixed widths and a date field held together with its icon. Tightened,
+     the fields take their cell's width, the pieces may wrap, and it fits: it stays a form table. -->
+<table id="formtight" class="form-edit" data-expect="reis-compact">
+  <tr>
+    <td>Uživatel</td>
+    <td><input type="text" name="u" size="60" /></td>
+    <td>
+      <span style="white-space: nowrap"
+        ><input type="text" name="od" size="20" class="hasDatepicker" /><img
+          alt=""
+          width="24"
+          height="24"
+          class="ui-datepicker-trigger"
+      /></span>
+    </td>
+  </tr>
+  <tr>
+    <td>Agenda</td>
+    <td>
+      <select name="a" style="width: 400px">
+        <option>-- neomezeno --</option>
+      </select>
+    </td>
+    <td>poznámka k výběru</td>
+  </tr>
+</table>
